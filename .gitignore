@@ -3,3 +3,5 @@ myproject/*
 db.sqlite3
 manage.py
 sso.txt
+*.pyc
+.env
