@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponseBadRequest
-from django.contrib.auth import login, get_user_model
+from django.contrib.auth import login, get_user_model, logout as django_logout
 from django.contrib.auth.decorators import login_required
 import requests
 from django.conf import settings
@@ -9,7 +9,30 @@ from django.conf import settings
 @login_required
 def dashboard(request):
     """Simple dashboard page for logged‑in users."""
-    return render(request, 'sso/dashboard.html')
+    sso_user = request.session.get('sso_user', {})
+    sso_business = request.session.get('sso_business', {})
+    
+    # Fallback to local user model fields if session data doesn't exist
+    user = request.user
+    context = {
+        'user': user,
+        'sso_user': sso_user or {
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'full_name': f"{user.first_name} {user.last_name}".strip() or user.username,
+            'phone': 'N/A',
+            'avatar': None,
+            'email_verified': False,
+        },
+        'sso_business': sso_business or {
+            'id': 'N/A',
+            'name': 'Hamro School/Business',
+            'module': 'students',
+        }
+    }
+    return render(request, 'sso/dashboard.html', context)
 
 
 def auto_login(request):
@@ -60,7 +83,29 @@ def auto_login(request):
     for attr, val in defaults.items():
         setattr(user, attr, val)
     user.save()
+    
+    # Store SSO details in session
+    request.session['sso_user'] = user_info
+    
+    business_info = data.get('business') or {}
+    business_name = business_info.get('name') or data.get('business_name')
+    business_id = business_info.get('id') or data.get('business_id')
+    
+    request.session['sso_business'] = {
+        'id': business_id,
+        'name': business_name or 'Hamro School/Business',
+        'module': data.get('module', 'students'),
+    }
+    
     login(request, user)
-    # Redirect to a landing page – you may change this as needed
-    return redirect('/')
+    # Redirect to dashboard landing page
+    return redirect('dashboard')
+
+
+def logout_user(request):
+    """Log the user out locally and redirect to the public home page."""
+    django_logout(request)
+    return redirect('home')
+
+
 

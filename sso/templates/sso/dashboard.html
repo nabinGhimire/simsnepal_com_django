@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIMS Nepal - SSO Dashboard</title>
+    
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: rgba(255, 255, 255, 0.85);
+            --panel-border: rgba(0, 137, 117, 0.12);
+            --accent-primary: #008975;
+            --accent-secondary: #00a890;
+            --accent-glow: rgba(0, 137, 117, 0.08);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --success: #059669;
+            --success-glow: rgba(5, 150, 105, 0.08);
+            --card-hover-border: rgba(0, 137, 117, 0.35);
+            --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+            padding: 2rem 1rem;
+        }
+
+        /* Modern Abstract Background Blobs - Brand Light Mode */
+        .bg-glow-1 {
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(0, 137, 117, 0.06) 0%, rgba(0,0,0,0) 70%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .bg-glow-2 {
+            position: absolute;
+            bottom: -10%;
+            right: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(0, 168, 144, 0.05) 0%, rgba(0,0,0,0) 70%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Container & Glassmorphism Panel */
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 20px 50px rgba(0, 137, 117, 0.05);
+            z-index: 2;
+            overflow: hidden;
+            display: grid;
+            grid-template-rows: auto 1fr;
+        }
+
+        /* Premium Header with Dynamic Gradients */
+        header {
+            padding: 2.5rem 3rem 1.5rem;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #ffffff;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 10px var(--accent-glow);
+        }
+
+        .brand-title h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent-primary) 30%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-title p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* Dashboard Badges */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(5, 150, 105, 0.05);
+            border: 1px solid rgba(5, 150, 105, 0.15);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--success);
+            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.02);
+            animation: pulse-border 3s infinite alternate;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+            display: inline-block;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            padding: 3rem;
+            display: grid;
+            grid-template-columns: 1.2fr 1.8fr;
+            gap: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                padding: 1.5rem;
+            }
+            header {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Profile Left Side Panel */
+        .profile-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            background: #ffffff;
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 2.5rem 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 137, 117, 0.02);
+            transition: all 0.3s ease;
+        }
+
+        .profile-card:hover {
+            border-color: var(--card-hover-border);
+            box-shadow: 0 10px 30px rgba(0, 137, 117, 0.06);
+            transform: translateY(-2px);
+        }
+
+        .avatar-container {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .avatar-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #ffffff;
+            box-shadow: 0 0 0 3px var(--accent-primary);
+        }
+
+        .avatar-placeholder {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 800;
+            color: #ffffff;
+            border: 4px solid #ffffff;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .verified-badge {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            width: 28px;
+            height: 28px;
+            background: var(--success);
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 800;
+            box-shadow: 0 4px 8px rgba(0, 137, 117, 0.15);
+        }
+
+        .user-name {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.25rem;
+        }
+
+        .user-username {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .user-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(0, 137, 117, 0.05);
+            border: 1px solid rgba(0, 137, 117, 0.18);
+            color: var(--accent-primary);
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Detail Cards Right Side Panel */
+        .details-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--panel-border);
+        }
+
+        .info-card {
+            background: #ffffff;
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 137, 117, 0.02);
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            border-color: var(--card-hover-border);
+            transform: translateY(-1px);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 137, 117, 0.05);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .info-row:first-child {
+            padding-top: 0;
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .info-value.highlight {
+            color: var(--accent-primary);
+        }
+
+        /* Business Hero Banner Card */
+        .business-hero {
+            background: linear-gradient(135deg, rgba(0, 137, 117, 0.04) 0%, rgba(0, 168, 144, 0.04) 100%);
+            border: 1px solid rgba(0, 137, 117, 0.15);
+            border-radius: 16px;
+            padding: 1.75rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(0, 137, 117, 0.02);
+        }
+
+        .business-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(0, 137, 117, 0.08) 0%, rgba(0,0,0,0) 70%);
+            pointer-events: none;
+        }
+
+        .business-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-primary) 40%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .business-meta {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+            font-weight: 700;
+        }
+
+        .meta-value {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: var(--accent-primary);
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+
+        /* Footer logout & switch buttons */
+        .actions-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            background: rgba(0, 137, 117, 0.04);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(0, 137, 117, 0.15);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 137, 117, 0.28);
+        }
+
+        /* Keyframe animations */
+        @keyframes pulse-border {
+            0% {
+                border-color: rgba(5, 150, 105, 0.15);
+                box-shadow: 0 0 15px rgba(5, 150, 105, 0.02);
+            }
+            100% {
+                border-color: rgba(5, 150, 105, 0.4);
+                box-shadow: 0 0 25px rgba(5, 150, 105, 0.1);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="brand-section">
+                <div class="brand-logo">S</div>
+                <div class="brand-title">
+                    <h1>SIMS Nepal</h1>
+                    <p>Student Information Management System</p>
+                </div>
+            </div>
+            
+            <div class="connection-status">
+                <span class="status-dot"></span>
+                <span>SSO Authenticated</span>
+            </div>
+        </header>
+
+        <!-- Dashboard Content Grid -->
+        <div class="content-grid">
+            
+            <!-- Left Panel - Profile Summary -->
+            <div class="profile-card">
+                <div class="avatar-container">
+                    {% if sso_user.avatar %}
+                        <img src="{{ sso_user.avatar }}" alt="User Avatar" class="avatar-img">
+                    {% else %}
+                        <div class="avatar-placeholder">
+                            {{ sso_user.full_name|slice:":1"|upper }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if sso_user.email_verified or sso_user.account_verified %}
+                        <div class="verified-badge" title="SSO Account Verified">✓</div>
+                    {% endif %}
+                </div>
+
+                <h2 class="user-name">{{ sso_user.full_name }}</h2>
+                <p class="user-username">@{{ sso_user.username }}</p>
+                
+                <span class="user-badge">
+                    {% if user.is_staff %}
+                        Staff Administrator
+                    {% else %}
+                        Client Member
+                    {% endif %}
+                </span>
+            </div>
+
+            <!-- Right Panel - Detailed Info -->
+            <div class="details-section">
+                
+                <!-- Business Info Card -->
+                <h3 class="section-title">Hamro Business Identity</h3>
+                <div class="business-hero">
+                    <div class="business-title">{{ sso_business.name }}</div>
+                    
+                    <div class="business-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Business ID</span>
+                            <span class="meta-value" style="font-family: monospace; font-size: 0.85rem;">{{ sso_business.id }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Access Module</span>
+                            <span class="meta-value">
+                                <span class="badge-pill">{{ sso_business.module }}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Details Card -->
+                <h3 class="section-title">User Account Parameters</h3>
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">SSO UUID</span>
+                        <span class="info-value" style="font-family: monospace; font-size: 0.85rem;">{{ sso_user.hamro_uuid|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email Address</span>
+                        <span class="info-value highlight">{{ sso_user.email }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Contact Phone</span>
+                        <span class="info-value">{{ sso_user.phone|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email Verified</span>
+                        <span class="info-value" style="color: {% if sso_user.email_verified %}var(--success){% else %}var(--text-muted){% endif %}; font-weight: 800;">
+                            {% if sso_user.email_verified %}Yes{% else %}No{% endif %}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Phone Verified</span>
+                        <span class="info-value" style="color: {% if sso_user.phone_verified %}var(--success){% else %}var(--text-muted){% endif %}; font-weight: 800;">
+                            {% if sso_user.phone_verified %}Yes{% else %}No{% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Control actions -->
+                <div class="actions-bar">
+                    <a href="http://127.0.0.1:8080" class="btn btn-outline">Back to Hamro SSO</a>
+                    <a href="{% url 'logout' %}" class="btn btn-primary">Term Session</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
