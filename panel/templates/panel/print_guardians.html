@@ -1,0 +1,177 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %}Guardians Report - {{ school.name }}{% endblock %}
+
+{% block navbar %}
+  {% if branch_user.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Print</div>
+        <h2 class="page-title">Guardians / Parents</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <div class="btn-list">
+          <button id="btn-export-csv" class="btn btn-outline-success" onclick="exportToCSV()">
+            <i class="ti ti-file-spreadsheet me-1"></i> Export CSV
+          </button>
+          <button id="btn-export-pdf" class="btn btn-outline-danger" onclick="exportToPDF()">
+            <i class="ti ti-file-type-pdf me-1"></i> Export PDF
+          </button>
+          <button id="btn-print" class="btn btn-primary" onclick="window.print()">
+            <i class="ti ti-printer me-1"></i> Print Report
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<style>
+  @media print {
+    body { background: white !important; }
+    .card { border: 1px solid #ccc !important; box-shadow: none !important; }
+    .d-print-none { display: none !important; }
+    .report-header { background: #1a56db !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { size: A4; margin: 15mm; }
+  }
+  .report-header {
+    background: linear-gradient(135deg, #1a56db 0%, #1e429f 100%);
+    color: white;
+    border-radius: 0.375rem 0.375rem 0 0;
+    padding: 1.5rem;
+  }
+  .report-school-name { font-size: 1.4rem; font-weight: 700; }
+  .report-school-location { font-size: 0.9rem; opacity: 0.85; }
+  .report-title { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.5px; }
+  .stats-badge {
+    background: rgba(255,255,255,0.2);
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  .table th { background: #e9f0fb; font-weight: 600; }
+  .table tbody tr:hover { background: #f1f5fd; }
+</style>
+
+<div class="card">
+  <div class="report-header">
+    <div class="row align-items-center g-3">
+      <div class="col">
+        <div class="report-school-name">{{ school.name }}</div>
+        <div class="report-school-location">
+          <i class="ti ti-map-pin me-1"></i>{{ school.location }}
+        </div>
+        <div class="report-title mt-2">
+          <i class="ti ti-users me-1"></i>Guardian / Parent Report
+        </div>
+      </div>
+      <div class="col-auto text-end d-print-flex">
+        <div class="mb-1 stats-badge">
+          <i class="ti ti-calendar me-1"></i>
+          <span id="report-date"></span>
+        </div>
+        <div class="stats-badge">
+          <i class="ti ti-users me-1"></i>
+          Total: <strong>{{ parents|length }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-body p-0">
+    {% if parents %}
+      <div class="table-responsive">
+        <table id="guardians-table" class="table table-vcenter table-striped mb-0">
+          <thead>
+            <tr>
+              <th class="w-1 text-center">SN</th>
+              <th>Full Name</th>
+              <th>Username</th>
+              <th>Email Address</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for parent in parents %}
+              <tr>
+                <td class="text-muted text-center">{{ forloop.counter }}</td>
+                <td class="fw-semibold">{{ parent.guardian.first_name }} {{ parent.guardian.last_name }}</td>
+                <td><code>{{ parent.guardian.username }}</code></td>
+                <td>{{ parent.guardian.email }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer text-muted small d-flex justify-content-between">
+        <span>Showing <strong>{{ parents|length }}</strong> guardian(s)</span>
+        <span>Report generated on: <span id="footer-date"></span></span>
+      </div>
+    {% else %}
+      <div class="empty py-5">
+        <div class="empty-icon">
+          <i class="ti ti-inbox" style="font-size: 3rem;"></i>
+        </div>
+        <p class="empty-title">No guardians found</p>
+        <p class="empty-subtitle text-secondary">There are no guardians registered in the system.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script>
+  // Set current date
+  var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  var dateShort = new Date().toISOString().split('T')[0];
+  var dateEl = document.getElementById('report-date');
+  var footerEl = document.getElementById('footer-date');
+  if (dateEl) dateEl.textContent = today;
+  if (footerEl) footerEl.textContent = today;
+
+  function exportToCSV() {
+    var table = document.getElementById('guardians-table');
+    if (!table) { alert('No data to export.'); return; }
+
+    var csv = [];
+    var headers = [];
+    table.querySelectorAll('thead th').forEach(function(th) {
+      headers.push('"' + th.textContent.trim() + '"');
+    });
+    csv.push(headers.join(','));
+
+    table.querySelectorAll('tbody tr').forEach(function(tr) {
+      var row = [];
+      tr.querySelectorAll('td').forEach(function(td) {
+        row.push('"' + td.textContent.trim().replace(/"/g, '""') + '"');
+      });
+      csv.push(row.join(','));
+    });
+
+    var csvContent = csv.join('\n');
+    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.setAttribute('href', URL.createObjectURL(blob));
+    link.setAttribute('download', 'guardians_' + dateShort + '.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function exportToPDF() {
+    window.print();
+  }
+</script>
+{% endblock scripts %}

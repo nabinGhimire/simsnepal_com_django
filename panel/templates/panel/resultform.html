@@ -1,0 +1,188 @@
+
+{% load static %}
+<html>
+<head>
+<title>View Result | SIMS Nepal </title>
+<meta name="google-site-verification" content="WMuM0C8b6nD2VcfTINkWs-4-LgDVXaD46L_mL34ALRM" />
+<meta name="msvalidate.01" content="2565F2B8D0D2195D6C5FFED5AB75D880" />
+<meta name="yandex-verification" content="1e31ec68952169d7" />
+<meta property= “fb:app_id” content= “1633658876679733” />
+<meta charset="utf-8" />
+<meta name="description" content="View result of you child online. SIMS provides online facilities for schools and parents to view the result of their children through web.">
+<meta name="keywords" content="SIMS result, Students result, School result, Samata School, Samata East, Samata School Itahari, Damak, Lahan">
+<meta name="author" content="Nabin Ghimire">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<style>
+
+/*
+/* Created by Filipe Pina
+ * Specific styles of signin, register, component
+ */
+/*
+ * General styles
+ */
+
+ @import "https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400";
+
+body, html{
+  height: 100%;
+  background-repeat: no-repeat;
+  background-color: #d3d3d3;
+  font-family: "Source Sans Pro", Helvetica, sans-serif;
+}
+
+.main{
+  margin-top: 70px;
+}
+
+h1.title {
+  font-size: 50px;
+  font-family: "Source Sans Pro", Helvetica, sans-serif;
+  font-weight: 400;
+}
+
+hr{
+  width: 10%;
+  color: #fff;
+}
+
+.form-group{
+  margin-bottom: 15px;
+}
+
+label{
+  margin-bottom: 15px;
+}
+
+input,
+input::-webkit-input-placeholder {
+    font-size: 11px;
+    padding-top: 3px;
+}
+
+.main-login{
+  background-color: #fff;
+    /* shadows and rounded borders */
+    -moz-border-radius: 2px;
+    -webkit-border-radius: 2px;
+    border-radius: 2px;
+    -moz-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+    -webkit-box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
+
+}
+
+.main-center{
+  margin-top: 30px;
+  margin: 0 auto;
+  max-width: 330px;
+    padding: 40px 40px;
+
+}
+
+.login-button{
+  margin-top: 5px;
+}
+
+.login-register{
+  font-size: 11px;
+  text-align: center;
+}
+
+
+
+
+</style>
+</head>
+<body id="top">
+  <script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '1633658876679733',
+      xfbml      : true,
+      version    : 'v2.11'
+    });
+    FB.AppEvents.logPageView();
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "https://connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-100716832-2', 'auto');
+  ga('send', 'pageview');
+
+</script>
+  <div class="container">
+      <a href="/" class="btn btn-info" role="button">Go to Home </a>
+  </div>
+   <div class="container">
+      <div class="row main">
+        <div class="panel-heading">
+                 <div class="panel-title text-center">
+                    <h1 class="title">SIMS</h1>
+                    <hr />
+                  </div>
+              </div>
+        <div class="main-login main-center">
+          <form class="form-horizontal" method="POST" action="/panel/publicresult/">
+            {% csrf_token %}
+            <div class="form-group">
+              {{ message }}
+            </div>
+            <div class="form-group">
+              <label for="name" class="cols-sm-2 control-label">Reg. No. / Symbol No.</label>
+              <div class="cols-sm-10">
+                <div class="input-group">
+                  <input type="text" class="form-control form-control-line" id="regno" name="regno">
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+                <label for="name" class="cols-sm-2 control-label">Security Code</label>
+                <div class="cols-sm-10">
+                  <div class="input-group">
+                    <input type="text" class="form-control form-control-line" id="scode" name="scode">
+                  </div>
+                </div>
+              </div>
+            <div class="form-group ">
+              <input type="submit" class="btn btn-success" name="action" value="Submit" />
+            </div>
+            <div class="login-register">
+                 </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="{% static "v1/bootstrap/dist/js/bootstrap.min.js" %}"></script>
+    <script type="application/ld+json">
+      {
+      "@context" : "http://schema.org",
+      "@type" : "Organization",
+      "name" : "View Result | SIMS Nepal",
+      "url" : "https://simsnepal.com/result/"
+      }
+    </script>
+  </body>
+</html>

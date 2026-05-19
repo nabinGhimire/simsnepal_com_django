@@ -1,0 +1,82 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+
+{% block title %}Edit Student Session - Hamro Panel{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">Edit Student Session</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <a href="{{ return_url|default:'javascript:history.back()' }}" class="btn btn-outline-secondary btn-sm">
+          <i class="ti ti-arrow-left me-1"></i> Back
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6">
+            <div class="text-secondary small">Registration No.</div>
+            <div class="fw-semibold">{{ student.student.reg_no }}</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="text-secondary small">Student Name</div>
+            <div class="fw-semibold">{{ student.student }}</div>
+          </div>
+        </div>
+
+        <form action="/panel/edit/student/session/{{ student.student.reg_no }}/" method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="redurl" value="{{ return_url }}">
+
+          <div class="mb-3">
+            <label class="form-label">Roll Number</label>
+            <input type="number" class="form-control" name="rollno" value="{{ student.roll_no }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Section</label>
+            <select class="form-select" name="section" required>
+              {% for section in avaiablesections %}
+                <option value="{{ section.id }}" {% if section.id == student.section.id %}selected{% endif %}>
+                  {{ section.section }} (Session: {{ section.session }})
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-hint">Need a new section? Add it from the grade page.</div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="ti ti-device-floppy me-1"></i> Save Changes
+            </button>
+            <a href="{{ return_url|default:'javascript:history.back()' }}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,215 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Result</title>
+    <link href='https://fonts.googleapis.com/css?family=Poppins' rel='stylesheet'>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+{#    <link rel="stylesheet" type="text/css" href="{% static "v2/css/ledger.css" %}">#}
+    <link rel="stylesheet" type="text/css" href="https://simsnepal.com/static/css/printledger.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
+    <!-- <meta http-equiv="refresh" content="1" > -->
+
+    <link rel="stylesheet" type="text/css" media="print" href="https://simsnepal.com/static/css/printledger.css">
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css"
+        integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <style>
+        body {
+            {#background-color: #eee;#}
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .trans2 {
+            transform: rotate(270deg);
+            transform-origin: 60% 30%;
+        }
+        /*
+
+        .gradetab {
+            margin: 2mm 5mm 5mm 5mm;
+            width: 192mm;
+        }
+
+        .footer {
+            width: 192mm;
+            margin: 20mm 5mm 0mm 5mm;
+            text-align: center;
+        }
+
+        
+        footer td{
+            border: 0;
+        }
+
+
+        tr{
+            border-bottom: 1px solid #fff3cd;
+        }
+
+        
+        th, td {
+			border: solid black !important;
+			border-width: 0 1px 1px 0 !important;
+			border-bottom-style: none;
+		}
+		table.table-bordered{
+			border:1px solid black;
+			margin-top:20px;
+		}
+		table.table-bordered > thead > tr > th{
+			border:1px solid black;
+		}
+		table.table-bordered > tbody > tr > td{
+			border:1px solid black;
+		}
+		*/
+
+		.table-bordered2 > tbody > tr > td, .table-bordered2 > tbody > tr > th, .table-bordered2 > tfoot > tr > td, .table-bordered2 > tfoot > tr > th, .table-bordered > thead > tr > td, .table-bordered > thead > tr > th {
+			border: 1px solid black;
+		}
+
+        @media print {
+		@page{
+			size: A4 landscape;
+			margin:0cm;
+		}
+		.table-birdered2{
+			margin-left: 0px;
+		} 
+
+		.container{
+			border-collapse: collapse;
+		}
+
+		tr {
+		   padding: 0; 
+		   margin: 0;
+		}
+
+		/*
+		
+		table {
+			border: solid black !important;
+			border-width: 1px 0 0 1px !important;
+			border-bottom-style: none;
+		}
+		
+		th, td {
+			border: solid black !important;
+			border-width: 0 1px 1px 0 !important;
+			border-bottom-style: none;
+		}
+		table.table-bordered{
+			border:1px solid black;
+			margin-top:20px;
+		}
+		table.table-bordered > thead > tr > th{
+			border:1px solid black;
+		}
+		table.table-bordered > tbody > tr > td{
+			border:1px solid black;
+		}
+		*/
+		.table-bordered2 > tbody > tr > td, .table-bordered2 > tbody > tr > th, .table-bordered2 > tfoot > tr > td, .table-bordered2 > tfoot > tr > th, .table-bordered > thead > tr > td, .table-bordered > thead > tr > th {
+			border: 1px solid black;
+		}
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+    <div class="row">
+        <div class="info" style="display: inline-block; float: right; margin-left: 60px;">
+            <p class="motto">{{ slogan|safe }} </p>
+            <h1 class="school">{{ school.name }}</h1>
+            <h3 class="term">{{ school.location }}</h3>
+            <p class="telephone" style="margin: -10px 0 10px 0;"><i class="fas fa-phone-square"></i> +977 {{ school.phone }},  <i class="fas fa-envelope-square"></i> {{ school.email }}</p>
+            <h3 class="address">{{ term.final_term_name|upper}} - {{year}}</h3>
+            <h3 class="report-type">GRADE LEDGER OF {% if board %}SCHOOL {% else %}GRADE {% endif %} {{ grade|upper }}{% if section %} ({{ section|upper }}){% else %}(ALL){% endif %}</h3>
+        </div>
+    </div>
+    <div class="row">
+        <table class="table table-bordered2 table-sm">
+        <tbody>
+            <tr>
+                <th rowspan="3">S.N</th>
+                <th rowspan="3">REG NO.</th>
+                <th rowspan="3">STUDENTS NAME</th>
+{#                <th rowspan="2"></th>#}
+{#                <th colspan="">SUBJECTS</th>#}
+                <th colspan="{{ th_pr_count }}" rowspan="1" style="text-align: center;">SUBJECTS</th>
+                <th rowspan="3">GPA</th>
+                <th rowspan="3">RANK</th>
+{#                <th rowspan="">RANK</th>#}
+                <th rowspan="3">REMARKS</th>			
+            </tr>
+            <tr>
+                {% for subject in subjects %}
+                    <th colspan="2">{{ subject }}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for subject in subjects %}
+                    <th>TH</th>
+                    <th>PR</th>
+                {% endfor %}
+            </tr>
+
+            {% for key, student in data.items %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ student.reg_no }}</td>
+                    <td>{{ student.name }}</td>
+{#                    <td>#}
+{#                        <table class="table table-sm table-borderless t-p-f-g" style="padding: 0px; margin: 0px;">#}
+{#                            <tr><td>TH</td></tr>#}
+{#                            <tr><td>PR</td></tr>#}
+{#                            <tr><td>FG</td></tr>#}
+{#                            <tr><td>GP</td></tr>#}
+{#                        </table>#}
+{#                    </td>#}
+                    {% for sub in subjects %}
+{#                        {%  for term in term_list %}#}
+
+{#                        <table class="table table-sm table-borderless t-p-f-g" style="padding: 0px; margin: 0px;">#}
+                            <td> &nbsp;<span id="{{ student.reg_no }}_{{ sub.id }}_{{ term.id }}_th_grade"></span><sup id="{{ student.reg_no }}_{{ sub.id }}_{{ term.id }}_th_symbol"></sup></td>
+                            <td> &nbsp;<span id="{{ student.reg_no }}_{{ sub.id }}_{{ term.id }}_pr_grade"></span><sup id="{{ student.reg_no }}_{{ sub.id }}_{{ term.id }}_pr_symbol"></sup></td>
+{#                            <tr><td class="subjects"><span id="{{ student.reg_no }}_{{ sub.id }}_total_grade"></span></td></tr>#}
+{#                            <tr><td><span id="{{ student.reg_no }}_{{ sub.id }}_total_grade_point"></span></td></tr>#}
+{#                        </table>#}
+
+{#                            {% endfor %}#}
+                    {% endfor %}
+                    <td><span id="{{ student.reg_no }}_gpa"></span></td>
+                    <th><span id="{{ student.reg_no }}_rank"></span></th>
+                    <th><span id="{{ student.reg_no }}_remarks"></span></th>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+
+    </div>
+        <script>
+             $(document).ready(function() {
+                 {#var obj = ;#}
+                 var obj = JSON.parse('{{ mo_dict|escapejs }}');
+                 Object.keys(obj).forEach(function(k){
+
+                    if(k.slice(-11) == "grade_point"){
+                        $("#"+k).text(parseFloat(obj[k]).toFixed(1));
+                     }
+                    else{
+                        $("#"+k).text(obj[k]);
+                     }
+                });
+            });
+        </script>
+  </body>
+</html>

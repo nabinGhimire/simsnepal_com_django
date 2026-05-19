@@ -1,0 +1,414 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="google-site-verification" content="WMuM0C8b6nD2VcfTINkWs-4-LgDVXaD46L_mL34ALRM" />
+    <meta name="msvalidate.01" content="2565F2B8D0D2195D6C5FFED5AB75D880" />
+    <meta name="yandex-verification" content="bf543be087b029c1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="View the result online by providing the students Registration Number. You can obtain the Registraton number of your children by contacting their School.">
+    <meta name="keywords" content="Online Result,">
+    <meta name="author" content="Nabin Ghimire">
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <style>
+      .report-card {
+        position: relative;
+        margin: auto;
+        padding: 0 10px;
+      }
+      .card-header {
+        position: relative;
+        display: block;
+        text-align: center;
+      }
+
+      .card-header h1 {
+        font-size: 26px;
+        font-family: "Times New Roman", Georgia, Serif;
+        margin: 0;
+        padding: 0;
+        font-weight: bold;
+      }
+
+      .branch {
+        font-size: 16px;
+        margin: 0;
+        padding: 0;
+      }
+
+      .card-header h2 {
+        font-size: 20px;
+        margin: 0;
+        padding: 0;
+        font-weight: normal;
+      }
+
+      .report {
+        font-size: 9pt;
+        margin: 0;
+        padding: 0;
+      }
+
+      .studentInfo {
+        position: relative;
+        display: block;
+        width: 100%;
+        margin: 0.5cm 0 0 0;
+      }
+
+      .studentInfo table {
+        width: 100%;
+      }
+
+      .marks {
+        position: relative;
+        display: block;
+        margin: 0.5cm 0 0 0;
+      }
+
+      .marks table {
+        width: 100%;
+        border: 1px solid #000000;
+      }
+
+      .marks table th {
+        text-align: center;
+        border: 1px solid #000000;
+      }
+
+      .marks table td {
+        padding: 3px 5px;
+        margin: 0;
+        /* border-bottom: 1px solid #000000; */
+        border-right: 1px solid #000000;
+        vertical-align: top;
+      }
+
+      .marks table td p {
+        margin-bottom: 5px;
+      }
+
+      .marks-content {
+        min-height: 350px;
+      }
+
+      .sn {
+        width: 2.5em;
+      }
+
+      .percentage {
+        position: relative;
+        display: block;
+        margin: 0.5em 0 0 0;
+      }
+
+      .percentage table {
+        width: 100%;
+      }
+
+      .attendance, .comment {
+        position: relative;
+        display: block;
+        margin: 0.2em 0 0 0;
+      }
+
+      .teacher {
+        position: relative;
+        display: block;
+        margin: 1.5em 0 0 0;
+      }
+
+      .teacher table {
+        width: 100%;
+      }
+
+      .marginTop {
+        border-top: 1px solid #000000;
+      }
+      .nobr{
+        text-align: right;
+        padding-right: 5px;
+      }
+      .nobl{
+        text-align: left;
+        padding-left: 5px;
+      }
+      .marksacr, .extraact {
+        display: inline-block;
+        margin-left: 10px;
+      }
+
+      .outcomes{
+        margin: 5px auto;
+        padding: 0 10px 0 0;
+
+      }
+
+      .extraact{
+        min-width: 200px;
+
+      }
+
+      .outcomes table{
+      	border: 0.26px solid #000;
+      	margin-right: 7px;
+      	text-align: left;
+      	border-radius: 0 5px 5px 0;
+      	background-color: #eee !important;
+      }
+
+      .marksacr table td, .extraact table td, .outcomes table td{
+      	padding: 4px 5px;
+      	border-bottom: 1px solid #000000;
+      }
+
+
+      .remarks{
+      	margin: 3px 0 0 9px;
+      	float: left;
+      	border: 1mm solid #eee;
+      	background-color: #eee;
+      	font-size: 15px;
+      	padding: 3px 0px;
+        display: block;
+      }
+
+
+    </style>
+    <style media="print">
+        /* @page {size:landscape}  */   
+        page[size="A4"][layout="landscape"] {
+          width: 29.7cm;
+          height: 21cm;  
+        }
+
+        @page body {size: landscape;
+        margin: 0 5pt;
+      }
+    </style>
+    <script type="text/javascript">
+      function printDiv(divName) {
+           var printContents = document.getElementById(divName).innerHTML;
+           var originalContents = document.body.innerHTML;
+
+           document.body.innerHTML = printContents;
+
+           window.print();
+
+           document.body.innerHTML = originalContents;
+      }
+          </script>
+    <link rel="stylesheet" href="{% static "/css/gradeprint.css" %}" type="text/css" media="print">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/paper-css/0.4.1/paper.css">
+    <style>@page { size: A4 landscape }
+      body{
+        margin: 0 auto;
+      }
+      .report-card{
+        margin-top: 5pt;
+      }
+      .marks table, .studentInfo table{
+        width: 96%;
+        margin: 0 1% 0 3%;
+      }
+      td{
+        padding: 3pt;
+      }
+      card-header{
+        margin-top: 15px;
+      }
+
+      .no-print { display:none; }
+
+      /* Grade alignment styles */
+      .grade-wrapper {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+      }
+      .grade-l {
+        width: 12px;
+        text-align: right;
+      }
+      .grade-s {
+        width: 10px;
+        text-align: left;
+        font-size: 0.85em;
+        margin-left: 1px;
+      }
+    </style>
+  </head>
+  <body class="A4 landscape">
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-100716832-2', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    <div class="container container-fluid no-print" style="margin-top: 10px; margin-bottom: 15px; text-align: center;">
+        <a href="/" class="btn btn-info" role="button">Go to Home</a>
+        {% if user.is_authenticated %}
+        <a href="edit/" class="btn btn-info" role="button" target="_blank">Edit Marks</a>
+        <input type="button" onclick="printDiv('report-card')" value="Print this result!" class="btn btn-primary" />
+        <button onclick="exportToExcel()" class="btn btn-success">Export to Excel</button>
+        {% endif %}
+    </div>
+    <div class="report-card" id="report-card">
+      <div class="card-header">
+        <h1>{{ school.name }}</h1>
+        <div class="branch">{{ school.location }}</div>
+        <h2>{{ term.term_name|upper}} - {{year}}</h2>
+        <div class="report">{% if ledgertype == "2" %}MARKS{% else %}GRADE{% endif %} LEDGER</div>
+      </div>
+      <div class="studentInfo">
+        <table>
+          <tr>
+            <td class="nobr" style="text-align: left;">GRADE: {{ grade }}</td>
+            {% if section %}
+            <td  class="nobr">SECTION: {{ section }}</td>
+            {% endif %}
+          </tr>
+        </table>
+      </div>
+
+      <div class="marks">
+        <table id="ledgerTable">
+          <tr>
+            <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}">S.N</th>
+            <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}">ROLL NO.</th>
+            <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}">REG NO.</th>
+            <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}">STUDENTS NAME</th>
+            {% for fm in subject_fm_list %}
+              <th colspan="{% if fm.pr_fm > 0 %}3{% else %}2{% endif %}">{{ fm.name }}</th>
+            {% endfor %}
+            <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}">TOTAL</th>
+            <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}">%</th>
+            <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}">GPA</th>
+            <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}">GRADE</th>
+            <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}">RANK</th>
+          </tr>
+          <tr>
+            {% for fm in subject_fm_list %}
+              <th>TH</th>
+              {% if fm.pr_fm > 0 %}<th>PR</th>{% endif %}
+              <th>GP</th>
+            {% endfor %}
+          </tr>
+          {% if ledgertype == "2" %}
+          <tr>
+            {% for fm in subject_fm_list %}
+              <th style="font-size:7pt;">FM:{{ fm.th_fm|floatformat:0 }}</th>
+              {% if fm.pr_fm > 0 %}<th style="font-size:7pt;">FM:{{ fm.pr_fm|floatformat:0 }}</th>{% endif %}
+              <th style="font-size:7pt;">-</th>
+            {% endfor %}
+          </tr>
+          {% endif %}
+          {% for key, value in data.items %}
+            <tr style="text-align: center; {% if value.is_failed %} background-color:#fff3f3; {% endif %} ">
+              <td>{{key}}</td>
+              <td>{{ value.roll_no|default:"-" }}</td>
+              <td>{{ value.reg_no|upper }}</td>
+              <td class="subject" style="text-align: left;">
+                {{ value.name|upper }}
+                {% if value.is_failed %}<br><small style="color:#c0392b;font-weight:bold;">⚠ FAILED</small>{% endif %}
+              </td>
+              {% if ledgertype == "2" %}
+                {% for fm in subject_fm_list %}
+                  {% with outer_index=forloop.counter0 %}
+                    {% for sid, marks in value.subjects.items %}
+                      {% if forloop.counter0 == outer_index %}
+                        <td {% if marks.th_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}>{{ marks.theory_raw|default:"-" }}</td>
+                        {% if fm.pr_fm > 0 %}<td {% if marks.pr_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}>{{ marks.prac_raw|default:"-" }}</td>{% endif %}
+                        <td>{{ marks.gradepoint|floatformat:2 }}</td>
+                      {% endif %}
+                    {% endfor %}
+                  {% endwith %}
+                {% endfor %}
+              {% else %}
+                {% for fm in subject_fm_list %}
+                  {% with outer_index=forloop.counter0 %}
+                    {% for sid, marks in value.subjects.items %}
+                      {% if forloop.counter0 == outer_index %}
+                        <td {% if marks.th_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}><div class="grade-wrapper"><span class="grade-l">{{ marks.theory_mo|default:"-" }}</span><span class="grade-s">{{ marks.theory_mo_s }}</span></div></td>
+                        {% if fm.pr_fm > 0 %}<td {% if marks.pr_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}><div class="grade-wrapper"><span class="grade-l">{{ marks.prac_mo|default:"-" }}</span><span class="grade-s">{{ marks.prac_mo_s }}</span></div></td>{% endif %}
+                        <td>{{ marks.gradepoint|floatformat:2 }}</td>
+                      {% endif %}
+                    {% endfor %}
+                  {% endwith %}
+                {% endfor %}
+              {% endif %}
+              <td><strong>{% if value.is_failed %}—{% else %}{{ value.total_obt|floatformat }}{% endif %}</strong></td>
+              <td>{% if value.is_failed %}—{% else %}{{ value.percent|floatformat }}{% endif %}</td>
+              <td>{% if value.is_failed %}—{% else %}{{ value.gp|floatformat:2 }}{% endif %}</td>
+              <td><strong>{% if value.is_failed %}-{% else %}<div class="grade-wrapper"><span class="grade-l">{{ value.gpa_grade_l }}</span><span class="grade-s">{{ value.gpa_grade_s }}</span></div>{% endif %}</strong></td>
+              <td>{% if value.is_failed %}—{% else %}{{ value.rank|default:"-" }}{% endif %}</td>
+            </tr>
+{% endfor %}
+        </table>
+      </div>
+      <br><br>
+
+      {# FM Reference Table — visible on screen, hidden on print #}
+      {% if subject_fm_list %}
+      <div style="margin-top:15px; font-size:0.75em;" class="no-print">
+        <h6><strong>📋 Full Marks, Pass Marks &amp; Calculation Reference</strong></h6>
+        <p style="color:#666; font-size:0.85em;">
+          Pass: <strong>TH obtained &ge; TH Pass Mark</strong>
+          (and <strong>PR obtained &ge; PR Pass Mark</strong> when practical exists).<br>
+          Percentage = (TH + PR obtained) &divide; (TH FM + PR FM) &times; 100.
+          <span style="background:#d5d5d5; padding:2px 6px;">Gray cell</span> = failed component.
+        </p>
+        <table class="table table-bordered table-condensed" style="width:auto;">
+          <thead>
+            <tr>
+              <th>#</th><th>Subject</th>
+              <th>TH FM</th><th>TH Pass Mark</th><th>TH Min%</th>
+              <th>PR FM</th><th>PR Pass Mark</th><th>PR Min%</th>
+              <th>Total FM</th><th>Has Practical?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fm in subject_fm_list %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td><strong>{{ fm.name }}</strong></td>
+              <td>{{ fm.th_fm }}</td>
+              <td>{{ fm.th_pm }}</td>
+              <td>{% if fm.th_fm > 0 %}{{ fm.th_pm }}/{{ fm.th_fm }}{% else %}&mdash;{% endif %}</td>
+              <td>{{ fm.pr_fm }}</td>
+              <td>{{ fm.pr_pm }}</td>
+              <td>{% if fm.pr_fm > 0 %}{{ fm.pr_pm }}/{{ fm.pr_fm }}{% else %}&mdash;{% endif %}</td>
+              <td><strong>{{ fm.th_fm|add:fm.pr_fm }}</strong></td>
+              <td>{% if fm.pr_fm > 0 %}✔ Yes{% else %}✘ No{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+    </div>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script>
+        function exportToExcel() {
+            var elt = document.getElementById('ledgerTable');
+            var wb = XLSX.utils.table_to_book(elt, {sheet: "Detailed Ledger"});
+            XLSX.writeFile(wb, 'Detailed_Ledger_{{ grade|default:"ALL" }}.xlsx');
+        }
+    </script>
+  </body>
+</html>

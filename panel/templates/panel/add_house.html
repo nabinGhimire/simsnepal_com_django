@@ -1,0 +1,103 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} Admin Dashboard - House Management - SIMSNepal.com {% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">House Management</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">House</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="row row-cards">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Existing Houses</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table table-striped">
+            <thead>
+              <tr>
+                <th>House Name</th>
+                <th class="w-1">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for this_house in house %}
+              <tr>
+                <td class="font-weight-medium">{{ this_house.name }}</td>
+                <td>
+                  <a href="/panel/edit/house/{{this_house.id}}" class="btn btn-sm btn-outline-primary btn-pill">
+                    <i class="ti ti-edit me-1"></i> Edit
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2" class="text-center text-muted">No houses added yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">{% if this_house %}Update{% else %}Add New{% endif %} House</h3>
+        </div>
+        <div class="card-body">
+          {% if message %}
+          <div class="alert alert-info alert-dismissible" role="alert">
+            <div class="d-flex">
+              <div><i class="ti ti-info-circle icon alert-icon"></i></div>
+              <div>{{ message }}</div>
+            </div>
+            <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+          </div>
+          {% endif %}
+          <form action="" method="POST" class="form-horizontal">
+            {% csrf_token %}
+            {% if this_house %}
+            <input type="hidden" name="update" value="True">
+            <input type="hidden" name="id" value="{{ this_house.id }}">
+            {% endif %}
+            
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">House Name</label>
+              <div class="col">
+                <input type="text" class="form-control" name="name" id="name" value="{{ this_house.name|default:'' }}" placeholder="e.g. Red, Blue, Everest" required>
+              </div>
+            </div>
+            
+            <div class="form-footer text-end">
+              <button type="submit" name="submit" class="btn btn-success btn-pill px-4">
+                <i class="ti ti-{% if this_house %}check{% else %}plus{% endif %} me-2"></i>
+                {% if this_house %}Update House{% else %}Add House{% endif %}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

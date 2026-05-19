@@ -1,0 +1,359 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} Admin Dashboard- Specific Class - SIMSNepal.com {% endblock %}
+
+{% load static %}
+{% block navbar %}
+    {% if branchuser.admin_status %}
+        {% include 'snippets/nav_admin.html' %}
+    {% else %}
+        {% include 'snippets/nav_teacher.html' %}
+    {% endif %}
+ 
+{% endblock navbar %}
+{% block page_header %}
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <div class="page-pretitle">
+                    SIMS Panel
+                </div>
+                <h2 class="page-title">
+                    Term Management
+                </h2>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Term Management</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-3">
+        <div class="panel-sidebar">
+            <ul class="sidebar-menu">
+                <li class="{% if request.GET.action == 'listterm' or not request.GET.action %}active{% endif %}">
+                    <a href="{{ request.path }}?action=listterm"><i class="ti ti-list"></i> List Terms</a>
+                </li>
+                <li class="{% if request.GET.action == 'addterm' %}active{% endif %}">
+                    <a href="{{ request.path }}?action=addterm"><i class="ti ti-plus"></i> Add Term</a>
+                </li>
+                <li class="{% if request.GET.action == 'result_calc' %}active{% endif %}">
+                    <a href="{{ request.path }}?action=result_calc"><i class="ti ti-calculator"></i> Result Calculation</a>
+                </li>
+                <li>
+                    <a href="{% url 'weighted_result_calculation' %}"><i class="ti ti-adjustments"></i> Weighted Calculation</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-9">
+        {% if change_name %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="card-title">Change Term Details</h3>
+                    <form class="form-horizontal" action="/panel/renameterm/" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="red_url" value="{{ request.path }}">
+                        <input type="hidden" name="gradelevel" value="{{ gradelevel }}">
+                        <input type="hidden" name="tid" value="{{ term_name.id }}">
+                        <div class="form-group row">
+                            <label for="term_name" class="col-sm-3 col-form-label">Name of Term </label>
+                            <div class="col-sm-9">
+                            <input type="text" class="form-control" id="term_name" name="term_name" value="{{ term_name.term_name }}" required>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="term_name_in_short" class="col-sm-3 col-form-label">Name in Short</label>
+                            <div class="col-sm-9">
+                            <input type="text" class="form-control" id="term_name_in_short" name="term_name_in_short" value="{{ term_name.name_in_short }}" required>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="activeStatus" class="col-sm-3 col-form-label">Term Status</label>
+                            <div class="col-sm-9">
+                                <select name="activeStatus" id="activeStatus"  class="form-control">
+                                    <option value="0" {% if not term_name.active %} selected {% endif %}>Disable</option>
+                                    <option value="1" {% if term_name.active %} selected {% endif %}>Active</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="termStatus" class="col-sm-3 col-form-label">Term Type</label>
+                            <div class="col-sm-9">
+                                <select name="termStatus" id="termStatus"  class="form-control">
+                                {% for ts in term_status %}
+                                <option value="{{ ts.id }}" {% if term_name.status == ts %} selected {% endif %}>{{ ts.value }}</option>
+                                {% endfor %}
+                            </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="final_term" class="col-sm-3 col-form-label">Is Final Term?</label>
+                            <div class="col-sm-9">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="final_term" name="final_term" value="yes" {% if term_name.final_term %} checked {% endif %}>
+                                <label class="form-check-label" for="final_term">Check if this is Final Term.</label>
+                            </div>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="final_term_name" class="col-sm-3 col-form-label">Final Term Name</label>
+                            <div class="col-sm-9">
+                            <input type="text" class="form-control" id="final_term_name" name="final_term_name" value="{{ term_name.final_term_name }}">
+                            <small class="text-muted">Name if this is Final Term.</small>
+                            </div>
+                        </div>
+                        <div class="form-group row m-b-0">
+                            <div class="col-sm-offset-3 col-sm-9">
+                                <button type="submit" class="btn btn-info waves-effect waves-light">Update Term</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if listterm %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">List of Terminal Exams</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>S.N</th>
+                                <th>Term Name</th>
+                                <th>In Short</th>
+                                <th>Active Status</th>
+                                <th>Exam Status</th>
+                                <th>Is Final Term</th>
+                                <th>Final Term Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for term in terms %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><a href="{{ request.path }}?cn={{ term.id }}" data-toggle="tooltip" title="Click to Change Term Name">{{ term.term_name }}</a></td>
+                                    <td>{{ term.name_in_short }}</td>
+                                    <td>
+                                        {% if term.active %}
+                                            <span class="badge bg-green-lt">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-red-lt">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ term.status.value }}</td>
+                                    <td>
+                                        {% if term.final_term %}
+                                            <span class="badge bg-blue-lt">Yes</span>
+                                        {% else %}
+                                            No
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if term.final_term %}
+                                            {{ term.final_term_name }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if result_calc %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Result Calculation</h3>
+                </div>
+                <div class="card-body">
+                    {% for term in terms %}
+                        {% if term.active %}
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h4 class="mb-0">{{ term.term_name }}</h4>
+                            </div>
+                            <form class="form-horizontal mb-4" action="/panel/termcalculation/" method="POST">
+                                {% csrf_token %}
+                                <div class="table-responsive">
+                                    <table class="table table-vcenter table-bordered">
+                                        <input type="number" name="term_id" value="{{ term.id }}" hidden>
+                                        <thead>
+                                            <tr>
+                                                <th>S.N</th>
+                                                <th>Term Name</th>
+                                                <th>Calculation (%)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for exam in terms %}
+                                                {% if exam.id <= term.id and exam.active %}
+                                                    <tr>
+                                                        <td>{{ forloop.counter }}</td>
+                                                        <td>{{ exam.term_name }}</td>
+                                                        <td>
+                                                            <input type="number" class="form-control" id="{{ term.id }}_{{ exam.id }}" name="{{ exam.id }}" placeholder="without %">
+                                                        </td>
+                                                    </tr>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="3">
+                                                    <button type="submit" class="btn btn-info waves-effect waves-light">Update Calculation</button>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </form>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if addterm %}
+            <div class="card" style="max-width: 600px;">
+                <div class="card-body">
+                    <h3 class="card-title">Add Terminal Exam</h3>
+                    <form class="form-horizontal" action="/panel/terms/" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="redurl" value="/panel/terms/?action=listterm">
+                        <input type="hidden" name="gradelevel" value="{{ gradelevel }}">
+                        <div class="form-group row">
+                            <label for="termName" class="col-sm-3 col-form-label">Term Name</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="termName" name="termname" placeholder="Name of Term" required>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="termNameShort" class="col-sm-3 col-form-label">Name in Short</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="termNameShort" name="term_name_in_short" placeholder="Short name (e.g. 1st, Mid)">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="activeStatus" class="col-sm-3 col-form-label">Active Status</label>
+                            <div class="col-sm-9">
+                                <select name="activeStatus" id="activeStatus" class="form-control">
+                                    <option value="1" selected>Active</option>
+                                    <option value="0">Disabled</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="termStatus" class="col-sm-3 col-form-label">Term Status</label>
+                            <div class="col-sm-9">
+                                <select name="termStatus" id="termStatus"  class="form-control">
+                                    {% for ts in term_status %}
+                                        <option value="{{ ts.id }}">{{ ts.value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="final_term" class="col-sm-3 col-form-label">Is Final Term?</label>
+                            <div class="col-sm-9">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="final_term" name="final_term" value="yes">
+                                    <label class="form-check-label" for="final_term">Check if this is Final Term.</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="final_term_name" class="col-sm-3 col-form-label">Final Term Name</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="final_term_name" name="final_term_name" placeholder="Final term name">
+                                <small class="text-muted">Name if this is Final Term.</small>
+                            </div>
+                        </div>
+                        <div class="form-group row m-b-0">
+                            <div class="col-sm-offset-3 col-sm-9">
+                                <button type="submit" class="btn btn-info waves-effect waves-light">Add Term</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+
+{% endblock %}
+
+
+{% block scripts %}
+    {% if result_calc %}
+
+    <script type="text/javascript">
+        $(document).ready(function(){
+            var calc = '{{ tc_dic }}'.replace(/&quot;/g,"\"");
+            var calc_obj = JSON.parse(calc);
+
+            console.log(calc_obj);
+
+            jQuery.each(calc_obj, function(i, valu){
+                console.log(i);
+                console.log(valu);
+
+                jQuery.each(valu, function (key, value){
+                    $('#'+i+'_'+key).val(value);
+                    console.log(i+'_'+key);
+                    console.log(value);
+            });
+
+
+            });
+        });
+
+
+    </script>
+
+    {% endif %}
+
+<script type='text/javascript'>
+    var section_list = '{{ section_list }}'.replace(/&quot;/g,"\"");
+    var section_list_obj = JSON.parse(section_list);
+    var grade_count = Object.keys(section_list_obj).length;
+
+    function populate(s1,s2){
+        var s1 = document.getElementById(s1);
+        var s2 = document.getElementById(s2);
+        s2.innerHTML = "";
+
+        sl = section_list_obj[s1.value]
+        var optionArray = [];
+        
+        for(var p in sl ){
+            optionArray.push(""+p+"|"+sl[p]+"");
+        }
+
+        for(var option in optionArray){
+            var pair = optionArray[option].split("|");
+            var newOption = document.createElement("option");
+            newOption.value = pair[0];
+            newOption.innerHTML = pair[1];
+            s2.options.add(newOption);
+        }
+    }
+</script>
+
+
+
+
+{% endblock %}

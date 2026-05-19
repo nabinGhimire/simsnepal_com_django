@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css"
+    integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    
+</head>
+  <style>
+    body{
+        font-family: 'Poppins', sans-serif;
+        line-height: 4.5mm;
+    }
+    @media print{
+        @page{
+            /* 148mm x 210mm */
+            size: A5;
+            /* margin-top: 8mm;*/
+            margin: 3mm;
+            padding: 0; 
+        }
+        .holder{
+         /* top:3mm;
+         left:2mm; */
+         /* margin: 2mm; */
+         /* margin:-150px 0 0 -150px; */
+            /* background-color: aqua; */
+            width: 142mm;
+            height: 202mm;
+            /* border: 1mm solid black; */
+            border-radius: 0.2cm;
+            padding: 2mm;
+        }
+       
+.main-header{
+    width: 130mm;
+}
+.info{
+text-align: center;
+margin-top: -3mm;
+}
+.motto{
+margin-top: -1mm;
+}
+
+.telephone, .school{
+margin-top: -5mm;
+}
+.term, .report-type{
+margin-top: -3mm;
+}
+
+.motto{
+margin-top: 3mm;
+font-size: 4mm;
+text-align: center;
+}
+.school{
+text-transform: uppercase;
+text-align: center;
+font-size: 7mm;
+font-weight: bolder;
+}
+.term{
+text-transform: uppercase;
+font-size: 6mm;
+font-weight: bold;
+/* text-decoration: underline; */
+}
+.term, .report-type{
+	margin-top: -3mm;
+}
+.address{
+	margin-top: -2mm;
+}
+
+.report-type{
+/* border: 0.3mm solid #0; */
+/* max-width: 65mm; */
+margin: 1mm 10mm;
+padding: 1.5mm 5mm 1mm 5mm;
+text-align: center;
+font-size: 5.5mm;
+color: #fff;
+font-weight: bolder;
+background-color: #000!important;
+}
+
+
+
+.stdname table{
+    margin: 2mm 0 2mm 2mm;
+    width: 134mm;
+	/*border: 0.25mm solid #000;*/
+}
+
+.stdname td{
+	font-weight: bold;
+}
+
+.muchb{
+	font-weight: bolder;
+	font-size: 120%;
+}
+
+.marks{
+	margin: 0mm 1mm 0 1mm;
+	text-align: center;
+}
+.drawl{
+	border-left: 0.25mm solid #000000;
+}
+.marks table{
+	width: 132mm;
+	border-radius: 2mm;
+}
+table td, table th {
+    padding: 0.51mm 1.1mm;
+    margin: 0;
+	border-left: 0.25mm solid #000000;
+	border-right: 0.25mm solid #000000;
+    vertical-align: top;
+}
+
+.marks table th{
+	border-bottom: 0.25mm solid #000000;
+	/*border-top: 0.25mm solid #000000;*/
+	padding-top:0.5mm;
+}
+
+
+
+.subject{
+	text-align: left;
+	padding-left: 5mm;
+}
+
+.first{
+	border-top: 0.25mm solid #000000;
+	font-size: 80%;
+}
+
+.first1{
+	border-top: 0.25mm solid #000000;
+	font-size: 30%;
+}
+
+.nob{
+	border-top: 0.25mm solid #000;
+}
+.nobr{
+	text-align: left;
+    border: none;
+}
+.nobl{
+	text-align: right;
+    border: none;
+}
+
+.gradetab tr{
+	margin: 2mm 0;
+}
+
+.footer{
+    padding-top: 3mm;
+	width: 134mm;
+	margin: 5mm 1mm 0 1mm;
+	text-align: center;
+    font-size: 3.5mm;
+    color: #000;
+}
+
+.gradetab{
+	margin: 2mm 5mm 1mm 2mm;
+	width: 130mm;
+	display: flex;
+    font-size: 3.5mm;
+}
+
+.gradetab td, .gradetab th{
+	border: 1px solid #000;
+	padding: 0.2mm 2mm;
+}
+.grading td.bigg, .grading th.bigg{
+	border: 1px solid #000;
+	padding: 0.2mm 3mm;
+	width: 30mm;
+	font-size: 3.5mm;
+}
+
+.outcomes{
+	font-size: 90%;
+}
+
+.gs-cent{
+	text-align: center;
+}
+
+.grading, .outcomes, .extraact, .remarks, .gradetab table, .aeor, .aeo, .r{
+	display: inline;
+}
+
+.outcomes{
+	/* display: inline-block; */
+	background-color: #fcfcfc;
+}
+.r{
+	margin-top: 5mm;
+}
+.remarks{
+	/* display: inline; */
+	vertical-align: bottom;
+	background-color: #000;
+	text-align: center;
+	padding: 1.5mm 7mm 1.5mm 2mm;
+	color: #fff;
+	font-weight: bolder;
+	margin-top: 1mm;
+}
+
+.gradetab {
+	display: flex;
+	flex-direction: row;
+    column-gap: 3mm;
+  }
+
+  .grading td, .grading th {
+	border: 1px solid #000;
+  }
+
+  .stdname{
+    margin: 0;
+    padding: -5mm;
+}
+
+.footer{
+    padding-top: 25mm;
+	width: 134mm;
+	margin: 0 5mm;
+	text-align: center;
+    color: #000;
+}
+
+footer td{
+    border: none;
+}
+
+
+
+
+    }
+
+    /* ooooooooooooooooooo */
+
+    .holder{
+         /* top:3mm;
+         left:2mm; */
+         margin-top: 2mm;
+         /* margin:-150px 0 0 -150px; */
+            /* background-color: aqua; */
+            width: 142mm;
+            height: 204mm;
+            /* border: 1mm solid black; */
+            /* border-radius: 0.2cm; */
+            padding: 2mm;
+        }
+        
+        .imageholder{
+	width: 24mm;
+	padding-top: 5mm;
+	position: absolute;
+	left: 6mm;
+	top: 4mm;
+}
+.main-header{
+    width: 130mm;
+    margin: -1mm 0mm;
+}
+.info{
+text-align: center;
+margin-top: -3mm;
+}
+.motto{
+margin-top: 1mm;
+}
+
+.telephone, .school{
+margin-top: -5mm;
+}
+.term, .report-type{
+margin-top: -3mm;
+}
+
+.motto{
+margin-top: 2.5mm;
+font-size: 3.5mm;
+text-align: center;
+}
+.school{
+text-transform: uppercase;
+text-align: center;
+font-size: 7mm;
+font-weight: bolder;
+}
+.term{
+text-transform: uppercase;
+font-size: 6mm;
+font-weight: bold;
+/* text-decoration: underline; */
+}
+.term, .report-type{
+	margin-top: -3mm;
+}
+.address .report-type{
+	margin-top: -2mm;
+}
+.report-type{
+/* border: 0.3mm solid #000; */
+max-width: 65mm;
+margin: 1mm auto;
+padding: 1.5mm 5mm 1mm 5mm;
+text-align: center;
+font-size: 5.5mm;
+color: #fff;
+font-weight: bolder;
+background-color: #000!important;
+}
+
+.stdname table{
+	/* margin: 2mm; */
+    margin: 2mm 0 2mm 1mm;
+	width: 134mm;
+	/*border: 0.25mm solid #000;*/
+}
+
+.stdname td{
+	font-weight: bold;
+}
+
+.muchb{
+	font-weight: bolder;
+	font-size: 120%;
+}
+
+.marks{
+	margin: 0mm 1mm 0 1mm;
+	text-align: center;
+}
+.drawl{
+	border-left: 0.25mm solid #000000;
+}
+.marks table{
+	width: 132mm;
+	border-radius: 2mm;
+}
+table td, table th {
+    padding: 0.51mm 1.1mm;
+    margin: 0;
+	border-left: 0.25mm solid #000000;
+	border-right: 0.25mm solid #000000;
+    vertical-align: top;
+}
+
+.marks table th{
+	border-bottom: 0.25mm solid #000000;
+	/*border-top: 0.25mm solid #000000;*/
+	padding-top:0.5mm;
+}
+
+
+
+.subject{
+	text-align: left;
+	padding-left: 5mm;
+}
+
+.first{
+	border-top: 0.25mm solid #000000;
+	font-size: 80%;
+}
+
+.first1{
+	border-top: 0.25mm solid #000000;
+	font-size: 30%;
+}
+
+.nob{
+	border-top: 0.25mm solid #000;
+}
+.nobr{
+	text-align: left;
+    border: none;
+}
+.nobl{
+	text-align: right;
+    border: none;
+}
+
+.gradetab tr{
+	margin: 2mm 0;
+}
+
+.footer{
+    padding-top: 25mm;
+	width: 134mm;
+	margin: 0 5mm;
+	text-align: center;
+    color: #000;
+}
+
+.gradetab{
+	margin: 2mm 5mm 1mm 2mm;
+	width: 130mm;
+	display: flex;
+    font-size: 3.65mm;
+}
+
+.gradetab td, .gradetab th{
+	border: 1px solid #000;
+	padding: 0.2mm 2mm;
+}
+.grading td.bigg, .grading th.bigg{
+	border: 1px solid #000;
+	padding: 0.2mm 3mm;
+	width: 30mm;
+	font-size: 3.55mm;
+}
+
+.outcomes{
+	font-size: 90%;
+}
+
+.gs-cent{
+	text-align: center;
+}
+
+.grading, .outcomes, .extraact, .remarks, .gradetab table, .aeor, .aeo, .r{
+	display: inline;
+}
+
+.outcomes{
+	/* display: inline-block; */
+	background-color: #fcfcfc;
+}
+.r{
+	margin-top: 5mm;
+}
+.remarks{
+	/* display: inline; */
+	vertical-align: bottom;
+	/* background-color: #979595; */
+	background-color: #000;
+	text-align: center;
+	padding: 1.5mm 7mm 1.5mm 2mm;
+	color: #fff;
+	font-weight: bolder;
+	margin-top: -1mm;
+}
+
+.gradetab {
+	display: flex;
+	flex-direction: row;
+  }
+
+  .grading td, .grading th {
+	border: 1px solid #000;
+  }
+
+  .footer{
+    padding-top: 25mm;
+	width: 134mm;
+	margin: 13mm 0mm 0 0mm;
+	text-align: center;
+    color: #000;
+}
+
+footer td{
+    border: none;
+}
+
+
+
+/* .info{
+text-align: center;
+margin-top: -3mm;
+}
+.motto{
+margin-top: -3mm;
+}
+
+.telephone, .school{
+margin-top: -5mm;
+}
+.term, .report-type{
+margin-top: -3mm;
+}
+
+.motto{
+margin-top: 3mm;
+font-size: 4mm;
+text-align: center;
+}
+.school{
+text-transform: uppercase;
+text-align: center;
+font-size: 7mm;
+font-weight: bolder;
+}
+.term{
+text-transform: uppercase;
+font-size: 6mm;
+font-weight: bold;
+}
+.report-type{
+border: 0.3mm solid #ddd;
+margin: 1mm auto;
+padding: 1.5mm 5mm 1mm 5mm;
+text-align: center;
+font-size: 5.5mm;
+color: #000;
+font-weight: bolder;
+background-color: #ddd!important;
+}
+
+.address{
+	margin-top: -2mm;
+} */
+  </style>
+  <body>
+    <div class="container">
+        {% for key, student in data.items %}
+            <div class="holder">
+                <section class="header">
+                    <div class="main-header" style="display: inline-block; margin-left: 2mm;">
+                        <div class="imageholder" style="position: relative; display: inline; width: 90mm;">
+                            <img src="{{ logo }}" class="" style="position: relative; margin-top: 2mm; margin-left: -5mm;" width="85mm">
+                        </div>
+                        <div class="info" style="display: inline-block; float: right; margin-left: 0px; width: 110mm;">
+                            <p class="motto">Education for all. </p>
+                            <h1 class="school">{{ school.name }}</h1>
+                            <h3 class="term">{{ school.location }}</h3>
+                            <p class="telephone" style="margin: -2mm 0 0 0;"><i class="fas fa-phone-square"></i> +977 
+                                {{ school.phone }}, <i class="fas fa-envelope-square"></i> {{ school.email }}</p>
+                            <h3 class="address" style="margin: 0mm 0 0mm 0;">FINAL TERM EXAMINATION - 2078</h3>
+                            <h3 class="report-type">GRADE SHEET</h3>
+                        </div>
+                    </div>
+                    <div class="stdname">
+                        <table>
+                            <tr>
+                                <td class="nobr">Name: <span class="muchb">{{ student.name|upper }}</span>
+                                </td>
+                                <td class="nobr" style="text-align: right;">Reg. No: <span class="muchb">{{ student.reg_no }}</span></td>
+
+                            </tr>
+                            <tr>
+                                <td class="nobr">School: <span class="muchb">FOUR</span></td>
+                                <td class="nobr" style="text-align: right;">Symbol No: <span class="muchb">{{ student.session_detail.roll_no }}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </section>
+                <section class="marks">
+                    <div class="marks">
+                        <table>
+                            <tr>
+                                <th class="first subjects" rowspan="{% if no_of_terms == 2 %} 3{% else %}2{% endif %}">S.N</th>
+                                <th class="first subjects" rowspan="{% if no_of_terms == 2 %} 3{% else %}2{% endif %}">SUBJECTS</th>
+                                <th class="first subjects" colspan="{{ no_of_terms_marks_count }}">OBTAINED</th>
+                                {% if no_of_terms == 2 %}
+                                <th class="first subjects" rowspan="2" colspan="2">EVALUATION</th>
+                                {% else %}
+                                <th class="first subjects" colspan="2">EVALUATION</th>
+                                {% endif %}
+                            </tr>
+                            {% if no_of_terms == 2 %}
+                            <tr>
+                                <th colspan="2">Formative</th>
+                                <th colspan="2">Term</th>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                {% for x in no_of_terms_range %}
+                                <th>TH</th>
+                                <th>PR</th>
+                                {% endfor %}
+                                <th class="first subjects">GRADE</th>
+                                <th class="first subjects">G.P</th>
+                            </tr>
+                            {# {{ student }}#}
+                            {% for sub in subjects %}
+                            {# {{ sub }}#}
+                            <tr>
+                                <td class="subjects">{{ forloop.counter }}</td>
+                                <td class="subject" style="text-align: left">{{ sub }}</td>
+                                {% for term in term_list %}
+                                <td class="subject" style="text-align: center;"><span
+                                        id="{{ student.reg_no }}_{{ sub.id }}_{{ term }}_th_grade"></span><sup
+                                        id="{{ student.reg_no }}_{{ sub.id }}_{{ term }}_th_symbol"></sup></td>
+                                <td class="subject" style="text-align: center;"><span
+                                        id="{{ student.reg_no }}_{{ sub.id }}_{{ term }}_pr_grade"></span><sup
+                                        id="{{ student.reg_no }}_{{ sub.id }}_{{ term }}_pr_symbol"></sup></td>
+                                {% endfor %}
+                
+                                <td class="subjects"><span id="{{ student.reg_no }}_{{ sub.id }}_total_grade"></span><sup
+                                        id="{{ student.reg_no }}_{{ sub.id }}_total_symbol"></sup></td>
+                                <td><span id="{{ student.reg_no }}_{{ sub.id }}_total_grade_point"></span></td>
+                            </tr>
+                            
+                            {% endfor %}
+                            {% for i in the_space %}
+                            <tr>
+                                <td></td>
+                                <td>&nbsp;</td>
+                                {% for x in no_of_terms_range %}
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                                {% endfor %}
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                            {% endfor %}
+                            <tr>
+                                <th class="nob" colspan="{{ gpa_colspan }}" style="text-align: right; padding-right: 5px">
+                                    GRADE POINT AVERAGE (GPA)
+                                </th>
+                                <th class="nob"><span id="{{ student.reg_no }}_gpa"></span></th>
+                            </tr>
+                        </table>
+                    </div>
+                </section>
+                <section class="gradetab">
+                    <div class="grading">
+                        <div>
+                            <table>
+                                <tr>
+                                    <th colspan="6" class="gs-cent">GRADING SYSTEM</th>
+                                </tr>
+                                <tr class="mgg">
+                                    <th class="bigg">Interval in %</th>
+                                    <th>Grade</th>
+                                    <th class="bleft">GPA</th>
+                                    <th class="bigg">Interval in %</th>
+                                    <th>Grade</th>
+                                    <th>GPA</th>
+                                </tr>
+                                <tr>
+                                    <td class="bigg">90-100</td>
+                                    <td>A<sup>+</sup></td>
+                                    <td>4.0</td>
+                                    <td class="bigg">50-60</td>
+                                    <td>C+</td>
+                                    <td>2.4</td>
+                                </tr>
+                                <tr>
+                                    <td class="bigg">80-90</td>
+                                    <td>A</td>
+                                    <td>3.6</td>
+                                    <td class="bigg">40-50</td>
+                                    <td>C</td>
+                                    <td>2.0</td>
+                                <tr>
+                                    <td class="bigg">70-80</td>
+                                    <td>B<sup>+</sup></td>
+                                    <td>3.2</td>
+                                    <td class="bigg">35-40</td>
+                                    <td>D</td>
+                                    <td>1.6</td>
+                                </tr>
+                                <tr>
+                                    <td class="bigg">60-70</td>
+                                    <td>B</td>
+                                    <td>2.8</td>
+                                    <td class="bigg">0-35</td>
+                                    <td>NG</td>
+                                    <td>0</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="aeor">
+                        <div class="aeo">
+                            <div class="grading1">
+                                <table>
+                                    <tr>
+                                        <th colspan="3" class="gs-cent"> ACRONYM USED</th>
+                                    </tr>
+                                    <tr class="mgg">
+                                        <th>CODE</th>
+                                        <th>MEANING</th>
+                                    </tr>
+                                    <tr>
+                                        <td>TH</td>
+                                        <td>Theory</td>
+                                    </tr>
+                                    <tr>
+                                        <td>PR</td>
+                                        <td>Practical</td>
+                                    </tr>
+                                    <tr>
+                                        <td>G.P</td>
+                                        <td>Grade Point</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- <div class="outcomes">
+                                <table>
+                                    <tr>
+                                        <th colspan="3" class="gs-cent">OUTCOMES</th>
+                                    </tr>
+                                    <tr>
+                                        <td class="nobrb"> Grade</td>
+                                        <td>{{ remarks.0 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="nobrb"> GP Average</td>
+                                        <td>{{ cgpa }}</td>
+                                    </tr> -->
+
+                                    <!--                                    <tr>-->
+                                    <!--                                        <td class="nobrb">Position</td>-->
+                                    <!--                                        <td>{{ value.rank}} / {{value.totalstudent}}</td>-->
+                                    <!--                                    </tr>-->
+                                    <!-- <tr>
+                                        <td class="nobrb">Attendance</td>
+                                        <td>{{value.attendance.no_of_present_days }} /
+                                            {{ value.attendance.no_of_school_days }}</td>
+                                    </tr> -->
+                                <!-- </table>
+                            </div> -->
+                        </div>
+
+
+                </section>
+                <section>
+                    <div class="gradetab">
+                        <!-- <div class="r" style="margin-top: 3mm;"> -->
+                            <div class="remarks" style="padding-right: 5px;">
+                                REMARKS: <span id="{{ student.reg_no }}_remarks">&nbsp;</span>
+                            </div>
+                        <!-- </div> -->
+                    </div>
+
+                </section>
+                <footer>
+                    <table class="footer">
+                        <tr>
+                            <td class="nobr">_______________</td>
+                            <td>_____________________</td>
+                            <td class="nobl">_____________</td>
+                        </tr>
+                        <tr>
+                            <td class="nobr">PRINCIPAL</td>
+                            <td>CONTROLLER OF EXAMINATION</td>
+                            <td class="nobl">EXAM BOARD SEAL</td>
+                        </tr>
+                    </table>
+                </footer>
+            </div>
+        {% endfor %}
+        <br>
+    </div>
+    <script>
+        $(document).ready(function() {
+            {#var obj = ;#}
+            var obj = JSON.parse('{{ mo_dict|escapejs }}');
+            Object.keys(obj).forEach(function(k){
+
+               if(k.slice(-11) === "grade_point"){
+                   $("#"+k).text(parseFloat(obj[k]).toFixed(1));
+                }
+               else{
+                   $("#"+k).text(obj[k]);
+                }
+           });
+       });
+   </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+  </body>
+</html>

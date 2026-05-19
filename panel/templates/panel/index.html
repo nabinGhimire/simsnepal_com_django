@@ -1,0 +1,126 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Dashboard - Hamro Panel | SIMSNepal.com{% endblock title %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<style>
+  /* Premium Micro-Animations */
+  .card-dynamic { transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); border-color: rgba(0,0,0,0.05); }
+  .card-dynamic:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -10px rgba(0,0,0,0.15) !important; border-color: var(--tblr-primary); }
+  
+  /* Rich Gradients */
+  .avatar-gradient { background: linear-gradient(135deg, var(--tblr-primary), #8b5cf6); color: #fff !important; font-weight: bold; }
+  .banner-gradient { background: linear-gradient(135deg, #0054a6, #3b82f6); color: #fff; border: none; }
+
+  /* Grade card tweaks */
+  .grade-title { font-size: 0.95rem; font-weight: 600; overflow-wrap: break-word; word-wrap: break-word; }
+  .student-total { font-size: 0.8rem; }
+  .gender-count { font-size: 0.9rem; font-weight: 600; }
+  .gender-icon { font-size: 1rem; }
+</style>
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Overview</div>
+        <h2 class="page-title">Dashboard</h2>
+      </div>
+      <div class="col-auto ms-auto">
+        <span class="text-secondary small">{{ school.name }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+
+<!-- Migration Banner -->
+<div class="card banner-gradient mb-3 card-dynamic shadow-sm">
+  <div class="card-body py-2 px-3">
+    <div class="row align-items-center g-2">
+      <div class="col">
+        <div class="fw-semibold">Session Migration</div>
+        <div class="small opacity-75">Migrate students to the upcoming 2083 session.</div>
+      </div>
+      <div class="col-auto">
+        <a href="/panel/migration" class="btn btn-warning btn-sm">
+          <i class="ti ti-rocket me-1"></i> Start Migration
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Grade Cards -->
+<div class="row g-3">
+  {% for key, value in total_grades.items %}
+  <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+    <div class="card h-100 card-dynamic shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-start mb-3">
+          <span class="avatar avatar-sm avatar-gradient me-3 flex-shrink-0 shadow-sm">
+            {{ value.name|slice:":2"|upper }}
+          </span>
+          <div class="flex-grow-1 min-width-0">
+            <div class="grade-title">
+              <a href="/panel/grades/{{ key }}/" class="text-reset stretched-link-off">Grade {{ value.name|roman_grade }}</a>
+            </div>
+            <div class="text-muted student-total">{{ value.total }} students</div>
+          </div>
+          <div class="ms-auto">
+            <div class="dropdown">
+              <a href="#" class="link-secondary" data-bs-toggle="dropdown" aria-label="More options">
+                <i class="ti ti-dots-vertical"></i>
+              </a>
+              <div class="dropdown-menu dropdown-menu-end">
+                <a class="dropdown-item" href="/panel/grades/{{ key }}/">
+                  <i class="ti ti-layout-dashboard me-2"></i>View Dashboard
+                </a>
+                <a class="dropdown-item" href="/panel/grades/{{ key }}/?list=student">
+                  <i class="ti ti-users me-2"></i>Student List
+                </a>
+                <a class="dropdown-item" href="/panel/grades/{{ key }}/?list=subject">
+                  <i class="ti ti-books me-2"></i>Subject List
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <span class="badge bg-blue-lt text-blue px-2 py-1" title="Male Students" data-bs-toggle="tooltip">
+            <i class="ti ti-gender-male gender-icon me-1"></i>
+            <span class="gender-count">{{ value.male }}</span>
+          </span>
+          <span class="badge bg-pink-lt text-pink px-2 py-1" title="Female Students" data-bs-toggle="tooltip">
+            <i class="ti ti-gender-female gender-icon me-1"></i>
+            <span class="gender-count">{{ value.female }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="empty">
+      <div class="empty-icon">
+        <i class="ti ti-school" style="font-size: 3rem;"></i>
+      </div>
+      <p class="empty-title">No grades found</p>
+      <p class="empty-subtitle text-secondary">Add grades from the navigation menu to get started.</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock content %}

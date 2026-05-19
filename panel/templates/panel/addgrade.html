@@ -1,0 +1,73 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %} Add Grade - Hamro Panel | Grihakarya.com {% endblock %}
+{% block navbar %}
+    {% if branchuser.admin_status %}
+        {% include 'snippets/nav_admin.html' %}
+    {% else %}
+        {% include 'snippets/nav_teacher.html' %}
+    {% endif %}
+ 
+{% endblock navbar %}
+{% block content %}
+
+<!-- Page-Title -->
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="btn-group pull-right">
+                <ol class="breadcrumb hide-phone p-0 m-0">
+                    <li>
+                        <a href="/gpanel/">Grihakarya Panel</a>
+                    </li>
+                    <li class="active">
+                        Add Grade
+                    </li>
+                </ol>
+            </div>
+            <h4 class="page-title">Add Grade</h4>
+        </div>
+    </div>
+</div>
+<!-- end page title end breadcrumb -->
+<!-- Start Row -->
+<div class="row">
+    <div class="col-md-6 m-t-50">
+        {% if message != ' ' %}
+            {% if success %}
+                <div class="alert alert-success" role="alert">{{ message }}</div>
+            {% else %}
+                <div class="alert alert-warning" role="alert">{{ message }}!</div>
+            {% endif %}
+        {% endif %}
+        <h4 class="m-t-0 header-title"><b>Add Grade in {{ gradelevel.name }} Level</b></h4>
+        <p class="text-muted m-b-30 font-13">
+            Here you can add grade in the respective grade level.
+        </p>
+
+        <form class="form-horizontal" method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="grade_name" class="col-sm-3 control-label">Grade Name</label>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" id="grade_name" name="grade_name" placeholder="Name of Grade">
+                </div>
+                <label for="grade_weight" class="col-sm-3 control-label">Grade Weight</label>
+                <div class="col-sm-9">
+                    <input type="number" class="form-control" id="grade_weight" name="grade_weight" placeholder="Weight of Grade">
+                </div>
+            </div>
+            <div class="form-group m-b-0 mt-3 pt-3">
+                <div class="col-sm-offset-3 col-sm-9">
+                    <button type="submit" class="btn btn-info waves-effect waves-light">Add Grade</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- End Row -->
+                
+
+
+
+{% endblock content %}

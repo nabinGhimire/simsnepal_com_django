@@ -1,0 +1,316 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+
+{% block title %}Print Ledger - SIMSNepal.com{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Print</div>
+        <h2 class="page-title">Ledger</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Print Ledger Preview</h3>
+      </div>
+      <div class="card-body">
+        <form action="{{ request.path }}preview/" method="POST" target="_blank">
+          {% csrf_token %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="text-secondary small">School</div>
+              <div class="fw-semibold">{{ school.name }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-secondary small">Location</div>
+              <div class="fw-semibold">{{ school.location }}</div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="edusession">Year</label>
+              <select name="edusession" id="edusession" class="form-select" onchange="filterTerms('edusession', 'term'); populate('grade','section', 'edusession')">
+                {% for session in edusession %}
+                  <option value="{{ session.id }}" {% if session.id == current_session.id %}selected{% endif %}>{{ session.year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="term">Exam Term</label>
+              <select name="term" id="term" class="form-select">
+                {% for exam_type in exam_types %}
+                  <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }} {{ exam_type.year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="grade">Grade</label>
+              <select name="grade" id="grade" onchange="populate(this.id,'section', 'edusession')" class="form-select">
+                <option value=""></option>
+                {% for grade in grades %}
+                  <option value="{{ grade.id }}">{{ grade|upper }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="section">Section</label>
+              <select name="section" id="section" class="form-select"></select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="ledgermode_pre">Ledger Mode</label>
+              <select name="ledgermode" id="ledgermode_pre" class="form-select">
+                <option value="1">STANDARD (RAW)</option>
+                <option value="3">CONSOLIDATED RAW</option>
+                <option value="2">WEIGHTED BREAKDOWN</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="order">Order By</label>
+              <select name="order" id="order" class="form-select">
+                <option value="1">REGISTRATION NUMBER</option>
+                <option value="2">ROLL NUMBER</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" name="submit" value="Submit" class="btn btn-primary">
+              <i class="ti ti-printer me-1"></i> Generate Preview
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Print Ledger</h3>
+      </div>
+      <div class="card-body">
+        <form action="{{ request.path }}now/" method="POST" target="_blank">
+          {% csrf_token %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="text-secondary small">School</div>
+              <div class="fw-semibold">{{ school.name }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-secondary small">Location</div>
+              <div class="fw-semibold">{{ school.location }}</div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="edusession2">Year</label>
+              <select name="edusession" id="edusession2" class="form-select" onchange="filterTerms('edusession2', 'term2'); populate2('grade2','section2', 'edusession2')">
+                {% for session in edusession %}
+                  <option value="{{ session.id }}" {% if session.id == current_session.id %}selected{% endif %}>{{ session.year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="term2">Exam Term</label>
+              <select name="term" id="term2" class="form-select">
+                {% for exam_type in exam_types %}
+                  <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }} {{ exam_type.year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="printtype">Print Type</label>
+              <select name="printtype" id="printtype" class="form-select">
+                <option value="1">DETAIL</option>
+                <option value="2">SUMMARIZED</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="ledgerttype">Ledger Type</label>
+              <select name="ledgertype" id="ledgerttype" class="form-select">
+                <option value="1">GRADE</option>
+                <option value="2">MARKS</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="grading_type">Grading System</label>
+              <select name="grading_type" id="grading_type" class="form-select">
+                <option value="1">OLD</option>
+                <option value="2" selected>NEW GRADING SYSTEM</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="grade2">Grade</label>
+              <select name="grade2" id="grade2" onchange="populate2(this.id,'section2', 'edusession2')" class="form-select">
+                <option value=""></option>
+                {% for grade in grades %}
+                  <option value="{{ grade.id }}">{{ grade|upper }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="section2">Section</label>
+              <select name="section2" id="section2" class="form-select"></select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="ledgermode">Ledger Mode</label>
+              <select name="ledgermode" id="ledgermode" class="form-select">
+                <option value="1">STANDARD</option>
+                <option value="2">WEIGHTED</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="rank_by">Rank By</label>
+              <select name="rank_by" id="rank_by" class="form-select">
+                <option value="total">TOTAL MARKS (Recommended)</option>
+                <option value="gpa">GPA</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="order_print">Order By</label>
+              <select name="order" id="order_print" class="form-select">
+                <option value="1">REGISTRATION NUMBER</option>
+                <option value="2">ROLL NUMBER</option>
+                <option value="3">RANK</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="filter">Filter</label>
+              <select name="filter" id="filter" class="form-select">
+                <option value="0" selected>NONE</option>
+                <option value="1">PASS</option>
+                <option value="2">FAIL</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" name="submit" value="Submit" class="btn btn-primary">
+              <i class="ti ti-printer me-1"></i> Generate Ledger
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+  var section_list_obj = JSON.parse('{{ section_list|escapejs }}');
+
+  var term_list_obj = JSON.parse('{{ term_list|escapejs }}');
+
+  function filterTerms(yearId, termId) {
+    var yearEl = document.getElementById(yearId);
+    var termEl = document.getElementById(termId);
+    if (!yearEl || !termEl) return;
+
+    var selectedYear = yearEl.value;
+    var terms = term_list_obj[selectedYear] || [];
+    
+    termEl.innerHTML = "";
+    terms.forEach(function(term) {
+      var option = document.createElement("option");
+      option.value = term.id;
+      option.innerHTML = term.name;
+      termEl.appendChild(option);
+    });
+  }
+
+  function populate(s1, s2, y1) {
+    var s1El = document.getElementById(s1);
+    var s2El = document.getElementById(s2);
+    var y1El = document.getElementById(y1);
+    if (!s2El || !s1El || !y1El) return;
+    s2El.innerHTML = "";
+
+    var session_id = y1El.value;
+    var grade_id = s1El.value;
+    var sl = (section_list_obj[session_id] || {})[grade_id] || {};
+    var optionArray = [];
+    for (var p in sl) {
+      optionArray.push("" + p + "|" + sl[p] + "");
+    }
+
+    for (var option in optionArray) {
+      var pair = optionArray[option].split("|");
+      var newOption = document.createElement("option");
+      newOption.value = pair[0];
+      newOption.innerHTML = pair[1];
+      s2El.options.add(newOption);
+    }
+  }
+
+  function populate2(s1, s2, y1) {
+    var s1El = document.getElementById(s1);
+    var s2El = document.getElementById(s2);
+    var y1El = document.getElementById(y1);
+    if (!s2El || !s1El || !y1El) return;
+    s2El.innerHTML = "";
+
+    var session_id = y1El.value;
+    var grade_id = s1El.value;
+    var sl = (section_list_obj[session_id] || {})[grade_id] || {};
+    var optionArray = [];
+    optionArray.push("0|ALL SECTION");
+    for (var p in sl) {
+      optionArray.push("" + p + "|" + sl[p] + "");
+    }
+
+    for (var option in optionArray) {
+      var pair = optionArray[option].split("|");
+      var newOption = document.createElement("option");
+      newOption.value = pair[0];
+      newOption.innerHTML = pair[1];
+      s2El.options.add(newOption);
+    }
+  }
+
+  // Initial filter on load
+  document.addEventListener('DOMContentLoaded', function() {
+    filterTerms('edusession', 'term');
+    filterTerms('edusession2', 'term2');
+    populate('grade', 'section', 'edusession');
+    populate2('grade2', 'section2', 'edusession2');
+  });
+</script>
+{% endblock scripts %}

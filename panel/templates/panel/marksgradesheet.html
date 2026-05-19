@@ -1,0 +1,178 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %}Marks or Grade Sheet - SIMSNepal.com{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Print</div>
+        <h2 class="page-title">Marks or Grade Sheet</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <form action="/panel/print/gradesheet/" method="POST" target="_blank">
+          {% csrf_token %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="text-secondary small">School</div>
+              <div class="fw-semibold">{{ school.name }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-secondary small">Location</div>
+              <div class="fw-semibold">{{ school.location }}</div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="edusession">Year</label>
+              <select name="edusession" id="edusession" class="form-select" onchange="filterTerms('edusession', 'term'); populate2('grade2','section2', 'edusession')">
+                {% for session in edusession %}
+                  <option value="{{ session.id }}" {% if session.id == current_session.id %}selected{% endif %}>{{ session.year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="term">Exam Term</label>
+              <select name="term" id="term" class="form-select">
+                {% for exam_type in exam_types %}
+                  <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }} {{ exam_type.year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="printtype">Ledger Type</label>
+              <select name="printtype" id="printtype" class="form-select">
+                <option value="1">GRADE</option>
+                <option value="2">MARKS</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="grade2">Grade</label>
+              <select name="grade2" id="grade2" onchange="populate2(this.id,'section2', 'edusession')" class="form-select">
+                <option value=""></option>
+                {% for grade in grades %}
+                  <option value="{{ grade.id }}">{{ grade|upper }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="section2">Section</label>
+              <select name="section2" id="section2" class="form-select">
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="result_type">Result Type</label>
+              <select name="result_type" id="result_type" class="form-select">
+                <option value="0" selected>LEGACY</option>
+                <option value="1">NON GRADE SYSTEM</option>
+                <option value="2">NEW GRADING SYSTEM</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="calc_type">Calculation</label>
+              <select name="calc_type" id="calc_type" class="form-select">
+                <option value="legacy" {% if live_calc_type != 'weighted' %}selected{% endif %}>LEGACY</option>
+                <option value="weighted" {% if live_calc_type == 'weighted' %}selected{% endif %}>WEIGHTED</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="pass_fail_filter">Filter</label>
+              <select name="pass_fail_filter" id="pass_fail_filter" class="form-select">
+                <option value="0">NONE</option>
+                <option value="1">PASS</option>
+                <option value="2">FAIL</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" name="submit" value="Submit" class="btn btn-primary">
+              <i class="ti ti-printer me-1"></i> Generate
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  var section_list_obj = JSON.parse('{{ section_list|escapejs }}');
+
+  var term_list_obj = JSON.parse('{{ term_list|escapejs }}');
+
+  function filterTerms(yearId, termId) {
+    var yearEl = document.getElementById(yearId);
+    var termEl = document.getElementById(termId);
+    if (!yearEl || !termEl) return;
+
+    var selectedYear = yearEl.value;
+    var terms = term_list_obj[selectedYear] || [];
+    
+    termEl.innerHTML = "";
+    terms.forEach(function(term) {
+      var option = document.createElement("option");
+      option.value = term.id;
+      option.innerHTML = term.name;
+      termEl.appendChild(option);
+    });
+  }
+
+  function populate2(s1, s2, y1) {
+    var s1El = document.getElementById(s1);
+    var s2El = document.getElementById(s2);
+    var y1El = document.getElementById(y1);
+    if (!s2El || !s1El || !y1El) return;
+    s2El.innerHTML = "";
+
+    var session_id = y1El.value;
+    var grade_id = s1El.value;
+    var sl = (section_list_obj[session_id] || {})[grade_id] || {};
+    var optionArray = [];
+    optionArray.push("0|ALL SECTION");
+    for (var p in sl) {
+      optionArray.push("" + p + "|" + sl[p] + "");
+    }
+
+    for (var option in optionArray) {
+      var pair = optionArray[option].split("|");
+      var newOption = document.createElement("option");
+      newOption.value = pair[0];
+      newOption.innerHTML = pair[1];
+      s2El.options.add(newOption);
+    }
+  }
+
+  // Initial filter on load
+  document.addEventListener('DOMContentLoaded', function() {
+    filterTerms('edusession', 'term');
+    populate2('grade2', 'section2', 'edusession');
+  });
+</script>
+{% endblock %}

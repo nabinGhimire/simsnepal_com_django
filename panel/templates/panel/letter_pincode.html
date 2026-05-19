@@ -1,0 +1,90 @@
+<html>
+    <head>
+            <meta charset="utf-8">
+        <style>
+            .letterbox{
+                /*border: 0.1em solid #000;
+                /*padding: 2em;
+                height: 47%; */
+            }
+        </style>
+        <style media="print">
+
+            
+                
+
+            @media print
+            {
+                @page {
+                  size: A4; /* DIN A4 standard, Europe */
+                  margin: 0em;;
+                }
+
+                .about_school{
+                    margin: 0; 
+                    padding: 0;
+                    font-weight: bolder;
+                    text-align: center;
+                    font-size: 1.5em;
+                }
+            
+                .mainbox{
+                    height: 50%;
+                    border: 0.1em solid #fff;
+                }
+           
+            
+                .letterbox{
+                    border: 0.1em solid #fff;
+                    margin: 2em;
+                    padding: 3em 0em;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        
+        {% for key,student in students.items %}
+        <div class="mainbox">
+            <div class="letterbox">
+                <div class="about_school">
+                    {{school.name }} <br>
+                    {{ school.location }} <br><br>
+                </div>
+
+            आदरणीय अभिभावक ज्यू,<br><br>
+
+
+            <strong>बिषय: जानकारी गराइएको बारे।</strong><br>
+
+            <p>महोदय, <br>उपरोक्त बिषयमा यस बिद्यालयमा अध्ययनरत बिद्यार्थी हरुको प्रत्येक परिक्षाको परिक्षाफल (Result) तथा हरेक दिनको हाजिरी (Attendance) जहाँ कहिँ बाट पनि आफ्नो मोबाइल /ल्यापटप /कम्प्युटर बाट हेर्न सकिने सुबिधा मिलाइएको जानकारी गराइन्छ। साथै माथि उल्लेखित जानकारी प्राप्त गर्न प्रत्येक बिद्यार्थीको छुट्टाछुट्टै दर्ता नम्बर (Registration number) र बिशेष नम्बर (Special Security Code) को आवश्यकता हुने भएकोले निम्न नम्बर आफुसंगै सुरक्षीत राख्नुहुन अनुरोध गरिन्छ ।</p>
+            
+            <table>
+                <tr>
+                    <td>Name of Student</td>
+                    <td style="padding-left: 1em;"><strong>{{ student.name|title }}</strong></td>
+                </tr>
+                <tr>
+                    <td>Class</td>
+                    <td style="padding-left: 1em;"><strong>{{ student.grade }} ({{ student.section }})</strong></td>
+                </tr>
+                <tr>
+                    <td> Registration Number</td>
+                    <td style="padding-left: 1em;"><strong>{{ student.reg_no }}</strong></td>
+                </tr>
+                <tr>
+                    <td> Special (Security) Code</td>
+                    <td style="padding-left: 1em;"><strong>{{ student.pin_code }}</strong></td>
+                </tr>
+            </table><br>
+
+            नोट: माथीको बिशेष नम्बर अरु लाई थाहा नदिनुहोला। <br>
+
+            अन्य जानकारीका लागि बिद्यालयमा सम्पर्क गर्नुहोला ।
+
+            </div>
+        </div>
+        {% endfor %}
+    </body>
+</html>
+

@@ -1,0 +1,87 @@
+{% extends 'panel/panel-main.html' %}
+{% block content %}
+{% if message %}
+    {% if success %}
+        <div class="alert alert-success" role="alert">{{ message }}</div>
+    {% else %}
+        <div class="alert alert-warning" role="alert">{{ message }}!</div>
+    {% endif %}
+{% endif %}
+<div class="col-md-6 mx-auto">
+
+    <h3>Students Detail</h3>
+<table class="table table-sm table-bordered">
+    <tr>
+        <td>Reg. Number</td>
+        <td>{{ student.reg_no }}</td>
+    </tr>
+    <tr>
+        <td>Name</td>
+        <td>{{ student.name }}</td>
+    </tr>
+    <tr>
+        <td>Gender</td>
+        <td>{% if student.gender %} Male {% else %} Female {% endif %}</td>
+    </tr>
+    <tr>
+        <td>Grade</td>
+        <td>{{ student.grade }}</td>
+    </tr>
+    <tr>
+        <td>Section</td>
+        <td>{{ student.section }}</td>
+    </tr>
+    <tr>
+        <td>Roll No</td>
+        <td>{{ student.roll_no }}</td>
+    </tr>
+</table>
+<form class="form-horizontal" action="/panel/status/student/{{ student.reg_no }}/" method="POST">
+    {% csrf_token %}
+
+    
+    <div class="form-group">
+        <label  class="col-sm-3 control-label">Account *:</label>
+        <div class="col-sm-9">
+            <div class="radio">
+                <input type="radio" name="status" id="status1" value="1" {% if student.status %} checked {% endif %} required="">
+                <label for="genderM">
+                    Active
+                </label>
+            </div>
+            <div class="radio">
+                <input type="radio" name="status" id="status2" {% if not student.status %} checked {% endif %} value="0">
+                <label for="genderF">
+                    Inactive
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label  class="col-sm-3 control-label">Result *:</label>
+        <div class="col-sm-9">
+            <div class="radio">
+                <input type="radio" name="result" id="result1" value="1" {% if student.publish_result %} checked {% endif %} required="">
+                <label for="genderM">
+                    Active
+                </label>
+            </div>
+            <div class="radio">
+                <input type="radio" name="result" id="result2" {% if not student.publish_result %} checked {% endif %} value="0">
+                <label for="genderF">
+                    Inactive
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-group m-b-0">
+        <div class="col-sm-offset-3 col-sm-9">
+            <button type="submit" class="btn btn-info waves-effect waves-light">Update Status</button>
+            <button class="btn waves-effect waves-light" onclick="self.close()">Close</button>
+        </div>
+    </div>
+</form>
+</div>
+
+{% endblock %}

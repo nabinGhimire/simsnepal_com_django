@@ -1,0 +1,491 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Result</title>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+	<!-- <link rel="stylesheet" type="text/css" href="{% static "v2/css/ledger.css" %}"> -->
+	<link rel="stylesheet" type="text/css" href="{% static "v2/css/ledgerprint.css" %}">
+	<!-- <meta http-equiv="refresh" content="1" > -->
+
+    <link rel="stylesheet" type="text/css" media="print" href="{% static "css/ledgerprint.css" %}">
+
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+	<style>
+			body{
+				background-color: #eee;
+			}
+	</style>
+</head>
+<body>
+
+<div class="container-fluid">
+
+<div class="row">
+<div class="col-md-12 col-lg-8 mx-auto">
+
+
+
+
+
+	<div class="holder" style="background-color: #fff;">
+		<section class="header">
+			<div class="main-header">
+				<div class="imageholder">
+					<img src="{% static "v2/img/logo/samata/logo.jpg" %}" class="logo">
+				</div>
+				<div class="info">
+					<p class="motto"> &nbsp; "Education for all".</p>
+					<h1 class="school">SAMATA SCHOOL</h1>
+					<!-- <p class="address">ITAHARI -4, HALGADA, SUNSARI</p> -->
+					<p class="address">BIRATNAGAR, MORANG</p>
+					<!-- <p class="telephone"><i class="fas fa-phone-square"></i> 025 588 553,  <i class="fas fa-envelope-square"></i> samataeast@gmail.com</p> -->
+					<p class="telephone"><i class="fas fa-phone-square"></i> 984-7055073,  <i class="fas fa-envelope-square"></i> samataeast@gmail.com</p>
+					<h2 class="term">{{ this_term.name|upper}} - {{year}}</h2>
+					<h3 class="report-type">GRADE SHEET</h3>
+				</div>
+			</div>
+
+
+			<div class="stdname">
+				<table>
+				<tr>
+					<td class="nobr">Student Name: <span class="muchb">{{ value.std_name|upper }}</span></td>
+					<td class="nobl">Reg No: <span class="muchb">{{ key }}</span></td>
+				</tr>
+				<tr>
+					<td  class="nobr">Grade: <span class="muchb">{{ value.grade|upper }}</span></td>
+					<td  class="nobl">Section: <span class="muchb">{{ value.section }}</span></td>
+				</tr>
+			</table>
+			</div>
+		</section>
+		<section class="marks">
+			<table>
+				<tr class="head_title">
+					<th rowspan="2" class="first drawl trans"  style="padding-top: 7mm;">S.N</th>
+					<th rowspan="2" class="first subjects" style="padding-top: 6mm;">SUBJECTS</th>
+					<th rowspan="2" class="first" style="padding-top: 3mm;">CREDIT <br> HOUR</th>
+					<!-- <th colspan="2">P.M</th> -->
+					<th colspan="2" class="first" style="padding-top: 2mm;">OBTAINED GRADE</th>
+					<th rowspan="2" class="first trans2">FINAL <br>GRADE</th>
+					<th rowspan="2" class="first trans2">GRADE <br>POINT</th>
+				</tr>
+				<tr class="head_title">
+
+					<!-- <th>TH</th>
+					<th>PR</th> -->
+					<th  style="padding-top: 2mm;">TH</th>
+					<th  style="padding-top: 2mm;">PR</th>
+                </tr>
+				{% for one, two in value.mo_dict.items %}
+				<tr>
+					<td class="drawl">{{one}}</td>
+					<td class="subject">{{ two.subject_name|upper }}</td>
+					<td>{{ two.theory_fm }}</td>
+					<!-- <td>{% if value.prac_fm > 0 %}{{ value.prac_fm }}{% endif %}</td> -->
+					<!-- <td>{{ value.theory_pm }}</td>
+					<td>{{ value.prac_pm }}</td> -->
+					<td>{% if two.th_absent %} {% else%}{{ two.theory_mo }}{% endif %}{% comment %}{% if not two.th_pass %}*{% endif %}{% endcomment %}</td>
+					<td>{% if two.prac_mo == 0 %} {% else %} {{ two.prac_mo }} {% endif %}</td>
+					<td>{{ two.total_mo }}</td>
+                    <td>{{ two.gpa}}</td>
+                    
+				</tr>
+				{% endfor %}
+				{% for i in "x"|rjust:value.additional_td %}
+				<tr>
+					<td class="drawl">&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<!-- <td>&nbsp;</td> -->
+					<td>&nbsp;</td>
+				</tr>
+                {% endfor %}
+                
+                {{ key.total }}
+				<tr>
+					<th class="drawl nob cgpa" colspan="7" style="padding-right: 8.5mm;">GRADE POINT AVERAGE (GPA) : {{ value.cgpa }}</th>
+				</tr>
+
+				<!-- <tr>
+					<th class="nob" colspan="2" rowspan="2">TOTAL</th>
+					<th class="nob" >{{ total.fm_th_total }}</th>
+					<th class="nob" >{{ total.fm_pr_total }}</th>
+					 -->
+					<!-- <th class="nob" >{{ total.pm_th_total }}</th>
+					<th class="nob" >{{ total.pm_pr_total }}</th> -->
+					
+					<!-- <th class="nob" >{{ total.mo_th_total }}</th>
+					<th class="nob" >{{ total.mo_pr_total }}</th>
+					<th class="nob" rowspan="2" >{{ total.mo_total }}</th>
+				</tr> -->
+				<!-- <tr>
+					<th colspan="2">{{ total.fm_total }}</th>
+					
+					<th colspan="2">{{ total.pm_total }}</th>
+					<th colspan="2">{{ total.mo_total }}</th>
+				</tr> -->
+			</table>
+		</section>
+		<!-- <section class="acronym">
+			<div class="marksacr">
+				<table>
+					<caption>Acronyms Used</caption>
+					<tr>
+						<td>FM : </td>
+						<td> Full Marks</td>
+					</tr>
+					<tr>
+						<td class="textl">PM </td>
+						<td> : </td>
+						<td class="textl"> Pass Marks</td>
+					</tr>
+					<tr>
+						<td class="textl">MO </td>
+						<td> : </td>
+						<td class="textl"> MarksObtained</td>
+					</tr>
+					<tr>
+						<td class="textl">TH </td>
+						<td> : </td>
+						<td class="textl"> Theory</td>
+					</tr>
+					<tr>
+						<td class="textl">PR </td>
+						<td> : </td>
+						<td class="textl"> Practical</td>
+					</tr>
+				</table>
+			</div>
+			<div class="extraact">
+				<table>
+					<caption>Extra Activities</caption>
+					<tr>
+						<td class="nobrb">Neatness</td>
+						<td>{{ attendance.neatness }}</td>
+					</tr>
+					<tr>
+						<td class="nobrb">Handwriting</td>
+						<td>{{ attendance.writing }}</td>
+					</tr>
+					<tr>
+						<td class="nobrb">Homework</td>
+						<td>{{ attendance.homework }}</td>
+					</tr>
+					<tr>
+						<td class="nobrb">Discipline</td>
+						<td>{{ attendance.discipline }}</td>
+					</tr>
+				</table>
+			</div>
+
+			<div class="outcomes">
+				<table>
+					<caption>Outcomes</caption>
+					<tr>
+						<td class="nobrb">Percentage</td>
+						<td>{{ total.percent }}%</td>
+					</tr>
+					<tr>
+						<td class="nobrb">Position</td>
+						<td>{{position}} / {{total_std}}</td>
+					</tr>
+					<tr>
+						<td class="nobrb">Attendance</td>
+						<td>{{attendance.attendance}}  / {{ attendance.school_days }}</td>
+					</tr>
+				</table>
+			</div>
+		</section> -->
+		<!-- <section class="remarks">
+			<p>Remarks: <span>{{ total.remarks }}</span></p>
+		</section> -->
+		<!-- <section class="gradetab">
+			<div class="grading">
+				<table>
+					<tr>
+						<th colspan="3" class="gs-cent">GRADING SYSTEM</th>
+					</tr>
+					<tr class="mgg">
+						<th class="bigg">Mark</th>
+						<th>Grade</th>
+						<th>GPA</th>
+					</tr>
+					<tr>
+						<td class="bigg">90-100</td>
+						<td>A+</td>
+						<td>4.0</td>
+					</tr>
+					<tr>
+						<td class="bigg">80-90</td>
+						<td>A</td>
+						<td>3.6</td>
+					</tr>
+					<tr>
+						<td class="bigg">70-80</td>
+						<td>B+</td>
+						<td>3.2</td>
+					</tr>
+					<tr>
+						<td class="bigg">60-70</td>
+						<td>B</td>
+						<td>2.8</td>
+					</tr>
+					<tr>
+						<td class="bigg">50-60</td>
+						<td>C+</td>
+						<td>2.4</td>
+					</tr>
+					<tr>
+						<td class="bigg">40-50</td>
+						<td>C</td>
+						<td>2.0</td>
+					</tr>
+					<tr>
+						<td class="bigg">20-40</td>
+						<td>D</td>
+						<td>1.6</td>
+					</tr>
+					<tr>
+						<td class="bigg">1-20</td>
+						<td>E</td>
+						<td>0.8</td>
+					</tr>
+					<tr>
+						<td class="bigg">0</td>
+						<td>N</td>
+						<td>0</td>
+					</tr>
+				</table>
+			</div>
+			<div class="aeor">
+				<div class="aeo">
+					<div class="grading1">
+						<table>
+							<tr>
+								<th colspan="3" class="gs-cent"> ACRONYM USED </th>
+							</tr>
+							<tr class="mgg">
+								<th>CODE</th>
+								<th>MEANING</th>
+							</tr>
+							<tr>
+								<td>TH</td>
+								<td>Theory</td>
+							</tr>
+							<tr>
+								<td>PR</td>
+								<td>Practical</td>
+							</tr>
+						</table>
+					</div>
+					<div class="extraact">
+						<table>
+							<tr>
+								<th colspan="3" class="gs-cent">EXTRA ACTIVITIES</th>
+							</tr>
+							<tr>
+								<td class="nobrb">Neatness</td>
+								<td> A </td>
+							</tr>
+							<tr>
+								<td class="nobrb">Handwriting</td>
+								<td> A </td>
+							</tr>
+							<tr>
+								<td class="nobrb">Discipline</td>
+								<td> A </td>
+							</tr>
+						</table>
+					</div>
+
+					<div class="outcomes">
+						<table>
+							<tr>
+								<th colspan="3" class="gs-cent">OUTCOMES</th>
+							</tr>
+							<tr>
+								<td class="nobrb">Percentage</td>
+								<td>{{ total.percent }}%</td>
+							</tr>
+							<tr>
+								<td class="nobrb">Position</td>
+								<td>{{position}} / {{total_std}}</td>
+							</tr>
+							<tr>
+								<td class="nobrb">Attendance</td>
+								<td>{{attendance.attendance}}  / {{ attendance.school_days }}</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+				<div class="r">
+					<div class="remarks">
+							REMARKS: EXCELLENT
+					</div>
+				</div>
+				
+					
+			</div>
+
+		</section> -->
+
+
+<section class="gradetab">
+	<div class="grading">
+					<table>
+						<tr>
+							<th colspan="3" class="gs-cent">GRADING SYSTEM</th>
+						</tr>
+						<tr class="mgg">
+							<th class="bigg">Mark</th>
+							<th>Grade</th>
+							<th>GPA</th>
+						</tr>
+						<tr>
+							<td class="bigg">90-100</td>
+							<td>A+</td>
+							<td>4.0</td>
+						</tr>
+						<tr>
+							<td class="bigg">80-90</td>
+							<td>A</td>
+							<td>3.6</td>
+						</tr>
+						<tr>
+							<td class="bigg">70-80</td>
+							<td>B+</td>
+							<td>3.2</td>
+						</tr>
+						<tr>
+							<td class="bigg">60-70</td>
+							<td>B</td>
+							<td>2.8</td>
+						</tr>
+						<tr>
+							<td class="bigg">50-60</td>
+							<td>C+</td>
+							<td>2.4</td>
+						</tr>
+						<tr>
+							<td class="bigg">40-50</td>
+							<td>C</td>
+							<td>2.0</td>
+						</tr>
+						<tr>
+							<td class="bigg">20-40</td>
+							<td>D</td>
+							<td>1.6</td>
+						</tr>
+						<tr>
+							<td class="bigg">1-20</td>
+							<td>E</td>
+							<td>0.8</td>
+						</tr>
+						<tr>
+							<td class="bigg">0</td>
+							<td>N</td>
+							<td>0</td>
+						</tr>
+					</table>
+				</div>
+		  
+		  <div class="aeor">
+			<div class="aeo">
+						<div class="grading1">
+							<table>
+								<tr>
+									<th colspan="3" class="gs-cent"> ACRONYM USED </th>
+								</tr>
+								<tr class="mgg">
+									<th>CODE</th>
+									<th>MEANING</th>
+								</tr>
+								<tr>
+									<td>TH</td>
+									<td>Theory</td>
+								</tr>
+								<tr>
+									<td>PR</td>
+									<td>Practical</td>
+								</tr>
+							</table>
+						</div>
+						<div class="extraact">
+							<table>
+								<tr>
+									<th colspan="3" class="gs-cent">EXTRA ACTIVITIES</th>
+								</tr>
+								<tr>
+									<td class="nobrb">Neatness</td>
+									<td> - </td>
+								</tr>
+								<tr>
+									<td class="nobrb">Handwriting</td>
+									<td> - </td>
+								</tr>
+								<tr>
+									<td class="nobrb">Discipline</td>
+									<td> - </td>
+								</tr>
+							</table>
+						</div>
+	
+						<div class="outcomes">
+							<table>
+								<tr>
+									<th colspan="3" class="gs-cent">OUTCOMES</th>
+								</tr>
+								<tr>
+									<td class="nobrb"> GP Average</td>
+									<td>{{ value.cgpa }}</td>
+								</tr>
+								<tr>
+									<td class="nobrb">Position</td>
+									<td>{{ value.position}} / {{total_std}}</td>
+								</tr>
+								<tr>
+									<td class="nobrb">Attendance</td>
+                                    <!-- <td>{{value.attendance.attendance}}  / {{ school_days }}</td> -->
+                                    <td>- / -</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+				<div class="r">
+						<div class="remarks">
+								REMARKS: {{ value.total.remarks|upper }}
+						</div>
+					</div>
+		  </div>
+	  
+	  
+	  
+	</section>
+
+		
+
+		<table class="footer">
+			<tr>
+				<td class="nobr">_______________</td>
+				<td>_______________</td>
+				<td class="nobl">_____________</td>
+			</tr>
+			<tr>
+				<td class="nobr">CLASS TEACHER</td>
+                    <td>EXAM. CO-ORDINATOR</td>
+                    <td class="nobl">PRINCIPAL</td>
+			</tr>
+		</table>
+	</div>
+
+
+	</div>
+</div>
+</div>
+</body>
+</html>

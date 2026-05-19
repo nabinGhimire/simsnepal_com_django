@@ -1,0 +1,139 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %} Admin Dashboard- Specific Class - SIMSNepal.com {% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">Subject-wise Marks Input</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Subject-wise Marks</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="row row-cards justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Marks Input Selection</h3>
+        </div>
+        <div class="card-body">
+          <form action="" method="POST" class="form-horizontal">
+            {% csrf_token %}
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">School</label>
+              <div class="col">
+                <div class="form-control-plaintext font-weight-bold">{{ school.name }}</div>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Location</label>
+              <div class="col">
+                <div class="form-control-plaintext">{{ school.location }}</div>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Year</label>
+              <div class="col">
+                <div class="form-control-plaintext">{{ this_year }}</div>
+              </div>
+            </div>
+            <hr class="my-3">
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Exam Term</label>
+              <div class="col">
+                <select name="term" id="term" class="form-select">
+                  {% for exam_type in exam_types %}
+                  <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Grade</label>
+              <div class="col">
+                <select name="grade" id="grade" onchange="populate(this.id,'section')" class="form-select">
+                  <option value=""></option>
+                  {% for grade in grades %}
+                  <option value="{{ grade.id }}">{{ grade|upper }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Section</label>
+              <div class="col">
+                <select name="section" id="section" class="form-select"></select>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Order By</label>
+              <div class="col">
+                <select name="order" id="order" class="form-select">
+                  <option value="1">REGISTRATION NUMBER</option>
+                  <option value="2">ROLL NUMBER</option>
+                  <option value="3">NAME</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-footer text-end mt-4">
+              <button type="submit" name="submit" class="btn btn-primary btn-pill px-4">
+                <i class="ti ti-arrow-right me-2"></i> Next Step
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+
+<script type='text/javascript'>
+    var section_list = '{{ section_list }}'.replace(/&quot;/g,"\"");
+    var section_list_obj = JSON.parse(section_list);
+    var grade_count = Object.keys(section_list_obj).length;
+
+    function populate(s1,s2){
+        var s1 = document.getElementById(s1);
+        var s2 = document.getElementById(s2);
+        s2.innerHTML = "";
+
+        sl = section_list_obj[s1.value]
+        var optionArray = [];
+        
+        for(var p in sl ){
+            optionArray.push(""+p+"|"+sl[p]+"");
+        }
+
+        for(var option in optionArray){
+            var pair = optionArray[option].split("|");
+            var newOption = document.createElement("option");
+            newOption.value = pair[0];
+            newOption.innerHTML = pair[1];
+            s2.options.add(newOption);
+        }
+    }
+</script>
+
+
+
+
+{% endblock %}

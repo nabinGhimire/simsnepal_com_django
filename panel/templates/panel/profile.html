@@ -1,0 +1,245 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %}Profile - {{ user.get_full_name|default:user.username }} | SIMSNepal{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Account</div>
+        <h2 class="page-title">My Profile</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  <!-- Left: Profile Card -->
+  <div class="col-12 col-md-4 col-lg-3">
+    <div class="card text-center">
+      <div class="card-body py-4">
+        <span class="avatar avatar-xl mb-3"
+              style="background: linear-gradient(135deg, var(--tblr-primary), #6366f1); font-size: 2rem; color: white; font-weight: 700;">
+          {{ user.username|slice:":1"|upper }}
+        </span>
+        <h3 class="mb-1">{{ user.get_full_name|default:user.username }}</h3>
+        <div class="text-secondary small mb-3">@{{ user.username }}</div>
+        <div class="mb-3">
+          {% if branchuser.admin_status %}
+            <span class="badge bg-blue-lt text-blue">
+              <i class="ti ti-shield-check me-1"></i>Administrator
+            </span>
+          {% else %}
+            <span class="badge bg-green-lt text-green">
+              <i class="ti ti-chalkboard me-1"></i>Teacher
+            </span>
+          {% endif %}
+        </div>
+        <div class="text-secondary small">
+          <i class="ti ti-building-school me-1"></i>{{ school.name }}
+        </div>
+        {% if school.location %}
+          <div class="text-secondary small mt-1">
+            <i class="ti ti-map-pin me-1"></i>{{ school.location }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Details -->
+  <div class="col-12 col-md-8 col-lg-9">
+
+    <!-- Account Information -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="ti ti-user me-2"></i>Account Information
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">Username</label>
+            <div class="fw-semibold">{{ user.username }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">Email Address</label>
+            <div class="fw-semibold">{{ user.email|default:"—" }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">First Name</label>
+            <div class="fw-semibold">{{ user.first_name|default:"—" }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">Last Name</label>
+            <div class="fw-semibold">{{ user.last_name|default:"—" }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">Account Role</label>
+            <div class="fw-semibold">
+              {% if branchuser.admin_status %}Administrator{% else %}Teacher{% endif %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">Date Joined</label>
+            <div class="fw-semibold">{{ user.date_joined|date:"F j, Y" }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">Last Login</label>
+            <div class="fw-semibold">{{ user.last_login|date:"F j, Y, g:i a"|default:"—" }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">Account Status</label>
+            <div>
+              {% if user.is_active %}
+                <span class="badge bg-success-lt text-success">Active</span>
+              {% else %}
+                <span class="badge bg-danger-lt text-danger">Inactive</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer text-end">
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-password">
+          <i class="ti ti-key me-1"></i> Change Password
+        </button>
+      </div>
+    </div>
+
+    <!-- School Information -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="ti ti-building-school me-2"></i>School Information
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">School Name</label>
+            <div class="fw-semibold">{{ school.name }}</div>
+          </div>
+          {% if school.location %}
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">Location</label>
+            <div class="fw-semibold">{{ school.location }}</div>
+          </div>
+          {% endif %}
+          {% if school.address %}
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">Address</label>
+            <div class="fw-semibold">{{ school.address }}</div>
+          </div>
+          {% endif %}
+          {% if school.contact %}
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">Contact</label>
+            <div class="fw-semibold">{{ school.contact }}</div>
+          </div>
+          {% endif %}
+          <div class="col-md-6">
+            <label class="form-label text-secondary small">School Status</label>
+            <div>
+              {% if school.status %}
+                <span class="badge bg-success-lt text-success">Active</span>
+              {% else %}
+                <span class="badge bg-danger-lt text-danger">Disabled</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <a href="{% url 'lockscreen' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="ti ti-lock me-1"></i> Lock Screen
+        </a>
+        <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">
+          <i class="ti ti-logout me-1"></i> Logout
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal modal-blur fade" id="modal-password" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <form action="{% url 'change_password' %}" method="POST">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="ti ti-key me-2"></i>Change Password</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          {% for field in password_form %}
+            <div class="mb-3">
+              <label class="form-label">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in field.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              {% if field.help_text %}
+                <div class="text-muted small mt-1" style="font-size: 11px;">
+                  {{ field.help_text|safe }}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary ms-auto">
+            <i class="ti ti-check me-1"></i> Update Password
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Styling the Django form fields to match Tabler
+    const inputs = document.querySelectorAll('#modal-password input');
+    inputs.forEach(input => {
+      input.classList.add('form-control');
+    });
+
+    // Auto-show modal if there are validation errors
+    {% if show_password_modal %}
+      var passwordModal = new bootstrap.Modal(document.getElementById('modal-password'));
+      passwordModal.show();
+    {% endif %}
+  });
+</script>
+{% endblock %}
+{% endblock content %}

@@ -1,0 +1,135 @@
+{% extends 'panel/panel-main.html' %}
+
+{% block title %} Admin Dashboard- Specific Class - SIMSNepal.com {% endblock %}
+{% load static %}
+{% block navbar %}
+    {% if branchuser.admin_status %}
+        {% include 'snippets/nav_admin.html' %}
+    {% else %}
+        {% include 'snippets/nav_teacher.html' %}
+    {% endif %}
+ 
+{% endblock navbar %}
+{% block content %}
+
+
+<!-- Page-Title -->
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="btn-group pull-right">
+                <ol class="breadcrumb hide-phone p-0 m-0">
+                    <li>
+                        <a href="#">Hamro Panel</a>
+                    </li>
+                    <li>
+                        <a href="#"> Search</a>
+                    </li>
+                    <li class="active">
+                        Student
+                    </li>
+                </ol>
+            </div>
+            <h4 class="page-title">Search Result</h4>
+        </div>
+    </div>
+</div>
+<!-- end -->
+
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <form  action="/panel/search/">
+        <div class="input-group m-t-10">
+            <input type="text" class="form-control" value="{{ data|title }}" name="q">
+            <span class="input-group-btn">
+                <button type="submit" class="btn waves-effect waves-light btn-custom"><i class="fa fa-search m-r-5"></i> Search</button>
+            </span>
+        </div>
+        </form>
+    </div>
+</div>
+<!-- end row -->
+
+<div class="row">
+    <div class="col-md-8 col-md-offset-2 text-center m-t-20">
+        <h3 class="h4"><b>Search Results For " {{ data|title }} "</b></h3>
+    </div>
+</div>
+<!-- end row -->
+
+
+<br>
+<div class="container-fluid">
+    <!-- /row -->
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="white-box">
+                <div class="clear"></div>
+                <div class="table-responsive">
+                    <table class="table tbl table-bordered">
+                        <thead>
+                            <tr>
+                            	<th>Class</th>
+                                <th>Roll No</th>
+					            <th>Name</th>
+					            <th>Registration No</th>
+					            <th>Code</th>
+					            <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        	{% for student in students %}
+						        <tr>
+						        	<td>{{ student.grade}}</td>
+						            <td>{{ student.roll_no}}</td>
+
+						            <td>{{ student.name }}</td>
+						            <td>{{ student.reg_no }}</td>
+						            <td>{{ student.pin_code}}</td>
+						            <td>
+                                        <a href="/panel/privateresult/{{ student.reg_no }}/" target="_blank" class="btn btn-success">View Result</a>
+						            </td>
+						            
+						        </tr>
+						    {% endfor %}
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+            {% comment %}
+
+            <ul class="pagination pagination-split pull-right">
+                    {% if students.has_previous %}
+                    <li>
+                        <a href="?page={{ students.previous_page_number }}"><i class="fa fa-angle-left"></i> Previous Page</a> 
+                    </li>
+                    {% else %}
+                        <li class="disabled">
+                            <a href="#"><i class="fa fa-angle-left"></i></a>
+                        </li>
+                    {% endif %}
+
+                    <li class="current">
+                    Page {{ students.number }} of {{ students.paginator.num_pages }}
+                    </li>
+
+                    {% if students.has_next %}
+                      <li><a href="?page={{ students.next_page_number }}">Next Page <i class="fa fa-angle-right"></i></a></li>
+                    {% else %}
+                        <li  class="disabled">
+                            <a href="#"><i class="fa fa-angle-right"></i></a>
+                        </li>
+                    {% endif %}
+                </ul>
+
+                <div class="clearfix"></div>
+
+            {% endcomment %}
+        </div>
+    </div>
+    <!-- /.row -->
+</div>
+
+
+{% endblock %}

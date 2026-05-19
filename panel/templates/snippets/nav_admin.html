@@ -1,0 +1,142 @@
+{% load static %}
+<header class="navbar-expand-md">
+  <div class="collapse navbar-collapse" id="navbar-menu">
+    <div class="navbar navbar-light">
+      <div class="container-xl">
+        <ul class="navbar-nav ms-n3">
+
+          <!-- Home -->
+          <li class="nav-item">
+            <a class="nav-link" href="/panel/">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     class="icon icon-1">
+                  <path d="M5 12l-2 0l9 -9l9 9l-2 0"/>
+                  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/>
+                  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/>
+                </svg>
+              </span>
+              <span class="nav-link-title">Home</span>
+            </a>
+          </li>
+
+          <!-- Grades (dynamic, grouped by level) -->
+          {% for level in grade_level %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
+               data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     class="icon icon-1">
+                  <path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12z"/>
+                  <path d="M19 16h-12a2 2 0 0 0 -2 2"/>
+                  <path d="M9 8h6"/>
+                </svg>
+              </span>
+              <span class="nav-link-title">{{ level.name|upper }}</span>
+            </a>
+            <div class="dropdown-menu">
+              {% for grade in grades %}
+                {% if grade.level.id == level.id %}
+                  <a class="dropdown-item" href="/panel/grades/{{ grade.id }}/">{{ grade.grade_name|upper }}</a>
+                {% endif %}
+              {% endfor %}
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item text-success" href="/panel/addgrade/{{ level.id }}/">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" class="icon me-1">
+                  <path d="M12 5l0 14"/><path d="M5 12l14 0"/>
+                </svg>
+                Add Grade
+              </a>
+            </div>
+          </li>
+          {% endfor %}
+
+          <!-- ADD -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
+               data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     class="icon icon-1">
+                  <path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9 -9 9s-9 -1.8 -9 -9s1.8 -9 9 -9z"/>
+                  <path d="M15 12h-6"/><path d="M12 9v6"/>
+                </svg>
+              </span>
+              <span class="nav-link-title">ADD</span>
+            </a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="{% url 'fullmarks' %}" target="_blank">Full Mark / Pass Mark</a>
+              <a class="dropdown-item" href="{% url 'subjectwisemarks' %}" target="_blank">Subjectwise Marks</a>
+              <a class="dropdown-item" href="{% url 'view_house' %}" target="_blank">House</a>
+              <a class="dropdown-item" href="{% url 'add_guardian' %}" target="_blank">Guardian</a>
+              <a class="dropdown-item" href="{% url 'add_teacher' %}" target="_blank">Teacher</a>
+            </div>
+          </li>
+
+          <!-- EXAM MANAGEMENT -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
+               data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     class="icon icon-1">
+                  <path d="M15 15m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/>
+                  <path d="M13 17.5v4.5l2 -1.5l2 1.5v-4.5"/>
+                  <path d="M10 19h-5a2 2 0 0 1 -2 -2v-10c0 -1.1 .9 -2 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -1 1.73"/>
+                  <path d="M6 9l12 0"/><path d="M6 12l3 0"/><path d="M6 15l2 0"/>
+                </svg>
+              </span>
+              <span class="nav-link-title">EXAM MANAGEMENT</span>
+            </a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="{% url 'subjectmanagement' %}" target="_blank">Subject Management</a>
+              <a class="dropdown-item" href="{% url 'termmanagement' %}">Term Management</a>
+              <a class="dropdown-item" href="{% url 'resultmanagement' %}">Result Management</a>
+            </div>
+          </li>
+
+          <!-- PRINT -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
+               data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     class="icon icon-1">
+                  <path d="M17 17h2a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-14a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h2"/>
+                  <path d="M17 9v-4a2 2 0 0 0 -2 -2h-6a2 2 0 0 0 -2 2v4"/>
+                  <path d="M7 13m0 2a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2z"/>
+                </svg>
+              </span>
+              <span class="nav-link-title">PRINT</span>
+            </a>
+            <div class="dropdown-menu">
+              <div class="dropdown-menu-columns">
+                <div class="dropdown-menu-column">
+                  <a class="dropdown-item" href="/panel/print/entrancecard/" target="_blank">Entrance Card</a>
+                  <a class="dropdown-item" href="/panel/print/studentdetail/" target="_blank">Student Detail</a>
+                  <a class="dropdown-item" href="{% url 'printmarksform' %}?data=marksform" target="_blank">Marks Allocator</a>
+                  <a class="dropdown-item" href="{% url 'printpincodeletter' %}" target="_blank">Pincode Letter</a>
+                  <a class="dropdown-item" href="{% url 'printledger' %}" target="_blank">Ledger</a>
+                </div>
+                <div class="dropdown-menu-column">
+                  <a class="dropdown-item" href="{% url 'marksgradesheet' %}">Marks/Grade Sheet</a>
+                  <a class="dropdown-item" href="{% url 'print_parents' %}">Guardian</a>
+                  <a class="dropdown-item" href="{% url 'print_teachers' %}">Teacher</a>
+                  <a class="dropdown-item" href="{% url 'print_homeworks' %}">Homework</a>
+                </div>
+              </div>
+            </div>
+          </li>
+
+        </ul><!-- /.navbar-nav -->
+      </div><!-- /.container-fluid -->
+    </div><!-- /.navbar -->
+  </div><!-- /.collapse -->
+</header>

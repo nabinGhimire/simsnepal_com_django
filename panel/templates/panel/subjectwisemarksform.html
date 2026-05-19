@@ -1,0 +1,119 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} Admin Dashboard - Subject-wise Marks - SIMSNepal.com {% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">Marks Entry: {{ subject }}</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/panel/subjectwise/">Subject-wise Marks</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ subject }}</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="row row-cards">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="row g-2 align-items-center w-100">
+            <div class="col">
+              <h3 class="card-title">{{ school.name|upper }} - {{ term_exam.term_name|upper }}</h3>
+              <div class="text-muted small">{{ school.location }}</div>
+            </div>
+            <div class="col-auto">
+              <div class="badge bg-blue-lt">Grade: {{ grade }}</div>
+              <div class="badge bg-green-lt">Section: {{ section.section }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <form action="/panel/subjectwisemarksentry/" method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="grade" id="grade" value="{{ grade.id }}">
+          <input type="hidden" name="section" id="section" value="{{ section.id }}">
+          <input type="hidden" name="subject" id="subject" value="{{ subject.id }}">
+          <input type="hidden" name="term" id="term" value="{{ term_exam.id }}">
+          <input type="hidden" name="submittedhere" id="submittedhere" value="1">
+          <input type="hidden" name="order" id="order" value="{{ order }}">
+          
+          <div class="table-responsive">
+            {% if praMarks == True %}
+              <input type="hidden" name="pracMarks" id="pracMarks" value="1">
+              <table class="table table-vcenter card-table table-striped">
+                <thead>
+                  <tr>
+                    <th class="w-1">Reg. No</th>
+                    <th>Name</th>
+                    <th class="w-1">Roll No</th>
+                    <th class="text-center">Theory (Max: {{ fullmark.th_fm }})</th>
+                    <th class="text-center">Practical (Max: {{ fullmark.pr_fm }})</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for key, value in new_desc.items %}
+                    <tr>
+                      <td class="font-weight-bold">{{ key }}</td>
+                      <td>{{ value.name }}</td>
+                      <td>{{ value.roll_no }}</td>
+                      <td class="text-center">
+                        <input type="number" id="{{ key}}_th" name="{{ key}}_th" min="0" max="{{ fullmark.th_fm }}" value="{% if value.th_mo > 0 %}{{ value.th_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                      <td class="text-center">
+                        <input type="number" id="{{ key}}_pr" name="{{ key}}_pr" min="0" max="{{ fullmark.pr_fm }}" value="{% if value.pr_mo > 0 %}{{ value.pr_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% else %}
+              <input type="hidden" name="pracMarks" id="pracMarks" value="0">
+              <table class="table table-vcenter card-table table-striped">
+                <thead>
+                  <tr>
+                    <th class="w-1">Reg. No</th>
+                    <th>Name</th>
+                    <th class="w-1">Roll No</th>
+                    <th class="text-center">Theory (Max: {{ fullmark.th_fm }})</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for key, value in new_desc.items %}
+                    <tr>
+                      <td class="font-weight-bold">{{ key }}</td>
+                      <td>{{ value.name }}</td>
+                      <td>{{ value.roll_no }}</td>
+                      <td class="text-center">
+                        <input type="number" id="{{ key}}_th" name="{{ key}}_th" min="0" max="{{ fullmark.th_fm }}" value="{% if value.th_mo > 0 %}{{ value.th_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% endif %}
+          </div>
+          <div class="card-footer text-end">
+            <button type="submit" name="submit" class="btn btn-success btn-pill px-4">
+              <i class="ti ti-device-floppy me-2"></i> Submit Marks
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

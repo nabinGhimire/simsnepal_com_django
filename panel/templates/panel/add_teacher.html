@@ -1,0 +1,98 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} Admin Dashboard - Add Teacher - SIMSNepal.com {% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">Teacher Management</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Add Teacher</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="row row-cards justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Create Teacher's Login Account</h3>
+        </div>
+        <div class="card-body">
+          {% if message %}
+          <div class="alert alert-info alert-dismissible" role="alert">
+            <div class="d-flex">
+              <div><i class="ti ti-info-circle icon alert-icon"></i></div>
+              <div>{{ message }}</div>
+            </div>
+            <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+          </div>
+          {% endif %}
+          
+          <form action="" method="POST" class="form-horizontal">
+            {% csrf_token %}
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">First Name</label>
+              <div class="col">
+                <input type="text" class="form-control" name="first_name" id="first_name" placeholder="First Name" required>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Last Name</label>
+              <div class="col">
+                <input type="text" class="form-control" name="last_name" id="last_name" placeholder="Last Name" required>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Mobile Number</label>
+              <div class="col">
+                <input type="number" class="form-control" name="username" id="username" placeholder="Mobile number will be the username" required>
+                <small class="form-hint">This will be used as the login username.</small>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Email</label>
+              <div class="col">
+                <input type="email" class="form-control" name="email" id="email" value="default@hamro.com">
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Password</label>
+              <div class="col">
+                <input type="password" class="form-control" name="password" id="password" placeholder="Account password" required>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <div class="col-3"></div>
+              <div class="col">
+                <label class="form-check">
+                  <input class="form-check-input" type="checkbox" name="is_admin" value="admin">
+                  <span class="form-check-label">Grant Admin Privileges</span>
+                </label>
+              </div>
+            </div>
+            
+            <div class="form-footer text-end">
+              <button type="submit" name="submit" class="btn btn-primary btn-pill px-4">
+                <i class="ti ti-user-plus me-2"></i> Create Teacher Account
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

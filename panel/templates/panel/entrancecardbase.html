@@ -1,0 +1,88 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %}Print Entrance Card - Hamro SIMS{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Print</div>
+        <h2 class="page-title">Entrance Card</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <form action="" method="POST">
+          {% csrf_token %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="text-secondary small">School</div>
+              <div class="fw-semibold">{{ school.name }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-secondary small">Location</div>
+              <div class="fw-semibold">{{ school.location }}</div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="term">Exam Term</label>
+              <select name="term" id="term" class="form-select">
+                {% for exam_type in exam_types %}
+                  <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Year</label>
+              <div class="form-control-plaintext">{{ year }}</div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Type</label>
+              <div class="d-flex flex-wrap gap-3">
+                <label class="form-check">
+                  <input class="form-check-input" type="radio" name="whattype" value="detail" checked>
+                  <span class="form-check-label">Detail</span>
+                </label>
+                <label class="form-check">
+                  <input class="form-check-input" type="radio" name="whattype" value="blank">
+                  <span class="form-check-label">Blank</span>
+                </label>
+                <label class="form-check">
+                  <input class="form-check-input" type="radio" name="whattype" value="detail_image">
+                  <span class="form-check-label">Detail With Image</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="ti ti-printer me-1"></i> Print Entrance Card
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

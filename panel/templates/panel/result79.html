@@ -1,0 +1,294 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Result</title>
+    <!-- <link href='https://fonts.googleapis.com/css?family=Poppins' rel='stylesheet'> -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+    <!-- <link rel="stylesheet" type="text/css" href="{% static "v2/css/ledger.css" %}"> -->
+    <link rel="stylesheet" type="text/css" href="https://hamroresult.com/static/css/printledger.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
+    <!-- <meta http-equiv="refresh" content="1" > -->
+
+    <link rel="stylesheet" type="text/css" media="print" href="https://hamroresult.com/static/css/printledger.css">
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css"
+        integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<style>
+        body {
+            background-color: #eee;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .trans2 {
+            transform: rotate(270deg);
+            transform-origin: 60% 30%;
+        }
+
+        .gradetab {
+            margin: 2mm 5mm 5mm 5mm;
+            width: 192mm;
+        }
+
+        .footer {
+            width: 192mm;
+            margin: 20mm 5mm 0mm 5mm;
+            text-align: center;
+        }
+        footer td{
+            border: 0;x
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+
+        <div class="row">
+            <div class="col-md-12 col-lg-8 mx-auto">
+                <div class="holder" style="background-color: #fff;">
+                    <section class="header">
+                        <div class="main-header">
+                            <div class="imageholder">
+                                {# <img src="{% static " v2/img/logo/samata/logo.jpg" %}" class="logo"> #}
+                            </div>
+                            <div class="info">
+                                <p class="motto">Education for all. </p>
+                                <h1 class="school">{{ student.student.school.name }}</h1>
+                                <h3 class="term">{{ student.student.school.location }}</h3>
+                           <!--      <h1 class="school">SAMATA EXAMINATION BOARD</h1>
+                                <h3 class="term">KATHMANDU, NEPAL</h3> -->
+                                <!-- <p class="address">HALGADA, ITAHARI</p> -->
+                                <!-- <p class="telephone"><i class="fas fa-phone-square"></i> {{ student.school.phone }} <i -->
+                                       <!-- <p><i class="fas fa-envelope-square"></i> </p> -->
+                                        <!-- <h4 style="margin-bottom: 0.5em;">exam@samataeast.com</h4> -->
+                                <!-- <p class="telephone"><i class="fas fa-phone-square"></i> +977 985 124 6630,  <i class="fas fa-envelope-square"></i> crystalshore.ktm@gmail.com</p> -->
+                                <h3 class="address">{{ term.term_name|upper}} - {{year}}</h3>
+                                <h3 class="report-type">GRADE SHEET</h3>
+                            </div>
+                        </div>
+                        <div class="stdname">
+                            <table>
+                                <tr>
+                                    <td class="nobr">Student Name: <span class="muchb">{{ student.student|upper }}</span>
+                                    </td>
+                                    <td class="nobl">Symbol No: <span class="muchb">{{ student.student.reg_no }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="nobr">Grade: <span class="muchb">{{ student.grade }}</span></td>
+                                    <td class="nobl">Section: <span class="muchb">{{ student.section }}</span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </section>
+                    <section class="marks">
+
+      <div class="marks">
+        <table border="1">
+          <tr>
+            <th class="first subjects" rowspan="2">S.N</th>
+            <th class="first subjects" rowspan="2">SUBJECTS</th>
+            <!-- <th rowspan="2">CREDIT HOUR</th> -->
+            <th class="first subjects" colspan="{{ no_of_terms_marks_count }}">OBTAINED GRADE</th>
+            <th class="first subjects" rowspan="2">GRADE</th>
+            <th class="first subjects" rowspan="2">GRADE POINT</th>
+          </tr>
+          <tr>
+
+              {% for x in no_of_terms_range %}
+                <th>TH</th>
+                <th>PR</th>
+              {% endfor %}
+          </tr>
+          {% for key, value in mo_dict.items %}
+          <tr style="text-align: center">
+            <td class="subjects">{{key}}</td>
+            <td class="subject" style="text-align: left">
+              {{ value.subject_name|upper }}
+            </td>
+            <!-- <td>{{ value.theory_fm }}</td> -->
+            <td>{{ value.theory_mo }}</td>
+            <td>{{ value.prac_mo }}</td>
+            <td>{{ value.theory_mo }}</td>
+            <td>{{ value.gradepoint }}</td>
+          </tr>
+          {% endfor %} {% for i in "x" %}
+
+
+          {% for sub in grade_subjects %}
+            <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ sub }}</td>
+                {% for term in term_list %}
+                    <td><span id="{{ student.student.reg_no }}_{{ sub.id }}_{{ term }}_th_grade"></span></td>
+                    <td><span id="{{ student.student.reg_no }}_{{ sub.id }}_{{ term }}_pr_grade"></span></td>
+                {% endfor %}
+
+            <td><span id="{{ student.student.reg_no }}_{{ sub.id }}_total_grade"></span></td>
+            <td><span id="{{ student.student.reg_no }}_{{ sub.id }}_total_grade_point"></span></td>
+          </tr>
+          {% endfor %}
+{#          <tr>#}
+{#            <td>&nbsp;</td>#}
+{#            <td>&nbsp;</td>#}
+{#            <td>&nbsp;</td>#}
+{#            <td>&nbsp;</td>#}
+{#            <td>&nbsp;</td>#}
+{#            <td>&nbsp;</td>#}
+{#          </tr>#}
+          {% endfor %}
+          <tr>
+            <th
+              class="nob"
+              colspan="{{ gpa_colspan }}"
+              style="text-align: right; padding-right: 5px"
+            >
+              GRADE POINT AVERAGE (GPA)
+            </th>
+{#            <th>{{ cgpa }}</th>#}
+            <th><span id="{{ student.student.reg_no }}_gpa"></span></th>
+            <!-- <th colspan="2">{{ total.pm_total }}</th>
+  					<th colspan="2">{{ total.mo_total }}</th> -->
+          </tr>
+        </table>
+      </div>
+      <section class="gradetab">
+                        <div class="grading">
+                            <div>
+                                <table>
+                                    <tr>
+                                        <th colspan="6" class="gs-cent">GRADING SYSTEM</th>
+                                    </tr>
+                                    <tr class="mgg">
+                                        <th class="bigg">Mark</th>
+                                        <th>Grade</th>
+                                        <th class="bleft">GPA</th>
+                                        <th class="bigg">Mark</th>
+                                        <th>Grade</th>
+                                        <th>GPA</th>
+                                    </tr>
+                                    <tr>
+                                        <td class="bigg">90-100</td>
+                                        <td>A+</td>
+                                        <td>4.0</td>
+                                        <td class="bigg">50-60</td>
+                                        <td>C+</td>
+                                        <td>2.4</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="bigg">80-90</td>
+                                        <td>A</td>
+                                        <td>3.6</td>
+                                        <td class="bigg">40-50</td>
+                                        <td>C</td>
+                                        <td>2.0</td>
+                                    <tr>
+                                        <td class="bigg">70-80</td>
+                                        <td>B+</td>
+                                        <td>3.2</td>
+                                        <td class="bigg">35-40</td>
+                                        <td>D</td>
+                                        <td>1.6</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="bigg">60-70</td>
+                                        <td>B</td>
+                                        <td>2.8</td>
+                                        <td class="bigg">0-35</td>
+                                        <td>NA</td>
+                                        <td>0</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="aeor">
+                            <div class="aeo">
+                                <div class="grading1">
+                                    <table>
+                                        <tr>
+                                            <th colspan="3" class="gs-cent"> ACRONYM USED</th>
+                                        </tr>
+                                        <tr class="mgg">
+                                            <th>CODE</th>
+                                            <th>MEANING</th>
+                                        </tr>
+                                        <tr>
+                                            <td>TH</td>
+                                            <td>Theory</td>
+                                        </tr>
+                                        <tr>
+                                            <td>PR</td>
+                                            <td>Practical</td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!-- <div class="outcomes">
+                                    <table>
+                                        <tr>
+                                            <th colspan="3" class="gs-cent">OUTCOMES</th>
+                                        </tr>
+                                        <tr>
+                                            <td class="nobrb"> Grade</td>
+                                            <td>{{ remarks.0 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="nobrb"> GP Average</td>
+                                            <td>{{ cgpa }}</td>
+                                        </tr> -->
+
+                                        <!--                                    <tr>-->
+                                        <!--                                        <td class="nobrb">Position</td>-->
+                                        <!--                                        <td>{{ value.rank}} / {{value.totalstudent}}</td>-->
+                                        <!--                                    </tr>-->
+                                        <!-- <tr>
+                                            <td class="nobrb">Attendance</td>
+                                            <td>{{value.attendance.no_of_present_days }} /
+                                                {{ value.attendance.no_of_school_days }}</td>
+                                        </tr> -->
+                                    <!-- </table>
+                                </div> -->
+                            </div> 
+
+
+                    </section>
+                    <section>
+                        <div class="gradetab">
+                            <div class="r" style="margin-top: 3mm;">
+                                <div class="remarks">
+                                    REMARKS: {{ remarks.1|upper }}
+                                </div>
+                            </div>
+                        </div>
+
+                    </section>
+                    <br>
+                    <footer>
+                        <table class="footer">
+                            <tr>
+                                <td class="nobr">_______________</td>
+                                <td>_____________________</td>
+                                <td class="nobl">_____________</td>
+                            </tr>
+                            <tr>
+                                <td class="nobr">PRINCIPAL</td>
+                                <td>EXAM. CO-ORDINATOR</td>
+                                <td class="nobl">SCHOOL SEAL</td>
+                            </tr>
+                        </table>
+                    </footer>
+                    <script>
+                         $(document).ready(function() {
+                             {#var obj = ;#}
+                             var obj = JSON.parse('{{ mo_dict|escapejs }}');
+                             Object.keys(obj).forEach(function(k){
+                                $("#"+k).text(obj[k]);
+                            });
+                        });
+                    </script>
+
+  </body>
+</html>

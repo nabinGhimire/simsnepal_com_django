@@ -1,0 +1,156 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %}Result Management - SIMSNepal.com{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">Result Management</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Result Management</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Result Type</h3>
+      </div>
+      <div class="card-body">
+        <p class="text-secondary">
+          Choose your result format for the session. Once selected, it should remain the same for the year.
+        </p>
+        {% if schoolresulttype %}
+          <div class="alert alert-info">
+            You have selected
+            <strong>{% if sr.resulttype == 1 %}Percentage{% else %}Grading{% endif %}</strong>
+            system.
+          </div>
+        {% else %}
+          <form action="" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="submittype" value="resulttype">
+            <div class="mb-3">
+              <label class="form-label">Result Format</label>
+              <select class="form-select" name="percentorgrade">
+                <option value="percent">Percentage</option>
+                <option value="grade">Grade</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Result Publication</h3>
+      </div>
+      <div class="card-body">
+        <form action="" method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="submittype" value="termandgrades">
+
+          <div class="mb-3">
+            <label class="form-label">Publish Result</label>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="publishresultswitch" name="publishresultswitch" {% if live_result_status %}checked{% endif %}>
+              <label class="form-check-label" for="publishresultswitch">Enable/Disable</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Exam Term</label>
+            <select class="form-select" id="examtype" name="examtype">
+              {% for exam in exam_types %}
+                <option value="{{ exam.id }}">{{ exam.term_name|upper }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Calculation Type</label>
+            <select class="form-select" name="calculation_type">
+              <option value="legacy" {% if live_calc_type == "legacy" %}selected{% endif %}>Legacy</option>
+              <option value="weighted" {% if live_calc_type == "weighted" %}selected{% endif %}>Weighted</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Publish Grades</label>
+            <div class="row g-2">
+              {% for grade in grades %}
+                <div class="col-6">
+                  <label class="form-check">
+                    <input class="form-check-input" type="checkbox" name="checks[]" value="{{ grade.id }}" {% if grade.id in gradelist %}checked{% endif %}>
+                    <span class="form-check-label">{{ grade }}</span>
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Publish</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if resultmanagement %}
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Result Calculation (Legacy)</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-vcenter">
+            <thead>
+              <tr>
+                <th>Term</th>
+                <th>Calculation</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for value in rm %}
+                <tr>
+                  <td>{{ value.school_term.term_name }}</td>
+                  <td><code>{{ value.term_calculation }}</code></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-secondary mt-2">
+          Use weighted calculation from the new weighted setup page if you need TH/PR mixing.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

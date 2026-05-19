@@ -1,0 +1,127 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+
+
+{% block title %} Admin Dashboard - Edit Full Marks - SIMSNepal.com {% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">Edit Full Marks</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/panel/fullmarks/">Full Marks</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit Marks</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="row row-cards">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Grade {{ grade|upper }} - {{ exam_term.term_name|upper }}</h3>
+        </div>
+        <div class="card-body border-bottom py-3">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="form-label">School</div>
+              <div class="form-control-plaintext font-weight-bold">{{ school.name|upper }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-label">Location</div>
+              <div class="form-control-plaintext font-weight-bold">{{ school.location|upper }}</div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-label">Academic Year</div>
+              <div class="form-control-plaintext font-weight-bold">{{ edusession }}</div>
+            </div>
+          </div>
+        </div>
+        <form action="" method="POST">
+          {% csrf_token %}
+          <input type="hidden" id="this_term" name="this_term" value="{{ term.id }}">
+          <input type="hidden" id="this_grade" name="this_grade" value="{{ this_grade }}">
+          <input type="hidden" id="this_year" name="this_year" value="2076">
+          
+          <div class="table-responsive">
+            <table class="table table-vcenter card-table table-striped">
+              <thead>
+                <tr>
+                  <th rowspan="2">Subject</th>
+                  <th colspan="2" class="text-center">Full Marks</th>
+                  <th colspan="2" class="text-center">Pass Marks</th>
+                </tr>
+                <tr>
+                  <th class="text-center">Theory</th>
+                  <th class="text-center">Prac.</th>
+                  <th class="text-center">Theory</th>
+                  <th class="text-center">Prac.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if gs != True %}
+                  {% for subject in subjects %}
+                    <tr>
+                      <td class="font-weight-medium">{{ subject.subject }}</td>
+                      <td class="text-center">
+                        <input type="number" name="{{ subject.id }}_th_full" value="0" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                      <td class="text-center">
+                        <input type="number" name="{{ subject.id }}_pr_full" value="0" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                      <td class="text-center">
+                        <input type="number" name="{{ subject.id }}_th_pass" value="0" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                      <td class="text-center">
+                        <input type="number" name="{{ subject.id }}_pr_pass" value="0" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  {% for subject in subjects %}
+                    <tr>
+                      <td class="font-weight-medium">{{ subject.subject.subject }}</td>
+                      <td class="text-center">
+                        <input type="number" name="{{ subject.subject.id }}_th_full" value="{{ subject.th_fm }}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                      <td class="text-center">
+                        <input type="number" name="{{ subject.subject.id }}_pr_full" value="{{ subject.pr_fm }}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                      <td class="text-center">
+                        <input type="number" name="{{ subject.subject.id }}_th_pass" value="{{ subject.th_pm }}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                      <td class="text-center">
+                        <input type="number" name="{{ subject.subject.id }}_pr_pass" value="{{ subject.pr_pm }}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer text-end">
+            {% if gs == True %}
+              <button type="submit" name="submit" class="btn btn-success btn-pill px-4">
+                <i class="ti ti-check me-2"></i> Update Marks
+              </button>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

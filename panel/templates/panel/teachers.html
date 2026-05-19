@@ -1,0 +1,72 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} List Guardian - Hamro Panel - SIMSNepal.com {% endblock %}
+
+{% block navbar %}
+    {% if branch_user.admin_status %}
+        {% include 'snippets/nav_admin.html' %}
+    {% else %}
+        {% include 'snippets/nav_teacher.html' %}
+    {% endif %}
+
+{% endblock navbar %}
+{% block content %}
+
+<!-- Page-Title -->
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="btn-group pull-right">
+                <ol class="breadcrumb hide-phone p-0 m-0">
+                    <li>
+                        <a href="#">Hamro Panel</a>
+                    </li>
+                    <li>
+                        <a href="#"> Print </a>
+                    </li>
+                    <li class="active">
+                        Teachers
+                    </li>
+                </ol>
+            </div>
+            <h4 class="page-title">List of Teachers</h4>
+        </div>
+    </div>
+</div>
+<!-- end -->
+<div class="row">
+    <div class="col-md-10">
+        <!-- <div class="card"> -->
+            <div class="card-header d-flex align-items-center form-group" style="border: 0px solid #ccc; border-radius: 5px; padding: 10;">
+                <div class="row mt-5">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>SN</th>
+                            <th>Full Name</th>
+                            <th>Mobile</th>
+                            <th>Email</th>
+                            <th>Action</th>
+                        </tr>
+                        {% for teacher in teachers %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td><a href="/panel/teacher/{{ teacher.id }}/">{{ teacher.teacher.first_name }} {{ teacher.teacher.last_name }}</a> </td>
+                                <td>{{ teacher.teacher.username }}</td>
+                                <td>{{ teacher.teacher.email }}</td>
+                                <td><a href="/panel/edit/teacher/{{ teacher.teacher.id }}/">Edit</a></td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                {{ subject_access }}
+            </div>
+    </div>
+</div>
+<!-- end row -->
+{% endblock %}
+
+
+
+
+
+
+

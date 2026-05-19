@@ -1,0 +1,261 @@
+{% extends 'panel/panel-main.html' %}
+{% block content %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">
+          <i class="ti ti-user-edit me-2"></i> Edit Student Information
+        </h2>
+        <div class="text-muted mt-1">Update personal and family details for registration #{{ student.reg_no }}</div>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit Student</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container-xl">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10 col-xl-8">
+        
+        <!-- Alerts -->
+        {% if message %}
+          {% if success %}
+            <div class="alert alert-success alert-dismissible" role="alert">
+              <div class="d-flex">
+                <div>
+                  <i class="ti ti-check icon alert-icon"></i>
+                </div>
+                <div>{{ message }}</div>
+              </div>
+              <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+            </div>
+          {% else %}
+            <div class="alert alert-warning alert-dismissible" role="alert">
+              <div class="d-flex">
+                <div>
+                  <i class="ti ti-alert-circle icon alert-icon"></i>
+                </div>
+                <div>{{ message }}</div>
+              </div>
+              <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+            </div>
+          {% endif %}
+        {% endif %}
+
+        <form action="/panel/edit/student/{{ student.reg_no }}/" method="POST" class="card shadow-sm">
+          {% csrf_token %}
+          <input type="hidden" name="redurl" value="{{ request.get_full_path }}">
+          <input type="hidden" name="gradelevel" value="{{ gradelevel }}">
+
+          <div class="card-header bg-white">
+            <h3 class="card-title">Student Profile Updates</h3>
+          </div>
+
+          <div class="card-body">
+            
+            <!-- Student Information Section -->
+            <fieldset class="form-fieldset">
+              <legend>
+                <div class="d-flex align-items-center">
+                  <span class="bg-blue text-white avatar avatar-sm me-2"><i class="ti ti-info-circle"></i></span>
+                  <span class="fs-4">Student Information</span>
+                </div>
+              </legend>
+              
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Registration Number</label>
+                  <input type="number" class="form-control" disabled value="{{ student.reg_no }}">
+                  <small class="form-hint">Cannot be changed</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label required">Full Name</label>
+                  <input type="text" class="form-control" name="studentname" value="{{ student.name }}" required>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label required">Gender</label>
+                  <div class="form-selectgroup">
+                    <label class="form-selectgroup-item">
+                      <input type="radio" name="gender" id="genderM" value="1" class="form-selectgroup-input" {% if student.gender %} checked {% endif %} required>
+                      <span class="form-selectgroup-label">
+                        <i class="ti ti-gender-male me-1"></i> Male
+                      </span>
+                    </label>
+                    <label class="form-selectgroup-item">
+                      <input type="radio" name="gender" id="genderF" value="0" class="form-selectgroup-input" {% if not student.gender %} checked {% endif %}>
+                      <span class="form-selectgroup-label">
+                        <i class="ti ti-gender-female me-1"></i> Female
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Date of Birth</label>
+                  <div class="input-icon">
+                    <span class="input-icon-addon">
+                      <i class="ti ti-calendar"></i>
+                    </span>
+                    <input type="text" class="form-control" name="dateofbirth" {% if student.dob %} value="{{ student.dob }}" {% else %} placeholder="YYYY/MM/DD" {% endif %}>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Temporary Address</label>
+                  <input type="text" class="form-control" name="tempaddr" {% if student.temporary_address %} value="{{ student.temporary_address }}" {% else %} placeholder="Enter temporary address" {% endif %}>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Permanent Address</label>
+                  <input type="text" class="form-control" name="peraddr" {% if student.permanent_address %} value="{{ student.permanent_address }}" {% else %} placeholder="Enter permanent address" {% endif %}>
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Father's Information Section -->
+            <fieldset class="form-fieldset mt-4">
+              <legend>
+                <div class="d-flex align-items-center">
+                  <span class="bg-azure text-white avatar avatar-sm me-2"><i class="ti ti-man"></i></span>
+                  <span class="fs-4">Father's Information</span>
+                </div>
+              </legend>
+              
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" class="form-control" name="fathersname" {% if student.fathers_name %} value="{{ student.fathers_name }}" {% else %} placeholder="Enter father's name" {% endif %}>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Phone Number</label>
+                  <div class="input-icon">
+                    <span class="input-icon-addon">
+                      <i class="ti ti-phone"></i>
+                    </span>
+                    <input type="number" class="form-control" name="fathersphone" {% if student.fathers_phone %} value="{{ student.fathers_phone }}" {% else %} placeholder="Enter phone number" {% endif %}>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Email Address</label>
+                  <div class="input-icon">
+                    <span class="input-icon-addon">
+                      <i class="ti ti-mail"></i>
+                    </span>
+                    <input type="email" class="form-control" name="fathersemail" {% if student.fathers_email %} value="{{ student.fathers_email }}" {% else %} placeholder="Enter email address" {% endif %}>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Mother's Information Section -->
+            <fieldset class="form-fieldset mt-4">
+              <legend>
+                <div class="d-flex align-items-center">
+                  <span class="bg-pink text-white avatar avatar-sm me-2"><i class="ti ti-woman"></i></span>
+                  <span class="fs-4">Mother's Information</span>
+                </div>
+              </legend>
+              
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" class="form-control" name="mothersname" {% if student.mothers_name %} value="{{ student.mothers_name }}" {% else %} placeholder="Enter mother's name" {% endif %}>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Phone Number</label>
+                  <div class="input-icon">
+                    <span class="input-icon-addon">
+                      <i class="ti ti-phone"></i>
+                    </span>
+                    <input type="number" class="form-control" name="mothersphone" {% if student.mothers_phone %} value="{{ student.mothers_phone }}" {% else %} placeholder="Enter phone number" {% endif %}>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Email Address</label>
+                  <div class="input-icon">
+                    <span class="input-icon-addon">
+                      <i class="ti ti-mail"></i>
+                    </span>
+                    <input type="email" class="form-control" name="mothersemail" {% if student.mothers_email %} value="{{ student.mothers_email }}" {% else %} placeholder="Enter email address" {% endif %}>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Guardian's Information Section -->
+            <fieldset class="form-fieldset mt-4 mb-0">
+              <legend>
+                <div class="d-flex align-items-center">
+                  <span class="bg-teal text-white avatar avatar-sm me-2"><i class="ti ti-shield-check"></i></span>
+                  <span class="fs-4">Guardian's Information</span>
+                </div>
+              </legend>
+              
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" class="form-control" name="guardiansname" {% if student.guardian_name %} value="{{ student.guardian_name }}" {% else %} placeholder="Enter guardian's name" {% endif %}>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Phone Number</label>
+                  <div class="input-icon">
+                    <span class="input-icon-addon">
+                      <i class="ti ti-phone"></i>
+                    </span>
+                    <input type="number" class="form-control" name="guardiansphone" {% if student.guardian_phone %} value="{{ student.guardian_phone }}" {% else %} placeholder="Enter phone number" {% endif %}>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Email Address</label>
+                  <div class="input-icon">
+                    <span class="input-icon-addon">
+                      <i class="ti ti-mail"></i>
+                    </span>
+                    <input type="email" class="form-control" name="guardiansemail" {% if student.guardian_email %} value="{{ student.guardian_email }}" {% else %} placeholder="Enter email address" {% endif %}>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+            
+          </div>
+          
+          <!-- Form Actions -->
+          <div class="card-footer bg-transparent mt-auto">
+            <div class="d-flex justify-content-end align-items-center gap-2">
+              <a href="javascript:history.back()" class="btn btn-light">
+                Cancel
+              </a>
+              <button type="submit" class="btn btn-primary btn-pill">
+                <i class="ti ti-device-floppy me-2"></i> Save Changes
+              </button>
+            </div>
+          </div>
+          
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

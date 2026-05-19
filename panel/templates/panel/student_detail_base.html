@@ -1,0 +1,123 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %}Print Student Details - SIMSNepal.com{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Print</div>
+        <h2 class="page-title">Student Detailed Reports</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Filter Students</h3>
+      </div>
+      <div class="card-body">
+        <form action="{% url 'student_detail' %}" method="POST">
+          {% csrf_token %}
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label" for="grade">Select Grade</label>
+              <select name="grade" id="grade" class="form-select" onchange="populate(this.id,'section')" required>
+                <option value="" disabled selected>Choose Grade...</option>
+                {% for grade in grades %}
+                  <option value="{{ grade.id }}">{{ grade.grade_name|upper }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="section">Select Section</label>
+              <select name="section" id="section" class="form-select" required>
+                <option value="" disabled selected>Choose Section...</option>
+              </select>
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label">Report Layout</label>
+              <div class="form-selectgroup form-selectgroup-boxes d-flex flex-column">
+                <label class="form-selectgroup-item flex-fill">
+                  <input type="radio" name="info_type" value="current" class="form-selectgroup-input" checked>
+                  <div class="form-selectgroup-label d-flex align-items-center p-3">
+                    <div class="me-3">
+                      <span class="form-selectgroup-check"></span>
+                    </div>
+                    <div>
+                      <span class="d-block mb-1"><strong>Standard Layout</strong></span>
+                      <span class="text-secondary small">Individual cards with box-style parent information.</span>
+                    </div>
+                  </div>
+                </label>
+                <label class="form-selectgroup-item flex-fill">
+                  <input type="radio" name="info_type" value="wide" class="form-selectgroup-input">
+                  <div class="form-selectgroup-label d-flex align-items-center p-3">
+                    <div class="me-3">
+                      <span class="form-selectgroup-check"></span>
+                    </div>
+                    <div>
+                      <span class="d-block mb-1"><strong>Wide Layout (Every Detail)</strong></span>
+                      <span class="text-secondary small">All information in a single row per student. Best for landscape printing.</span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100 py-2">
+              <i class="ti ti-printer me-1"></i> Generate Report
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+  var section_list_obj = JSON.parse('{{ section_list|escapejs }}');
+
+  function populate(s1, s2) {
+    var s1El = document.getElementById(s1);
+    var s2El = document.getElementById(s2);
+    if (!s2El || !s1El) return;
+    s2El.innerHTML = "";
+
+    var sl = section_list_obj[s1El.value] || {};
+    var optionArray = ["|Select Section"];
+    for (var p in sl) {
+      optionArray.push("" + p + "|" + sl[p] + "");
+    }
+
+    for (var i = 0; i < optionArray.length; i++) {
+      var pair = optionArray[i].split("|");
+      var newOption = document.createElement("option");
+      newOption.value = pair[0];
+      newOption.innerHTML = pair[1];
+      if(i === 0) newOption.disabled = true;
+      s2El.options.add(newOption);
+    }
+  }
+</script>
+{% endblock scripts %}

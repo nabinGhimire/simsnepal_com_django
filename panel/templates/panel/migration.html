@@ -1,0 +1,186 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} Home - Hamro Panel | Hamro.com {% endblock title %} 
+{% load static %} 
+{% block navbar %} 
+  {% if branchuser.admin_status %} 
+    {% include 'snippets/nav_admin.html' %} 
+  {% else %} 
+    {% include 'snippets/nav_teacher.html' %} 
+  {% endif %} 
+{% endblock navbar %} 
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Administration</div>
+        <h2 class="page-title">Session Migration</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row row-cards">
+
+  <!-- Alert -->
+  <div class="col-12">
+    <div class="alert alert-info alert-important" role="alert">
+      <div class="d-flex">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path>
+            <path d="M12 9h.01"></path>
+            <path d="M11 12h1v4h1"></path>
+          </svg>
+        </div>
+        <div>
+          <strong>Have you already migrated students correctly?</strong><br/>
+          Check out the finalized student rolls for the upcoming session here: 
+          <a href="/panel/2083" class="alert-link text-decoration-underline" target="_blank">View 2083 Final Roll</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grade Selector Card -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Step 1: Select Grade to Migrate From</h3>
+      </div>
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-2">
+          {% for grade in grades %} 
+            <a href="?grade={{grade.id}}" class="btn {% if grade.id|stringformat:'s' == this_grade %}btn-primary{% else %}btn-outline-primary{% endif %}">
+              {{ grade|upper }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% if students %}
+  <!-- Migration Form Card -->
+  <div class="col-12">
+    <form method="POST" class="card">
+      {% csrf_token %}
+      <input type="hidden" name="grade" value="{{ this_grade }}">
+      
+      <div class="card-header">
+        <h3 class="card-title">Step 2: Assign Destination for {{ gradelevel.grade_name|upper }}</h3>
+      </div>
+      
+      <div class="card-body border-bottom py-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label required">Transfer To Target Grade</label>
+            <select name="new_grade" id="grade" onchange="populate(this.id,'section')" class="form-select" required>
+              <option value="" selected disabled>Select Destination Grade...</option>
+              {% for grade in grades %}
+                <option value="{{ grade.id }}">{{ grade|upper }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Destination Section (Optional)</label>
+            <select name="section" id="section" class="form-select"></select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="table-responsive">
+        <table class="table card-table table-vcenter text-nowrap datatable">
+          <thead>
+            <tr>
+              <th class="w-1">Reg. No</th>
+              <th>Student Name</th>
+              <th>Current Section</th>
+              <th class="w-25">New Roll No</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for student in students %}
+            <tr>
+              <td><span class="text-secondary">{{ student.student.reg_no }}</span></td>
+              <td><strong>{{ student.student.name }}</strong></td>
+              <td class="text-secondary">{{ student.section }}</td>
+              <td>
+                <input type="number" class="form-control" name="{{ student.student.reg_no }}" placeholder="Assign Roll No...">
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="card-footer text-end mt-0">
+        <button type="submit" class="btn btn-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-device-floppy" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2"></path>
+            <path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+            <path d="M14 4l0 4l-6 0l0 -4"></path>
+          </svg>
+          Execute Full Migration
+        </button>
+      </div>
+    </form>
+  </div>
+{% endif %}
+
+</div>
+
+<script type='text/javascript'>
+        var section_list = '{{ section_list }}'.replace(/&quot;/g,"\"");
+        var section_list_obj = JSON.parse(section_list);
+        var grade_count = Object.keys(section_list_obj).length;
+    
+        function populate(s1,s2){
+            var s1 = document.getElementById(s1);
+            var s2 = document.getElementById(s2);
+            s2.innerHTML = "";
+    
+            sl = section_list_obj[s1.value]
+            var optionArray = [];
+
+            for(var p in sl ){
+                optionArray.push(""+p+"|"+sl[p]+"");
+            }
+    
+            for(var option in optionArray){
+                var pair = optionArray[option].split("|");
+                var newOption = document.createElement("option");
+                newOption.value = pair[0];
+                newOption.innerHTML = pair[1];
+                s2.options.add(newOption);
+            }
+        }
+
+        function populate2(s1,s2){
+            var s1 = document.getElementById(s1);
+            var s2 = document.getElementById(s2);
+            s2.innerHTML = "";
+    
+            sl = section_list_obj[s1.value]
+            var optionArray = [];
+
+            optionArray.push("0|ALL SECTION");
+            for(var p in sl ){
+                optionArray.push(""+p+"|"+sl[p]+"");
+            }
+    
+            for(var option in optionArray){
+                var pair = optionArray[option].split("|");
+                var newOption = document.createElement("option");
+                newOption.value = pair[0];
+                newOption.innerHTML = pair[1];
+                s2.options.add(newOption);
+            }
+        }
+    </script>
+
+{% endblock content %}

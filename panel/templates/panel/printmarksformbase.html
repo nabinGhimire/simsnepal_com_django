@@ -1,0 +1,115 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %}Print Marks Input Form - SIMSNepal.com{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Print</div>
+        <h2 class="page-title">Marks Input Form</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <form action="" method="POST">
+          {% csrf_token %}
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="text-secondary small">School</div>
+              <div class="fw-semibold">{{ school.name }}</div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-secondary small">Location</div>
+              <div class="fw-semibold">{{ school.location }}</div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="term">Exam Term</label>
+              <select name="term" id="term" class="form-select" required>
+                <option value="" disabled selected>Select Term</option>
+                {% for exam_type in exam_types %}
+                  <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="grade">Grade</label>
+              <select name="grade" id="grade" class="form-select" onchange="populate(this.id,'section')" required>
+                <option value="" disabled selected>Select Grade</option>
+                {% for grade in grades %}
+                  <option value="{{ grade.id }}">{{ grade|upper }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="section">Section</label>
+              <select name="section" id="section" class="form-select" required>
+                <option value="" disabled selected>Select Section</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Academic Year</label>
+              <div class="form-control-plaintext">{{ this_year }}</div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" name="submit" class="btn btn-primary">
+              <i class="ti ti-printer me-1"></i> Generate Form
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script type="text/javascript">
+  var section_list_obj = JSON.parse('{{ section_list|escapejs }}');
+
+  function populate(s1, s2) {
+    var s1El = document.getElementById(s1);
+    var s2El = document.getElementById(s2);
+    if (!s2El || !s1El) return;
+    s2El.innerHTML = "";
+
+    var sl = section_list_obj[s1El.value] || {};
+    var optionArray = [];
+    for (var p in sl) {
+      optionArray.push("" + p + "|" + sl[p] + "");
+    }
+
+    for (var option in optionArray) {
+      var pair = optionArray[option].split("|");
+      var newOption = document.createElement("option");
+      newOption.value = pair[0];
+      newOption.innerHTML = pair[1];
+      s2El.options.add(newOption);
+    }
+  }
+</script>
+{% endblock scripts %}

@@ -1,0 +1,282 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <title>Consolidated {% if ledgertype == "2" %}Marks{% else %}Grade{% endif %} Ledger – {{ school.name }}</title>
+    <style>
+      body { margin: 0 auto; font-family: 'Times New Roman', Times, serif; }
+      .report-card { padding: 8px; }
+      .card-header { text-align: center; margin-bottom: 6px; }
+      .card-header h1 { font-size: 21px; margin: 0; font-weight: bold; }
+      .card-header h2 { font-size: 15px; margin: 3px 0; }
+      .marks table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 8px; }
+      .marks th, .marks td { border: 1px solid #333; text-align: center; padding: 2px 3px; vertical-align: middle; }
+      .student-name { text-align: left !important; padding-left: 4px !important; white-space: nowrap; }
+      .term-group   { background-color: #2c3e50; color: #fff; font-size: 7.5px; font-weight: bold; }
+      .sub-header   { background-color: #dce6f0; font-size: 7px; }
+      .th-pr-header { background-color: #edf2f7; font-size: 7px; }
+      .total-col { background:#e8f0fe !important; font-weight:bold; }
+      .fail-row td  { background-color: #fff3f3 !important; }
+      .failed-badge { color: #c0392b; font-size: 7px; font-weight: bold; }
+      .no-data      { padding: 20px; color: #888; font-style: italic; }
+      .fm-reference { margin-top: 15px; font-size: 0.75em; }
+      @media print {
+        @page { size: A4 landscape; margin: 5mm; }
+        .no-print { display: none; }
+        .fm-reference { display: none; }
+        .term-group { background-color: #2c3e50 !important; color: #fff !important;
+          -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .sub-header  { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .th-pr-header{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      }
+
+      /* Grade alignment styles */
+      .grade-wrapper {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+      }
+      .grade-l {
+        width: 12px;
+        text-align: right;
+      }
+      .grade-s {
+        width: 10px;
+        text-align: left;
+        font-size: 0.85em;
+        margin-left: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid no-print" style="margin-top: 10px; margin-bottom: 15px; text-align: center;">
+      <a href="/" class="btn btn-info btn-sm">Home</a>
+      <button onclick="window.print()" class="btn btn-primary btn-sm">Print Ledger</button>
+      <button onclick="exportToExcel()" class="btn btn-success btn-sm">Export to Excel</button>
+    </div>
+
+    <div class="report-card">
+      <div class="card-header">
+        <h1>{{ school.name }}</h1>
+        <div>{{ school.location }}</div>
+        <h2>{{ term.term_name|upper }} — {{ year }}</h2>
+        <div style="font-weight:bold;">
+          CONSOLIDATED {% if ledgertype == "2" %}RAW MARKS{% else %}GRADE{% endif %} LEDGER (MULTIPLE TERMS)
+        </div>
+        <div>GRADE: {{ grade }}{% if section %} &nbsp;|&nbsp; SECTION: {{ section }}{% endif %}</div>
+      </div>
+
+      <div class="marks">
+        {% if source_terms %}
+          <table id="ledgerTable">
+            <thead>
+              <tr>
+                <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}" style="width:22px;">S.N.</th>
+                <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}" style="width:40px;">ROLL NO.</th>
+                <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}" style="width:50px;">REG NO.</th>
+                <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}" style="min-width:90px;">STUDENT NAME</th>
+                <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}" style="width:50px;" class="term-group">TERM</th>
+                {% for fm in subject_fm_list %}
+                  <th colspan="{% if fm.pr_fm > 0 %}3{% else %}2{% endif %}" class="sub-header">{{ fm.name|upper }}</th>
+                {% endfor %}
+                <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}" class="total-col" style="width:35px;">TOTAL</th>
+                <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}" style="width:35px;">%</th>
+                <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}" style="width:30px;">GPA</th>
+                <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}" style="width:30px;">GRADE</th>
+                <th rowspan="{% if ledgertype == '2' %}3{% else %}2{% endif %}" style="width:22px;">RANK</th>
+              </tr>
+              <tr>
+                {% for fm in subject_fm_list %}
+                  <th class="th-pr-header">TH</th>
+                  {% if fm.pr_fm > 0 %}<th class="th-pr-header">PR</th>{% endif %}
+                  <th class="th-pr-header">GP</th>
+                {% endfor %}
+              </tr>
+              {% if ledgertype == "2" %}
+              <tr>
+                {% for fm in subject_fm_list %}
+                  <th class="sub-header" style="font-size:6px;">FM:{{ fm.th_fm|floatformat:0 }}</th>
+                  {% if fm.pr_fm > 0 %}<th class="sub-header" style="font-size:6px;">FM:{{ fm.pr_fm|floatformat:0 }}</th>{% endif %}
+                {% endfor %}
+              </tr>
+              {% endif %}
+            </thead>
+            <tbody>
+              {% for key, value in data.items %}
+                {# First row: SN, name, first term data #}
+                <tr class="marks-row{% if value.is_failed %} fail-row{% endif %}">
+                  <td rowspan="{{ value.consolidated_terms|length|add:'1' }}">{{ key }}</td>
+                  <td rowspan="{{ value.consolidated_terms|length|add:'1' }}">{{ value.roll_no|default:"-" }}</td>
+                  <td rowspan="{{ value.consolidated_terms|length|add:'1' }}">{{ value.reg_no }}</td>
+                  <td rowspan="{{ value.consolidated_terms|length|add:'1' }}" class="student-name">
+                    <strong>{{ value.name|upper }}</strong>
+                    {% if value.is_failed %}<br><span class="failed-badge">⚠ FAILED</span>{% endif %}
+                  </td>
+
+                  {% with first_term=value.consolidated_terms|first %}
+                  <td style="font-weight:bold; font-size:0.9em; background-color:#f8f9fa;">
+                    {{ first_term.term_short|upper }}
+                  </td>
+                  {% if ledgertype == "2" %}
+                    {% for sub_marks in first_term.subjects %}
+                      {% with outer_index=forloop.counter0 %}
+                        {% for fm in subject_fm_list %}
+                          {% if forloop.counter0 == outer_index %}
+                            <td {% if sub_marks.th_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}>{{ sub_marks.raw_th|default:"-" }}</td>
+                            {% if fm.pr_fm > 0 %}<td {% if sub_marks.pr_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}>{{ sub_marks.raw_pr|default:"-" }}</td>{% endif %}
+                            <td>{{ sub_marks.term_gp|floatformat:2 }}</td>
+                          {% endif %}
+                        {% endfor %}
+                      {% endwith %}
+                    {% endfor %}
+                  {% else %}
+                    {% for sub_marks in first_term.subjects %}
+                      {% with outer_index=forloop.counter0 %}
+                        {% for fm in subject_fm_list %}
+                          {% if forloop.counter0 == outer_index %}
+                            <td {% if sub_marks.th_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}><div class="grade-wrapper"><span class="grade-l">{{ sub_marks.th_grade|default:"-" }}</span><span class="grade-s">{{ sub_marks.th_grade_s }}</span></div></td>
+                            {% if fm.pr_fm > 0 %}<td {% if sub_marks.pr_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}><div class="grade-wrapper"><span class="grade-l">{{ sub_marks.pr_grade|default:"-" }}</span><span class="grade-s">{{ sub_marks.pr_grade_s }}</span></div></td>{% endif %}
+                            <td>{{ sub_marks.term_gp|floatformat:2 }}</td>
+                          {% endif %}
+                        {% endfor %}
+                      {% endwith %}
+                    {% endfor %}
+                  {% endif %}
+                  <td rowspan="{{ value.consolidated_terms|length|add:'1' }}" class="total-col">
+                    <strong>{% if value.is_failed %}—{% else %}{{ value.total_obt|floatformat }}{% endif %}</strong>
+                  </td>
+                  <td rowspan="{{ value.consolidated_terms|length|add:'1' }}">
+                    {% if value.is_failed %}-{% else %}{{ value.percent|floatformat }}{% endif %}
+                  </td>
+                  <td rowspan="{{ value.consolidated_terms|length|add:'1' }}" class="total-col">
+                    <strong>{% if value.is_failed %}-{% else %}{{ value.gp|floatformat }}{% endif %}</strong>
+                  </td>
+                  <td rowspan="{{ value.consolidated_terms|length|add:'1' }}">
+                    <strong>{% if value.is_failed %}-{% else %}<div class="grade-wrapper"><span class="grade-l">{{ value.gpa_grade_l }}</span><span class="grade-s">{{ value.gpa_grade_s }}</span></div>{% endif %}</strong>
+                  </td>
+                  <td rowspan="{{ value.consolidated_terms|length|add:'1' }}">{{ value.rank|default:"-" }}</td>
+                  {% endwith %}
+                </tr>
+
+                {# Remaining term rows #}
+                {% for ct in value.consolidated_terms|slice:"1:" %}
+                <tr{% if value.is_failed %} class="fail-row"{% endif %}>
+                  <td style="font-weight:bold; font-size:0.9em; background-color:#f8f9fa;">
+                    {{ ct.term_short|upper }}
+                  </td>
+                  {% if ledgertype == "2" %}
+                    {% for sub_marks in ct.subjects %}
+                      {% with outer_index=forloop.counter0 %}
+                        {% for fm in subject_fm_list %}
+                          {% if forloop.counter0 == outer_index %}
+                            <td {% if sub_marks.th_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}>{{ sub_marks.raw_th|default:"-" }}</td>
+                            {% if fm.pr_fm > 0 %}<td {% if sub_marks.pr_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}>{{ sub_marks.raw_pr|default:"-" }}</td>{% endif %}
+                          {% endif %}
+                        {% endfor %}
+                      {% endwith %}
+                    {% endfor %}
+                  {% else %}
+                    {% for sub_marks in ct.subjects %}
+                      {% with outer_index=forloop.counter0 %}
+                        {% for fm in subject_fm_list %}
+                          {% if forloop.counter0 == outer_index %}
+                            <td {% if sub_marks.th_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}><div class="grade-wrapper"><span class="grade-l">{{ sub_marks.th_grade|default:"-" }}</span><span class="grade-s">{{ sub_marks.th_grade_s }}</span></div></td>
+                            {% if fm.pr_fm > 0 %}<td {% if sub_marks.pr_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}><div class="grade-wrapper"><span class="grade-l">{{ sub_marks.pr_grade|default:"-" }}</span><span class="grade-s">{{ sub_marks.pr_grade_s }}</span></div></td>{% endif %}
+                          {% endif %}
+                        {% endfor %}
+                      {% endwith %}
+                    {% endfor %}
+                  {% endif %}
+                </tr>
+                {% endfor %}
+
+                {# TOTAL row #}
+                <tr{% if value.is_failed %} class="fail-row"{% endif %}>
+                  <td style="font-weight:bold; font-size:0.9em; background-color:#e8f0fe;">TOTAL</td>
+                  {% for subject in subjects %}
+                    {% with outer_index=forloop.counter0 %}
+                      {% for sid, marks in value.subjects.items %}
+                        {% if subject.id == sid %}
+                          {% for fm in subject_fm_list %}
+                            {% if forloop.counter0 == outer_index %}
+                              {% if ledgertype == "2" %}
+                                <td class="total-col" {% if marks.th_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}>{{ marks.theory_raw|default:"-" }}</td>
+                                {% if fm.pr_fm > 0 %}<td class="total-col" {% if marks.pr_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}>{{ marks.prac_raw|default:"-" }}</td>{% endif %}
+                                <td class="total-col">{{ marks.gradepoint|floatformat:2 }}</td>
+                              {% else %}
+                                <td class="total-col" {% if marks.th_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}><div class="grade-wrapper"><span class="grade-l">{{ marks.theory_mo|default:"-" }}</span><span class="grade-s">{{ marks.theory_mo_s }}</span></div></td>
+                                {% if fm.pr_fm > 0 %}<td class="total-col" {% if marks.pr_fail %}style="background:#d5d5d5;color:#c0392b;font-weight:bold;"{% endif %}><div class="grade-wrapper"><span class="grade-l">{{ marks.prac_mo|default:"-" }}</span><span class="grade-s">{{ marks.prac_mo_s }}</span></div></td>{% endif %}
+                                <td class="total-col">{{ marks.gradepoint|floatformat:2 }}</td>
+                              {% endif %}
+                            {% endif %}
+                          {% endfor %}
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="no-data">
+            No weighted term configuration found for this exam term. Please set up the weighted calculation config first.
+          </div>
+        {% endif %}
+
+        <div style="margin-top:8px; font-size:8px;">
+          {% if ledgertype == "2" %}
+            <em>* Displaying original (raw) marks as entered. No weighted conversion applied.</em>
+          {% else %}
+            <em>* Displaying grade letters calculated from raw marks.</em>
+          {% endif %}
+        </div>
+      </div>
+
+      {# FM Reference Table — screen only #}
+      {% if subject_fm_list %}
+      <div class="fm-reference no-print" style="margin-top:15px;">
+        <h6><strong>Full Marks &amp; Pass Marks Reference</strong></h6>
+        <p style="color:#666; font-size:0.85em;">
+          How FM is used: <code>% = (TH + PR obtained) / (TH_FM + PR_FM) × 100</code>.
+          Fail if TH &lt; TH_PM, or (when PR exists) PR &lt; PR_PM.
+        </p>
+        <table class="table table-bordered table-condensed" style="width:auto;">
+          <thead>
+            <tr>
+              <th>#</th><th>Subject</th><th>TH FM</th><th>PR FM</th><th>Total FM</th><th>TH PM</th><th>PR PM</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fm in subject_fm_list %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ fm.name }}</td>
+              <td>{{ fm.th_fm }}</td>
+              <td>{{ fm.pr_fm }}</td>
+              <td><strong>{{ fm.th_fm|add:fm.pr_fm }}</strong></td>
+              <td>{{ fm.th_pm }}</td>
+              <td>{{ fm.pr_pm }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+    </div>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script>
+        function exportToExcel() {
+            var elt = document.getElementById('ledgerTable');
+            var wb = XLSX.utils.table_to_book(elt, {sheet: "Consolidated Ledger"});
+            XLSX.writeFile(wb, 'Consolidated_Ledger_{{ grade|default:"ALL" }}.xlsx');
+        }
+    </script>
+  </body>
+</html>

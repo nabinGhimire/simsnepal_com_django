@@ -1,0 +1,248 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %} Home - Hamro Panel | Hamro.com {% endblock title %} 
+{% block navbar %} 
+  {% if branchuser.admin_status %} 
+    {% include 'snippets/nav_admin.html' %} 
+  {% else %} 
+    {% include 'snippets/nav_teacher.html' %} 
+  {% endif %} 
+{% endblock navbar %} 
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Administration</div>
+        <h2 class="page-title">Upcoming 2083 Session Details</h2>
+      </div>
+      <!-- Back button placeholder -->
+      <div class="col-auto ms-auto" id="back-btn-container" style="display: none;">
+        <button class="btn btn-primary" onclick="showDashboard()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-arrow-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M5 12l14 0"></path>
+            <path d="M5 12l6 6"></path>
+            <path d="M5 12l6 -6"></path>
+          </svg>
+          Back to Grades
+        </button>
+      </div>
+      <div class="col-auto ms-auto" id="migration-btn-container">
+        <a href="/panel/migration" class="btn btn-warning d-none d-sm-inline-block">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M12 5l4 4m0 -4l-4 4"></path>
+            <path d="M12 5v14"></path>
+          </svg>
+          Migration Tool
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<style>
+  /* Reuse premium styling */
+  .card-dynamic { transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1); border-color: rgba(0,0,0,0.05); cursor: pointer; }
+  .card-dynamic:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -10px rgba(0,0,0,0.15) !important; border-color: var(--tblr-primary); }
+  .avatar-gradient { background: linear-gradient(135deg, var(--tblr-primary), #8b5cf6); color: #fff !important; font-weight: bold; }
+</style>
+
+<!-- DASHBOARD VIEW -->
+<div id="dashboard-view" class="row row-cards">
+  {% for grade, student in students_dict.items %} 
+  <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+    <div class="card h-100 card-dynamic shadow-sm" onclick="showGrade('grade-{{ grade.id }}')">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <span class="avatar avatar-sm avatar-gradient me-3 flex-shrink-0 shadow-sm">
+            {{ grade|stringformat:"s"|slice:":2"|upper }}
+          </span>
+          <div class="flex-grow-1 min-width-0">
+            <div class="grade-title text-truncate fw-bold" style="font-size: 0.95rem;">
+              {{ grade|upper }}
+            </div>
+            <div class="text-muted student-total mt-1" style="font-size: 0.8rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-users" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"></path>
+                <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                <path d="M21 21v-2a4 4 0 0 0 -3 -3.85"></path>
+              </svg> {{ student|length }} students migrated
+            </div>
+          </div>
+          <div class="ms-auto text-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M9 6l6 6l-6 6"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="empty py-5">
+      <div class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon text-muted" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><circle cx="12" cy="12" r="9"></circle><path d="M9 12l2 2l4 -4"></path></svg>
+      </div>
+      <p class="empty-title">No Students Migrated Yet</p>
+      <p class="empty-subtitle text-secondary">
+        It looks like the 2083 session is completely empty. Head over to the Migration Tracker to start assigning rolls.
+      </p>
+      <div class="empty-action">
+        <a href="/panel/migration" class="btn btn-primary">Go to Migration Tracker</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- GRADE DETAILS VIEW (Hidden initially) -->
+<div id="details-view" style="display: none;">
+  {% for grade, student in students_dict.items %} 
+  <div id="grade-{{ grade.id }}" class="grade-table-container row row-cards" style="display: none;">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <h3 class="card-title text-white mb-0">{{ grade|upper }} Roster</h3>
+          <span class="badge bg-white text-primary">{{ student|length }} Total</span>
+        </div>
+        
+        <!-- Interactive Section Filters -->
+        <div class="card-body border-bottom py-3 bg-light">
+          <div class="d-flex align-items-center gap-2 flex-wrap" id="filters-{{ grade.id }}">
+            <span class="text-muted me-2 small fw-bold">FILTER SECTION:</span>
+            <button class="btn btn-sm btn-primary filter-btn active" onclick="filterSection('grade-{{ grade.id }}', 'all', this)">All</button>
+            <!-- JS will dynamically inject section buttons here -->
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table card-table table-vcenter table-striped text-nowrap" id="table-grade-{{ grade.id }}">
+            <thead>
+              <tr>
+                <th class="w-1">Roll No</th>
+                <th class="w-1">Reg. No</th>
+                <th>Student Name</th>
+                <th>Section</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for reg_no, data in student.items %}
+              <tr data-section="{{ data.section }}">
+                <td><span class="badge bg-blue-lt">{{ data.roll_no }}</span></td>
+                <td><span class="text-secondary small">{{ reg_no }}</span></td>
+                <td><strong class="text-dark">{{ data.student.name }}</strong></td>
+                <td><span class="badge bg-secondary-lt">{{ data.section }}</span></td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">No students migrated yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+  // On DOM load, dynamically generate section buttons for each grade container
+  document.addEventListener("DOMContentLoaded", function() {
+    const gradeContainers = document.querySelectorAll('.grade-table-container');
+    gradeContainers.forEach(function(container) {
+      const gradeId = container.id;
+      const table = document.getElementById('table-' + gradeId);
+      const filterContainer = document.getElementById('filters-' + gradeId.replace('grade-', ''));
+      
+      if(!table || !filterContainer) return;
+      
+      const rows = table.querySelectorAll('tbody tr[data-section]');
+      const sections = new Set();
+      
+      rows.forEach(function(row) {
+        const sec = row.getAttribute('data-section');
+        if(sec && sec !== 'None' && sec.trim() !== '') {
+          sections.add(sec.trim());
+        }
+      });
+      
+      // Generate buttons for unique sections dynamically
+      sections.forEach(function(sec) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-sm btn-outline-primary filter-btn';
+        btn.innerText = sec;
+        btn.onclick = function() { filterSection(gradeId, sec, this); };
+        filterContainer.appendChild(btn);
+      });
+    });
+  });
+
+  function showDashboard() {
+    document.getElementById('dashboard-view').style.display = 'flex';
+    document.getElementById('details-view').style.display = 'none';
+    document.getElementById('back-btn-container').style.display = 'none';
+    document.getElementById('migration-btn-container').style.display = 'block';
+    
+    // hide all specific grade tables
+    const tables = document.querySelectorAll('.grade-table-container');
+    tables.forEach(t => t.style.display = 'none');
+  }
+
+  function showGrade(gradeId) {
+    document.getElementById('dashboard-view').style.display = 'none';
+    document.getElementById('details-view').style.display = 'block';
+    document.getElementById('back-btn-container').style.display = 'block';
+    document.getElementById('migration-btn-container').style.display = 'none';
+    
+    // Show specific target grade
+    document.getElementById(gradeId).style.display = 'block';
+    
+    // Automatically reset filter to 'all' when opening a grade
+    const filterContainer = document.getElementById('filters-' + gradeId.replace('grade-', ''));
+    if(filterContainer) {
+      const allBtn = filterContainer.querySelector('button[onclick*="\'all\'"]');
+      if(allBtn) allBtn.click();
+    }
+  }
+
+  function filterSection(gradeId, section, btnElement) {
+    // Determine the container we are filtering within
+    const filterContainer = document.getElementById('filters-' + gradeId.replace('grade-', ''));
+    const buttons = filterContainer.querySelectorAll('.filter-btn');
+    
+    // De-activate all buttons
+    buttons.forEach(b => {
+      b.classList.remove('btn-primary');
+      b.classList.add('btn-outline-primary');
+    });
+    
+    // Activate target button
+    btnElement.classList.remove('btn-outline-primary');
+    btnElement.classList.add('btn-primary');
+
+    // Filter the rows
+    const table = document.getElementById('table-' + gradeId);
+    if(table) {
+      const rows = table.querySelectorAll('tbody tr[data-section]');
+      rows.forEach(function(row) {
+        if(section === 'all' || row.getAttribute('data-section') === section) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+  }
+</script>
+{% endblock content %}

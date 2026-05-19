@@ -1,0 +1,453 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<style type="text/css">
+
+		body{
+			text-align: center;
+		}
+		.cardcontainer{
+			border: 1px solid #000;
+			float: left;
+			width: 363px;
+			height:260px;
+			margin: 15px 10px 2px 20px;
+			padding: 15px;
+		}
+		.cardcontainer {
+			border: 1px solid #000;
+			float: left;
+			width: 363px;
+			height: 260px;
+			margin: 15px 10px 2px 20px;
+			padding: 15px;
+		  }
+		  .cardcontainer .card-header {
+			position: relative;
+			display: block;
+			text-align: left;
+			font-size: 12px;
+		  }
+		  .cardcontainer .card-header > div {
+			display: inline-block;
+			vertical-align: middle;
+		  }
+		  .cardcontainer .card-header .headerDetails {
+			margin-left: 15px;
+		  }
+		  .cardcontainer .card-header h1 {
+			font-size: 18px;
+			font-family: "Times New Roman", Georgia, Serif;
+			margin: 0;
+			padding: 0;
+			font-weight: bold;
+			margin-bottom: 5px;
+		  }
+		  .cardcontainer .card-header .admitcard {
+			font-size: 14px;
+			margin: auto;
+			margin-top: 2px;
+		  }
+		  .cardcontainer .terminal {
+			border: 1px solid #000;
+			padding: 5px;
+			font-weight: bold;
+			background-color: #000;
+			color: #fff;
+			text-align: center;
+			font-size: 14px;
+			margin-top: 5px;
+		  }
+		  .cardcontainer .studentInfo {
+			position: relative;
+			display: block;
+			width: 100%;
+			margin: 0.3cm 0 0 0;
+			text-align: left;
+			font-size: 15px;
+		  }
+		  .cardcontainer .studentInfo table {
+			width: 100%;
+		  }
+		  .cardcontainer .studentInfo table.studentDetails th {
+			width: 125px;
+		  }
+		  .cardcontainer .studentInfo .signature {
+			margin-top: 20px;
+			text-align: center;
+			font-size: 13px;
+		  }
+		  .cardcontainer .studentInfo .signature .sign_block {
+			border-top: 1px solid;
+			padding-top: 5px;
+			}
+			
+			.schoolname{
+				padding-bottom: 5px;
+			}
+
+	</style>
+	<link rel="stylesheet" href="{% static "/css/print2.css" %}" type="text/css" media="print">
+</head>
+<body>
+    <div class="cardcontainer">
+        <div class="card-header">
+            <div class="slogo">
+                <img src="https://static.hamro.com/{{ school.logo }}" style="width:50px;">
+            </div>
+            <div class="headerDetails">
+                <h1>{{ school.name }} </h1>
+                {{ school.location }}
+                <div class="admitcard ">EXAM ENTRANCE CARD</div>
+            </div>
+        </div>
+        <!-- <div class="terminal">{{ this_term.name|upper }} - {{ year }}</div> -->
+        <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div> 
+        <div class="studentInfo">
+            <table class="studentDetails">
+                <tbody>
+                    <tr>
+                        <th>Student Name: </th>
+                         <td></td> 
+                    </tr>
+                    <tr>
+                        <th>Symbol No:</th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Class: </th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Section: </th>
+                         <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="signature">
+                <tbody><tr>
+                    <td class="sign_block" width="33%">Verified By</td>
+                    <td width="33%"></td>
+                    <td class="sign_block" width="33%">Principal</td>
+                </tr>
+            </tbody></table>
+          </div>
+    
+    </div>
+<div class="cardcontainer">
+        <div class="card-header">
+            <div class="slogo">
+                <img src="https://static.hamro.com/{{ school.logo }}" style="width:50px;">
+            </div>
+            <div class="headerDetails">
+                <h1>{{ school.name }} </h1>
+                {{ school.location }}
+                <div class="admitcard ">EXAM ENTRANCE CARD</div>
+            </div>
+        </div>
+        <!-- <div class="terminal">{{ this_term.name|upper }} - {{ year }}</div> -->
+        <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div>
+        <div class="studentInfo">
+            <table class="studentDetails">
+                <tbody>
+                    <tr>
+                        <th>Student Name: </th>
+                         <td></td> 
+                    </tr>
+                    <tr>
+                        <th>Symbol No:</th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Class: </th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Section: </th>
+                         <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="signature">
+                <tbody><tr>
+                    <td class="sign_block" width="33%">Verified By</td>
+                    <td width="33%"></td>
+                    <td class="sign_block" width="33%">Principal</td>
+                </tr>
+            </tbody></table>
+          </div>
+    
+    </div>
+<div class="cardcontainer">
+        <div class="card-header">
+            <div class="slogo">
+                <img src="https://static.hamro.com/{{ school.logo }}" style="width:50px;">
+            </div>
+            <div class="headerDetails">
+                <h1>{{ school.name }} </h1>
+                {{ school.location }}
+                <div class="admitcard ">EXAM ENTRANCE CARD</div>
+            </div>
+        </div>
+        <!-- <div class="terminal">{{ this_term.name|upper }} - {{ year }}</div> -->
+        <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div> 
+        <div class="studentInfo">
+            <table class="studentDetails">
+                <tbody>
+                    <tr>
+                        <th>Student Name: </th>
+                         <td></td> 
+                    </tr>
+                    <tr>
+                        <th>Symbol No:</th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Class: </th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Section: </th>
+                         <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="signature">
+                <tbody><tr>
+                    <td class="sign_block" width="33%">Verified By</td>
+                    <td width="33%"></td>
+                    <td class="sign_block" width="33%">Principal</td>
+                </tr>
+            </tbody></table>
+          </div>
+    
+    </div>
+<div class="cardcontainer">
+        <div class="card-header">
+            <div class="slogo">
+                <img src="https://static.hamro.com/{{ school.logo }}" style="width:50px;">
+            </div>
+            <div class="headerDetails">
+                <h1>{{ school.name }} </h1>
+                {{ school.location }}
+                <div class="admitcard ">EXAM ENTRANCE CARD</div>
+            </div>
+        </div>
+        <!-- <div class="terminal">{{ this_term.name|upper }} - {{ year }}</div> -->
+        <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div> 
+        <div class="studentInfo">
+            <table class="studentDetails">
+                <tbody>
+                    <tr>
+                        <th>Student Name: </th>
+                         <td></td> 
+                    </tr>
+                    <tr>
+                        <th>Symbol No:</th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Class: </th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Section: </th>
+                         <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="signature">
+                <tbody><tr>
+                    <td class="sign_block" width="33%">Verified By</td>
+                    <td width="33%"></td>
+                    <td class="sign_block" width="33%">Principal</td>
+                </tr>
+            </tbody></table>
+          </div>
+    
+    </div>
+<div class="cardcontainer">
+        <div class="card-header">
+            <div class="slogo">
+                <img src="https://static.hamro.com/{{ school.logo }}" style="width:50px;">
+            </div>
+            <div class="headerDetails">
+                <h1>{{ school.name }} </h1>
+                {{ school.location }}
+                <div class="admitcard ">EXAM ENTRANCE CARD</div>
+            </div>
+        </div>
+        <!-- <div class="terminal">{{ this_term.name|upper }} - {{ year }}</div> -->
+        <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div> 
+        <div class="studentInfo">
+            <table class="studentDetails">
+                <tbody>
+                    <tr>
+                        <th>Student Name: </th>
+                         <td></td> 
+                    </tr>
+                    <tr>
+                        <th>Symbol No:</th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Class: </th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Section: </th>
+                         <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="signature">
+                <tbody><tr>
+                    <td class="sign_block" width="33%">Verified By</td>
+                    <td width="33%"></td>
+                    <td class="sign_block" width="33%">Principal</td>
+                </tr>
+            </tbody></table>
+          </div>
+    
+    </div>
+<div class="cardcontainer">
+        <div class="card-header">
+            <div class="slogo">
+                <img src="https://static.hamro.com/{{ school.logo }}" style="width:50px;">
+            </div>
+            <div class="headerDetails">
+                <h1>{{ school.name }} </h1>
+                {{ school.location }}
+                <div class="admitcard ">EXAM ENTRANCE CARD</div>
+            </div>
+        </div>
+        <!-- <div class="terminal">{{ this_term.name|upper }} - {{ year }}</div> -->
+        <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div> 
+        <div class="studentInfo">
+            <table class="studentDetails">
+                <tbody>
+                    <tr>
+                        <th>Student Name: </th>
+                         <td></td> 
+                    </tr>
+                    <tr>
+                        <th>Symbol No:</th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Class: </th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Section: </th>
+                         <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="signature">
+                <tbody><tr>
+                    <td class="sign_block" width="33%">Verified By</td>
+                    <td width="33%"></td>
+                    <td class="sign_block" width="33%">Principal</td>
+                </tr>
+            </tbody></table>
+          </div>
+    
+    </div>
+<div class="cardcontainer">
+        <div class="card-header">
+            <div class="slogo">
+                <img src="https://static.hamro.com/{{ school.logo }}" style="width:50px;">
+            </div>
+            <div class="headerDetails">
+                <h1>{{ school.name }} </h1>
+                {{ school.location }}
+                <div class="admitcard ">EXAM ENTRANCE CARD</div>
+            </div>
+        </div>
+        <!-- <div class="terminal">{{ this_term.name|upper }} - {{ year }}</div> -->
+        <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div> 
+        <div class="studentInfo">
+            <table class="studentDetails">
+                <tbody>
+                    <tr>
+                        <th>Student Name: </th>
+                         <td></td> 
+                    </tr>
+                    <tr>
+                        <th>Symbol No:</th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Class: </th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Section: </th>
+                         <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="signature">
+                <tbody><tr>
+                    <td class="sign_block" width="33%">Verified By</td>
+                    <td width="33%"></td>
+                    <td class="sign_block" width="33%">Principal</td>
+                </tr>
+            </tbody></table>
+          </div>
+    
+    </div>
+<div class="cardcontainer">
+        <div class="card-header">
+            <div class="slogo">
+                <img src="https://static.hamro.com/{{ school.logo }}" style="width:50px;">
+            </div>
+            <div class="headerDetails">
+                <h1>{{ school.name }} </h1>
+                {{ school.location }}
+                <div class="admitcard ">EXAM ENTRANCE CARD</div>
+            </div>
+        </div>
+        <!-- <div class="terminal">{{ this_term.name|upper }} - {{ year }}</div> -->
+        <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div> 
+        <div class="studentInfo">
+            <table class="studentDetails">
+                <tbody>
+                    <tr>
+                        <th>Student Name: </th>
+                         <td></td> 
+                    </tr>
+                    <tr>
+                        <th>Symbol No:</th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Class: </th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Section: </th>
+                         <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="signature">
+                <tbody><tr>
+                    <td class="sign_block" width="33%">Verified By</td>
+                    <td width="33%"></td>
+                    <td class="sign_block" width="33%">Principal</td>
+                </tr>
+            </tbody></table>
+          </div>
+    
+    </div>
+
+
+
+
+</body>
+</html>

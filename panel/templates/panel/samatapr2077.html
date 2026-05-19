@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
+
+    <title>Result {{ student.school.name }} {{ term.term_name|upper}} - {{year}} </title>
+  </head>
+  <body>
+    <div class="container">
+        <div class="row">
+            <!-- Header -->
+            <div class="col-md-6 mx-auto text-center">
+                <p class="motto">Education for all. </p>
+                <h3 class="school">{{ student.school.name }}</h3>
+                <h5 class="term">{{ student.school.location }}</h5>
+                <h6 class="address">{{ term.term_name|upper}} - {{year}}</h6>
+                <h6 class="report-type">GRADE SHEET</h6>
+                <hr>
+            </div>
+        </div>
+        <div class="row">
+            <!-- Info -->
+            <div class="col-md-6 mx-auto">
+                Student Name: <strong>{{ student|upper }}</strong> </br>
+                School Location: <strong>{{ student.school.location }}</strong></br>
+                Symbol No: <strong>{{ student.reg_no }}</strong> </br>
+                Grade: <strong>{{ student.grade }} </strong> </br>
+                Section: <strong>{{ student.section }} </strong> </br><br>
+            </div>
+        </div>
+        <div class="row">
+            <!-- Marks -->
+            <div class="col-md-6 mx-auto">
+                <table class="table table-bordered">
+                    <tr>
+                      <th class="first subjects" rowspan="2">S.N</th>
+                      <th class="first subjects" rowspan="2">SUBJECTS</th>
+                      <!-- <th rowspan="2">CREDIT HOUR</th> -->
+                      <th class="first subjects" colspan="2">OBTAINED GRADE</th>
+                      <th class="first subjects" rowspan="2">GRADE</th>
+                      <th class="first subjects" rowspan="2">GRADE POINT</th>
+                    </tr>
+                    <tr>
+                      <th>TH</th>
+                      <th>PR</th>
+                    </tr>
+                    {% for key, value in mo_dict.items %}
+                    <tr style="text-align: center">
+                      <td class="subjects">{{key}}</td>
+                      <td class="subject" style="text-align: left">
+                        {{ value.subject_name|upper }}
+                      </td>
+                      <!-- <td>{{ value.theory_fm }}</td> -->
+                      <td>{{ value.theory_mo }}</td>
+                      <td>{{ value.prac_mo }}</td>
+                      <td>{{ value.total_mo }}</td>
+                      <td>{{ value.gradepoint }}</td>
+                    </tr>
+                    {% endfor %} {% for i in "x" %}
+                    <!-- <tr>
+                      <td>&nbsp;</td>
+                      <td>&nbsp;</td>
+                      <td>&nbsp;</td>
+                      <td>&nbsp;</td>
+                      <td>&nbsp;</td>
+                      <td>&nbsp;</td>
+                    </tr> -->
+                    {% endfor %}
+                    <tr>
+                      <th
+                        class="nob"
+                        colspan="5"
+                        style="text-align: right; padding-right: 5px"
+                      >
+                        GRADE POINT AVERAGE (GPA)
+                      </th>
+                      <th>{{ cgpa }}</th>
+                      <!-- <th colspan="2">{{ total.pm_total }}</th>
+                                <th colspan="2">{{ total.mo_total }}</th> -->
+                    </tr>
+                  </table>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-6 mx-auto">
+                <p><strong>REMARKS: {{ remarks|upper }}</strong></p>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Grade Info -->
+            <div class="col-md-6 mx-auto mt-3">
+                <table class="table table-sm table-bordered">
+                    <tr>
+                        <th colspan="6" class="gs-cent">GRADING SYSTEM</th>
+                    </tr>
+                    <tr class="mgg">
+                        <th class="bigg">Mark</th>
+                        <th>Grade</th>
+                        <th class="bleft">GPA</th>
+                        <th class="bigg">Mark</th>
+                        <th>Grade</th>
+                        <th>GPA</th>
+                    </tr>
+                    <tr>
+                        <td class="bigg">90-100</td>
+                        <td>A+</td>
+                        <td>4.0</td>
+                        <td class="bigg">40-50</td>
+                        <td>C</td>
+                        <td>2.0</td>
+                    </tr>
+                    <tr>
+                        <td class="bigg">80-90</td>
+                        <td>A</td>
+                        <td>3.6</td>
+                        <td class="bigg">30-40</td>
+                        <td>D+</td>
+                        <td>1.6</td>
+                    </tr>
+                    <tr>
+                        <td class="bigg">70-80</td>
+                        <td>B+</td>
+                        <td>3.2</td>
+                        <td class="bigg">20-30</td>
+                        <td>D</td>
+                        <td>1.2</td>
+                    </tr>
+                    <tr>
+                        <td class="bigg">60-70</td>
+                        <td>B</td>
+                        <td>2.8</td>
+                        <td class="bigg">1-20</td>
+                        <td>E</td>
+                        <td>0.8</td>
+                    </tr>
+                    <tr>
+                        <td class="bigg">50-60</td>
+                        <td>C+</td>
+                        <td>2.4</td>
+                        <td class="bigg">0</td>
+                        <td>N</td>
+                        <td>0</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 text-center mx-auto">
+                <p>** This result is only for reference. If you are not satisfied with the result please consult with your class teacher.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optional JavaScript; choose one of the two! -->
+
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+
+    <!-- Option 2: Separate Popper and Bootstrap JS -->
+    <!--
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.min.js" integrity="sha384-lpyLfhYuitXl2zRZ5Bn2fqnhNAKOAaM/0Kr9laMspuaMiZfGmfwRNFh8HlMy49eQ" crossorigin="anonymous"></script>
+    -->
+  </body>
+</html>

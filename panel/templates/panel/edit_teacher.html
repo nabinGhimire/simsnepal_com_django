@@ -1,0 +1,139 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} Edit Teacher - SIMSNepal.com {% endblock %}
+
+{% block navbar %}
+    {% if branchuser.admin_status %}
+        {% include 'snippets/nav_admin.html' %}
+    {% else %}
+        {% include 'snippets/nav_teacher.html' %}
+    {% endif %}
+ 
+{% endblock navbar %}
+{% block content %}
+
+<!-- Page-Title -->
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="btn-group pull-right">
+                <ol class="breadcrumb hide-phone p-0 m-0">
+                    <li>
+                        <a href="#">Hamro Panel</a>
+                    </li>
+                    <li>
+                        <a href="#"> Print </a>
+                    </li>
+                    <li class="active">
+                        Edit Teacher
+                    </li>
+                </ol>
+            </div>
+            <h4 class="page-title">Edit Teacher Information</h4>
+        </div>
+    </div>
+</div>
+<!-- end -->
+<div class="row">
+    <div class="col-md-6">
+        <!-- <div class="card"> -->
+            <div class="card-header d-flex align-items-center form-group" style="border: 1px solid #ccc; padding: 15px; border-radius: 5px; padding: 0 auto;">
+                <form action="" method="POST" class="form-horizontal">
+                    {% csrf_token %}
+                    {% if message %}{{ message }} {% endif %}
+                    <table>
+                        <tr>
+                            <td>Firstname</td>
+                            <td style="padding: 5px 15px;"> : </td>
+                            <td style="margin-top: 10px; padding: 5px;"><input type="text" class="mt-3 form-control" name="first_name" id="first_name" value="{{ teacher.teacher.first_name }}" required></td>
+                        </tr>
+                        <tr>
+                            <td>Lastname</td>
+                            <td style="padding: 5px 15px;"> : </td>
+                            <td style="margin-top: 10px; padding: 5px;"><input type="text" class="mt-3 form-control" name="last_name" id="last_name" value="{{ teacher.teacher.last_name }}" required></td>
+                        </tr>
+                        <tr  style="margin: 5px;" >
+                            <td>Mobile </td>
+                            <td style="padding: 5px 15px;">:</td>
+                            <td style="margin-top: 10px;  padding: 5px;">
+                                <input type="number" class="mt-3 form-control" name="username" id="username" value="{{ teacher.teacher.username }}" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Email </td>
+                            <td style="padding: 5px 15px;"> : </td>
+                            <td style="margin-top: 10px;   padding: 5px;">
+                                <input type="email" class="mt-3 form-control" name="email" id="email" value="{% if teacher.teacher.email %}{{ teacher.teacher.email }} {% else %} default1@hamro.com {% endif %}">
+                            </td>
+                        </tr>
+                        <input type="hidden" name="action" value="edit_information">
+
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td><input type="submit" name="submit" value="Edit Information" class="btn btn-success"  style="margin-top: 10px"></td>
+                        </tr>
+                    </table>
+
+                </form>
+            </div>
+         <!-- </div> -->
+    </div>
+
+    <div class="col-md-6">
+        <!-- <div class="card"> -->
+            <div class="card-header d-flex align-items-center form-group" style="border: 1px solid #ccc; padding: 15px; border-radius: 5px; padding: 0 auto;">
+                <form action="" method="POST" class="form-horizontal">
+                    {% csrf_token %}
+                    {% if change_message %} {{ change_message }} {% endif %}
+                    <table>
+                        <tr>
+                            <td>Full Name</td>
+                            <td style="padding: 5px 15px;"> : </td>
+                            <td style="margin-top: 10px; padding: 5px;">{{ teacher.teacher.first_name }} {{ parent.guardian.last_name }}</td>
+                        </tr>
+                        <tr  style="margin: 5px;" >
+                            <td>Mobile </td>
+                            <td style="padding: 5px 15px;">:</td>
+                            <td style="margin-top: 10px;  padding: 5px;">
+                                {{ teacher.teacher.username }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Email </td>
+                            <td style="padding: 5px 15px;"> : </td>
+                            <td style="margin-top: 10px;   padding: 5px;">
+                                {{ teacher.teacher.email }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Password </td>
+                            <td style="padding: 5px 15px;"> : </td>
+                            <td style="margin-top: 10px;   padding: 5px;">
+                                <input type="password" class="mt-3 form-control" name="password" id="password" value="" required>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Confirm Password </td>
+                            <td style="padding: 5px 15px;"> : </td>
+                            <td style="margin-top: 10px;   padding: 5px;">
+                                <input type="password" class="mt-3 form-control" name="confirm_password" id="confirm_password" value="" required>
+                            </td>
+                        </tr>
+                        <input type="hidden" name="action" value="change_password">
+
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td><input type="submit" name="submit" value="Change Password" class="btn btn-success"  style="margin-top: 10px"></td>
+                        </tr>
+                    </table>
+
+                </form>
+            </div>
+         <!-- </div> -->
+    </div>
+    
+</div>
+<!-- end row -->
+
+{% endblock %}

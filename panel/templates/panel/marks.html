@@ -1,0 +1,88 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+
+{% block title %} Admin Dashboard - Full Marks - SIMSNepal.com {% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">Add / Update Full Marks</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Full Marks</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="row row-cards justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Full Marks Input Selection</h3>
+        </div>
+        <div class="card-body">
+          <form action="/panel/inputfullmarksredirector/" method="POST" target="_blank" class="form-horizontal">
+            {% csrf_token %}
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">School</label>
+              <div class="col">
+                <div class="form-control-plaintext font-weight-bold">{{ school.name }}</div>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Location</label>
+              <div class="col">
+                <div class="form-control-plaintext">{{ school.location }}</div>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Academic Year</label>
+              <div class="col">
+                <div class="form-control-plaintext">{{ edusession }}</div>
+              </div>
+            </div>
+            <hr class="my-3">
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Exam Term</label>
+              <div class="col">
+                <select name="term" id="term" class="form-select">
+                  {% for exam_type in exam_types %}
+                  <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Grade</label>
+              <div class="col">
+                <select name="grade" id="grade" class="form-select">
+                  {% for grade in grades %}
+                  <option value="{{ grade.id }}">{{ grade|upper }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="form-footer text-end mt-4">
+              <button type="submit" name="submit" class="btn btn-primary btn-pill px-4">
+                <i class="ti ti-arrow-right me-2"></i> Next Step
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

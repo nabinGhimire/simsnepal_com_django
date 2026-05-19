@@ -1,0 +1,130 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} Admin Dashboard- Specific Class - SIMSNepal.com {% endblock %}
+
+{% block navbar %}
+    {% if branchuser.admin_status %}
+        {% include 'snippets/nav_admin.html' %}
+    {% else %}
+        {% include 'snippets/nav_teacher.html' %}
+    {% endif %}
+ 
+{% endblock navbar %}
+{% block content %}
+
+<!-- Page-Title -->
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="btn-group pull-right">
+                <ol class="breadcrumb hide-phone p-0 m-0">
+                    <li>
+                        <a href="#">Hamro Panel</a>
+                    </li>
+                    <li>
+                        <a href="#"> Print </a>
+                    </li>
+                    <li class="active">
+                        Marks or Grade Sheet
+                    </li>
+                </ol>
+            </div>
+            <h4 class="page-title">Marks or Grade Sheet</h4>
+        </div>
+    </div>
+</div>
+<!-- end -->
+<div class="row">
+    <div class="col-md-6">
+        <!-- <div class="card"> -->
+            <div class="card-header d-flex align-items-center form-group" style="border: 1px solid #ccc; padding: 15px; border-radius: 5px; padding: 0 auto;">
+                <form action="" method="POST" target="_blank" class="form-horizontal">
+                    {% csrf_token %} 
+                    <table>
+                        <tr>
+                            <td>Board</td>
+                            <td style="padding: 5px 15px;"> : </td>
+                            <td><span style="font-weight: bold;"> SAMATA EXAMINATION BOARD</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Location</td>
+                            <td style="padding: 5px 15px;"> : </td>
+                            <td><span style="font-weight: bold;"> KATHMANDU</span></td>
+                        </tr>
+                        <tr>
+                            <td>School </td>
+                            <td style="padding: 5px 15px;"> : </td>
+                            <td>
+                                <select name="grade2" id="grade2" onchange="populate2(this.id,'section2')"   class="form-control">
+                                        <option value=""></option>
+                                    {% for grade in grades %}
+                                        <option value="{{ grade.id }}">{{ grade|upper }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td><input type="submit" name="submit" value="Submit" class="btn btn-success"  style="margin-top: 10px"></td>
+                        </tr>
+                    </table>
+
+                </form>
+            </div>
+         <!-- </div> -->
+    </div>
+    
+</div>
+<!-- end row -->
+
+<script type='text/javascript'>
+    var section_list = '{{ section_list }}'.replace(/&quot;/g,"\"");
+    var section_list_obj = JSON.parse(section_list);
+    var grade_count = Object.keys(section_list_obj).length;
+
+    function populate(s1,s2){
+        var s1 = document.getElementById(s1);
+        var s2 = document.getElementById(s2);
+        s2.innerHTML = "";
+
+        sl = section_list_obj[s1.value]
+        var optionArray = [];
+
+        for(var p in sl ){
+            optionArray.push(""+p+"|"+sl[p]+"");
+        }
+
+        for(var option in optionArray){
+            var pair = optionArray[option].split("|");
+            var newOption = document.createElement("option");
+            newOption.value = pair[0];
+            newOption.innerHTML = pair[1];
+            s2.options.add(newOption);
+        }
+    }
+
+    function populate2(s1,s2){
+        var s1 = document.getElementById(s1);
+        var s2 = document.getElementById(s2);
+        s2.innerHTML = "";
+
+        sl = section_list_obj[s1.value]
+        var optionArray = [];
+
+        optionArray.push("0|ALL SECTION");
+        for(var p in sl ){
+            optionArray.push(""+p+"|"+sl[p]+"");
+        }
+
+        for(var option in optionArray){
+            var pair = optionArray[option].split("|");
+            var newOption = document.createElement("option");
+            newOption.value = pair[0];
+            newOption.innerHTML = pair[1];
+            s2.options.add(newOption);
+        }
+    }
+</script>
+
+{% endblock %}

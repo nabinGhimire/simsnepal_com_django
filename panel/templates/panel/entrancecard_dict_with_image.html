@@ -1,0 +1,222 @@
+{% load static %}
+{% load panel_extras %}
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap" rel="stylesheet"><style type="text/css">
+
+		body {
+		    text-align: center;
+		    font-family: 'Poppins', sans-serif;
+		}
+		.cardcontainer {
+		    border: 1px solid #000;
+		    float: left;
+		    width: 520px;
+		    height: 360px;
+		    margin: 20px;
+		    padding: 15px;
+		}
+		.cardcontainer .card-header {
+		    position: relative;
+		    display: block;
+		    text-align: left;
+		    font-size: 13px;
+		}
+		.cardcontainer .card-header > div {
+		    display: inline-block;
+		    vertical-align: middle;
+		}
+		.cardcontainer .card-header .headerDetails {
+		    margin-left: 5px;
+		}
+		.cardcontainer .card-header h1 {
+		    font-size: 25px;
+/*		    font-family: "Times New Roman", Georgia, Serif;*/
+		    margin: 0;
+		    padding: 0;
+		    font-weight: bold;
+		}
+		.cardcontainer .card-header .admitcard {
+		    font-size: 18px;
+		    margin: auto;
+		}
+		.cardcontainer .terminal {
+		    border: 2px solid #000;
+		    padding: 8px;
+		    font-weight: bold;
+		    background-color: #000 !important;
+		    color: #fff !important;
+		    text-align: center;
+		    font-size: 18px;
+		    margin-top: 5px;
+		    -webkit-print-color-adjust: exact;
+		    color-adjust: exact;
+
+		}
+		.cardcontainer .studentInfo {
+		    position: relative;
+		    display: block;
+		    width: 100%;
+		    margin: 0.3cm 0 0;
+		    text-align: left;
+		    font-size: 18px;
+		}
+		.cardcontainer .studentInfo table {
+		    width: 100%;
+		}
+		.cardcontainer .studentInfo .signature {
+		    margin-top: 65px;
+		    text-align: center;
+		    font-size: 14px;
+		}
+		.cardcontainer .studentInfo .signature .sign_block {
+		    border-top: 2px solid;
+		    padding-top: 5px;
+		}
+		.signature {
+		    margin-top: 65px;
+		}
+		.admitcard{
+			font-weight: bold;
+		}
+		.location{
+			font-size: 120%;
+		}
+		@media print {
+		    .terminal {
+		        border: 1px solid #000;
+		        padding: 5px;
+		        font-weight: bold;
+		        background-color: #000;
+		        color: #fff;
+		        text-align: center;
+		        font-size: 20px;
+		        margin-top: 5px;
+		        -webkit-print-color-adjust: exact;
+		        color-adjust: exact;
+		    }
+		   }
+		   
+
+	</style>
+	<link rel="stylesheet" href="{% static "/css/print2.css" %}" type="text/css" media="print">
+</head>
+<body>
+{% if count > 1 %}
+{% for data,student in std_reg.items %}
+<div class="cardcontainer">
+     <div style="width:80px; height: 80px; background-color:#ccc; float: right;"></div>
+	<div class="card-header">
+		<div class="slogo">
+			<!--			<img src="https://grihakarya.hamro.com/samataeast/images/logo1.jpg" style="width:50px;"> -->
+			<img src="//static.hamro.com/{{ school.logo }}" style="width:80px;">
+		</div>
+		<div class="headerDetails">
+			<h1 class="schoolname">{{ school.name }} </h1>
+			<span class="location">{{ school.location }}</span>
+			<div class="admitcard ">EXAM ENTRANCE CARD</div>
+		</div>
+	</div>
+	
+    <!-- <div class="terminal">{{ this_term.name|upper }} - {{ year }}</div> -->
+    <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div> 
+	<div class="studentInfo">
+        <table class="studentDetails">
+            <tbody>
+				<tr>
+					<td>Student Name</td>
+                    <td></td>
+					 <th> {% if student.name|length >= 22 %}{{ student.name|slice:":20" }}..{% else %}{{ student.name }}{% endif %}</th>
+				</tr>
+				<tr>
+					<td>Symbol No</td>
+                    <td></td>
+					 <th> {{ student.reg_no }}</th>
+				</tr>
+				<tr>
+					<td>Class</td>
+                    <td></td>
+					 <th> {{ student.grade }}</th>
+				</tr>
+				<tr>
+					<td>Section/Roll</td>
+                    <td></td>
+					 <th> {{ student.section }}/{{ student.roll_no }}</th>
+				</tr>
+			</tbody>
+		</table>
+        <table class="signature"">
+        	<tbody><tr>
+        		<td class="sign_block" width="33%">Exam Controller</td>
+        		<td width="33%"></td>
+        		<td class="sign_block" width="33%">Principal</td>
+        	</tr>
+        </tbody></table>
+      </div>
+
+</div>
+
+
+{% endfor %}
+{% else%}
+    {% for item in items %}
+
+    <div class="cardcontainer">
+        <div class="card-header">
+            <div class="slogo">
+<!--                <img src="https://grihakarya.hamro.com/samataeast/images/logo1.jpg" style="width:50px;">-->
+                <img src="//static.hamro.com/{{ school.logo }}" style="width:50px;">
+            </div>
+            <div class="headerDetails">
+                <h1>{{ school.name }} </h1>
+                {{ school.location }}
+                <div class="admitcard ">EXAM ENTRANCE CARD</div>
+            </div>
+        </div>
+        <!-- <div class="terminal">{{ this_term.name|upper }} - {{ year }}</div> -->
+        <div class="terminal">{{ term_exam.term_name|upper}} - 2080</div> 
+        <div class="studentInfo">
+            <table class="studentDetails">
+                <tbody>
+                    <tr>
+                        <th>Student Name: </th>
+                         <td></td> 
+                    </tr>
+                    <tr>
+                        <th>Symbol No:</th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Class: </th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Section: </th>
+                         <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="signature">
+                <tbody><tr>
+                    <td class="sign_block" width="33%">Verified By</td>
+                    <td width="33%"></td>
+                    <td class="sign_block" width="33%">Principal</td>
+                </tr>
+            </tbody></table>
+          </div>
+    
+    </div>
+
+
+
+    {% endfor %}
+
+{% endif %}
+
+</body>
+</html>

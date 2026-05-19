@@ -1,0 +1,256 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %}Weighted Result Calculation - SIMSNepal.com{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">Weighted Result Calculation</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/panel/terms/?action=listterm">Term Management</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Weighted Calculation</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-3">
+    <div class="panel-sidebar">
+      <ul class="sidebar-menu">
+        <li>
+          <a href="/panel/terms/?action=listterm"><i class="ti ti-list"></i> List Terms</a>
+        </li>
+        <li>
+          <a href="/panel/terms/?action=addterm"><i class="ti ti-plus"></i> Add Term</a>
+        </li>
+        <li>
+          <a href="/panel/terms/?action=result_calc"><i class="ti ti-calculator"></i> Result Calculation</a>
+        </li>
+        <li class="active">
+          <a href="{% url 'weighted_result_calculation' %}"><i class="ti ti-adjustments"></i> Weighted Calculation</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-md-9">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <h3 class="card-title">Weighted Calculation Setup</h3>
+        <form action="{% url 'activate_weighted_calculation' %}" method="POST" class="m-0" id="activationForm">
+          {% csrf_token %}
+          <div class="form-check form-switch m-0">
+            <input class="form-check-input" type="checkbox" id="calcToggle" 
+                   {% if live_calc_type == 'weighted' %}checked{% endif %}
+                   onchange="updateCalcType(this)">
+            <label class="form-check-label" for="calcToggle">
+              <strong>Weighted Mode:</strong> 
+              {% if live_calc_type == 'weighted' %}
+                <span class="badge bg-success">ACTIVE</span>
+              {% else %}
+                <span class="badge bg-secondary">INACTIVE</span>
+              {% endif %}
+            </label>
+            <input type="hidden" name="calculation_type" id="id_calculation_type" value="{{ live_calc_type }}">
+          </div>
+        </form>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          Use the four inputs to mix previous terms into final TH and PR. Each value is a percentage.
+          Example: Final TH = (TH 80% + PR 20%) and Final PR = (TH 10% + PR 90%).
+        </div>
+
+        {% for term in terms %}
+          {% if term.active %}
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h4 class="mb-0">{{ term.term_name }}</h4>
+              <span class="text-secondary small">Configure how previous terms contribute to this term</span>
+            </div>
+            <div class="card-body">
+              <form action="{% url 'weighted_term_calculation' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="term_id" value="{{ term.id }}">
+
+                <!-- Global Configuration Section -->
+                <div class="row g-3 mb-4 p-3 border rounded bg-light">
+                  <div class="col-md-12">
+                    <h4 class="mb-2">Calculation Strategy</h4>
+                    <p class="text-secondary small">This strategy applies to all source terms contributing to <strong>{{ term.term_name }}</strong>.</p>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Calculation Plan</label>
+                    <select class="form-select" name="global_plan" id="global_plan_{{ term.id }}" 
+                            onchange="toggleGlobalFm(this, {{ term.id }})">
+                      <option value="direct">Direct % (Obtained * Weight)</option>
+                      <option value="scaling">Scale FM (Convert to Target FM, then apply weight)</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">TH Target FM</label>
+                    <input type="number" step="0.1" class="form-control" 
+                            id="global_target_fm_th_{{ term.id }}" name="global_target_fm_th" 
+                            value="100" disabled>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">PR Target FM</label>
+                    <input type="number" step="0.1" class="form-control" 
+                            id="global_target_fm_pr_{{ term.id }}" name="global_target_fm_pr" 
+                            value="100" disabled>
+                  </div>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="table table-vcenter table-bordered">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width: 50px;" rowspan="2">S.N</th>
+                        <th rowspan="2">Source Term</th>
+                        <th class="text-center" colspan="2">Final TH (Theory)</th>
+                        <th class="text-center" colspan="2">Final PR (Practical)</th>
+                      </tr>
+                      <tr>
+                        <th style="width: 150px;">from TH %</th>
+                        <th style="width: 150px;">from PR %</th>
+                        <th style="width: 150px;">from TH %</th>
+                        <th style="width: 150px;">from PR %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for exam in terms %}
+                        {% if exam.id <= term.id and exam.active %}
+                          <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                              {{ exam.term_name }}
+                              {% if exam.id == term.id %}
+                                <span class="badge bg-blue-lt ms-2">Current</span>
+                              {% endif %}
+                            </td>
+                            <!-- Theory Column Group -->
+                            <td>
+                              <input type="number" step="0.01" class="form-control form-control-sm"
+                                      name="th_th_{{ exam.id }}" value="{% if exam.id == term.id %}100{% else %}0{% endif %}">
+                            </td>
+                            <td>
+                              <input type="number" step="0.01" class="form-control form-control-sm"
+                                      name="th_pr_{{ exam.id }}" value="0">
+                            </td>
+                            <!-- Practical Column Group -->
+                            <td>
+                              <input type="number" step="0.01" class="form-control form-control-sm"
+                                      name="pr_th_{{ exam.id }}" value="0">
+                            </td>
+                            <td>
+                              <input type="number" step="0.01" class="form-control form-control-sm"
+                                      name="pr_pr_{{ exam.id }}" value="{% if exam.id == term.id %}100{% else %}0{% endif %}">
+                            </td>
+                          </tr>
+                        {% endif %}
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="mt-3 text-end">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-device-floppy me-1"></i> Save Weighted Config for {{ term.term_name }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function updateCalcType(checkbox) {
+    document.getElementById('id_calculation_type').value = checkbox.checked ? 'weighted' : 'legacy';
+    document.getElementById('activationForm').submit();
+  }
+
+  function toggleGlobalFm(select, termId) {
+    var thInput = document.getElementById('global_target_fm_th_' + termId);
+    var prInput = document.getElementById('global_target_fm_pr_' + termId);
+    var isDisabled = (select.value !== 'scaling');
+    if(thInput) thInput.disabled = isDisabled;
+    if(prInput) prInput.disabled = isDisabled;
+  }
+
+  (function () {
+    var calc = JSON.parse('{{ wc_dic|escapejs }}');
+    // iterate over target terms
+    Object.keys(calc).forEach(function (key) {
+      if (key.endsWith('_meta')) return;
+      
+      var targetId = key;
+      var sources = calc[targetId] || {};
+      var meta = calc[targetId + '_meta'] || { plan: 'direct', target_fm_th: 100, target_fm_pr: 100 };
+
+      var form = document.querySelector('input[name="term_id"][value="' + targetId + '"]')?.closest('form');
+      if(!form) return;
+
+      // Set global meta fields
+      var planSelect = form.querySelector('[name="global_plan"]');
+      var fmInputTh = form.querySelector('[name="global_target_fm_th"]');
+      var fmInputPr = form.querySelector('[name="global_target_fm_pr"]');
+      
+      if(planSelect) {
+          planSelect.value = meta.plan;
+          // Trigger change to set disabled state
+          toggleGlobalFm(planSelect, targetId);
+      }
+      if(fmInputTh) {
+          fmInputTh.value = meta.target_fm_th;
+      }
+      if(fmInputPr) {
+          fmInputPr.value = meta.target_fm_pr;
+      }
+
+      // Set individual source fields
+      Object.keys(sources).forEach(function (sourceId) {
+        var values = sources[sourceId] || {};
+        
+        function setVal(name, val) {
+            var el = form.querySelector('[name="' + name + '"]');
+            if (el && typeof val !== 'undefined') {
+                el.value = val;
+            }
+        }
+
+        // Theory mapping
+        setVal('th_th_' + sourceId, values.th_th);
+        setVal('th_pr_' + sourceId, values.th_pr);
+
+        // Practical mapping
+        setVal('pr_th_' + sourceId, values.pr_th);
+        setVal('pr_pr_' + sourceId, values.pr_pr);
+      });
+    });
+  })();
+</script>
+{% endblock %}

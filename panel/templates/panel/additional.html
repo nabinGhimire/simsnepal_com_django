@@ -1,0 +1,43 @@
+{% if praMarks == True %}
+      <input type="hidden" name="pracMarks" id="pracMarks" value="1">
+        <div class="row">
+          <div class="col-sm-12 col-md-12">
+            <table class="table table-sm table-bordered">
+              <tr>
+                <td>Reg. No</td>
+                <!-- <td>Name</td> -->
+                <td>Theory</td>
+                <td>Practical</td>
+              </tr>  
+              {% for student in mo_by_students %}
+              <tr>
+                  <td style="font-weight: bold;">{{ student.student }}</td>
+                  <!-- <td>{{ student.name }}</td> -->
+                  <td><input type="number" id="{{ student.student}}_th" name="{{ student.student}}_th" min="0" max="{{ fullmark.th_fm }}"  value="{% if student.th_mo > 0 %}{{ student.th_mo }}{% endif %}" ></td>
+                  <td><input type="number" id="{{ student.student}}_pr" name="{{ student.student}}_pr" min="0" max="{{ fullmark.pr_fm }}"  value="{% if student.pr_mo > 0 %}{{ student.pr_mo }}{% endif %}" ></td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+        </div>        
+      {% else %} 
+        <input type="hidden" name="pracMarks" id="pracMarks" value="0">        
+        <div class="row">
+          <div class="col-sm-12 col-md-12">
+            <table class="table table-sm table-bordered">
+              <tr>
+                <td>Reg. No</td>
+                <!-- <td>Name</td> -->
+                <td>Theory</td>
+              </tr>  
+              {% for student in mo_by_students %}
+              <tr>
+                  <td style="font-weight: bold;">{{ student.student }}</td>
+                  <!-- <td>{{ student.student }}</td> -->
+                  <td><input type="number" id="{{ student.student}}_th" name="{{ student.student}}_th" min="0" max="{{ fullmark.th_fm }}"  value="{% if student.th_mo > 0 %}{{ student.th_mo }}{% endif %}" ></td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+        </div>    
+      {% endif%}

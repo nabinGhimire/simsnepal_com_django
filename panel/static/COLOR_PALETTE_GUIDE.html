@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SIMS Color Palette - Visual Guide</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background-color: #f8f9fa;
+        color: #212529;
+        padding: 40px 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        text-align: center;
+        color: #066fd1;
+        margin-bottom: 10px;
+        font-size: 32px;
+      }
+
+      .subtitle {
+        text-align: center;
+        color: #6c757d;
+        margin-bottom: 40px;
+        font-size: 16px;
+      }
+
+      .palette-section {
+        margin-bottom: 60px;
+      }
+
+      .section-title {
+        color: #066fd1;
+        font-size: 24px;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #4299e1;
+      }
+
+      .color-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .color-card {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .color-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .color-swatch {
+        width: 100%;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      .color-info {
+        padding: 16px;
+        background: white;
+      }
+
+      .color-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 8px;
+      }
+
+      .color-code {
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        color: #6c757d;
+        margin-bottom: 4px;
+      }
+
+      .color-var {
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        color: #4299e1;
+        background-color: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+
+      .use-case {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 8px;
+        font-style: italic;
+      }
+
+      /* Color variations */
+      .color-variations {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+      }
+
+      .variation {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .variation-swatch {
+        width: 100%;
+        height: 60px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 500;
+        font-size: 12px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      }
+
+      .variation-label {
+        font-size: 11px;
+        color: #6c757d;
+      }
+
+      .component-example {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .component-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 12px;
+      }
+
+      .example-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        cursor: pointer;
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
+        font-size: 13px;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn-blue {
+        background-color: #066fd1;
+      }
+      .btn-azure {
+        background-color: #4299e1;
+      }
+      .btn-green {
+        background-color: #2fb344;
+      }
+      .btn-orange {
+        background-color: #f76707;
+      }
+      .btn-red {
+        background-color: #d63939;
+      }
+      .btn-brand {
+        background-color: #008877;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 60px;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+        color: #6c757d;
+        font-size: 14px;
+      }
+
+      @media print {
+        body {
+          background-color: white;
+        }
+        .color-card {
+          page-break-inside: avoid;
+        }
+      }
+
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 24px;
+        }
+        .section-title {
+          font-size: 18px;
+        }
+        .color-grid {
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎨 SIMS Color Palette</h1>
+      <p class="subtitle">Complete Color System for Hamro Panel</p>
+
+      <!-- Primary Colors -->
+      <div class="palette-section">
+        <h2 class="section-title">Primary Colors</h2>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #066fd1">
+              Blue
+            </div>
+            <div class="color-info">
+              <div class="color-name">Blue</div>
+              <div class="color-code">#066fd1</div>
+              <div class="color-var">--color-blue</div>
+              <div class="use-case">Primary buttons, headers, links</div>
+            </div>
+          </div>
+
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #4299e1">
+              Azure
+            </div>
+            <div class="color-info">
+              <div class="color-name">Azure</div>
+              <div class="color-code">#4299e1</div>
+              <div class="color-var">--color-azure</div>
+              <div class="use-case">Secondary actions, hover states</div>
+            </div>
+          </div>
+
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #4263eb">
+              Indigo
+            </div>
+            <div class="color-info">
+              <div class="color-name">Indigo</div>
+              <div class="color-code">#4263eb</div>
+              <div class="color-var">--color-indigo</div>
+              <div class="use-case">Special highlights</div>
+            </div>
+          </div>
+
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #ae3ec9">
+              Purple
+            </div>
+            <div class="color-info">
+              <div class="color-name">Purple</div>
+              <div class="color-code">#ae3ec9</div>
+              <div class="color-var">--color-purple</div>
+              <div class="use-case">Accent colors</div>
+            </div>
+          </div>
+
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #d6336c">
+              Pink
+            </div>
+            <div class="color-info">
+              <div class="color-name">Pink</div>
+              <div class="color-code">#d6336c</div>
+              <div class="color-var">--color-pink</div>
+              <div class="use-case">Warning accents</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secondary Colors -->
+      <div class="palette-section">
+        <h2 class="section-title">Secondary Colors (Status)</h2>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #d63939">
+              Red
+            </div>
+            <div class="color-info">
+              <div class="color-name">Red</div>
+              <div class="color-code">#d63939</div>
+              <div class="color-var">--color-red</div>
+              <div class="use-case">Danger, errors, disabled</div>
+            </div>
+          </div>
+
+          <div class="color-card">
+            <div
+              class="color-swatch"
+              style="
+                background-color: #f76707;
+                color: white;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+              "
+            >
+              Orange
+            </div>
+            <div class="color-info">
+              <div class="color-name">Orange</div>
+              <div class="color-code">#f76707</div>
+              <div class="color-var">--color-orange</div>
+              <div class="use-case">Warnings, pending states</div>
+            </div>
+          </div>
+
+          <div class="color-card">
+            <div
+              class="color-swatch"
+              style="
+                background-color: #f59f00;
+                color: white;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+              "
+            >
+              Yellow
+            </div>
+            <div class="color-info">
+              <div class="color-name">Yellow</div>
+              <div class="color-code">#f59f00</div>
+              <div class="color-var">--color-yellow</div>
+              <div class="use-case">Cautions, alerts</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Natural Colors -->
+      <div class="palette-section">
+        <h2 class="section-title">Natural Colors (Success & Info)</h2>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #2fb344">
+              Green
+            </div>
+            <div class="color-info">
+              <div class="color-name">Green</div>
+              <div class="color-code">#2fb344</div>
+              <div class="color-var">--color-green</div>
+              <div class="use-case">Success, enabled states</div>
+            </div>
+          </div>
+
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #74b816">
+              Lime
+            </div>
+            <div class="color-info">
+              <div class="color-name">Lime</div>
+              <div class="color-code">#74b816</div>
+              <div class="color-var">--color-lime</div>
+              <div class="use-case">Progress indicators</div>
+            </div>
+          </div>
+
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #0ca678">
+              Teal
+            </div>
+            <div class="color-info">
+              <div class="color-name">Teal</div>
+              <div class="color-code">#0ca678</div>
+              <div class="color-var">--color-teal</div>
+              <div class="use-case">Secondary success, info</div>
+            </div>
+          </div>
+
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #17a2b8">
+              Cyan
+            </div>
+            <div class="color-info">
+              <div class="color-name">Cyan</div>
+              <div class="color-code">#17a2b8</div>
+              <div class="color-var">--color-cyan</div>
+              <div class="use-case">Secondary information</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brand Color -->
+      <div class="palette-section">
+        <h2 class="section-title">Brand Color</h2>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background-color: #008877">
+              Brand Teal
+            </div>
+            <div class="color-info">
+              <div class="color-name">Brand Teal</div>
+              <div class="color-code">#008877</div>
+              <div class="color-var">--color-brand</div>
+              <div class="use-case">Brand identity, special elements</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Component Examples -->
+      <div class="palette-section">
+        <h2 class="section-title">Component Examples</h2>
+
+        <div class="component-example">
+          <div class="component-title">Button Styles</div>
+          <div class="example-buttons">
+            <button class="btn btn-blue">Primary Button</button>
+            <button class="btn btn-azure">Info Button</button>
+            <button class="btn btn-green">Success Button</button>
+            <button class="btn btn-orange">Warning Button</button>
+            <button class="btn btn-red">Danger Button</button>
+            <button class="btn btn-brand">Brand Button</button>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <div class="component-title">Status Indicators</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 20px">
+            <div>
+              <span style="color: #2fb344; font-weight: 600; font-size: 14px"
+                >✅ Enabled</span
+              >
+            </div>
+            <div>
+              <span style="color: #d63939; font-weight: 600; font-size: 14px"
+                >❌ Disabled</span
+              >
+            </div>
+            <div>
+              <span style="color: #f76707; font-weight: 600; font-size: 14px"
+                >⏳ Pending</span
+              >
+            </div>
+            <div>
+              <span style="color: #6c757d; font-weight: 600; font-size: 14px"
+                >ℹ️ Inactive</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="component-example">
+          <div class="component-title">Alert Styles</div>
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div
+              style="
+                padding: 12px 16px;
+                background-color: rgba(66, 153, 225, 0.1);
+                border-left: 4px solid #4299e1;
+                color: #4299e1;
+                border-radius: 4px;
+              "
+            >
+              ℹ️ Information message
+            </div>
+            <div
+              style="
+                padding: 12px 16px;
+                background-color: rgba(47, 179, 68, 0.1);
+                border-left: 4px solid #2fb344;
+                color: #2fb344;
+                border-radius: 4px;
+              "
+            >
+              ✓ Success message
+            </div>
+            <div
+              style="
+                padding: 12px 16px;
+                background-color: rgba(247, 103, 7, 0.1);
+                border-left: 4px solid #f76707;
+                color: #f76707;
+                border-radius: 4px;
+              "
+            >
+              ⚠️ Warning message
+            </div>
+            <div
+              style="
+                padding: 12px 16px;
+                background-color: rgba(214, 57, 57, 0.1);
+                border-left: 4px solid #d63939;
+                color: #d63939;
+                border-radius: 4px;
+              "
+            >
+              ✕ Error message
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>
+          SIMS Color Palette - Designed for Hamro Panel<br />
+          CSS File: <code>/panel/static/css/colors.css</code>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,109 @@
+<div class="navbar-custom">
+    <div class="container">
+        <div id="navigation">
+            <!-- Navigation Menu-->
+            <ul class="navigation-menu">
+                <li>
+                    <a href="/gpanel/"><i class="mdi mdi-view-dashboard"></i>gPanel</a>
+                </li>
+                {%comment%}
+                <li class="has-submenu">
+                    <a href="#"><i class="mdi mdi-layers"></i>Grades</a>
+                    <ul class="submenu megamenu">
+                      {% for level in grade_level %}
+                        <li>
+                            <ul>
+                                <li>
+                                    <span>{{ level }}</span>
+                                </li>
+                                {% for grade in grades %}
+                                  {% if grade.level.id == level.id %}
+                                    <li><a href="/sims/{{ grade.name|lower }}/">{{ grade.name }}</a></li>
+                                  {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        {% endfor %}
+
+                    </ul>
+                </li>
+                {% endcomment %}
+                {% for level in grade_level %}
+                <li class="has-submenu">
+                    <a href="#"><i class="mdi mdi-home-map-marker"></i>{{ level.name|upper }}</a>
+                    <ul class="submenu">
+                        {% for grade in grades %}
+                            {% if grade.level.id == level.id %}
+                              <li><a href="/sims/grades/{{ grade.name|lower }}/">{{ grade.name|upper }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        <li><a href="/gpanel/{{ level.id }}/addgrade/">Add Grade</a></li>
+                    </ul>
+                    
+                </li>
+                {% endfor %}
+
+                <li class="has-submenu">
+                    <a href="#"><i class="mdi mdi-home-map-marker"></i>Additional</a>
+                    <ul class="submenu">
+                        <li><a href="#">Add Student</a></li>
+
+                    </ul>
+                </li>
+
+                <!-- <li class="has-submenu">
+                    <a href="#"><i class="mdi mdi-home-map-marker"></i>Update</a>
+                    <ul class="submenu">
+                        <li><a href="real-estate-dashboard.html">Dashboard</a></li>
+                        <li><a href="real-estate-list.html">Property List</a></li>
+                        <li><a href="real-estate-column.html">Property Column</a></li>
+                        <li><a href="real-estate-detail.html">Property Detail</a></li>
+                        <li><a href="real-estate-agents.html">Agents</a></li>
+                        <li><a href="real-estate-profile.html">Agent Details</a></li>
+                        <li><a href="real-estate-add.html">Add Property</a></li>
+                    </ul>
+                </li> -->
+
+                <!-- <li class="has-submenu">
+                    <a href="#"><i class="mdi mdi-home-map-marker"></i>Print</a>
+                    <ul class="submenu">
+                        <li><a href="real-estate-dashboard.html">Dashboard</a></li>
+                        <li><a href="real-estate-list.html">Property List</a></li>
+                        <li><a href="real-estate-column.html">Property Column</a></li>
+                        <li><a href="real-estate-detail.html">Property Detail</a></li>
+                        <li><a href="real-estate-agents.html">Agents</a></li>
+                        <li><a href="real-estate-profile.html">Agent Details</a></li>
+                        <li><a href="real-estate-add.html">Add Property</a></li>
+                    </ul>
+                </li> -->
+
+                <!-- <li class="has-submenu">
+                    <a href="#"><i class="mdi mdi-home-map-marker"></i>Enable / Disable</a>
+                    <ul class="submenu">
+                        <li><a href="/sims/ed/grades/">Grades</a></li>
+                        <li><a href="real-estate-list.html">Property List</a></li>
+                        <li><a href="real-estate-column.html">Property Column</a></li>
+                        <li><a href="real-estate-detail.html">Property Detail</a></li>
+                        <li><a href="real-estate-agents.html">Agents</a></li>
+                        <li><a href="real-estate-profile.html">Agent Details</a></li>
+                        <li><a href="real-estate-add.html">Add Property</a></li>
+                    </ul>
+                </li> -->
+
+                <!-- <li class="has-submenu">
+                    <a href="#"><i class="mdi mdi-home-map-marker"></i>Additional</a>
+                    <ul class="submenu">
+                        <li><a href="real-estate-dashboard.html">Dashboard</a></li>
+                        <li><a href="real-estate-list.html">Property List</a></li>
+                        <li><a href="real-estate-column.html">Property Column</a></li>
+                        <li><a href="real-estate-detail.html">Property Detail</a></li>
+                        <li><a href="real-estate-agents.html">Agents</a></li>
+                        <li><a href="real-estate-profile.html">Agent Details</a></li>
+                        <li><a href="real-estate-add.html">Add Property</a></li>
+                    </ul>
+                </li> -->
+            </ul>
+            <!-- End navigation menu -->
+        </div> <!-- end #navigation -->
+    </div> <!-- end container -->
+</div> <!-- end navbar-custom -->

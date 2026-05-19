@@ -1,0 +1,25 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} Under Maintenance - Hamro Panel | Hamro.com {% endblock title %}
+{% load static %}
+{% block content %}
+      <body class="account-pages-bg bg-transparent">
+
+        <!-- HOME -->
+        <section>
+            <div class="container-alt">
+                <div class="row">
+                    <div class="col-sm-12 text-center">
+
+                        <div class="home-wrapper">
+                            <img src="{% static "images/animat-rocket-color.gif" %}" alt="" height="180">
+                            <h2 class="home-text text-uppercase text-danger">Site is Under Maintenance</h2>
+                            <p class="text-muted">We're making the system more awesome.we'll be back shortly.</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+          </section>
+          <!-- END HOME -->
+      </body>
+{% endblock content %}

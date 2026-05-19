@@ -1,0 +1,71 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} List Guardian - Hamro Panel - SIMSNepal.com {% endblock %}
+
+{% block navbar %}
+    {% if branch_user.admin_status %}
+        {% include 'snippets/nav_admin.html' %}
+    {% else %}
+        {% include 'snippets/nav_teacher.html' %}
+    {% endif %}
+
+{% endblock navbar %}
+{% block content %}
+
+<!-- Page-Title -->
+<div class="row">
+    <div class="col-sm-12">
+        <div class="page-title-box">
+            <div class="btn-group pull-right">
+                <ol class="breadcrumb hide-phone p-0 m-0">
+                    <li>
+                        <a href="#">Hamro Panel</a>
+                    </li>
+                    <li>
+                        <a href="#"> Print </a>
+                    </li>
+                    <li class="active">
+                        Guardians
+                    </li>
+                </ol>
+            </div>
+            <h4 class="page-title">List of Guardians</h4>
+        </div>
+    </div>
+</div>
+<!-- end -->
+<div class="row">
+    <div class="col-md-10">
+        <!-- <div class="card"> -->
+            <div class="card-header d-flex align-items-center form-group" style="border: 0px solid #ccc; border-radius: 5px; padding: 10;">
+                <div class="row mt-5">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>SN</th>
+                            <th>Full Name</th>
+                            <th>Mobile</th>
+                            <th>Email</th>
+                            <th>Action</th>
+                        </tr>
+                        {% for parent in parents %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ parent.guardian.first_name }} {{ parent.guardian.last_name }}</td>
+                                <td>{{ parent.guardian.username }}</td>
+                                <td>{{ parent.guardian.email }}</td>
+                                <td><a href="/panel/edit/parent/{{ parent.guardian.id }}/">Edit</a></td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+    </div>
+</div>
+<!-- end row -->
+{% endblock %}
+
+
+
+
+
+
+

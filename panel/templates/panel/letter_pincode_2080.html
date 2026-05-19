@@ -1,0 +1,165 @@
+<html>
+    <head>
+            <meta charset="utf-8">
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+            <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css"
+        integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        <style media="print">
+            @media print
+            {
+                @page {
+                  size: A4; /* DIN A4 standard, Europe */
+                  margin: 0em;
+                  zoom: 70%;
+                  /* line-height: 2; */
+                  font-size: 110%;
+                }
+
+                .mainbox{
+                    height: 100%;
+                    /* border: 0.1em solid #000; */
+                    padding: 0.8em; 
+                    /* font-size: 1.2;                */
+                    font-size: 110%;
+                }
+
+                .about_school{
+                    margin: 0; 
+                    padding: 0;
+                    font-weight: bolder;
+                    text-align: center;
+                    font-size: 1.3em;
+                }
+            
+                
+           
+            
+                .letterbox{
+                    /* border: 0.1em solid #fff;
+                    margin: 0em;
+                    padding: 0.5em 2em; */
+                    
+                    margin: 0 2em;
+                    padding: 1em 0em;
+                    word-wrap: break-word;
+                    text-align: justify;
+                    text-justify: inter-word;
+                }
+                .lettercontent{
+                    font-size: 110%;
+                }
+                td{
+                    padding: 0px 10px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        
+        {% for key,student in students.items %}
+        <div class="mainbox">
+            <div class="letterbox">
+                <div class="about_school">
+                    <p class="motto">{{ slogan|safe }} </p>
+                    <h1 class="school">{{ school.name }}</h1>
+                    <h3 class="term">{{ school.location }}</h3>
+                    <p class="telephone" style="margin: -10px 0 10px 0;">
+                        <i class="fas fa-phone-square"></i> +977 {{ school.phone }},  
+                        <i class="fas fa-envelope-square"></i> {{ school.email }}
+                    </p>
+                </div>
+                <div class="lettercontent">
+
+                    <br><strong>बिषय: जानकारी गराइएको बारे।  </strong><br><br>
+    
+                    आदरणीय अभिभावक ज्यू,  <br>
+                        <span style="margin-left:50px;"></span>उपरोक्त बिषयमा यस बिद्यालयमा अध्ययनरत बिद्यार्थीका 
+                    अभिभावकहरुको व्यस्तता लाई ध्यानमा राखी विद्यार्थीको परीक्षाको परीक्षाफल 
+                    (Result), गृहकार्य (Homework) लगायत विद्यार्थीको अन्य जानकारी इन्टरनेटको 
+                    सहायताले संसारको जुनसुकै कुना बाट पनि सजिलै थाहा पाउनका निमित्त आफ्नो 
+                    मोबाइल वा कम्प्युटरको web browser मा {{ school.website }} वेबसाईट खोली 
+                    SIMS मा login गर्न सक्नुहुनेछ। Login गर्नका लागि आवश्यक पर्ने User Name 
+                    र Password का लागि बिद्यालयमा यथाशीघ्र सम्पर्क गर्नुहुन अनुरोध छ।<br>
+                    
+                    <span style="margin-left:50px;"></span>साथै यस बिद्यालयमा अध्ययन गर्ने प्रत्येक बिद्यार्थीको छुट्टाछुट्टै दर्ता नम्बर कायम भै 
+                    सोही नम्बरको आधारमा विद्यार्थीका बिबिध तथ्यांक ब्यवस्थापन गरिने भएकाले 
+                    तलको बिवरण रुजु गरि सुधार (Correction) गर्नुपर्ने भए बिद्यालयमा जानकारी 
+                    गराउनुहुन समेत समेत अनुरोध छ। <br><br>
+                    
+                    <!--<strong>नोट: विद्यार्थीको दर्ता नम्बर एकपटक तथा सदैव एउटै कायम रहनेछ।  </strong><br><br> -->
+
+                    <table class="table-sm table-bordered">
+                        <tr>
+                            <th colspan="2">Information about {{ student.info.name|title }} ({{student.grade}} / {{student.section}})</th>
+                        </tr>
+                        <tr>
+                            <td>Name</td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.name|title }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td> Registration Number</td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.reg_no }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td> Gender </td>
+                            <td style="padding-left: 1em;"><strong>{% if student.info.gender %} Male {% else %} Female {% endif %}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Date of Birth </td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.dob }} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Temporary Address </td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.temporary_address }} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Permanent Address </td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.permanent_address }} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Fathers Name </td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.fathers_name }} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Fathers Phone </td>
+                            <td style="padding-left: 1em;"><strong>{% if student.info.fathers_phone != None %}{{ student.info.fathers_phone }}{% endif %} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Fathers Email </td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.fathers_email }} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Mothers Name </td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.mothers_name }} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Mothers Phone </td>
+                            <td style="padding-left: 1em;"><strong>{% if student.info.mothers_phone != None %}{{ student.info.mothers_phone }}{% endif %} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Mothers Email </td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.mothers_email }} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Guardian's Name </td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.guardian_name }} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Guardian's Phone </td>
+                            <td style="padding-left: 1em;"><strong>{% if student.info.guardian_phone != None %}{{ student.info.guardian_phone }}{% endif %} </strong></td>
+                        </tr>
+                        <tr>
+                            <td>Guardian's Email </td>
+                            <td style="padding-left: 1em;"><strong>{{ student.info.guardian_email }} </strong></td>
+                        </tr>
+
+                    </table>
+                    <p style="float:right;">-बिद्यालय प्रशासन</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </body>
+</html>
+

@@ -1,0 +1,105 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %} Admin Dashboard- Specific Class - SIMSNepal.com {% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">
+          <i class="ti ti-books me-2"></i> Select Subject
+        </h2>
+        <div class="text-muted mt-1">Choose a subject to continue entering marks</div>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/panel/subjectwise/">Subject-wise Marks</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Select Subject</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="page-body">
+  <div class="container-xl">
+    <div class="row row-cards justify-content-center">
+      <div class="col-md-8 col-lg-6">
+        <form action="/panel/subjectwisemarksentry/" method="POST" target="_blank" class="card shadow-sm">
+          {% csrf_token %} 
+          <input type="hidden" name="grade" id="grade" value="{{ grade.id }}">
+          <input type="hidden" name="term" id="term" value="{{ term_exam.id }}">
+          <input type="hidden" name="section" id="section" value="{{ section.id }}">
+          <input type="hidden" name="order" id="order" value="{{ order }}">
+          
+          <div class="card-header bg-white">
+            <h3 class="card-title">Marks Input Selection</h3>
+          </div>
+          
+          <div class="card-body">
+            
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">School</label>
+              <div class="col">
+                <div class="form-control-plaintext fw-bold">{{ school|upper }}</div>
+              </div>
+            </div>
+            
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Term</label>
+              <div class="col">
+                <div class="form-control-plaintext">{{ term_exam|upper }}</div>
+              </div>
+            </div>
+            
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Grade</label>
+              <div class="col">
+                <div class="form-control-plaintext">
+                  <span class="badge bg-blue-lt">{{ grade }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">Section</label>
+              <div class="col">
+                <div class="form-control-plaintext">
+                  <span class="badge bg-green-lt">{{ section }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <div class="mb-3">
+              <label class="form-label required">Select Subject</label>
+              <select name="subject" id="subject" class="form-select">
+                {% for subject in subjects %}
+                  <option value="{{ subject.id }}">{{ subject.subject|upper }}</option>
+                {% endfor %}
+              </select>
+              <small class="form-hint">Must select a subject inside this grade</small>
+            </div>
+            
+          </div>
+          
+          <div class="card-footer text-end bg-transparent mt-auto">
+            <button type="submit" name="submit" class="btn btn-primary btn-pill px-4">
+              <i class="ti ti-check me-2"></i> Proceed to Marks Entry
+            </button>
+          </div>
+          
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

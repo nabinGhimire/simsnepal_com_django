@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<link href='https://fonts.googleapis.com/css?family=Poppins' rel='stylesheet'>
+    <title>Marks Form for {{ grade|upper }}{% if section %} ({{ section|upper }}){% else %}(ALL){% endif %} {{ term_exam.term_name|upper }} - {{ this_year }}</title>
+    <style>
+	body{
+        font-family: "Poppins";
+        font-size: 15px;
+      }
+      table.table-bordered{
+          border:1px solid black;
+          margin-top:20px;
+      }
+      table.table-bordered > thead > tr > th{
+          border:1px solid black;
+      }
+      table.table-bordered > tbody > tr > td{
+          border:1px solid black;
+      }
+      .main-header{
+    width: 130mm;
+}
+.info{
+margin: 0px auto;
+text-align: center;
+margin-top: -3mm;
+}
+.motto{
+margin-top: -1mm;
+}
+
+.telephone, .school{
+margin-top: -5mm;
+}
+.term, .report-type{
+margin-top: -3mm;
+}
+
+.motto{
+margin-top: 3mm;
+font-size: 4mm;
+text-align: center;
+}
+.school{
+text-transform: uppercase;
+text-align: center;
+font-size: 7mm;
+font-weight: bolder;
+}
+.term{
+text-transform: uppercase;
+font-size: 6mm;
+font-weight: bold;
+/* text-decoration: underline; */
+}
+.term, .report-type{
+	margin-top: -3mm;
+}
+.address{
+	margin-top: -2mm;
+}
+
+.report-type{
+/* border: 0.3mm solid #0; */
+/* max-width: 65mm; */
+/* margin: 1mm 10mm; */
+padding: 1.5mm 3mm 1mm 3mm;
+text-align: center;
+font-size: 5.5mm;
+color: #fff;
+font-weight: bolder;
+background-color: #000!important;
+}
+
+.table th, .table td, .table tr{
+  border: 1px solid black;
+}
+
+.table th, .table td, .table tr{
+  border: 1px solid black;
+}
+.table td{
+  margin-left: 30px;
+}
+
+.table th, .table td, .table tr{
+  border: 1px solid black;
+}
+.table td{
+  margin-left: 100px;
+}
+
+td{
+  /* text-align: center; */
+  margin-top: 5px;
+  padding-left: 10px;
+}
+@media print{
+ header { position: fixed; top: 0; } footer { position: fixed; bottom: 0; }
+}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+    	<div class="col-md-6 mx-auto">
+        <div class="info">
+            <p class="motto">{{school.slogan}} </p>
+            <h1 class="school">{{ school.name }}</h1>
+            <h3 class="term">{{ school.location }}</h3>
+            {#            <p class="telephone" style="margin: -10px 0 10px 0;"><i class="fas fa-phone-square"></i> +977 {{ school.phone }},  <i class="fas fa-envelope-square"></i> {{ school.email }}</p>#}
+            <h3 class="report-type">MARK ENTRY FORM FOR {{ grade|upper }}{% if section %} ({{ section|upper }}){% else %}(ALL){% endif %}</h3>
+        </div>
+        </div>
+    </div>
+	<div class="row">
+        <div class="col-sm-12">
+            <table class="table">
+                <tr>
+                  <td>TERM: </td>
+                  <td>SUBJECT : </td>
+                </tr>
+              </table>
+        </div>
+        
+
+      </div>
+      <div class="row">
+        <div class="col-sm-12 col-md-12">
+          <table class="table">
+            <tr>
+                <td>Roll No</td>
+              <td>Reg. No</td>
+              <td>Name</td>
+              <td>Theory</td>
+              <td>Practical</td>
+            </tr>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.roll_no }}</td>
+                <td>{{ student.student.reg_no }}</td>
+                <td>{{ student.student.name }}</td>
+                <td></td>
+                <td></td>
+            </tr>
+            {% endfor %}
+          </table>
+        </div>
+      </div>        
+                
+                
+    </div>
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+  </body>
+</html>
+
+    
+
