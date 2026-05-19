@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Optimization Meta Tags -->
+    <meta name="description" content="{% block meta_description %}SIMS Nepal - The premier modern Student Information Management System (SIMS). Streamline academic records, tracking, financials, and communications in Nepal.{% endblock %}">
+    <meta name="keywords" content="SIMS Nepal, Student Information Management System, School Management Software Nepal, SMS Nepal, Academic Management, Hamro Business SSO">
+    <meta name="author" content="SIMS Nepal">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Canonical URL to prevent duplicate content indexing -->
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    
+    <!-- Open Graph (Facebook/LinkedIn) -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="{% block og_title %}SIMS Nepal - Student Information Management System{% endblock %}">
+    <meta property="og:description" content="Modern, fast, and feature-rich management software for schools and colleges across Nepal.">
+    <meta property="og:site_name" content="SIMS Nepal">
+    
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}SIMS Nepal - Student Information Management System{% endblock %}">
+    <meta name="twitter:description" content="Modern, fast, and feature-rich management software for schools and colleges across Nepal.">
+    
+    <title>{% block title %}SIMS Nepal | Student Information Management System{% endblock %}</title>
+    
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Structured JSON-LD Schema Data (SEO optimization) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "SIMS Nepal",
+      "url": "{{ request.scheme }}://{{ request.get_host }}",
+      "logo": "{{ request.scheme }}://{{ request.get_host }}/static/logo.png",
+      "description": "Student Information Management System (SIMS) Nepal - Core institutional software for school administration and grading.",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "New Baneshwor",
+        "addressLocality": "Kathmandu",
+        "postalCode": "44600",
+        "addressCountry": "NP"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+977-1-4499000",
+        "contactType": "sales and technical service",
+        "email": "support@simsnepal.com"
+      }
+    }
+    </script>
+    
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: rgba(255, 255, 255, 0.85);
+            --panel-border: rgba(0, 137, 117, 0.12);
+            --accent-primary: #008975;
+            --accent-secondary: #00a890;
+            --accent-glow: rgba(0, 137, 117, 0.08);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --success: #059669;
+            --success-glow: rgba(5, 150, 105, 0.08);
+            --card-hover-border: rgba(0, 137, 117, 0.35);
+            --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Glow Wrapper to clip vertical overflow completely */
+        .ambient-glow-wrapper {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* Abstract glowing blobs for premium light mode feel */
+        .bg-blob-1 {
+            position: absolute;
+            top: -200px;
+            right: -200px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 137, 117, 0.06) 0%, rgba(0,0,0,0) 70%);
+            pointer-events: none;
+        }
+
+        .bg-blob-2 {
+            position: absolute;
+            bottom: -200px;
+            left: -200px;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 137, 117, 0.05) 0%, rgba(0,0,0,0) 70%);
+            pointer-events: none;
+        }
+
+        /* Navigation Header */
+        header.site-header {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--panel-border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 137, 117, 0.03);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-box {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #ffffff;
+            font-size: 1.15rem;
+            box-shadow: 0 4px 10px var(--accent-glow);
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent-primary) 40%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        nav.nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        nav.nav-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        nav.nav-links a:hover, nav.nav-links a.active {
+            color: var(--accent-primary);
+        }
+
+        nav.nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transition: width 0.2s ease;
+        }
+
+        nav.nav-links a:hover::after, nav.nav-links a.active::after {
+            width: 100%;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 9px 20px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .btn-outline:hover {
+            background: rgba(0, 137, 117, 0.05);
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(0, 137, 117, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 137, 117, 0.35);
+        }
+
+        /* Mobile Hamburger */
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .menu-toggle span {
+            width: 25px;
+            height: 2px;
+            background-color: var(--text-main);
+            transition: all 0.3s ease;
+        }
+
+        .mobile-only-link {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            nav.nav-links {
+                display: none;
+            }
+            .header-actions {
+                display: none;
+            }
+            .menu-toggle {
+                display: flex;
+            }
+            nav.nav-links a.mobile-only-link {
+                display: block !important;
+                padding: 0.75rem 0;
+                border-top: 1px solid var(--panel-border);
+                margin-top: 0.5rem;
+            }
+        }
+
+        /* Main Site Content Wrapper */
+        main.site-content {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            z-index: 2;
+        }
+
+        /* Modern Glass Footer */
+        footer.site-footer {
+            background: rgba(255, 255, 255, 0.9);
+            border-top: 1px solid var(--panel-border);
+            padding: 3rem 2rem 2rem;
+            margin-top: auto;
+            z-index: 2;
+            box-shadow: 0 -4px 20px rgba(0, 137, 117, 0.02);
+        }
+
+        .footer-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 4rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+
+        .footer-about h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 1rem;
+        }
+
+        .footer-about p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            max-width: 400px;
+        }
+
+        .footer-links h4 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-main);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links ul li {
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-links ul li a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links ul li a:hover {
+            color: var(--accent-primary);
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            border-top: 1px solid rgba(0, 137, 117, 0.08);
+            padding-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-bottom p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer-bottom-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .footer-bottom-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            transition: color 0.2s ease;
+        }
+
+        .footer-bottom-links a:hover {
+            color: var(--accent-primary);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Ambient Glow wrapper to contain & clip vertical space -->
+    <div class="ambient-glow-wrapper">
+        <div class="bg-blob-1"></div>
+        <div class="bg-blob-2"></div>
+    </div>
+
+    <!-- Sticky Navigation Header -->
+    <header class="site-header" id="site-header-navbar">
+        <div class="nav-container">
+            <a href="{% url 'home' %}" class="logo-section" id="brand-logo-link">
+                <div class="logo-box">S</div>
+                <span class="logo-text">SIMS Nepal</span>
+            </a>
+
+            <!-- Public Navigation Links -->
+            <nav class="nav-links" id="main-navigation-links">
+                <a href="{% url 'home' %}" class="{% block active_home %}{% endblock %}" id="nav-home-link">Home</a>
+                <a href="{% url 'features' %}" class="{% block active_features %}{% endblock %}" id="nav-features-link">Features</a>
+                <a href="{% url 'pricing' %}" class="{% block active_pricing %}{% endblock %}" id="nav-pricing-link">Pricing</a>
+                <a href="{% url 'faq' %}" class="{% block active_faq %}{% endblock %}" id="nav-faq-link">FAQ</a>
+                <a href="{% url 'about' %}" class="{% block active_about %}{% endblock %}" id="nav-about-link">About Us</a>
+                <a href="{% url 'contact' %}" class="{% block active_contact %}{% endblock %}" id="nav-contact-link">Contact</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="mobile-only-link" id="nav-mobile-dashboard">Dashboard Portal</a>
+                    <a href="{% url 'logout' %}" class="mobile-only-link" id="nav-mobile-logout" style="color: #ef4444;">Logout</a>
+                {% endif %}
+            </nav>
+
+            <!-- SSO Action CTA -->
+            <div class="header-actions">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline" id="nav-dashboard-button">Dashboard Portal</a>
+                    <a href="{% url 'logout' %}" class="btn btn-primary" id="nav-logout-button">Logout</a>
+                {% else %}
+                    <a href="http://127.0.0.1:8080" class="btn btn-outline" id="nav-login-sso-btn">SSO Partner Login</a>
+                    <a href="{% url 'features' %}" class="btn btn-primary" id="nav-cta-getstarted">Explore Features</a>
+                {% endif %}
+            </div>
+
+            <!-- Hamburger Button -->
+            <button class="menu-toggle" id="mobile-menu-toggle-btn" aria-label="Toggle Navigation Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="site-content" id="site-primary-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Global Glass Footer -->
+    <footer class="site-footer" id="site-global-footer">
+        <div class="footer-grid">
+            <div class="footer-about">
+                <h4>SIMS Nepal</h4>
+                <p>The highly intuitive, secure, and modern Student Information Management System built specifically to satisfy local, regional, and national school administration guidelines across Nepal.</p>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Solutions</h4>
+                <ul>
+                    <li><a href="{% url 'features' %}">Academic Grading</a></li>
+                    <li><a href="{% url 'features' %}">Attendance Tracking</a></li>
+                    <li><a href="{% url 'features' %}">Financial Management</a></li>
+                    <li><a href="{% url 'dashboard' %}">SSO User Portal</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Corporate</h4>
+                <ul>
+                    <li><a href="{% url 'pricing' %}">Plans & Pricing</a></li>
+                    <li><a href="{% url 'faq' %}">Common FAQs</a></li>
+                    <li><a href="{% url 'about' %}">Our Mission</a></li>
+                    <li><a href="{% url 'contact' %}">Contact Us</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 SIMS Nepal. All Rights Reserved. Partnered with Hamro Business SSO System.</p>
+            <div class="footer-bottom-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Interactive navigation helper scripts -->
+    <script>
+        const toggleBtn = document.getElementById('mobile-menu-toggle-btn');
+        const navMenu = document.getElementById('main-navigation-links');
+        
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const isNavVisible = navMenu.style.display === 'flex';
+                if (isNavVisible) {
+                    navMenu.style.display = 'none';
+                } else {
+                    navMenu.style.display = 'flex';
+                    navMenu.style.flexDirection = 'column';
+                    navMenu.style.position = 'absolute';
+                    navMenu.style.top = '100%';
+                    navMenu.style.left = '0';
+                    navMenu.style.width = '100%';
+                    navMenu.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
+                    navMenu.style.padding = '1.5rem';
+                    navMenu.style.borderBottom = '1px solid var(--panel-border)';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
