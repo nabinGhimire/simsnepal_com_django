@@ -5,3 +5,4 @@ manage.py
 sso.txt
 *.pyc
 .env
+./sso/*/*.pyc
