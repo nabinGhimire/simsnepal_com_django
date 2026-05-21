@@ -254,6 +254,8 @@ class Student(models.Model):
 
     status = models.BooleanField(default=True)
     publish_result = models.BooleanField(default=True)
+    
+    avatar = models.FileField(upload_to='students/avatars/', blank=True, null=True)
 
     added = models.DateTimeField(default=datetime.now)
     modified = models.DateTimeField(auto_now_add=True)
@@ -262,6 +264,16 @@ class Student(models.Model):
 
     def __str__(self):
         return self.name
+        
+    def get_avatar(self, session=None):
+        if session:
+            try:
+                student_session = self.studentsession_set.get(session=session)
+                if student_session.avatar:
+                    return student_session.avatar
+            except (StudentSession.DoesNotExist, StudentSession.MultipleObjectsReturned):
+                pass
+        return self.avatar
 
 
 class StudentSession(models.Model):
@@ -271,6 +283,10 @@ class StudentSession(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
     roll_no = models.IntegerField()
     status = models.BooleanField(default=True)
+    
+    avatar = models.FileField(upload_to='students/sessions/', blank=True, null=True)
+    parent_can_view_result = models.BooleanField(default=True)
+    parent_can_view_homework = models.BooleanField(default=True)
 
     class Meta:
         unique_together = (('session', 'student', 'grade'),)

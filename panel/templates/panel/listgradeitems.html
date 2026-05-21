@@ -537,6 +537,133 @@
       </div>
     </div>
 
+    {% elif student %}
+    <div class="card mb-3 border-0 shadow-sm" style="border-top: 3px solid #008877 !important;">
+      <div class="card-header">
+        <h3 class="card-title">Add New Student</h3>
+      </div>
+      <div class="card-body">
+        <form action="/panel/addstudent/" method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="redurl" value="{{ request.get_full_path }}" />
+          <input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
+          
+          <div class="row g-3">
+            <div class="col-md-6 mb-3">
+              <label class="form-label required">Student Name</label>
+              <input type="text" class="form-control" name="studentname" required />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label required">Roll No.</label>
+              <input type="number" class="form-control" name="rollno" required />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label required">Gender</label>
+              <select name="gender" class="form-select" required>
+                <option value="True">Male</option>
+                <option value="False">Female</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label required">Section</label>
+              <select name="section" class="form-select" required>
+                {% for sec in avaiablesections %}
+                  <option value="{{ sec.id }}">{{ sec.section }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Date of Birth</label>
+              <input type="text" class="form-control" name="dateofbirth" placeholder="YYYY/MM/DD" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Student Avatar</label>
+              <input type="file" class="form-control" name="avatar" accept="image/*" />
+            </div>
+          </div>
+          
+          <hr class="my-3" />
+          <h5 class="mb-3">Parent/Guardian Details</h5>
+          <div class="row g-3">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Father's Name</label>
+              <input type="text" class="form-control" name="fathersname" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Father's Phone</label>
+              <input type="number" class="form-control" name="fathersphone" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Mother's Name</label>
+              <input type="text" class="form-control" name="mothersname" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Mother's Phone</label>
+              <input type="number" class="form-control" name="mothersphone" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Father's Email</label>
+              <input type="email" class="form-control" name="fathersemail" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Mother's Email</label>
+              <input type="email" class="form-control" name="mothersemail" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Guardian's Name</label>
+              <input type="text" class="form-control" name="guardianname" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Guardian's Phone</label>
+              <input type="number" class="form-control" name="guardianphone" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Guardian's Email</label>
+              <input type="email" class="form-control" name="guardianemail" />
+            </div>
+          </div>
+
+          <hr class="my-3" />
+          <h5 class="mb-3">Address Details</h5>
+          <div class="row g-3">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Temporary Address</label>
+              <input type="text" class="form-control" name="tempaddr" />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Permanent Address</label>
+              <input type="text" class="form-control" name="peraddr" />
+            </div>
+          </div>
+
+          <hr class="my-3" />
+          <h5 class="mb-3">Parent View Permissions</h5>
+          <div class="row g-3">
+            <div class="col-md-6 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="parent_can_view_result" id="parent_can_view_result" checked>
+                <label class="form-check-label" for="parent_can_view_result">
+                  Parent can view Result
+                </label>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="parent_can_view_homework" id="parent_can_view_homework" checked>
+                <label class="form-check-label" for="parent_can_view_homework">
+                  Parent can view Homework
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-teal text-white mt-3" style="background-color: #008877;">
+            <i class="ti ti-plus me-1"></i> Add Student
+          </button>
+        </form>
+      </div>
+    </div>
+
     {% elif student_by_reg %}
     <div class="card"><div class="card-header"><h3 class="card-title">Add Student by Registration</h3></div><div class="card-body"><form action="/panel/add_student_by_reg/" method="POST">{% csrf_token %}<input type="hidden" name="redurl" value="{{ request.get_full_path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" /><div class="mb-3"><label class="form-label">Reg. No.</label><input type="number" class="form-control" name="regno" required /></div><div class="mb-3"><label class="form-label">Roll No.</label><input type="number" class="form-control" name="rollno" required /></div><div class="mb-3">{% for sec in avaiablesections %}<div class="form-check"><input type="radio" name="section" value="{{ sec.id }}" class="form-check-input" required><label class="form-check-label">{{ sec.section }}</label></div>{% endfor %}</div><button type="submit" class="btn btn-primary">Add Student</button></form></div></div>
 

@@ -29,11 +29,13 @@ from django.db.models import Q
 
 from io import BytesIO
 from django.template.loader import get_template
-from xhtml2pdf import pisa
+# from xhtml2pdf import pisa
 import logging
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
+
+# this_year = 2083
 
 def get_current_session():
     """Helper to get the current session without executing on import."""
@@ -505,83 +507,86 @@ def addteacher(request):
         )
 
 
-# @login_required
-# def addstudent(request):
-#     user = request.user
-#     if request.method == "POST":
-#         gradelevel = request.POST.get("gradelevel")
-#         redurl = request.POST.get("redurl")
-#
-#         # gradelevel = SchoolGrade.objects.get(id=gradelevel)
-#
-#         studentname = request.POST.get("studentname")
-#         rollno = request.POST.get("rollno", 1)
-#         gender = request.POST.get("gender")
-#         section = request.POST.get("section")
-#         dateofbirth = request.POST.get("dateofbirth", "")
-#
-#         tempaddr = request.POST.get("tempaddr", "")
-#         peraddr = request.POST.get("peraddr", "")
-#         fathersname = request.POST.get("fathersname", "")
-#         fathersphone = request.POST.get("fathersphone", 9800000000)
-#         mothersname = request.POST.get("mothersname", "")
-#         mothersphone = request.POST.get("mothersphone", 9800000000)
-#         parentsemail = request.POST.get("parentsemail", "demoemail@hamro.com")
-#
-#         # print(gradelevel, grade, section)
-#
-#         grade = SchoolGrade.objects.get(id=gradelevel)
-#         userbranch = BranchUser.objects.get(user=user)
-#         section = Section.objects.get(id=section)
-#         school = userbranch.school
-#
-#         new_reg_no = findNewRegNo(userbranch.school.id)
-#         pincode = randint(1000, 9999)
-#
-#         student = Student()
-#         student.reg_no = new_reg_no
-#         student.pin_code = pincode
-#         student.roll_no = rollno
-#         student.name = studentname
-#         student.gender = gender
-#         # student.dob = dateofbirth #datetime.strptime(dateofbirth, '%y/%m/%d')
-#         # student.temporary_address = tempaddr
-#         # student.permanent_address = peraddr
-#         student.grade = grade
-#         student.section = section
-#         # student.fathers_name = fathersname
-#         # student.fathers_phone = fathersphone
-#         # student.mothers_name = mothersname
-#         # student.mothers_phone = mothersphone
-#         # student.parents_email = parentsemail
-#         student.school = userbranch.school
-#         print("going to save student")
-#
-#         student.save()
-#
-#         # print(new_reg_no)
-#         # print('ADD STUDENT')
-#         # print(gradelevel, studentname, gender)#, username, gradelevel, userbranch.school.id, section)
-#         # print(userbranch.school)
-#
-#         # BranchUser.objects.filter()
-#
-#         # Subject.objects.get_or_create(branch=userbranch.school, grade=grade,subject=subject.upper())
-#
-#         # Section.objects.get_or_create(grade=grade,section=sectionname.upper())
-#
-#         for key, value in request.POST.items():
-#             print("Key: %s" % (key))
-#             # print(f'Key: {key}') in Python >= 3.7
-#             print("Value %s" % (value))
-#             # print(f'Value: {value}') in Python >= 3.7
-#
-#         return HttpResponseRedirect(redurl)
-#
-#     else:
-#         return HttpResponse(
-#             'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
-#         )
+@login_required
+def addstudent(request):
+    user = request.user
+    if request.method == "POST":
+        gradelevel = request.POST.get("gradelevel")
+        redurl = request.POST.get("redurl")
+
+        studentname = request.POST.get("studentname")
+        rollno = request.POST.get("rollno", 1)
+        gender = request.POST.get("gender") == "True"
+        section = request.POST.get("section")
+        dateofbirth = request.POST.get("dateofbirth", "")
+
+        tempaddr = request.POST.get("tempaddr", "")
+        peraddr = request.POST.get("peraddr", "")
+        fathersname = request.POST.get("fathersname", "")
+        fathersphone = request.POST.get("fathersphone")
+        fathersemail = request.POST.get("fathersemail", "")
+        mothersname = request.POST.get("mothersname", "")
+        mothersphone = request.POST.get("mothersphone")
+        mothersemail = request.POST.get("mothersemail", "")
+        guardianname = request.POST.get("guardianname", "")
+        guardianphone = request.POST.get("guardianphone")
+        guardianemail = request.POST.get("guardianemail", "")
+        
+        parent_can_view_result = request.POST.get("parent_can_view_result") == "on"
+        parent_can_view_homework = request.POST.get("parent_can_view_homework") == "on"
+        
+        avatar = request.FILES.get("avatar")
+
+        grade = SchoolGrade.objects.get(id=gradelevel)
+        userbranch = BranchUser.objects.get(user=user)
+        section_obj = Section.objects.get(id=section)
+        school = userbranch.school
+        current_session = get_current_session()
+
+        new_reg_no = findNewRegNo(userbranch.school.id)
+        pincode = randint(1000, 9999)
+
+        student = Student()
+        student.reg_no = new_reg_no
+        student.pin_code = pincode
+        student.name = studentname
+        student.gender = gender
+        student.dob = dateofbirth
+        student.temporary_address = tempaddr
+        student.permanent_address = peraddr
+        student.fathers_name = fathersname
+        student.fathers_phone = fathersphone
+        student.fathers_email = fathersemail
+        student.mothers_name = mothersname
+        student.mothers_phone = mothersphone
+        student.mothers_email = mothersemail
+        student.guardian_name = guardianname
+        student.guardian_phone = guardianphone
+        student.guardian_email = guardianemail
+        student.school = school
+        
+        if avatar:
+            student.avatar = avatar
+
+        student.save()
+
+        student_session = StudentSession.objects.create(
+            session=current_session,
+            student=student,
+            grade=grade,
+            section=section_obj,
+            roll_no=rollno,
+            status=True,
+            parent_can_view_result=parent_can_view_result,
+            parent_can_view_homework=parent_can_view_homework
+        )
+
+        return HttpResponseRedirect(redurl)
+
+    else:
+        return HttpResponse(
+            'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
+        )
 
 
 def findNewRegNo(school):
@@ -3446,7 +3451,7 @@ def resultapi(request):
         remark = remarks(cgpa)
 
         context = {
-            "year": this_year,
+            "year": this_session.year,
             "term": this_term,
             "student": student,
             "mo_dict": mo_dict,
@@ -3643,7 +3648,7 @@ def resultapinew(request):
         # total[''] =
 
         context = {
-            "year": this_year,
+            "year": this_session.year,
             "term": this_term,
             "student": student,
             "mo_dict": mo_dict,
@@ -5343,161 +5348,8 @@ def hwsubject(request):
 
 
 @login_required
-def addstudent(request):
-    this_session = EduSession.objects.get(year=this_year)
-    user = request.user
-    if request.method == 'POST':
-        gradelevel = request.POST.get('gradelevel')
-        redurl = request.POST.get('redurl')
-
-        # gradelevel = SchoolGrade.objects.get(id=gradelevel)
-        regno = request.POST.get('regno', 1)
-        print(' REG: ' + str(regno))
-        studentname = request.POST.get('studentname')
-        rollno = request.POST.get('rollno', 1)
-        gender = request.POST.get('gender')
-        section = request.POST.get('section')
-        dateofbirth = request.POST.get('dateofbirth', '')
-
-        tempaddr = request.POST.get('tempaddr', '')
-        peraddr = request.POST.get('peraddr', '')
-
-        fathersname = request.POST.get('fathersname', '')
-        fathersphone = request.POST.get('fathersphone', 0)
-        fathersemail = request.POST.get('fathersemail', None)
-
-        mothersname = request.POST.get('mothersname', '')
-        mothersphone = request.POST.get('mothersphone', None)
-        mothersemail = request.POST.get('mothersemail', None)
-
-        gurdainsname = request.POST.get('guardiansname', '')
-        gurdainsphone = request.POST.get('guardiansphone', None)
-        gurdainsemail = request.POST.get('guardiansemail', None)
-
-        # print(gradelevel, grade, section)
-
-        grade = SchoolGrade.objects.get(id=gradelevel)
-        userbranch = BranchUser.objects.get(user=user)
-        section = Section.objects.get(id=section)
-        school = userbranch.school
-
-        regno = regno.strip()
-
-        if regno:
-            regno = int(regno)
-            print(" regno after strip " + str(regno))
-            print("min: ")
-            print(userbranch.school.min_reg)
-            print("max: ")
-            print(userbranch.school.max_reg)
-            if userbranch.school.min_reg < regno < userbranch.school.max_reg:
-                new_reg_no = regno
-                print("reg within range")
-            else:
-                new_reg_no = findNewRegNo(userbranch.school.id)
-                print(" auto generated " + str(new_reg_no))
-        else:
-            new_reg_no = findNewRegNo(userbranch.school.id)
-            print(" auto generated " + str(new_reg_no))
-
-        pincode = randint(1000, 9999)
-
-        student = Student()
-        student.reg_no = new_reg_no
-
-        student.pin_code = pincode
-        student.roll_no = rollno
-        student.name = studentname
-        student.gender = gender
-        student.dob = dateofbirth #datetime.strptime(dateofbirth, '%y/%m/%d')
-        student.temporary_address = tempaddr
-        student.permanent_address = peraddr
-        # student.grade = grade
-        # student.section = section
-        student.fathers_name = fathersname
-        try:
-            fathersphone = int(fathersphone)
-            student.fathers_phone = fathersphone
-        except:
-            fathersphone = None
-            student.fathers_phone = fathersphone
-
-        student.fathers_email = fathersemail
-
-        student.mothers_name = mothersname
-        student.mothers_email = mothersemail
-        try:
-            mothersphone = int(mothersphone)
-            student.mothers_phone = mothersphone
-        except:
-            mothersphone = None
-            student.mothers_phone = mothersphone
-
-        student.guardian_name = gurdainsname
-        try:
-            gurdainsphone = int(gurdainsphone)
-            student.guardian_phone = gurdainsphone
-        except:
-            gurdainsphone = None
-            student.guardian_phone = gurdainsphone
-
-        student.guardian_email = gurdainsemail
-
-        student.school = userbranch.school
-        print("going to save student")
-
-        student.save()
-        if StudentSession.objects.filter(session=this_session, student=student).count() == 0:
-            student_session = StudentSession()
-            student_session.session = this_session
-            student_session.student = student
-            student_session.grade = grade
-            student_session.section = section
-            student_session.roll_no = rollno
-
-            student_session.save()
-
-
-        else:
-            student_session = StudentSession.objects.get(session=this_session, student=student, status=True)
-            student_session.status = False
-            student_session.save()
-
-            student_session = StudentSession()
-            student_session.session = this_session
-            student_session.student = student
-            student_session.grade = grade
-            student_session.section = section
-            student_session.roll_no = rollno
-
-            student_session.save()
-
-        # print(new_reg_no)
-        # print('ADD STUDENT')
-        # print(gradelevel, studentname, gender)#, username, gradelevel, userbranch.school.id, section)
-        # print(userbranch.school)
-
-        # BranchUser.objects.filter()
-
-        # Subject.objects.get_or_create(branch=userbranch.school, grade=grade,subject=subject.upper())
-
-        # Section.objects.get_or_create(grade=grade,section=sectionname.upper())
-
-        for key, value in request.POST.items():
-            print('Key: %s' % (key))
-            # print(f'Key: {key}') in Python >= 3.7
-            print('Value %s' % (value))
-            # print(f'Value: {value}') in Python >= 3.7
-
-        return HttpResponseRedirect(redurl)
-
-    else:
-        return HttpResponse('Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.')
-
-
-@login_required
 def add_student_by_reg(request):
-    this_session = EduSession.objects.get(year=this_year)
+    this_session = get_current_session()
     user = request.user
     if request.method == 'POST':
         gradelevel = request.POST.get('gradelevel')
