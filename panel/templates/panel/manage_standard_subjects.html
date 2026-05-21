@@ -1,0 +1,126 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %}Manage Standard Subjects | SIMSNepal{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Settings</div>
+        <h2 class="page-title">Manage Standard Subjects</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-md-4">
+    <div class="card border-0 shadow-sm" style="border-top: 3px solid #008877 !important;">
+      <div class="card-header">
+        <h3 class="card-title">
+          {% if editing_subject %}Edit{% else %}Create{% endif %} Standard Subject
+        </h3>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="">
+          {% csrf_token %}
+          {% if editing_subject %}
+            <input type="hidden" name="action" value="edit" />
+            <input type="hidden" name="subject_id" value="{{ editing_subject.id }}" />
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label required">Subject Code</label>
+            <input type="text" class="form-control" name="code" value="{{ editing_subject.code|default:'' }}" placeholder="e.g. MATH101" required style="text-transform: uppercase;" />
+            <small class="form-hint">Unique short code representing the subject.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label required">Canonical Name</label>
+            <input type="text" class="form-control" name="canonical_name" value="{{ editing_subject.canonical_name|default:'' }}" placeholder="e.g. Mathematics" required />
+            <small class="form-hint">Official standard name of the subject.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="3" placeholder="e.g. Core mathematical concepts and algebra...">{{ editing_subject.description|default:'' }}</textarea>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-2">
+            {% if editing_subject %}
+              <a href="{% url 'manage_standard_subjects' %}" class="btn btn-link link-secondary">Cancel</a>
+              <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
+                <i class="ti ti-check me-1"></i> Update Subject
+              </button>
+            {% else %}
+              <div></div>
+              <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
+                <i class="ti ti-plus me-1"></i> Create Subject
+              </button>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <h3 class="card-title">Canonical Standard Subjects List</h3>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table table-striped">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Canonical Name</th>
+                <th>Description</th>
+                <th class="w-1">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sm in standard_subjects %}
+              <tr>
+                <td><span class="badge bg-teal-lt" style="background-color: rgba(0, 136, 119, 0.1) !important; color: #008877 !important;">{{ sm.code }}</span></td>
+                <td class="font-weight-medium">{{ sm.canonical_name }}</td>
+                <td class="text-secondary small">{{ sm.description|default:"-" }}</td>
+                <td>
+                  <div class="btn-list flex-nowrap">
+                    <a href="?edit={{ sm.id }}" class="btn btn-sm btn-white">
+                      <i class="ti ti-edit me-1"></i> Edit
+                    </a>
+                    <a href="?delete={{ sm.id }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this standard subject?');">
+                      <i class="ti ti-trash me-1"></i> Delete
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center py-4 text-secondary">
+                  <i class="ti ti-book-off d-block mb-2" style="font-size: 24px;"></i>
+                  No standard subjects registered yet. Create one on the left.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

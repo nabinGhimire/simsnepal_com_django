@@ -45,11 +45,6 @@
                 <i class="ti ti-search me-2"></i> Search Hamro Ecosystem
               </a>
             </li>
-            <li class="nav-item">
-              <a href="#tab-manual-create" class="nav-link" data-bs-toggle="tab">
-                <i class="ti ti-edit me-2"></i> Create Manually
-              </a>
-            </li>
           </ul>
         </div>
         <div class="card-body">
@@ -75,18 +70,31 @@
               {% if found_user %}
               <div class="border rounded p-4 bg-light-gray mb-3">
                 <h5 class="text-teal mb-3"><i class="ti ti-user-check me-2"></i>Profile Found</h5>
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <div class="text-secondary small">Full Name</div>
-                    <div class="font-weight-medium text-dark">{{ found_user.first_name }} {{ found_user.last_name }}</div>
+                <div class="row g-3 align-items-center">
+                  {% if found_user.avatar_url %}
+                  <div class="col-auto">
+                    <span class="avatar avatar-xl rounded" style="background-image: url({{ found_user.avatar_url }})"></span>
                   </div>
-                  <div class="col-md-6">
-                    <div class="text-secondary small">Mobile Number (Username)</div>
-                    <div class="font-weight-medium text-dark">{{ found_user.username }}</div>
-                  </div>
-                  <div class="col-md-12">
-                    <div class="text-secondary small">Email Address</div>
-                    <div class="font-weight-medium text-dark">{{ found_user.email }}</div>
+                  {% endif %}
+                  <div class="col">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <div class="text-secondary small">Full Name</div>
+                        <div class="font-weight-medium text-dark">{{ found_user.first_name }} {{ found_user.last_name }}</div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="text-secondary small">Username</div>
+                        <div class="font-weight-medium text-dark">@{{ found_user.username|default:"-" }}</div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="text-secondary small">Mobile Number</div>
+                        <div class="font-weight-medium text-dark">{{ found_user.phone|default:"-" }}</div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="text-secondary small">Email Address</div>
+                        <div class="font-weight-medium text-dark">{{ found_user.email|default:"-" }}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
@@ -99,6 +107,9 @@
                   <input type="hidden" name="email" value="{{ found_user.email }}">
                   <input type="hidden" name="first_name" value="{{ found_user.first_name }}">
                   <input type="hidden" name="last_name" value="{{ found_user.last_name }}">
+                  <input type="hidden" name="hamro_uuid" value="{{ found_user.hamro_uuid }}">
+                  <input type="hidden" name="avatar_url" value="{{ found_user.avatar_url }}">
+                  <input type="hidden" name="mobile_number" value="{{ found_user.phone }}">
                   
                   <button type="submit" class="btn btn-teal px-4 btn-pill">
                     <i class="ti ti-user-plus me-2"></i> Register {{ found_user.first_name }} {{ found_user.last_name }} as Teacher
@@ -112,49 +123,7 @@
               {% endif %}
             </div>
 
-            <!-- MANUAL CREATE TAB -->
-            <div class="tab-pane" id="tab-manual-create">
-              <h4 class="mb-3">Create Local Teacher Account</h4>
-              <p class="text-secondary mb-4">Create a standalone local account for a teacher. They will log in using this username and password directly.</p>
-              
-              <form action="" method="POST" class="form-horizontal">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="create_manual">
-                
-                <div class="mb-3 row">
-                  <label class="col-3 col-form-label">First Name</label>
-                  <div class="col">
-                    <input type="text" class="form-control" name="first_name" placeholder="First Name" required>
-                  </div>
-                </div>
-                <div class="mb-3 row">
-                  <label class="col-3 col-form-label">Last Name</label>
-                  <div class="col">
-                    <input type="text" class="form-control" name="last_name" placeholder="Last Name" required>
-                  </div>
-                </div>
-                <div class="mb-3 row">
-                  <label class="col-3 col-form-label">Mobile Number</label>
-                  <div class="col">
-                    <input type="number" class="form-control" name="username" placeholder="Mobile number will be the username" required>
-                    <small class="form-hint">Used as login username and unique identification.</small>
-                  </div>
-                </div>
-                <div class="mb-3 row">
-                  <label class="col-3 col-form-label">Email</label>
-                  <div class="col">
-                    <input type="email" class="form-control" name="email" value="default@hamro.com">
-                  </div>
-                </div>
 
-                
-                <div class="form-footer text-end">
-                  <button type="submit" class="btn btn-primary btn-pill px-4">
-                    <i class="ti ti-user-plus me-2"></i> Create Local Account
-                  </button>
-                </div>
-              </form>
-            </div>
 
           </div>
         </div>

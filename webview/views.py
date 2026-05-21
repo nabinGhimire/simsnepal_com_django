@@ -58,7 +58,9 @@ def generate_auth_token(request):
             pass
 
     if hamro_uuid:
-        user = User.objects.filter(username=hamro_uuid).first()
+        from sso.models import HamroUserProfile
+        profile = HamroUserProfile.objects.filter(hamro_uuid=hamro_uuid).first()
+        user = profile.user if profile else None
         if user and BranchUser.objects.filter(user=user, status=True).exists():
             response_data["exists"] = True
             response_data["roles"].append("teacher")

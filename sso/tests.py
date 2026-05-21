@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from sms.models import SuperBranchUser, SchoolBranch, BranchUser, EduSession
 from sms.middleware import _thread_locals
 
@@ -309,6 +309,143 @@ class SSOTests(TestCase):
         _thread_locals.request = MockRequest({'sso_business': {'id': 'school-uuid-B'}})
         resolved_b = BranchUser.objects.get(user=user)
         self.assertEqual(resolved_b, branch_user_b)
+
+
+class AddTeacherTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.session_2082, _ = EduSession.objects.get_or_create(year="2082", defaults={"status": True})
+        
+        # 1. Create admin user
+        self.admin = self.User.objects.create_user(
+            username="testadmin",
+            email="admin@test.com",
+            password="adminpassword"
+        )
+        self.client.login(username="testadmin", password="adminpassword")
+        
+        # 2. Create SuperBranchUser
+        self.sbu = SuperBranchUser.objects.create(
+            user=self.admin,
+            range_start=1000,
+            range_end=9999
+        )
+        
+        # 3. Create SchoolBranch
+        self.school = SchoolBranch.objects.create(
+            shortcode="testschool",
+            name="Test School",
+            location="Kathmandu",
+            phone=9800000000,
+            email="testschool@school.com",
+            owner=self.sbu,
+            status=True,
+            min_reg=1000,
+            max_reg=9999
+        )
+        
+        # 4. Create BranchUser for admin
+        self.admin_bu = BranchUser.objects.create(
+            school=self.school,
+            user=self.admin,
+            admin_status=True,
+            status=True,
+            added_by=self.sbu
+        )
+        
+        # 5. Create Grade, Section, Subject
+        from sms.models import GradeLevel, SchoolGrade, Section, Subject
+        self.level = GradeLevel.objects.create(name="Secondary Level")
+        self.grade = SchoolGrade.objects.create(
+            school=self.school,
+            grade_name="GRADE 10",
+            level=self.level,
+            active=True,
+            grade_weight=10,
+            session=self.session_2082
+        )
+        self.section = Section.objects.create(
+            grade=self.grade,
+            section="A",
+            session=self.session_2082
+        )
+        self.subject = Subject.objects.create(
+            session=self.session_2082,
+            branch=self.school,
+            grade=self.grade,
+            subject="MATHEMATICS",
+            section=self.section
+        )
+
+    @patch('requests.post')
+    def test_search_iostest_teacher_mock(self, mock_post):
+        # Configure mock response to match the contacts/find API payload
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'data': [{
+                'contact': 'iostest@hamro.com',
+                'found': True,
+                'user': {
+                    'id': 'mock-uuid-1234',
+                    'name': 'IOS Test',
+                    'email': 'iostest@hamro.com',
+                    'mobile_number': '9801234568',
+                    'username': 'ios6230'
+                }
+            }]
+        }
+        mock_post.return_value = mock_response
+
+        # Access the view to search for iostest@hamro.com
+        url = reverse('add_teacher')
+        response = self.client.get(url, {'search_phone': 'iostest@hamro.com'})
+        
+        # Verify the response is 200 OK and contains mock user details in the context
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.context['found_user'])
+        self.assertEqual(response.context['found_user']['username'], 'ios6230')
+        self.assertEqual(response.context['found_user']['first_name'], 'IOS')
+        self.assertEqual(response.context['found_user']['last_name'], 'Test')
+
+    def test_register_sso_teacher_creates_branch_user_and_subject_access(self):
+        from sms.models import Teacher, TeacherSubjectAccess
+        
+        # Submit POST request to register the teacher
+        url = reverse('add_teacher')
+        post_data = {
+            'action': 'add_sso_teacher',
+            'username': 'iostest@hamro.com',
+            'email': 'iostest@hamro.com',
+            'first_name': 'IOS',
+            'last_name': 'Test'
+        }
+        response = self.client.post(url, post_data)
+        self.assertEqual(response.status_code, 200)
+        
+        # Verify User was created
+        user_exists = self.User.objects.filter(username='iostest@hamro.com').exists()
+        self.assertTrue(user_exists)
+        teacher_user = self.User.objects.get(username='iostest@hamro.com')
+        
+        # Verify Teacher record was created
+        teacher_exists = Teacher.objects.filter(teacher=teacher_user).exists()
+        self.assertTrue(teacher_exists)
+        
+        # Verify BranchUser record was created associating teacher with the school branch
+        bu_exists = BranchUser.objects.filter(user=teacher_user, school=self.school, status=True).exists()
+        self.assertTrue(bu_exists)
+        
+        # Verify TeacherSubjectAccess was automatically created for mock teacher
+        access_exists = TeacherSubjectAccess.objects.filter(
+            session=self.session_2082,
+            teacher=teacher_user,
+            grade=self.grade,
+            section=self.section,
+            subject=self.subject,
+            status=True
+        ).exists()
+        self.assertTrue(access_exists)
 
 
 

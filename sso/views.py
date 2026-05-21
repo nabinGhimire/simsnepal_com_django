@@ -78,6 +78,7 @@ def auto_login(request):
     # Identify the user uniquely – using the ``hamro_uuid`` if present, otherwise fallback to email
     identifier = user_info.get('hamro_uuid') or user_info.get('email')
     username = user_info.get('username') or identifier
+    hamro_uuid = user_info.get('hamro_uuid')
     
     defaults = {
         'email': user_info.get('email', ''),
@@ -85,10 +86,23 @@ def auto_login(request):
         'last_name': user_info.get('last_name', ''),
         'is_staff': user_info.get('is_staff', False),
     }
-    user, _ = User.objects.get_or_create(username=username, defaults=defaults)
+    
+    user = None
+    from sso.models import HamroUserProfile
+    if hamro_uuid:
+        profile = HamroUserProfile.objects.filter(hamro_uuid=hamro_uuid).first()
+        if profile:
+            user = profile.user
+            
+    if not user:
+        user, _ = User.objects.get_or_create(username=username, defaults=defaults)
+        if hamro_uuid:
+            HamroUserProfile.objects.get_or_create(user=user, hamro_uuid=hamro_uuid)
+            
     # Update fields in case they changed on the IdP
     for attr, val in defaults.items():
-        setattr(user, attr, val)
+        if val:
+            setattr(user, attr, val)
     user.save()
     
     # Store SSO details in session

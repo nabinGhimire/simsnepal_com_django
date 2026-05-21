@@ -64,6 +64,24 @@
   }
   .table th { background: #ebfbee; font-weight: 600; }
   .table tbody tr:hover { background: #f3fdf5; }
+  .avatar-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid #e9ecef;
+  }
+  .avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    border: 1.5px solid #e9ecef;
+  }
 </style>
 
 <div class="card">
@@ -98,8 +116,10 @@
           <thead>
             <tr>
               <th class="w-1 text-center">SN</th>
+              <th class="w-1 text-center">Photo</th>
               <th>Full Name</th>
               <th>Username</th>
+              <th>Phone Number</th>
               <th>Email Address</th>
             </tr>
           </thead>
@@ -107,16 +127,43 @@
             {% for teacher in teachers %}
               <tr>
                 <td class="text-muted text-center">{{ forloop.counter }}</td>
-                <td class="fw-semibold">{{ teacher.teacher.first_name }} {{ teacher.teacher.last_name }}</td>
-                <td><code>{{ teacher.teacher.username }}</code></td>
-                <td>{{ teacher.teacher.email }}</td>
+                <td class="text-center align-middle">
+                  {% if teacher.teacher.hamro_profile.avatar_url %}
+                    <img src="{{ teacher.teacher.hamro_profile.avatar_url }}" class="avatar-circle" alt="Teacher Photo">
+                  {% else %}
+                    <span class="avatar-placeholder bg-teal-lt text-teal">
+                      {% if teacher.teacher.first_name or teacher.teacher.last_name %}
+                        {{ teacher.teacher.first_name|slice:":1"|upper }}{{ teacher.teacher.last_name|slice:":1"|upper }}
+                      {% else %}
+                        {{ teacher.teacher.username|slice:":2"|upper }}
+                      {% endif %}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="fw-semibold">
+                  {% if teacher.teacher.first_name or teacher.teacher.last_name %}
+                    {{ teacher.teacher.first_name }} {{ teacher.teacher.last_name }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>
+                  {% if teacher.teacher.username %}
+                    <code>@{{ teacher.teacher.username }}</code>
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>{{ teacher.teacher.hamro_profile.mobile_number|default:"-" }}</td>
+                <td>{{ teacher.teacher.email|default:"-" }}</td>
               </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-      <div class="card-footer text-muted small d-flex justify-content-between">
+      <div class="card-footer text-muted small d-flex justify-content-between align-items-center">
         <span>Showing <strong>{{ teachers|length }}</strong> teacher(s)</span>
+        <span class="fw-semibold text-secondary">SimsNepal.com powered by Nobins Pvt. Ltd.</span>
         <span>Report generated on: <span id="footer-date"></span></span>
       </div>
     {% else %}
@@ -148,15 +195,21 @@
 
     var csv = [];
     var headers = [];
-    table.querySelectorAll('thead th').forEach(function(th) {
-      headers.push('"' + th.textContent.trim() + '"');
+    table.querySelectorAll('thead th').forEach(function(th, index) {
+      // Exclude Photo column from headers (which is at index 1)
+      if (index !== 1) {
+        headers.push('"' + th.textContent.trim() + '"');
+      }
     });
     csv.push(headers.join(','));
 
     table.querySelectorAll('tbody tr').forEach(function(tr) {
       var row = [];
-      tr.querySelectorAll('td').forEach(function(td) {
-        row.push('"' + td.textContent.trim().replace(/"/g, '""') + '"');
+      tr.querySelectorAll('td').forEach(function(td, index) {
+        // Exclude Photo column from rows (which is at index 1)
+        if (index !== 1) {
+          row.push('"' + td.textContent.trim().replace(/"/g, '""') + '"');
+        }
       });
       csv.push(row.join(','));
     });

@@ -37,6 +37,15 @@ logger = logging.getLogger(__name__)
 
 def get_current_session():
     """Helper to get the current session without executing on import."""
+    from sms.middleware import get_current_request
+    request = get_current_request()
+    if request and hasattr(request, 'session') and request.session:
+        active_session_id = request.session.get('active_session_id')
+        if active_session_id:
+            try:
+                return EduSession.objects.get(id=active_session_id)
+            except EduSession.DoesNotExist:
+                pass
     try:
         # Hardcoded for now as per original logic, but wrapped in a function
         return EduSession.objects.get(year=2082)
@@ -397,33 +406,69 @@ def addsection(request):
 
 @login_required
 def addsubject(request):
+    this_session = get_current_session()
     user = request.user
-    if request.method == "POST":
-        gradelevel = request.POST.get("gradelevel")
-        redurl = request.POST.get("redurl")
-        subject = request.POST.get("subjectname")
-        print(gradelevel)
+    if request.method == 'POST':
+        gradelevel = request.POST.get('gradelevel')
+        redurl = request.POST.get('redurl')
+        subject_master_id = request.POST.get('subject_master')
+        section_id = request.POST.get('section')
+        internal_name = request.POST.get('subjectname', '').strip()
 
-        grade = SchoolGrade.objects.get(id=gradelevel)
+        try:
+            grade = SchoolGrade.objects.get(id=gradelevel)
+        except (ValueError, SchoolGrade.DoesNotExist):
+            return HttpResponse("Grade not found.")
 
-        userbranch, error = get_branch_info(user)
-        if error:
-            return HttpResponse(error)
+        try:
+            userbranch = BranchUser.objects.get(user=user)
+        except BranchUser.DoesNotExist:
+            return HttpResponse("Branch user not found.")
 
-        print(userbranch.school)
+        try:
+            sm = SubjectMaster.objects.get(id=subject_master_id)
+        except (ValueError, TypeError, SubjectMaster.DoesNotExist):
+            messages.error(request, "Invalid Standard Subject selected.")
+            return HttpResponseRedirect(redurl)
 
-        Subject.objects.get_or_create(
-            branch=userbranch.school, grade=grade, subject=subject.upper()
-        )
+        # Fallback to canonical name if custom internal name is empty
+        if not internal_name:
+            internal_name = sm.canonical_name
 
-        # Section.objects.get_or_create(grade=grade,section=sectionname.upper())
+        # Resolve section if provided
+        section = None
+        if section_id:
+            try:
+                section = Section.objects.get(id=section_id)
+            except (ValueError, TypeError, Section.DoesNotExist):
+                pass
+
+        subject_upper = internal_name.strip().upper()
+
+        # Check unique constraint: (session, branch, grade, section, subject)
+        if Subject.objects.filter(
+            session=this_session,
+            branch=userbranch.school,
+            grade=grade,
+            section=section,
+            subject=subject_upper
+        ).exists():
+            messages.error(request, f"Subject '{subject_upper}' is already assigned to this grade/section in the current session.")
+        else:
+            Subject.objects.create(
+                session=this_session,
+                branch=userbranch.school,
+                grade=grade,
+                section=section,
+                subject_master=sm,
+                subject=subject_upper
+            )
+            messages.success(request, f"Subject '{subject_upper}' added successfully.")
 
         return HttpResponseRedirect(redurl)
 
     else:
-        return HttpResponse(
-            'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
-        )
+        return HttpResponse('Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.')
 
 
 @login_required
@@ -1355,6 +1400,7 @@ def edgradeitems(request, gradelevel):
     
     grade_level_all = GradeLevel.objects.all()
     grades = SchoolGrade.objects.filter(school=schoolbranch).order_by("grade_weight")
+    standard_subjects = SubjectMaster.objects.all().order_by('canonical_name')
     
     try:
         this_grade = SchoolGrade.objects.get(id=int(gradelevel))
@@ -1510,6 +1556,7 @@ def edgradeitems(request, gradelevel):
         "grades": grades,
         "branchuser": branchuser,
         "school": schoolbranch,
+        "standard_subjects": standard_subjects,
         "section": section,
         "subject": subject,
         "teacher": teacher,
@@ -4813,7 +4860,7 @@ def print_teachers(request):
     grade_level = GradeLevel.objects.all()
     school_branch = SchoolBranch.objects.get(id=branch_user.school_id)
     grades = SchoolGrade.objects.filter(school=school_branch).order_by("id")
-    teachers = Teacher.objects.filter(added_by=request.user)
+    teachers = Teacher.objects.filter(added_by=request.user).select_related('teacher', 'teacher__hamro_profile')
 
     subject_access = dict()
 
@@ -4910,6 +4957,7 @@ def guardian(request):
 @login_required()
 def add_teacher(request):
     import requests
+    import secrets
     from django.conf import settings
     user = User.objects.get(id=request.user.id)
     message = ""
@@ -4919,40 +4967,88 @@ def add_teacher(request):
     if search_query:
         api_key = getattr(settings, 'HAMRO_BUSINESS_API_KEY', 'hamro_sys_key_789')
         headers = {
-            'X-Business-API-Key': api_key,
-            'Content-Type': 'application/json'
+            'X-System-API-Key': api_key,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
         }
         payload = {
-            'user_identifier': search_query
+            'contacts': [search_query]
         }
+        api_base_url = getattr(settings, 'HAMRO_API_BASE_URL', 'https://serverin.hamro.com').rstrip('/')
         try:
             # Query the user from the Hamro Ecosystem API via POST request
             resp = requests.post(
-                'https://serverin.hamro.com/api/v1/auth/remote-request',
+                f'{api_base_url}/api/v1/system/contacts/find',
                 json=payload,
                 headers=headers,
                 timeout=5,
                 verify=False
             )
+            print(resp)
+            print(resp.json())
             if resp.status_code == 200:
                 data = resp.json()
-                if isinstance(data, dict):
-                    user_data = data.get("user") or data
-                    if user_data.get("username") or user_data.get("email"):
-                        found_user = {
-                            "username": user_data.get("username") or user_data.get("email", ""),
-                            "first_name": user_data.get("first_name", ""),
-                            "last_name": user_data.get("last_name", ""),
-                            "email": user_data.get("email", ""),
-                            "phone": user_data.get("phone", "")
-                        }
+                print(data)
+                results = data.get('data', [])
+                if results and len(results) > 0:
+                    first_result = results[0]
+                    if first_result.get('found'):
+                        user_data = first_result.get('user', {})
+                        if user_data:
+                            # Map user_data according to the new API schema
+                            # Split name into first and last name
+                            name_parts = user_data.get('name', '').strip().split(' ', 1)
+                            first_name = name_parts[0] if name_parts else ''
+                            last_name = name_parts[1] if len(name_parts) > 1 else ''
+                            
+                            found_user = {
+                                "username": user_data.get('username', ''),
+                                "hamro_uuid": user_data.get('id', ''),
+                                "avatar_url": user_data.get('avatar_url', ''),
+                                "first_name": first_name,
+                                "last_name": last_name,
+                                "email": user_data.get('email', ''),
+                                "phone": user_data.get('mobile_number', '')
+                            }
+                        else:
+                            message = "User data missing from response."
                     else:
-                        message = data.get("message", "User not found in Hamro Ecosystem.")
+                        message = "User not found in Hamro Ecosystem."
                 else:
                     message = "Invalid response format received from Ecosystem."
             else:
                 # Fallback to local mock for offline development testing ONLY for specific test accounts
-                if search_query == "9876543210" or search_query == "teacher@example.com":
+                if search_query in ["9876543210", "teacher@example.com", "iostest@hamro.com", "iostest"]:
+                    if search_query in ["iostest@hamro.com", "iostest"]:
+                        found_user = {
+                            "username": "iostest@hamro.com",
+                            "first_name": "IOS",
+                            "last_name": "Test",
+                            "email": "iostest@hamro.com",
+                            "phone": "9801234568"
+                        }
+                    else:
+                        found_user = {
+                            "username": "9876543210" if "@" not in search_query else search_query.split("@")[0],
+                            "first_name": "Hari",
+                            "last_name": "Bahadur",
+                            "email": search_query if "@" in search_query else f"hari_{search_query}@hamro.com",
+                            "phone": search_query if "@" not in search_query else "9876543210"
+                        }
+                else:
+                    message = f"User with identifier '{search_query}' not found."
+        except Exception as e:
+            # Fallback to local mock for offline development testing ONLY for specific test accounts
+            if search_query in ["9876543210", "teacher@example.com", "iostest@hamro.com", "iostest"]:
+                if search_query in ["iostest@hamro.com", "iostest"]:
+                    found_user = {
+                        "username": "iostest@hamro.com",
+                        "first_name": "IOS",
+                        "last_name": "Test",
+                        "email": "iostest@hamro.com",
+                        "phone": "9801234568"
+                    }
+                else:
                     found_user = {
                         "username": "9876543210" if "@" not in search_query else search_query.split("@")[0],
                         "first_name": "Hari",
@@ -4960,18 +5056,6 @@ def add_teacher(request):
                         "email": search_query if "@" in search_query else f"hari_{search_query}@hamro.com",
                         "phone": search_query if "@" not in search_query else "9876543210"
                     }
-                else:
-                    message = f"User with identifier '{search_query}' not found."
-        except Exception as e:
-            # Fallback to local mock for offline development testing ONLY for specific test accounts
-            if search_query == "9876543210" or search_query == "teacher@example.com":
-                found_user = {
-                    "username": "9876543210" if "@" not in search_query else search_query.split("@")[0],
-                    "first_name": "Hari",
-                    "last_name": "Bahadur",
-                    "email": search_query if "@" in search_query else f"hari_{search_query}@hamro.com",
-                    "phone": search_query if "@" not in search_query else "9876543210"
-                }
             else:
                 message = f"Ecosystem connection failed: {str(e)}"
 
@@ -4982,9 +5066,12 @@ def add_teacher(request):
             email = request.POST.get("email")
             first_name = request.POST.get("first_name")
             last_name = request.POST.get("last_name")
+            hamro_uuid = request.POST.get("hamro_uuid")
+            avatar_url = request.POST.get("avatar_url")
+            mobile_number = request.POST.get("mobile_number")
             
             # SSO User password can be randomized since login is via SSO
-            rand_pwd = User.objects.make_random_password()
+            rand_pwd = secrets.token_urlsafe(16)
             try:
                 obj, created = User.objects.get_or_create(username=username, defaults={
                     "email": email,
@@ -4993,7 +5080,46 @@ def add_teacher(request):
                     "password": make_password(rand_pwd)
                 })
                 
+                if hamro_uuid:
+                    from sso.models import HamroUserProfile
+                    HamroUserProfile.objects.update_or_create(
+                        user=obj,
+                        defaults={
+                            'hamro_uuid': hamro_uuid,
+                            'avatar_url': avatar_url,
+                            'mobile_number': mobile_number
+                        }
+                    )
+                
                 teacher, t_created = Teacher.objects.get_or_create(teacher=obj, defaults={"added_by": user})
+                
+                # Associate the teacher with the admin's current school branch via BranchUser
+                admin_branch = BranchUser.objects.filter(user=user, status=True).first()
+                if admin_branch:
+                    BranchUser.objects.get_or_create(
+                        school=admin_branch.school,
+                        user=obj,
+                        defaults={
+                            "admin_status": False,
+                            "status": True,
+                            "added_by": admin_branch.added_by
+                        }
+                    )
+                    # Automatically assign subjects for mock teachers for testing convenience
+                    if username in ["iostest@hamro.com", "teacher", "9876543210"]:
+                        current_session = get_current_session()
+                        if current_session:
+                            subjects = Subject.objects.filter(branch=admin_branch.school, session=current_session)
+                            for sub in subjects:
+                                TeacherSubjectAccess.objects.get_or_create(
+                                    session=current_session,
+                                    teacher=obj,
+                                    grade=sub.grade,
+                                    section=sub.section,
+                                    subject=sub,
+                                    defaults={"status": True}
+                                )
+                
                 if t_created:
                     message = f"Teacher '{first_name} {last_name}' registered successfully from Hamro Ecosystem."
                 else:
@@ -5009,7 +5135,7 @@ def add_teacher(request):
 
             try:
                 # No manual password needed as teachers authenticate strictly using SSO
-                rand_pwd = User.objects.make_random_password()
+                rand_pwd = secrets.token_urlsafe(16)
                 obj, created = User.objects.get_or_create(username=username, defaults={
                     "email": email,
                     "first_name": first_name,
@@ -5021,6 +5147,34 @@ def add_teacher(request):
                     teacher.added_by = user
                     teacher.teacher = obj
                     teacher.save()
+                    
+                    # Associate the teacher with the admin's current school branch via BranchUser
+                    admin_branch = BranchUser.objects.filter(user=user, status=True).first()
+                    if admin_branch:
+                        BranchUser.objects.get_or_create(
+                            school=admin_branch.school,
+                            user=obj,
+                            defaults={
+                                "admin_status": False,
+                                "status": True,
+                                "added_by": admin_branch.added_by
+                            }
+                        )
+                        # Automatically assign subjects for mock teachers for testing convenience
+                        if username in ["iostest@hamro.com", "teacher", "9876543210"]:
+                            current_session = get_current_session()
+                            if current_session:
+                                subjects = Subject.objects.filter(branch=admin_branch.school, session=current_session)
+                                for sub in subjects:
+                                    TeacherSubjectAccess.objects.get_or_create(
+                                        session=current_session,
+                                        teacher=obj,
+                                        grade=sub.grade,
+                                        section=sub.section,
+                                        subject=sub,
+                                        defaults={"status": True}
+                                    )
+                    
                     message = f"Teacher Login Account for '{first_name} {last_name}' Created Successfully."
                 else:
                     message = "Teacher Login Account Already Exists."
@@ -5062,19 +5216,59 @@ def addsubject(request):
     if request.method == 'POST':
         gradelevel = request.POST.get('gradelevel')
         redurl = request.POST.get('redurl')
-        subject = request.POST.get('subjectname')
-        print(gradelevel)
+        subject_master_id = request.POST.get('subject_master')
+        section_id = request.POST.get('section')
+        internal_name = request.POST.get('subjectname', '').strip()
 
-        grade = SchoolGrade.objects.get(id=gradelevel)
+        try:
+            grade = SchoolGrade.objects.get(id=gradelevel)
+        except (ValueError, SchoolGrade.DoesNotExist):
+            return HttpResponse("Grade not found.")
 
-        userbranch = BranchUser.objects.get(user=user)
+        try:
+            userbranch = BranchUser.objects.get(user=user)
+        except BranchUser.DoesNotExist:
+            return HttpResponse("Branch user not found.")
 
-        print(userbranch.school)
+        try:
+            sm = SubjectMaster.objects.get(id=subject_master_id)
+        except (ValueError, TypeError, SubjectMaster.DoesNotExist):
+            messages.error(request, "Invalid Standard Subject selected.")
+            return HttpResponseRedirect(redurl)
 
-        Subject.objects.get_or_create(
-            branch=userbranch.school, grade=grade, subject=subject.upper(), session=this_session)
+        # Fallback to canonical name if custom internal name is empty
+        if not internal_name:
+            internal_name = sm.canonical_name
 
-        # Section.objects.get_or_create(grade=grade,section=sectionname.upper())
+        # Resolve section if provided
+        section = None
+        if section_id:
+            try:
+                section = Section.objects.get(id=section_id)
+            except (ValueError, TypeError, Section.DoesNotExist):
+                pass
+
+        subject_upper = internal_name.strip().upper()
+
+        # Check unique constraint: (session, branch, grade, section, subject)
+        if Subject.objects.filter(
+            session=this_session,
+            branch=userbranch.school,
+            grade=grade,
+            section=section,
+            subject=subject_upper
+        ).exists():
+            messages.error(request, f"Subject '{subject_upper}' is already assigned to this grade/section in the current session.")
+        else:
+            Subject.objects.create(
+                session=this_session,
+                branch=userbranch.school,
+                grade=grade,
+                section=section,
+                subject_master=sm,
+                subject=subject_upper
+            )
+            messages.success(request, f"Subject '{subject_upper}' added successfully.")
 
         return HttpResponseRedirect(redurl)
 
@@ -10679,5 +10873,123 @@ def manage_grades(request):
         'school': school,
     }
     return render(request, "panel/manage_grades.html", context)
+
+
+@login_required
+def manage_standard_subjects(request):
+    try:
+        branchuser = BranchUser.objects.get(user=request.user)
+    except BranchUser.DoesNotExist:
+        return HttpResponse("Unauthorized", status=403)
+        
+    school = branchuser.school
+    editing_subject = None
+
+    if request.method == "POST":
+        action = request.POST.get('action')
+        code = request.POST.get('code', '').strip().upper()
+        canonical_name = request.POST.get('canonical_name', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if action == "delete":
+            subject_id = request.POST.get('subject_id')
+            try:
+                sm = SubjectMaster.objects.get(id=subject_id)
+                # Verify if it is referenced
+                if Subject.objects.filter(subject_master=sm).exists():
+                    messages.error(request, f"Cannot delete standard subject '{sm.canonical_name}' because it is assigned to one or more grades/sections.")
+                else:
+                    sm.delete()
+                    messages.success(request, f"Standard subject '{sm.canonical_name}' deleted successfully.")
+            except SubjectMaster.DoesNotExist:
+                messages.error(request, "Subject not found.")
+            return redirect('manage_standard_subjects')
+
+        elif action == "edit":
+            subject_id = request.POST.get('subject_id')
+            try:
+                sm = SubjectMaster.objects.get(id=subject_id)
+                if not code or not canonical_name:
+                    messages.error(request, "Code and Canonical Name are required.")
+                else:
+                    # Check unique code (excluding itself)
+                    if SubjectMaster.objects.filter(code=code).exclude(id=sm.id).exists():
+                        messages.error(request, f"Standard subject with code '{code}' already exists.")
+                    # Check unique canonical name (excluding itself)
+                    elif SubjectMaster.objects.filter(canonical_name__iexact=canonical_name).exclude(id=sm.id).exists():
+                        messages.error(request, f"Standard subject with name '{canonical_name}' already exists.")
+                    else:
+                        sm.code = code
+                        sm.canonical_name = canonical_name
+                        sm.description = description
+                        sm.save()
+                        messages.success(request, f"Standard subject '{canonical_name}' updated successfully.")
+                        return redirect('manage_standard_subjects')
+            except SubjectMaster.DoesNotExist:
+                messages.error(request, "Subject not found.")
+
+        else:  # Create
+            if not code or not canonical_name:
+                messages.error(request, "Code and Canonical Name are required.")
+            else:
+                if SubjectMaster.objects.filter(code=code).exists():
+                    messages.error(request, f"Standard subject with code '{code}' already exists.")
+                elif SubjectMaster.objects.filter(canonical_name__iexact=canonical_name).exists():
+                    messages.error(request, f"Standard subject with name '{canonical_name}' already exists.")
+                else:
+                    SubjectMaster.objects.create(
+                        code=code,
+                        canonical_name=canonical_name,
+                        description=description
+                    )
+                    messages.success(request, f"Standard subject '{canonical_name}' created successfully.")
+                    return redirect('manage_standard_subjects')
+
+    # GET requests & fallbacks
+    edit_id = request.GET.get('edit')
+    if edit_id:
+        try:
+            editing_subject = SubjectMaster.objects.get(id=edit_id)
+        except (ValueError, SubjectMaster.DoesNotExist):
+            pass
+
+    delete_id = request.GET.get('delete')
+    if delete_id:
+        try:
+            sm = SubjectMaster.objects.get(id=delete_id)
+            if Subject.objects.filter(subject_master=sm).exists():
+                messages.error(request, f"Cannot delete '{sm.canonical_name}' because it is assigned to one or more grades/sections.")
+            else:
+                sm.delete()
+                messages.success(request, f"Standard subject '{sm.canonical_name}' deleted successfully.")
+        except (ValueError, SubjectMaster.DoesNotExist):
+            messages.error(request, "Subject not found.")
+        return redirect('manage_standard_subjects')
+
+    standard_subjects = SubjectMaster.objects.all().order_by('canonical_name')
+    context = {
+        'branchuser': branchuser,
+        'school': school,
+        'standard_subjects': standard_subjects,
+        'editing_subject': editing_subject,
+    }
+    return render(request, "panel/manage_standard_subjects.html", context)
+
+
+@login_required
+def switch_session(request):
+    session_id = request.POST.get('session_id') or request.GET.get('session_id')
+    if session_id:
+        try:
+            edu_session = EduSession.objects.get(id=session_id)
+            request.session['active_session_id'] = edu_session.id
+            messages.success(request, f"Switched to academic session {edu_session.year}.")
+        except EduSession.DoesNotExist:
+            messages.error(request, "Invalid academic session.")
+            
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('index')
 
 

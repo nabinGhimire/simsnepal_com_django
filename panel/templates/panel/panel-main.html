@@ -160,6 +160,33 @@
                 </a>
               </div>
 
+              <!-- Session Switcher -->
+              {% if all_sessions %}
+              <div class="nav-item dropdown d-none d-md-flex me-3">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                  <span class="avatar avatar-xs bg-teal-lt me-2" style="background-color: rgba(0, 136, 119, 0.1) !important; color: #008877 !important; width: 1.5rem; height: 1.5rem;">
+                    <i class="ti ti-calendar" style="font-size: 0.8rem;"></i>
+                  </span>
+                  <span class="font-weight-medium">Session: {{ current_session.year }}</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                  <div class="dropdown-header">Select Academic Session</div>
+                  {% for sess in all_sessions %}
+                    <form method="POST" action="{% url 'switch_session' %}" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="session_id" value="{{ sess.id }}" />
+                      <button type="submit" class="dropdown-item d-flex justify-content-between align-items-center {% if sess.id == current_session.id %}active font-weight-bold text-teal{% endif %}" style="width: 100%; border: none; background: none; text-align: left; cursor: pointer;">
+                        <span>Session {{ sess.year }}</span>
+                        {% if sess.id == current_session.id %}
+                          <span class="badge bg-teal text-white">Active</span>
+                        {% endif %}
+                      </button>
+                    </form>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+
               <!-- App Switcher -->
               <div class="nav-item dropdown d-none d-md-flex me-3">
                 <a href="#" class="nav-link px-0" data-bs-toggle="dropdown"
@@ -258,6 +285,14 @@
                   </svg>
                   Manage Grades & Levels
                 </a>
+                <a href="{% url 'manage_standard_subjects' %}" class="dropdown-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2" class="icon me-2">
+                    <path d="M19 4v16H5V4h14m0-2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+                    <path d="M12 6H7v2h5V6zm5 4H7v2h10v-2zm0 4H7v2h10v-2z"/>
+                  </svg>
+                  Standard Subjects
+                </a>
                 {% endif %}
                 <a href="{% url 'lockscreen' %}" class="dropdown-item">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -308,6 +343,33 @@
 
         <div class="page-body">
           <div class="container-xl">
+            {% if messages %}
+              <div class="row g-4 mb-3 d-print-none">
+                <div class="col-12">
+                  {% for message in messages %}
+                    <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% elif message.tags == 'info' %}alert-info{% else %}alert-success{% endif %} alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-left: 4px solid {% if message.tags == 'error' %}#d63939{% elif message.tags == 'warning' %}#f76707{% elif message.tags == 'info' %}#4299e1{% else %}#2fb344{% endif %} !important;">
+                      <div class="d-flex align-items-center">
+                        <div class="me-2">
+                          {% if message.tags == 'error' %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-danger" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 8v4" /><path d="M12 16h.01" /></svg>
+                          {% elif message.tags == 'warning' %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-warning" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9v4" /><path d="M12 17h.01" /><path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" /></svg>
+                          {% elif message.tags == 'info' %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-info" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 9h.01" /><path d="M11 12h1v4h1" /></svg>
+                          {% else %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-success" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
+                          {% endif %}
+                        </div>
+                        <div class="fw-medium text-secondary">
+                          {{ message }}
+                        </div>
+                      </div>
+                      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
 
             {% block content %}
             {% endblock content %}

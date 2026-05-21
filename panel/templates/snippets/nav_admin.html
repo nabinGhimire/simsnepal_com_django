@@ -132,8 +132,8 @@
           </li>
 
           <!-- Settings -->
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'manage_grades' %}">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
               <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -143,8 +143,20 @@
                   <circle cx="12" cy="12" r="3" />
                 </svg>
               </span>
-              <!-- <span class="nav-link-title">SETTINGS</span> -->
+              <span class="nav-link-title">SETTINGS</span>
             </a>
+            <div class="dropdown-menu">
+              <div class="dropdown-menu-columns">
+                <div class="dropdown-menu-column">
+                  <a class="dropdown-item" href="{% url 'manage_grades' %}">
+                    <i class="ti ti-school me-2 text-secondary"></i> Manage Levels & Grades
+                  </a>
+                  <a class="dropdown-item" href="{% url 'manage_standard_subjects' %}">
+                    <i class="ti ti-book me-2 text-secondary"></i> Standard Subjects
+                  </a>
+                </div>
+              </div>
+            </div>
           </li>
 
         </ul><!-- /.navbar-nav -->
