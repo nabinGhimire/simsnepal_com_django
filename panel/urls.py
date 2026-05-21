@@ -65,11 +65,13 @@ urlpatterns = [
     path("addattendance/", views.addAttendance,),
     path("profile/", views.profile, name="profile"),
     path("profile/change-password/", views.change_password, name="change_password"),
+    path("settings/grades/", views.manage_grades, name="manage_grades"),
     path("migration", views.migration, name="migration"),
     path("2081", views.new_session, name="2081"),
     path("2082", views.new_session, name="2082"),
     path("2083", views.new_session, name="2083"),
     path("set-theme/", views.set_theme, name="set_theme"),
+    path("student/<regno>/progress/", views.student_progress, name="student_progress"),
     path("", views.index, name="index"),
 
 ]

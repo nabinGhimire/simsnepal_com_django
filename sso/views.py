@@ -49,6 +49,13 @@ def auto_login(request):
     if not token:
         return HttpResponseBadRequest('auth_token missing')
 
+    business_id_get = request.GET.get('business_id')
+    if request.user.is_authenticated and business_id_get:
+        current_business = request.session.get('sso_business', {})
+        current_business_id = current_business.get('id')
+        if str(current_business_id) != str(business_id_get):
+            django_logout(request)
+
     # Call the validation endpoint (adjust URL if needed for local dev)
     validate_url = settings.BUSINESS_SITE
     try:
@@ -89,17 +96,54 @@ def auto_login(request):
     
     business_info = data.get('business') or {}
     business_name = business_info.get('name') or data.get('business_name')
-    business_id = business_info.get('id') or data.get('business_id')
+    business_id_resolved = business_id_get or business_info.get('id') or data.get('business_id')
     
     request.session['sso_business'] = {
-        'id': business_id,
+        'id': business_id_resolved,
         'name': business_name or 'Hamro School/Business',
         'module': data.get('module', 'students'),
     }
     
     login(request, user)
-    # Redirect to dashboard landing page
-    return redirect('dashboard')
+    
+    # Associate user with a SchoolBranch for the admin panel
+    from sms.models import SuperBranchUser, SchoolBranch, BranchUser, EduSession
+    
+    # Ensure a default session exists
+    EduSession.objects.get_or_create(year="2082", defaults={"status": True})
+    
+    sbu, _ = SuperBranchUser.objects.get_or_create(
+        user=user,
+        defaults={'range_start': 1000, 'range_end': 9999}
+    )
+    
+    branch_slug = str(business_id_resolved) if business_id_resolved else 'default_branch'
+    branch, _ = SchoolBranch.objects.get_or_create(
+        shortcode=branch_slug,
+        defaults={
+            'name': business_name or 'Hamro School/Business',
+            'location': 'Kathmandu',
+            'phone': 9800000000,
+            'email': user.email or 'contact@hamroschool.com',
+            'owner': sbu,
+            'status': True,
+            'min_reg': 1000,
+            'max_reg': 9999,
+        }
+    )
+    
+    BranchUser.objects.get_or_create(
+        school=branch,
+        user=user,
+        defaults={
+            'admin_status': True,
+            'status': True,
+            'added_by': sbu,
+        }
+    )
+    
+    # Redirect to panel dashboard landing page
+    return redirect('/panel/')
 
 
 def logout_user(request):

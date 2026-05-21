@@ -37,9 +37,49 @@
       
       /* Premium Navbar Aesthetics */
       .navbar-premium {
-        background: linear-gradient(to right, rgba(0, 84, 166, 0.05) 0%, rgba(59, 130, 246, 0.1) 100%) !important;
-        border-bottom: 1px solid rgba(0, 84, 166, 0.1) !important;
-        box-shadow: 0 4px 20px -10px rgba(0, 84, 166, 0.1);
+        background: linear-gradient(to right, rgba(0, 136, 119, 0.05) 0%, rgba(0, 168, 144, 0.1) 100%) !important;
+        border-bottom: 1px solid rgba(0, 136, 119, 0.1) !important;
+        box-shadow: 0 4px 20px -10px rgba(0, 136, 119, 0.1);
+      }
+      
+      /* Global Brand Teal Color System Overrides */
+      :root {
+        --tblr-primary: #008877 !important;
+        --tblr-primary-rgb: 0, 136, 119 !important;
+        --tblr-link-color: #008877 !important;
+      }
+      .btn-primary, .btn-teal {
+        background-color: #008877 !important;
+        border-color: #008877 !important;
+        color: white !important;
+      }
+      .btn-primary:hover, .btn-teal:hover {
+        background-color: #006c5e !important;
+        border-color: #006c5e !important;
+      }
+      .btn-outline-primary {
+        color: #008877 !important;
+        border-color: #008877 !important;
+      }
+      .btn-outline-primary:hover {
+        background-color: #008877 !important;
+        color: white !important;
+      }
+      .text-primary, .text-teal {
+        color: #008877 !important;
+      }
+      .bg-primary-lt, .bg-teal-lt {
+        background-color: rgba(0, 136, 119, 0.1) !important;
+        color: #008877 !important;
+      }
+      .nav-link.active, .dropdown-item.active, .dropdown-item:active {
+        color: #008877 !important;
+      }
+      .navbar-light .navbar-nav .show > .nav-link, 
+      .navbar-light .navbar-nav .active > .nav-link, 
+      .navbar-light .navbar-nav .nav-link.show, 
+      .navbar-light .navbar-nav .nav-link.active {
+        color: #008877 !important;
       }
     </style>
 
@@ -209,6 +249,16 @@
                   </svg>
                   Profile
                 </a>
+                {% if branchuser.admin_status %}
+                <a href="{% url 'manage_grades' %}" class="dropdown-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2" class="icon me-2">
+                    <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  Manage Grades & Levels
+                </a>
+                {% endif %}
                 <a href="{% url 'lockscreen' %}" class="dropdown-item">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                        fill="none" stroke="currentColor" stroke-width="2" class="icon me-2">

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Daily Homework - Parent Portal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.36.0/tabler-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.hamro.com/hamro/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f7f6;
+      color: #2c3e50;
+      padding-bottom: 30px;
+    }
+    .header-bar {
+      background: linear-gradient(135deg, #008877, #00a890);
+      color: white;
+      padding: 20px 16px;
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,136,119,0.15);
+    }
+    .student-card {
+      background: white;
+      border-radius: 14px;
+      border: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      margin-top: 16px;
+      overflow: hidden;
+    }
+    .student-header {
+      background-color: #fcfefe;
+      border-bottom: 1px solid #eef3f2;
+      padding: 14px 16px;
+    }
+    .subject-badge {
+      background-color: #e6f3f2;
+      color: #008877;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .homework-item {
+      padding: 14px 16px;
+      border-bottom: 1px dashed #eef3f2;
+    }
+    .homework-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h4 class="mb-0 fw-bold">Hamro School Portal</h4>
+        <small class="opacity-75">Daily Homework Dashboard</small>
+      </div>
+      <div class="text-end">
+        <span class="badge bg-white-lt text-white px-2 py-1"><i class="ti ti-phone me-1"></i>{{ parent_phone }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="container-xl px-3">
+    <!-- Date selector -->
+    <div class="card mt-3 border-0 shadow-sm" style="border-radius: 12px;">
+      <div class="card-body p-3">
+        <form method="GET" action="">
+          <label class="form-label fw-semibold text-secondary mb-1">Select Nepali Date</label>
+          <div class="input-group">
+            <input type="text" id="nepali-datepicker" name="date" class="form-control" value="{{ selected_date }}" readonly placeholder="YYYY-MM-DD">
+            <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
+              <i class="ti ti-calendar-search me-1"></i>View
+            </button>
+          </div>
+          {% if parent_phone %}
+            <input type="hidden" name="parent_phone" value="{{ parent_phone }}">
+          {% endif %}
+        </form>
+      </div>
+    </div>
+
+    <!-- Student Cards -->
+    {% for entry in student_homeworks %}
+    <div class="student-card card">
+      <div class="student-header d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="mb-0 fw-bold text-dark">{{ entry.student.name }}</h3>
+          <small class="fw-bold text-teal" style="color: #008877;">{{ entry.student.school.name }}</small><br>
+          <small class="text-secondary">Grade {{ entry.grade }} - Section {{ entry.section }}</small>
+        </div>
+        <span class="avatar avatar-md brand-teal text-white rounded-circle">
+          {{ entry.student.name|slice:":2" }}
+        </span>
+      </div>
+
+      <div class="card-body p-0">
+        {% if entry.homeworks %}
+          {% for hw in entry.homeworks %}
+            <div class="homework-item">
+              <div class="d-flex align-items-center mb-2">
+                <span class="subject-badge">{{ hw.subject }}</span>
+              </div>
+              <div class="text-dark" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;">{{ hw.content }}</div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center p-4">
+            <div class="text-secondary mb-2" style="font-size: 2rem;"><i class="ti ti-notebook-off"></i></div>
+            <p class="text-secondary mb-0">No homework assigned for this date.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <script src="https://cdn.hamro.com/hamro/js/nepali.datepicker.v4.0.1.min.js" type="text/javascript"></script>
+  <script type="text/javascript">
+    window.onload = function() {
+      const pickerElement = document.getElementById("nepali-datepicker");
+      if (pickerElement) {
+        pickerElement.nepaliDatePicker({
+          ndpYear: true,
+          ndpMonth: true,
+          ndpYearCount: 20,
+          readOnlyInput: true
+        });
+      }
+    };
+  </script>
+</body>
+</html>

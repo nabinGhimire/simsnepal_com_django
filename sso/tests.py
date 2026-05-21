@@ -2,13 +2,23 @@ from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
-import json
+from sms.models import SuperBranchUser, SchoolBranch, BranchUser, EduSession
+from sms.middleware import _thread_locals
 
 class SSOTests(TestCase):
     def setUp(self):
         self.User = get_user_model()
         self.auto_login_url = reverse('auto_login')
         self.dashboard_url = reverse('dashboard')
+        # Ensure default session exists
+        self.session_2082, _ = EduSession.objects.get_or_create(year="2082", defaults={"status": True})
+        # Clear thread locals before each test
+        if hasattr(_thread_locals, 'request'):
+            del _thread_locals.request
+
+    def tearDown(self):
+        if hasattr(_thread_locals, 'request'):
+            del _thread_locals.request
 
     @patch('requests.get')
     def test_auto_login_success(self, mock_get):
@@ -43,11 +53,14 @@ class SSOTests(TestCase):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = mock_response_data
 
-        # Request auto_login with valid token
-        response = self.client.get(self.auto_login_url, {'auth_token': 'test_valid_token'})
+        # Request auto_login with valid token and business_id
+        response = self.client.get(self.auto_login_url, {
+            'auth_token': 'test_valid_token',
+            'business_id': 'business-uuid-111'
+        })
         
-        # Assert user was redirected to dashboard
-        self.assertRedirects(response, self.dashboard_url)
+        # Assert user was redirected to /panel/
+        self.assertRedirects(response, '/panel/')
 
         # Assert user was created/updated in the local database
         user_exists = self.User.objects.filter(username="sandesh").exists()
@@ -124,7 +137,10 @@ class SSOTests(TestCase):
         mock_get.return_value.json.return_value = mock_response_data
 
         # Execute SSO login
-        self.client.get(self.auto_login_url, {'auth_token': 'test_valid_token'})
+        self.client.get(self.auto_login_url, {
+            'auth_token': 'test_valid_token',
+            'business_id': 'business-uuid-111'
+        })
 
         # Access dashboard
         response = self.client.get(self.dashboard_url)
@@ -156,9 +172,143 @@ class SSOTests(TestCase):
         # Assert redirect to public home page
         self.assertRedirects(logout_response, reverse('home'))
 
-        # Assert dashboard access is now blocked (redirects to login due to @login_required)
+        # Assert dashboard access is now blocked (redirects to login which is /?next=...)
         dashboard_response = self.client.get(self.dashboard_url)
         self.assertEqual(dashboard_response.status_code, 302)
-        self.assertIn("login", dashboard_response.url)
+        self.assertEqual(dashboard_response.url, '/?next=/dashboard/')
+
+    @patch('requests.get')
+    def test_logout_on_new_business_id(self, mock_get):
+        # 1. Log in with business-uuid-AAA
+        mock_response_aaa = {
+            "valid": True,
+            "user": {
+                "id": 105,
+                "username": "sandesh",
+                "email": "sandesh@example.com",
+                "first_name": "Sandesh",
+                "last_name": "Adhikari",
+                "hamro_uuid": "user-uuid-999"
+            },
+            "business_id": "business-uuid-AAA",
+            "business_name": "School AAA",
+            "module": "students"
+        }
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = mock_response_aaa
+
+        self.client.get(self.auto_login_url, {
+            'auth_token': 'token_aaa',
+            'business_id': 'business-uuid-AAA'
+        })
+        self.assertEqual(self.client.session['sso_business']['id'], 'business-uuid-AAA')
+
+        # 2. Access auto-login with a new business_id 'business-uuid-BBB'
+        mock_response_bbb = {
+            "valid": True,
+            "user": {
+                "id": 105,
+                "username": "sandesh",
+                "email": "sandesh@example.com",
+                "first_name": "Sandesh",
+                "last_name": "Adhikari",
+                "hamro_uuid": "user-uuid-999"
+            },
+            "business_id": "business-uuid-BBB",
+            "business_name": "School BBB",
+            "module": "students"
+        }
+        mock_get.return_value.json.return_value = mock_response_bbb
+
+        response = self.client.get(self.auto_login_url, {
+            'auth_token': 'token_bbb',
+            'business_id': 'business-uuid-BBB'
+        })
+
+        # Assert redirection to /panel/ is still successful
+        self.assertRedirects(response, '/panel/')
+
+        # Assert session was updated to the new business ID
+        self.assertEqual(self.client.session['sso_business']['id'], 'business-uuid-BBB')
+        self.assertEqual(self.client.session['sso_business']['name'], 'School BBB')
+
+    def test_safe_branch_user_multiple_schools_resolution(self):
+        # Create a user
+        user = self.User.objects.create_user(
+            username="multischooluser",
+            email="multi@example.com",
+            password="testpassword"
+        )
+        
+        # Create a SuperBranchUser to act as added_by
+        sbu = SuperBranchUser.objects.create(
+            user=user,
+            range_start=1000,
+            range_end=9999
+        )
+        
+        # Create two different school branches
+        school_a = SchoolBranch.objects.create(
+            shortcode="school-uuid-A",
+            name="School A",
+            location="Location A",
+            phone=9800000001,
+            email="a@school.com",
+            owner=sbu,
+            status=True,
+            min_reg=1000,
+            max_reg=9999
+        )
+        
+        school_b = SchoolBranch.objects.create(
+            shortcode="school-uuid-B",
+            name="School B",
+            location="Location B",
+            phone=9800000002,
+            email="b@school.com",
+            owner=sbu,
+            status=True,
+            min_reg=1000,
+            max_reg=9999
+        )
+        
+        # Create two BranchUser records associating user with both schools
+        branch_user_a = BranchUser.objects.create(
+            school=school_a,
+            user=user,
+            admin_status=True,
+            status=True,
+            added_by=sbu
+        )
+        
+        branch_user_b = BranchUser.objects.create(
+            school=school_b,
+            user=user,
+            admin_status=True,
+            status=True,
+            added_by=sbu
+        )
+        
+        # Verify that direct call to BranchUser.objects.get(user=user)
+        # without thread-local session returns one of the active branch users gracefully
+        # instead of throwing MultipleObjectsReturned
+        res = BranchUser.objects.get(user=user)
+        self.assertIn(res, [branch_user_a, branch_user_b])
+
+        # Now mock the request object and set thread-locals
+        class MockRequest:
+            def __init__(self, session_data):
+                self.session = session_data
+
+        # Test resolution for School A
+        _thread_locals.request = MockRequest({'sso_business': {'id': 'school-uuid-A'}})
+        resolved_a = BranchUser.objects.get(user=user)
+        self.assertEqual(resolved_a, branch_user_a)
+
+        # Test resolution for School B
+        _thread_locals.request = MockRequest({'sso_business': {'id': 'school-uuid-B'}})
+        resolved_b = BranchUser.objects.get(user=user)
+        self.assertEqual(resolved_b, branch_user_b)
+
 
 

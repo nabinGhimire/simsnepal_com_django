@@ -1,0 +1,645 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
+		"name": "HamroMessenger API",
+		"description": "Comprehensive API collection for HamroMessenger (ChatHamro) including Auth, Friends, Groups, and Messaging.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"username\": \"john1234\",\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": 1,\n    \"otp\": \"123456\",\n    \"device_name\": \"Chrome Browser\",\n    \"device_identifier\": \"optional-client-id\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/auth/verify-otp", "host": ["{{baseUrl}}"], "path": ["auth", "verify-otp"] }
+					}
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"login\": \"john@example.com\",\n    \"password\": \"password123\",\n    \"device_identifier\": \"your-stored-id-here\",\n    \"platform\": \"ios\",\n    \"fcm_token\": \"FCM_TOKEN_HERE\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Channels",
+			"item": [
+				{
+					"name": "List Channels",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/channels", "host": ["{{baseUrl}}"], "path": ["channels"] }
+					}
+				},
+				{
+					"name": "Create Channel",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subject\": \"Announcements\",\n    \"providers\": [ { \"alias\": \"user\", \"id\": \"USER_ID_1\" } ],\n    \"is_channel\": true\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/channels", "host": ["{{baseUrl}}"], "path": ["channels"] }
+					}
+				},
+				{
+					"name": "Channel Page (paginate)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/channels/page/{{channel}}", "host": ["{{baseUrl}}"], "path": ["channels", "page", "{{channel}}"] }
+					}
+				},
+				{
+					"name": "Promote Participant (by participant_id)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"participant_id\": \"PARTICIPANT_UUID\" }",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/channels/{{channel}}/promote", "host": ["{{baseUrl}}"], "path": ["channels", "{{channel}}", "promote"] }
+					}
+				},
+				{
+					"name": "Promote Participant (by provider)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \n  \"provider\": { \"alias\": \"user\", \"id\": \"USER_ID\" }\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/channels/{{channel}}/promote", "host": ["{{baseUrl}}"], "path": ["channels", "{{channel}}", "promote"] }
+					}
+				},
+				{
+					"name": "Demote Participant",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"participant_id\": \"PARTICIPANT_UUID\" }",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/channels/{{channel}}/demote", "host": ["{{baseUrl}}"], "path": ["channels", "{{channel}}", "demote"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Messenger Settings & Profile",
+			"item": [
+				{
+					"name": "Get Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/", "host": ["{{baseUrl}}"], "path": [""] }
+					}
+				},
+				{
+					"name": "Get Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/settings", "host": ["{{baseUrl}}"], "path": ["settings"] }
+					}
+				},
+				{
+					"name": "Update Settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"message_popups\": true,\n    \"message_sound\": true,\n    \"online_status\": 1\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/settings", "host": ["{{baseUrl}}"], "path": ["settings"] }
+					}
+				},
+				{
+					"name": "Update Avatar",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "image", "type": "file", "src": [] }
+							]
+						},
+						"url": { "raw": "{{baseUrl}}/avatar", "host": ["{{baseUrl}}"], "path": ["avatar"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Devices & FCM Tokens",
+			"item": [
+				{
+					"name": "List Devices",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/devices", "host": ["{{baseUrl}}"], "path": ["devices"] }
+					}
+				},
+				{
+					"name": "Register FCM Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"device_identifier\": \"device-uuid-here\",\n    \"fcm_token\": \"YOUR_FCM_TOKEN_HERE\",\n    \"device_name\": \"iPhone 15 Pro\",\n    \"platform\": \"ios\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/devices/fcm-token", "host": ["{{baseUrl}}"], "path": ["devices", "fcm-token"] }
+					}
+				},
+				{
+					"name": "Remove FCM Token",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"device_identifier\": \"device-uuid-here\" }",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/devices/fcm-token", "host": ["{{baseUrl}}"], "path": ["devices", "fcm-token"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Threads & Messaging",
+			"item": [
+				{
+					"name": "List Threads",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/threads", "host": ["{{baseUrl}}"], "path": ["threads"] }
+					}
+				},
+				{
+					"name": "Create Private Thread",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"recipient_alias\": \"user\",\n    \"recipient_id\": \"USER_ID_HERE\",\n    \"message\": \"Hello!\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/privates", "host": ["{{baseUrl}}"], "path": ["privates"] }
+					}
+				},
+				{
+					"name": "Create Group Thread",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subject\": \"Team Chat\",\n    \"providers\": [\n        { \"alias\": \"user\", \"id\": \"USER_ID_1\" },\n        { \"alias\": \"user\", \"id\": \"USER_ID_2\" }\n    ]\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/groups", "host": ["{{baseUrl}}"], "path": ["groups"] }
+					}
+				},
+				{
+					"name": "Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"message\": \"Hello World!\",\n    \"temporary_id\": \"client-side-uuid\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/threads/{{threadId}}/messages", "host": ["{{baseUrl}}"], "path": ["threads", "{{threadId}}", "messages"] }
+					}
+				},
+				{
+					"name": "Knock-Knock",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/threads/{{threadId}}/knock-knock", "host": ["{{baseUrl}}"], "path": ["threads", "{{threadId}}", "knock-knock"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Friends",
+			"item": [
+				{
+					"name": "List Friends",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/friends", "host": ["{{baseUrl}}"], "path": ["friends"] }
+					}
+				},
+				{
+					"name": "Send Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"recipient_alias\": \"user\",\n    \"recipient_id\": \"USER_ID_HERE\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/friends/sent", "host": ["{{baseUrl}}"], "path": ["friends", "sent"] }
+					}
+				},
+				{
+					"name": "Accept Friend Request",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/friends/pending/{{pendingId}}", "host": ["{{baseUrl}}"], "path": ["friends", "pending", "{{pendingId}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "System & Business Management",
+			"item": [
+				{
+					"name": "Sync Business (System)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "X-System-API-Key", "value": "{{systemKey}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"USER_UUID_HERE\",\n    \"name\": \"Acme Corp\",\n    \"type\": \"company\",\n    \"website\": \"https://acme.com\",\n    \"contact_email\": \"contact@acme.com\",\n    \"contact_phone\": \"+9779800000000\",\n    \"contact_name\": \"Acme Support\",\n    \"address\": \"Kathmandu, Nepal\",\n    \"metadata\": { \"notes\": \"nullable fields are allowed\" },\n    \"is_active\": true\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/system/businesses/sync", "host": ["{{baseUrl}}"], "path": ["system", "businesses", "sync"] }
+					}
+				},
+				{
+					"name": "Send Notification (Business API)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "X-Business-API-Key", "value": "{{businessKey}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": \"USER_UUID_HERE\",\n    \"message\": \"Your order #123 has been shipped!\",\n    \"subject\": \"Order Update\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/business-api/notifications", "host": ["{{baseUrl}}"], "path": ["business-api", "notifications"] }
+					}
+				},
+				{
+					"name": "Create Business (User)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Acme Corp\",\n    \"type\": \"company\",\n    \"website\": \"https://acme.com\",\n    \"contact_email\": \"contact@acme.com\",\n    \"contact_phone\": \"+9779800000000\",\n    \"contact_name\": \"Acme Support\",\n    \"address\": \"Kathmandu, Nepal\",\n    \"metadata\": { \"notes\": \"nullable fields are allowed\" }\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/businesses", "host": ["{{baseUrl}}"], "path": ["businesses"] }
+					}
+				},
+				{
+					"name": "List Businesses (User)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/businesses", "host": ["{{baseUrl}}"], "path": ["businesses"] }
+					}
+				},
+				{
+					"name": "Request Platform Auth",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"company_business_id\": \"COMPANY_UUID_HERE\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/businesses/{{platformId}}/request-authorization", "host": ["{{baseUrl}}"], "path": ["businesses", "{{platformId}}", "request-authorization"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Remote Auth",
+			"item": [
+				{
+					"name": "Remote Auth Request (Business)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "X-Business-API-Key", "value": "{{businessKey}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_identifier\": \"user@example.com\", \n    \"callback_url\": \"https://your-app.com/callback\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/auth/remote-request", "host": ["{{baseUrl}}"], "path": ["auth", "remote-request"] }
+					}
+				},
+				{
+					"name": "List Remote Requests (User)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/auth/remote-requests", "host": ["{{baseUrl}}"], "path": ["auth", "remote-requests"] }
+					}
+				},
+				{
+					"name": "Respond to Remote Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"approved\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/auth/remote-respond/{{requestId}}", "host": ["{{baseUrl}}"], "path": ["auth", "remote-respond", "{{requestId}}"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "In-App Notifications",
+			"item": [
+				{
+					"name": "List Notifications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/auth/notifications", "host": ["{{baseUrl}}"], "path": ["auth", "notifications"] }
+					}
+				},
+				{
+					"name": "Get Unread Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/auth/notifications/unread-count", "host": ["{{baseUrl}}"], "path": ["auth", "notifications", "unread-count"] }
+					}
+				},
+				{
+					"name": "Mark All as Read",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/auth/notifications/mark-all-read", "host": ["{{baseUrl}}"], "path": ["auth", "notifications", "mark-all-read"] }
+					}
+				},
+				{
+					"name": "Mark Single as Read",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/auth/notifications/{{notificationId}}/mark-read", "host": ["{{baseUrl}}"], "path": ["auth", "notifications", "{{notificationId}}", "mark-read"] }
+					}
+				},
+				{
+					"name": "Delete Notification",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/auth/notifications/{{notificationId}}", "host": ["{{baseUrl}}"], "path": ["auth", "notifications", "{{notificationId}}"] }
+					}
+				},
+				{
+					"name": "Delete All Notifications",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{baseUrl}}/auth/notifications/all", "host": ["{{baseUrl}}"], "path": ["auth", "notifications", "all"] }
+					}
+				},
+				{
+					"name": "Handle Notification Action (In-App)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notification_id\": \"NOTIFICATION_UUID_HERE\",\n    \"action\": \"accept\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/auth/notifications/action", "host": ["{{baseUrl}}"], "path": ["auth", "notifications", "action"] }
+					}
+				},
+				{
+					"name": "Handle FCM Notification Action (Mobile)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"accept_friend\",\n    \"type\": \"friend_request\",\n    \"sender_id\": \"USER_UUID_HERE\",\n    \"request_id\": \"REQUEST_UUID_HERE\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{baseUrl}}/auth/notifications/fcm-action", "host": ["{{baseUrl}}"], "path": ["auth", "notifications", "fcm-action"] }
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test FCM notification actions",
+									"// Actions: accept_friend, reject_friend, allow_group_join, reject_group_join, allow_channel_join, reject_channel_join, accept_login, reject_login",
+									"pm.test(\"Status code is 200 or 404\", function() {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404, 400]);",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "baseUrl", "value": "https://messengerin.hamro.com/api/v1" },
+		{ "key": "token", "value": "YOUR_BEARER_TOKEN_HERE" },
+		{ "key": "businessKey", "value": "YOUR_BUSINESS_API_KEY_HERE" },
+		{ "key": "systemKey", "value": "YOUR_SYSTEM_API_KEY_HERE" },
+		{ "key": "platformId", "value": "" },
+		{ "key": "threadId", "value": "" },
+		{ "key": "pendingId", "value": "" },
+		{ "key": "requestId", "value": "" },
+		{ "key": "notificationId", "value": "" }
+	]
+}

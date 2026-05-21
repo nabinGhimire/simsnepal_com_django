@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Enter Exam Marks - Teacher Portal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.36.0/tabler-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f7f6;
+      color: #2c3e50;
+      padding-bottom: 30px;
+    }
+    .header-bar {
+      background: linear-gradient(135deg, #008877, #00a890);
+      color: white;
+      padding: 20px 16px;
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,136,119,0.15);
+    }
+    .class-card {
+      background: white;
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      margin-top: 14px;
+      padding: 16px;
+    }
+    .term-btn {
+      background-color: #f4f7f6;
+      border: 1px solid #e2eae7;
+      color: #008877;
+      font-weight: 500;
+      border-radius: 8px;
+      padding: 8px 12px;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .term-btn:hover {
+      background-color: #008877;
+      color: white;
+      border-color: #008877;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h4 class="mb-0 fw-bold">{{ school.name }}</h4>
+        <small class="opacity-75">Exam Marks Entry</small>
+      </div>
+      <div>
+        {% if is_admin %}
+          <span class="badge bg-yellow-lt">Administrator</span>
+        {% else %}
+          <span class="badge bg-white-lt">Teacher</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="container-xl px-3 mt-3">
+    <h3 class="fw-bold text-dark mb-1">Your Assigned Subjects</h3>
+    <p class="text-secondary mb-3">Select a term under the class and subject to input or edit exam marks.</p>
+
+    {% if access_list %}
+      {% for item in access_list %}
+        <div class="class-card card">
+          <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+            <div>
+              <h3 class="mb-0 fw-bold text-dark">{{ item.subject.subject }}</h3>
+              <small class="text-secondary">Grade {{ item.grade }} - Section {{ item.section }}</small>
+            </div>
+            <span class="avatar avatar-sm bg-teal-lt text-teal rounded">
+              <i class="ti ti-books"></i>
+            </span>
+          </div>
+
+          <div class="terms-container">
+            <span class="d-block text-secondary fw-semibold mb-2" style="font-size: 0.8rem;">Select Exam Term:</span>
+            {% if terms %}
+              {% for term in terms %}
+                <a href="/panel/subjectwisemarksentry/?term={{ term.id }}&grade={{ item.grade.id }}&section={{ item.section.id }}&subject={{ item.subject.id }}" class="term-btn">
+                  <span><i class="ti ti-notes me-2"></i>{{ term.term_name }}</span>
+                  <i class="ti ti-chevron-right"></i>
+                </a>
+              {% endfor %}
+            {% else %}
+              <div class="text-muted p-2 text-center" style="font-size: 0.9rem;">
+                <i class="ti ti-alert-circle me-1"></i>No active exam terms found.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="card border-0 shadow-sm text-center p-5" style="border-radius: 12px;">
+        <div class="text-secondary mb-3" style="font-size: 3rem;"><i class="ti ti-books-off"></i></div>
+        <h3 class="fw-bold text-dark">No Subjects Assigned</h3>
+        <p class="text-secondary mb-0">No subject access records exist for your profile in the current session.</p>
+      </div>
+    {% endif %}
+  </div>
+
+</body>
+</html>

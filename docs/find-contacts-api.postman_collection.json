@@ -1,0 +1,309 @@
+{
+  "info": {
+    "name": "Hamro Find Contacts API",
+    "description": "API collection for Find Contacts batch contact search feature",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://messengerin.hamro.com",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_BEARER_TOKEN_HERE",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Find Contacts - Basic",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response is successful', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Has data array', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('data');",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "});",
+              "",
+              "pm.test('Has meta info', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.meta).to.have.property('total_requested');",
+              "    pm.expect(jsonData.meta).to.have.property('total_found');",
+              "});",
+              "",
+              "pm.test('Filter found contacts', function() {",
+              "    var jsonData = pm.response.json();",
+              "    var foundContacts = jsonData.data.filter(function(c) { return c.found; });",
+              "    console.log('Found ' + foundContacts.length + ' users');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"contacts\": [\n        \"+9779841234567\",\n        \"test@example.com\",\n        \"+9779812345678\"\n    ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contacts/find",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contacts", "find"]
+        },
+        "description": "Basic contact search with mixed phone numbers and emails"
+      }
+    },
+    {
+      "name": "Find Contacts - With Duplicate Detection",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"contacts\": [\n        \"+9779841234567\",\n        \"john@example.com\",\n        \"john.doe@example.com\"\n    ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contacts/find",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contacts", "find"]
+        },
+        "description": "Test duplicate detection - same user with multiple contacts"
+      }
+    },
+    {
+      "name": "Find Contacts - Phone Numbers Only",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"contacts\": [\n        \"+9779841234567\",\n        \"9841234567\",\n        \"984-123-4567\",\n        \"+977-984-123-4567\"\n    ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contacts/find",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contacts", "find"]
+        },
+        "description": "Test phone number normalization with various formats"
+      }
+    },
+    {
+      "name": "Find Contacts - Emails Only",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"contacts\": [\n        \"user1@example.com\",\n        \"user2@example.com\",\n        \"user3@example.com\"\n    ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contacts/find",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contacts", "find"]
+        },
+        "description": "Test email-only contact search"
+      }
+    },
+    {
+      "name": "Find Contacts - Max Batch (100)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"contacts\": [\n        \"contact1@example.com\",\n        \"contact2@example.com\",\n        \"contact3@example.com\",\n        \"contact4@example.com\",\n        \"contact5@example.com\",\n        \"contact6@example.com\",\n        \"contact7@example.com\",\n        \"contact8@example.com\",\n        \"contact9@example.com\",\n        \"contact10@example.com\"\n    ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contacts/find",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contacts", "find"]
+        },
+        "description": "Test maximum batch size (adjust list to 100 for full test)"
+      }
+    },
+    {
+      "name": "Find Contacts - Validation Error (Empty)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Returns 422 for empty contacts', function() {",
+              "    pm.response.to.have.status(422);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"contacts\": []\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contacts/find",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contacts", "find"]
+        },
+        "description": "Test validation error for empty contacts array"
+      }
+    },
+    {
+      "name": "Find Contacts - Validation Error (Too Many)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Returns 422 for >100 contacts', function() {",
+              "    pm.response.to.have.status(422);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"contacts\": [\"contact@example.com\"]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contacts/find",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contacts", "find"]
+        },
+        "description": "Test validation error when sending >100 contacts"
+      }
+    },
+    {
+      "name": "Find Contacts - No Auth (401)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Returns 401 without auth', function() {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"contacts\": [\"test@example.com\"]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contacts/find",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contacts", "find"]
+        },
+        "description": "Test unauthorized request (no token)"
+      }
+    }
+  ]
+}

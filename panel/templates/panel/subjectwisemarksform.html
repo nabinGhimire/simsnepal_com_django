@@ -41,7 +41,7 @@
           </div>
         </div>
         
-        <form action="/panel/subjectwisemarksentry/" method="POST">
+        <form action="/panel/subjectwisemarksentry/" method="POST" id="marks-entry-form">
           {% csrf_token %}
           <input type="hidden" name="grade" id="grade" value="{{ grade.id }}">
           <input type="hidden" name="section" id="section" value="{{ section.id }}">
@@ -59,6 +59,7 @@
                     <th class="w-1">Reg. No</th>
                     <th>Name</th>
                     <th class="w-1">Roll No</th>
+                    <th class="text-center w-1">Absent</th>
                     <th class="text-center">Theory (Max: {{ fullmark.th_fm }})</th>
                     <th class="text-center">Practical (Max: {{ fullmark.pr_fm }})</th>
                   </tr>
@@ -70,10 +71,13 @@
                       <td>{{ value.name }}</td>
                       <td>{{ value.roll_no }}</td>
                       <td class="text-center">
-                        <input type="number" id="{{ key}}_th" name="{{ key}}_th" min="0" max="{{ fullmark.th_fm }}" value="{% if value.th_mo > 0 %}{{ value.th_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                        <input type="checkbox" id="{{ key }}_absent" name="{{ key }}_absent" value="1" {% if value.is_absent %}checked{% endif %} class="form-check-input student-absent-chk" data-reg="{{ key }}">
                       </td>
                       <td class="text-center">
-                        <input type="number" id="{{ key}}_pr" name="{{ key}}_pr" min="0" max="{{ fullmark.pr_fm }}" value="{% if value.pr_mo > 0 %}{{ value.pr_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                        <input type="number" id="{{ key}}_th" name="{{ key}}_th" min="0" max="{{ fullmark.th_fm }}" value="{% if not value.is_absent and value.th_mo >= 0 %}{{ value.th_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                      </td>
+                      <td class="text-center">
+                        <input type="number" id="{{ key}}_pr" name="{{ key}}_pr" min="0" max="{{ fullmark.pr_fm }}" value="{% if not value.is_absent and value.pr_mo >= 0 %}{{ value.pr_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 80px;">
                       </td>
                     </tr>
                   {% endfor %}
@@ -87,6 +91,7 @@
                     <th class="w-1">Reg. No</th>
                     <th>Name</th>
                     <th class="w-1">Roll No</th>
+                    <th class="text-center w-1">Absent</th>
                     <th class="text-center">Theory (Max: {{ fullmark.th_fm }})</th>
                   </tr>
                 </thead>
@@ -97,7 +102,10 @@
                       <td>{{ value.name }}</td>
                       <td>{{ value.roll_no }}</td>
                       <td class="text-center">
-                        <input type="number" id="{{ key}}_th" name="{{ key}}_th" min="0" max="{{ fullmark.th_fm }}" value="{% if value.th_mo > 0 %}{{ value.th_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 80px;">
+                        <input type="checkbox" id="{{ key }}_absent" name="{{ key }}_absent" value="1" {% if value.is_absent %}checked{% endif %} class="form-check-input student-absent-chk" data-reg="{{ key }}">
+                      </td>
+                      <td class="text-center">
+                        <input type="number" id="{{ key}}_th" name="{{ key}}_th" min="0" max="{{ fullmark.th_fm }}" value="{% if not value.is_absent and value.th_mo >= 0 %}{{ value.th_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 80px;">
                       </td>
                     </tr>
                   {% endfor %}
@@ -117,3 +125,65 @@
 </div>
 {% endblock %}
 
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkAbsent = function(chk) {
+        const reg = chk.getAttribute('data-reg');
+        const thInput = document.getElementById(reg + '_th');
+        const prInput = document.getElementById(reg + '_pr');
+        if (chk.checked) {
+            if (thInput) {
+                thInput.setAttribute('data-old-val', thInput.value);
+                thInput.value = '';
+                thInput.disabled = true;
+            }
+            if (prInput) {
+                prInput.setAttribute('data-old-val', prInput.value);
+                prInput.value = '';
+                prInput.disabled = true;
+            }
+        } else {
+            if (thInput) {
+                thInput.disabled = false;
+                if (thInput.hasAttribute('data-old-val')) {
+                    thInput.value = thInput.getAttribute('data-old-val');
+                }
+            }
+            if (prInput) {
+                prInput.disabled = false;
+                if (prInput.hasAttribute('data-old-val')) {
+                    prInput.value = prInput.getAttribute('data-old-val');
+                }
+            }
+        }
+    };
+
+    document.querySelectorAll('.student-absent-chk').forEach(function(chk) {
+        // Initial validation call
+        checkAbsent(chk);
+        
+        // Listen to updates
+        chk.addEventListener('change', function() {
+            checkAbsent(chk);
+        });
+    });
+
+    // Make sure disabled inputs are temporarily enabled right before form submit so the request parser doesn't ignore them
+    const form = document.getElementById('marks-entry-form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            document.querySelectorAll('.student-absent-chk').forEach(function(chk) {
+                const reg = chk.getAttribute('data-reg');
+                const thInput = document.getElementById(reg + '_th');
+                const prInput = document.getElementById(reg + '_pr');
+                if (chk.checked) {
+                    if (thInput) thInput.disabled = false;
+                    if (prInput) prInput.disabled = false;
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

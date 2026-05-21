@@ -25,71 +25,138 @@
 {% block content %}
 <div class="container-xl">
   <div class="row row-cards justify-content-center">
-    <div class="col-md-8 col-lg-6">
+    <div class="col-md-10 col-lg-8">
+      
+      {% if message %}
+      <div class="alert alert-important alert-info alert-dismissible" role="alert">
+        <div class="d-flex">
+          <div><i class="ti ti-info-circle icon alert-icon me-2"></i></div>
+          <div>{{ message }}</div>
+        </div>
+        <a class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="close"></a>
+      </div>
+      {% endif %}
+
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Create Teacher's Login Account</h3>
+          <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
+            <li class="nav-item">
+              <a href="#tab-sso-search" class="nav-link active" data-bs-toggle="tab">
+                <i class="ti ti-search me-2"></i> Search Hamro Ecosystem
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#tab-manual-create" class="nav-link" data-bs-toggle="tab">
+                <i class="ti ti-edit me-2"></i> Create Manually
+              </a>
+            </li>
+          </ul>
         </div>
         <div class="card-body">
-          {% if message %}
-          <div class="alert alert-info alert-dismissible" role="alert">
-            <div class="d-flex">
-              <div><i class="ti ti-info-circle icon alert-icon"></i></div>
-              <div>{{ message }}</div>
-            </div>
-            <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-          </div>
-          {% endif %}
-          
-          <form action="" method="POST" class="form-horizontal">
-            {% csrf_token %}
-            <div class="mb-3 row">
-              <label class="col-3 col-form-label">First Name</label>
-              <div class="col">
-                <input type="text" class="form-control" name="first_name" id="first_name" placeholder="First Name" required>
-              </div>
-            </div>
-            <div class="mb-3 row">
-              <label class="col-3 col-form-label">Last Name</label>
-              <div class="col">
-                <input type="text" class="form-control" name="last_name" id="last_name" placeholder="Last Name" required>
-              </div>
-            </div>
-            <div class="mb-3 row">
-              <label class="col-3 col-form-label">Mobile Number</label>
-              <div class="col">
-                <input type="number" class="form-control" name="username" id="username" placeholder="Mobile number will be the username" required>
-                <small class="form-hint">This will be used as the login username.</small>
-              </div>
-            </div>
-            <div class="mb-3 row">
-              <label class="col-3 col-form-label">Email</label>
-              <div class="col">
-                <input type="email" class="form-control" name="email" id="email" value="default@hamro.com">
-              </div>
-            </div>
-            <div class="mb-3 row">
-              <label class="col-3 col-form-label">Password</label>
-              <div class="col">
-                <input type="password" class="form-control" name="password" id="password" placeholder="Account password" required>
-              </div>
-            </div>
-            <div class="mb-3 row">
-              <div class="col-3"></div>
-              <div class="col">
-                <label class="form-check">
-                  <input class="form-check-input" type="checkbox" name="is_admin" value="admin">
-                  <span class="form-check-label">Grant Admin Privileges</span>
-                </label>
-              </div>
-            </div>
+          <div class="tab-content">
             
-            <div class="form-footer text-end">
-              <button type="submit" name="submit" class="btn btn-primary btn-pill px-4">
-                <i class="ti ti-user-plus me-2"></i> Create Teacher Account
-              </button>
+            <!-- SSO SEARCH TAB -->
+            <div class="tab-pane active show" id="tab-sso-search">
+              <h4 class="mb-3">Register Teacher from Hamro Ecosystem</h4>
+              <p class="text-secondary mb-4">
+                Enter the teacher's registered phone number to find their Hamro profile. Registering via SSO allows them to sign in securely using their existing credentials.
+              </p>
+
+              <form method="GET" action="" class="mb-4">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="ti ti-user"></i></span>
+                  <input type="text" class="form-control" name="search_phone" value="{{ search_phone|default:'' }}" placeholder="Enter phone number or email address (e.g. user@example.com)" required>
+                  <button class="btn btn-teal" type="submit">
+                    <i class="ti ti-search me-1"></i> Search User
+                  </button>
+                </div>
+              </form>
+
+              {% if found_user %}
+              <div class="border rounded p-4 bg-light-gray mb-3">
+                <h5 class="text-teal mb-3"><i class="ti ti-user-check me-2"></i>Profile Found</h5>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="text-secondary small">Full Name</div>
+                    <div class="font-weight-medium text-dark">{{ found_user.first_name }} {{ found_user.last_name }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="text-secondary small">Mobile Number (Username)</div>
+                    <div class="font-weight-medium text-dark">{{ found_user.username }}</div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="text-secondary small">Email Address</div>
+                    <div class="font-weight-medium text-dark">{{ found_user.email }}</div>
+                  </div>
+                </div>
+                
+                <hr class="my-3">
+                
+                <form method="POST" action="" class="text-end">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="add_sso_teacher">
+                  <input type="hidden" name="username" value="{{ found_user.username }}">
+                  <input type="hidden" name="email" value="{{ found_user.email }}">
+                  <input type="hidden" name="first_name" value="{{ found_user.first_name }}">
+                  <input type="hidden" name="last_name" value="{{ found_user.last_name }}">
+                  
+                  <button type="submit" class="btn btn-teal px-4 btn-pill">
+                    <i class="ti ti-user-plus me-2"></i> Register {{ found_user.first_name }} {{ found_user.last_name }} as Teacher
+                  </button>
+                </form>
+              </div>
+              {% elif search_phone %}
+              <div class="alert alert-warning" role="alert">
+                <i class="ti ti-alert-triangle me-2"></i> No active Hamro account found for <strong>{{ search_phone }}</strong>. Please ensure the number is correct or use the manual fallback tab.
+              </div>
+              {% endif %}
             </div>
-          </form>
+
+            <!-- MANUAL CREATE TAB -->
+            <div class="tab-pane" id="tab-manual-create">
+              <h4 class="mb-3">Create Local Teacher Account</h4>
+              <p class="text-secondary mb-4">Create a standalone local account for a teacher. They will log in using this username and password directly.</p>
+              
+              <form action="" method="POST" class="form-horizontal">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_manual">
+                
+                <div class="mb-3 row">
+                  <label class="col-3 col-form-label">First Name</label>
+                  <div class="col">
+                    <input type="text" class="form-control" name="first_name" placeholder="First Name" required>
+                  </div>
+                </div>
+                <div class="mb-3 row">
+                  <label class="col-3 col-form-label">Last Name</label>
+                  <div class="col">
+                    <input type="text" class="form-control" name="last_name" placeholder="Last Name" required>
+                  </div>
+                </div>
+                <div class="mb-3 row">
+                  <label class="col-3 col-form-label">Mobile Number</label>
+                  <div class="col">
+                    <input type="number" class="form-control" name="username" placeholder="Mobile number will be the username" required>
+                    <small class="form-hint">Used as login username and unique identification.</small>
+                  </div>
+                </div>
+                <div class="mb-3 row">
+                  <label class="col-3 col-form-label">Email</label>
+                  <div class="col">
+                    <input type="email" class="form-control" name="email" value="default@hamro.com">
+                  </div>
+                </div>
+
+                
+                <div class="form-footer text-end">
+                  <button type="submit" class="btn btn-primary btn-pill px-4">
+                    <i class="ti ti-user-plus me-2"></i> Create Local Account
+                  </button>
+                </div>
+              </form>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>

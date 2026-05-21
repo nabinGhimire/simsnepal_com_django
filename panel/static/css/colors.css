@@ -5,8 +5,8 @@
 
 :root {
   /* Primary Colors */
-  --color-blue: #066fd1;
-  --color-azure: #4299e1;
+  --color-blue: #008877;
+  --color-azure: #00a890;
   --color-indigo: #4263eb;
   --color-purple: #ae3ec9;
   --color-pink: #d6336c;
@@ -47,8 +47,8 @@
 }
 
 .btn-primary:hover {
-  background-color: #055bb8;
-  border-color: #055bb8;
+  background-color: #006b5f;
+  border-color: #006b5f;
 }
 
 .btn-info {
@@ -58,8 +58,8 @@
 }
 
 .btn-info:hover {
-  background-color: #3389d1;
-  border-color: #3389d1;
+  background-color: #008975;
+  border-color: #008975;
 }
 
 .btn-warning {

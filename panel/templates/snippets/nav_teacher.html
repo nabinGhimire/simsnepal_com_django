@@ -22,7 +22,7 @@
           </li>
 
           <!-- Grade levels (teacher view) -->
-          {% for level in grade_level %}
+          {% for level in nav_grade_levels %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
                data-bs-auto-close="outside" role="button" aria-expanded="false">
@@ -38,9 +38,9 @@
               <span class="nav-link-title">{{ level.name|upper }}</span>
             </a>
             <div class="dropdown-menu">
-              {% for grade in grades %}
+              {% for grade in nav_grades %}
                 {% if grade.level.id == level.id %}
-                  <a class="dropdown-item" href="/sims/grades/{{ grade.name|lower }}/">{{ grade.name|upper }}</a>
+                  <a class="dropdown-item" href="/sims/grades/{{ grade.id }}/">{{ grade.grade_name|upper }}</a>
                 {% endif %}
               {% endfor %}
             </div>

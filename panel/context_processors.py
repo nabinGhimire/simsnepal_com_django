@@ -17,12 +17,14 @@ def nav_context(request):
         return {}
 
     school = branchuser.school
-    grade_level = GradeLevel.objects.all()
-    grades = SchoolGrade.objects.filter(school=school).order_by('grade_weight')
+    grade_level = GradeLevel.objects.filter(schoolgrade__school=school, schoolgrade__active=True).distinct().order_by('id')
+    grades = SchoolGrade.objects.filter(school=school, active=True).order_by('grade_weight')
 
     return {
         'grade_level': grade_level,
         'grades': grades,
+        'nav_grade_levels': grade_level,
+        'nav_grades': grades,
         'branchuser': branchuser,
         'school': school,
     }

@@ -40,10 +40,14 @@
   <div class="col-12 col-md-4 col-lg-3">
     <div class="card text-center">
       <div class="card-body py-4">
-        <span class="avatar avatar-xl mb-3"
-              style="background: linear-gradient(135deg, var(--tblr-primary), #6366f1); font-size: 2rem; color: white; font-weight: 700;">
-          {{ user.username|slice:":1"|upper }}
-        </span>
+        {% if request.session.sso_user.avatar %}
+          <img src="{{ request.session.sso_user.avatar }}" class="avatar avatar-xl mb-3 rounded-circle shadow-sm" alt="User Image" style="object-fit: cover;">
+        {% else %}
+          <span class="avatar avatar-xl mb-3 rounded-circle text-white shadow-sm"
+                style="background: linear-gradient(135deg, #008877, #00a890); font-size: 2rem; font-weight: 700;">
+            {{ user.username|slice:":1"|upper }}
+          </span>
+        {% endif %}
         <h3 class="mb-1">{{ user.get_full_name|default:user.username }}</h3>
         <div class="text-secondary small mb-3">@{{ user.username }}</div>
         <div class="mb-3">
@@ -123,11 +127,7 @@
           </div>
         </div>
       </div>
-      <div class="card-footer text-end">
-        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-password">
-          <i class="ti ti-key me-1"></i> Change Password
-        </button>
-      </div>
+
     </div>
 
     <!-- School Information -->
@@ -186,60 +186,5 @@
   </div>
 </div>
 
-<!-- Change Password Modal -->
-<div class="modal modal-blur fade" id="modal-password" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <form action="{% url 'change_password' %}" method="POST">
-        {% csrf_token %}
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="ti ti-key me-2"></i>Change Password</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          {% for field in password_form %}
-            <div class="mb-3">
-              <label class="form-label">{{ field.label }}</label>
-              {{ field }}
-              {% if field.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in field.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-              {% if field.help_text %}
-                <div class="text-muted small mt-1" style="font-size: 11px;">
-                  {{ field.help_text|safe }}
-                </div>
-              {% endif %}
-            </div>
-          {% endfor %}
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary ms-auto">
-            <i class="ti ti-check me-1"></i> Update Password
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
 
-{% block scripts %}
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Styling the Django form fields to match Tabler
-    const inputs = document.querySelectorAll('#modal-password input');
-    inputs.forEach(input => {
-      input.classList.add('form-control');
-    });
-
-    // Auto-show modal if there are validation errors
-    {% if show_password_modal %}
-      var passwordModal = new bootstrap.Modal(document.getElementById('modal-password'));
-      passwordModal.show();
-    {% endif %}
-  });
-</script>
-{% endblock %}
 {% endblock content %}

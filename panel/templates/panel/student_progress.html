@@ -1,0 +1,178 @@
+{% extends 'panel/panel-main.html' %}
+{% block title %} Admin Dashboard - Student Progress - SIMSNepal.com {% endblock %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">SIMS Panel</div>
+        <h2 class="page-title">Academic Progress: {{ student.name }}</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/panel/">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Student Progress</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="row row-cards">
+    <!-- Student Header Card -->
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-3 align-items-center">
+            <div class="col-auto">
+              <span class="avatar avatar-md bg-teal-lt text-teal font-weight-bold">
+                {{ student.name|slice:":2"|upper }}
+              </span>
+            </div>
+            <div class="col">
+              <h3 class="mb-1 text-dark">{{ student.name }}</h3>
+              <div class="text-secondary small">
+                <span class="me-3"><strong>Reg No:</strong> {{ student.reg_no }}</span>
+                <span class="me-3"><strong>Gender:</strong> {% if student.gender %}Male{% else %}Female{% endif %}</span>
+                <span><strong>School:</strong> {{ school.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Over Time Timeline -->
+    <div class="col-12">
+      <h3 class="mb-3 text-secondary">Session-by-Session Performance History</h3>
+      {% if not progress_data %}
+        <div class="alert alert-warning" role="alert">
+          <i class="ti ti-alert-triangle me-2"></i> No academic records or marks found for this student.
+        </div>
+      {% else %}
+        {% for session in progress_data %}
+          <div class="card mb-4">
+            <div class="card-header bg-teal-lt">
+              <div class="row g-2 align-items-center w-100">
+                <div class="col">
+                  <h3 class="card-title text-teal">
+                    <i class="ti ti-calendar me-2"></i> Session Year: {{ session.session_year }}
+                  </h3>
+                </div>
+                <div class="col-auto">
+                  <span class="badge bg-teal-lt">Grade: {{ session.grade_name }}</span>
+                  <span class="badge bg-green-lt">Section: {{ session.section_name }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="card-body">
+              <div class="row row-cards mb-4">
+                {% for term in session.terms %}
+                  <div class="col-md-4">
+                    <div class="card card-sm border-light">
+                      <div class="card-body">
+                        <div class="row align-items-center">
+                          <div class="col">
+                            <div class="text-secondary small">{{ term.term_name }}</div>
+                            <div class="h2 mb-0">{{ term.percentage }}%</div>
+                            <div class="text-secondary small">
+                              {{ term.total_obtained }}/{{ term.total_full }} Marks
+                            </div>
+                          </div>
+                          <div class="col-auto">
+                            {% if term.progress_diff is not None %}
+                              {% if term.progress_diff > 0 %}
+                                <span class="badge bg-green-lt text-green font-weight-bold">
+                                  <i class="ti ti-trending-up me-1"></i> +{{ term.progress_diff }}%
+                                </span>
+                              {% elif term.progress_diff < 0 %}
+                                <span class="badge bg-red-lt text-red font-weight-bold">
+                                  <i class="ti ti-trending-down me-1"></i> {{ term.progress_diff }}%
+                                </span>
+                              {% else %}
+                                <span class="badge bg-gray-lt text-secondary font-weight-bold">
+                                  No Change
+                                </span>
+                              {% endif %}
+                            {% else %}
+                              <span class="text-muted small">First Session</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% empty %}
+                  <div class="col-12">
+                    <div class="text-muted text-center py-2">No exam results recorded for this session.</div>
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- Collapsible Subject Details -->
+              {% if session.terms %}
+                <div class="accordion" id="accordion-{{ session.session_year }}">
+                  {% for term in session.terms %}
+                    <div class="accordion-item">
+                      <h2 class="accordion-header" id="heading-{{ session.session_year }}-{{ term.term_id }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ session.session_year }}-{{ term.term_id }}" aria-expanded="false">
+                          <i class="ti ti-list-details me-2"></i> Subject-wise Breakdown: {{ term.term_name }}
+                        </button>
+                      </h2>
+                      <div id="collapse-{{ session.session_year }}-{{ term.term_id }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ session.session_year }}">
+                        <div class="accordion-body p-0">
+                          <table class="table table-vcenter card-table table-striped">
+                            <thead>
+                              <tr>
+                                <th>Subject</th>
+                                <th class="text-center">Theory</th>
+                                <th class="text-center">Practical</th>
+                                <th class="text-center">Total</th>
+                                <th class="text-center">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {% for sub in term.subjects %}
+                                <tr>
+                                  <td><strong>{{ sub.subject_name }}</strong></td>
+                                  <td class="text-center">
+                                    {% if sub.is_absent %}-{% else %}{{ sub.th_mo }}{% endif %}
+                                  </td>
+                                  <td class="text-center">
+                                    {% if sub.is_absent %}-{% else %}{{ sub.pr_mo }}{% endif %}
+                                  </td>
+                                  <td class="text-center font-weight-bold">
+                                    {% if sub.is_absent %}-{% else %}{{ sub.total_mo }} / {{ sub.max_mark }}{% endif %}
+                                  </td>
+                                  <td class="text-center">
+                                    {% if sub.is_absent %}
+                                      <span class="badge bg-red-lt text-red">Absent</span>
+                                    {% else %}
+                                      <span class="badge bg-green-lt text-green">Present</span>
+                                    {% endif %}
+                                  </td>
+                                </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

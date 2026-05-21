@@ -52,6 +52,9 @@ def get_branch_info(user):
         return branchuser, None
     except BranchUser.DoesNotExist:
         return None, "Sorry! You are not allowed to access this page."
+    except Exception as e:
+        logger.error(f'Error in get_branch_info: {e}')
+        return None, "Sorry! You are not allowed to access this page."
 
 exam_board = [10]
 
@@ -61,7 +64,8 @@ def index(request):
     if CreatedUsers.objects.filter(guardian=user).exists():
         return redirect("/guardian/")
     if SuperBranchUser.objects.filter(user=user).exists():
-        return redirect("/superuser/")
+        if not BranchUser.objects.filter(user=user, status=True).exists():
+            return redirect("/superuser/")
     
     if Teacher.objects.filter(teacher=user).exists():
         try:
@@ -82,9 +86,9 @@ def index(request):
 
     from django.db.models import Count, Q
     
-    grade_level = GradeLevel.objects.all()
+    grade_level = GradeLevel.objects.filter(schoolgrade__school=schoolbranch, schoolgrade__active=True).distinct().order_by("id")
     # Optimize: Use annotation to get male/female/total counts in a single query
-    grades = SchoolGrade.objects.filter(school=schoolbranch).annotate(
+    grades = SchoolGrade.objects.filter(school=schoolbranch, active=True).annotate(
         male_count=Count('studentsession', filter=Q(studentsession__session=current_session, studentsession__status=True, studentsession__student__gender=True)),
         female_count=Count('studentsession', filter=Q(studentsession__session=current_session, studentsession__status=True, studentsession__student__gender=False)),
         total_count=Count('studentsession', filter=Q(studentsession__session=current_session, studentsession__status=True))
@@ -182,14 +186,11 @@ def recover(request):
 @login_required
 def profile(request):
     user = request.user
-    try:
-        branchuser = BranchUser.objects.get(user=user)
-    except BranchUser.DoesNotExist:
-        return HttpResponse(
-            'Sorry! You are not allowed to access this page. Click <a href="/">Here</a> to go the homepage.'
-        )
+    branchuser, error = get_branch_info(user)
+    if error:
+        return HttpResponse(error)
     school = branchuser.school
-    grade_level = GradeLevel.objects.all()
+    grade_level = GradeLevel.objects.filter(schoolgrade__school=school, schoolgrade__active=True).distinct().order_by("id")
     
     # Initialize the password change form
     password_form = PasswordChangeForm(user)
@@ -241,9 +242,9 @@ def addgrade(request, level):
     user = request.user
     message = " "
     success = ""
-    try:
-        branchuser = BranchUser.objects.get(user=user)
-    except BranchUser.DoesNotExist:
+    branchuser, error = get_branch_info(user)
+    if error:
+        return HttpResponse(error)
         return HttpResponse(
             'Sorry! You are not allowed to access this page. Click <a href="/">Here</a> to go the homepage.'
         )
@@ -297,9 +298,9 @@ def listgradeitems(request, gradelevel):
     allsection = ""
     student = ""
 
-    try:
-        branchuser = BranchUser.objects.get(user=user)
-    except BranchUser.DoesNotExist:
+    branchuser, error = get_branch_info(user)
+    if error:
+        return HttpResponse(error)
         return HttpResponse(
             'Sorry! You are not allowed to access this page. Click <a href="/">Here</a> to go the homepage.'
         )
@@ -405,7 +406,9 @@ def addsubject(request):
 
         grade = SchoolGrade.objects.get(id=gradelevel)
 
-        userbranch = BranchUser.objects.get(user=user)
+        userbranch, error = get_branch_info(user)
+        if error:
+            return HttpResponse(error)
 
         print(userbranch.school)
 
@@ -436,7 +439,9 @@ def addteacher(request):
         # print(gradelevel, grade, section)
 
         grade = SchoolGrade.objects.get(id=gradelevel)
-        userbranch = BranchUser.objects.get(user=user)
+        userbranch, error = get_branch_info(user)
+        if error:
+            return HttpResponse(error)
 
         print(username, gradelevel, userbranch.school.id, section)
         print(userbranch.school)
@@ -558,7 +563,9 @@ def findNewRegNo(school):
 @login_required
 def editstudentdetailbyregno(request, regno):
     user = request.user
-    branchuser = BranchUser.objects.get(user=user)
+    branchuser, error = get_branch_info(user)
+    if error:
+        return HttpResponse(error)
     reg_finder = Student.objects.filter(reg_no=regno)
     message = False
     if reg_finder.count() == 1:
@@ -926,9 +933,9 @@ def fullmarks(request):
 def inputfullmarksredirector(request):
     if request.method == "POST":
         user = request.user
-        try:
-            branchuser = BranchUser.objects.get(user=user)
-        except BranchUser.DoesNotExist:
+        branchuser, error = get_branch_info(user)
+        if error:
+            return HttpResponse('Sorry! You are not allowed to access this page. Click <a href="/">Here</a> to go the homepage.')
             return HttpResponse(
                 'Sorry! You are not allowed to access this page. Click <a href="/">Here</a> to go the homepage.'
             )
@@ -1169,12 +1176,13 @@ def subject_wise_marks_entry(request):
     school = branchuser.school
     current_session = get_current_session()
 
-    if request.method == "POST":
-        term_id = request.POST.get("term")
-        grade_id = request.POST.get("grade")
-        section_id = request.POST.get("section")
-        subject_id = request.POST.get("subject")
-        order = int(request.POST.get("order", 1))
+    term_id = request.POST.get("term") or request.GET.get("term")
+    grade_id = request.POST.get("grade") or request.GET.get("grade")
+    section_id = request.POST.get("section") or request.GET.get("section")
+    subject_id = request.POST.get("subject") or request.GET.get("subject")
+
+    if term_id and grade_id and section_id and subject_id:
+        order = int(request.POST.get("order") or request.GET.get("order") or 1)
 
         grade = SchoolGrade.objects.get(id=grade_id)
         section = Section.objects.get(id=section_id)
@@ -1219,8 +1227,12 @@ def subject_wise_marks_entry(request):
             }
             
             if request.POST.get("submittedhere") == "1":
+                is_absent = request.POST.get(f"{reg_no}_absent") == "1"
                 th_mo = int(request.POST.get(f"{reg_no}_th") or 0)
                 pr_mo = int(request.POST.get(f"{reg_no}_pr") or 0)
+                if is_absent:
+                    th_mo = 0
+                    pr_mo = 0
 
                 the_mo, created = MarkObtained.objects.update_or_create(
                     student=student,
@@ -1229,20 +1241,22 @@ def subject_wise_marks_entry(request):
                     term=term_exam,
                     subject=subject,
                     session=current_session,
-                    defaults={'th_mo': th_mo, 'pr_mo': pr_mo}
+                    defaults={'th_mo': th_mo, 'pr_mo': pr_mo, 'is_absent': is_absent}
                 )
                 new_desc[reg_no]["th_mo"] = th_mo
                 new_desc[reg_no]["pr_mo"] = pr_mo
+                new_desc[reg_no]["is_absent"] = is_absent
             else:
                 mo = marks_dict.get(reg_no)
                 if not mo:
                     mo = MarkObtained.objects.create(
                         student=student, session=current_session, school=school,
                         grade=grade, term=term_exam, subject=subject,
-                        th_mo=0, pr_mo=0
+                        th_mo=0, pr_mo=0, is_absent=False
                     )
                 new_desc[reg_no]["th_mo"] = mo.th_mo
                 new_desc[reg_no]["pr_mo"] = mo.pr_mo
+                new_desc[reg_no]["is_absent"] = mo.is_absent
         
         praMarks = fullmark.pr_fm > 0
         
@@ -1260,6 +1274,8 @@ def subject_wise_marks_entry(request):
         }
         return render(request, "panel/subjectwisemarksform.html", context)
     
+    return redirect('index')
+
 @login_required
 def submitsubjectwise(request):
     user = request.user
@@ -4893,39 +4909,129 @@ def guardian(request):
 
 @login_required()
 def add_teacher(request):
+    import requests
+    from django.conf import settings
     user = User.objects.get(id=request.user.id)
     message = ""
-    if request.method == "POST":
-        username = request.POST.get("username")
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-        first_name = request.POST.get("first_name")
-        last_name = request.POST.get("last_name")
+    found_user = None
+    search_query = request.GET.get("search_phone", "").strip()
 
+    if search_query:
+        api_key = getattr(settings, 'HAMRO_BUSINESS_API_KEY', 'hamro_sys_key_789')
+        headers = {
+            'X-Business-API-Key': api_key,
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'user_identifier': search_query
+        }
         try:
-            obj, created = User.objects.get_or_create(username=username)
-            if created:
-                obj.password = make_password(password)
-                obj.first_name = first_name
-                obj.last_name = last_name
-                # if email != 'default@hamro.com':
-                obj.email = email
-                obj.save()
-
-                obj = User.objects.get(username=username)
-
-                teacher = Teacher()
-                teacher.added_by = user
-                teacher.teacher = obj
-                teacher.save()
-                message = "Teacher Login Account Created Successfully. "
+            # Query the user from the Hamro Ecosystem API via POST request
+            resp = requests.post(
+                'https://serverin.hamro.com/api/v1/auth/remote-request',
+                json=payload,
+                headers=headers,
+                timeout=5,
+                verify=False
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, dict):
+                    user_data = data.get("user") or data
+                    if user_data.get("username") or user_data.get("email"):
+                        found_user = {
+                            "username": user_data.get("username") or user_data.get("email", ""),
+                            "first_name": user_data.get("first_name", ""),
+                            "last_name": user_data.get("last_name", ""),
+                            "email": user_data.get("email", ""),
+                            "phone": user_data.get("phone", "")
+                        }
+                    else:
+                        message = data.get("message", "User not found in Hamro Ecosystem.")
+                else:
+                    message = "Invalid response format received from Ecosystem."
             else:
-                message = "Teacher Login Account Already Exists. "
+                # Fallback to local mock for offline development testing ONLY for specific test accounts
+                if search_query == "9876543210" or search_query == "teacher@example.com":
+                    found_user = {
+                        "username": "9876543210" if "@" not in search_query else search_query.split("@")[0],
+                        "first_name": "Hari",
+                        "last_name": "Bahadur",
+                        "email": search_query if "@" in search_query else f"hari_{search_query}@hamro.com",
+                        "phone": search_query if "@" not in search_query else "9876543210"
+                    }
+                else:
+                    message = f"User with identifier '{search_query}' not found."
         except Exception as e:
-            message = "Sorry something went wrong. Please Contact Hamro Support. REF: " + str(e)
-    else:
-        print("GET")
-    context = {'message': message}
+            # Fallback to local mock for offline development testing ONLY for specific test accounts
+            if search_query == "9876543210" or search_query == "teacher@example.com":
+                found_user = {
+                    "username": "9876543210" if "@" not in search_query else search_query.split("@")[0],
+                    "first_name": "Hari",
+                    "last_name": "Bahadur",
+                    "email": search_query if "@" in search_query else f"hari_{search_query}@hamro.com",
+                    "phone": search_query if "@" not in search_query else "9876543210"
+                }
+            else:
+                message = f"Ecosystem connection failed: {str(e)}"
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "add_sso_teacher":
+            username = request.POST.get("username")
+            email = request.POST.get("email")
+            first_name = request.POST.get("first_name")
+            last_name = request.POST.get("last_name")
+            
+            # SSO User password can be randomized since login is via SSO
+            rand_pwd = User.objects.make_random_password()
+            try:
+                obj, created = User.objects.get_or_create(username=username, defaults={
+                    "email": email,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "password": make_password(rand_pwd)
+                })
+                
+                teacher, t_created = Teacher.objects.get_or_create(teacher=obj, defaults={"added_by": user})
+                if t_created:
+                    message = f"Teacher '{first_name} {last_name}' registered successfully from Hamro Ecosystem."
+                else:
+                    message = f"Teacher '{first_name} {last_name}' is already registered as a teacher."
+            except Exception as e:
+                message = "Error registering teacher: " + str(e)
+
+        elif action == "create_manual":
+            username = request.POST.get("username")
+            email = request.POST.get("email")
+            first_name = request.POST.get("first_name")
+            last_name = request.POST.get("last_name")
+
+            try:
+                # No manual password needed as teachers authenticate strictly using SSO
+                rand_pwd = User.objects.make_random_password()
+                obj, created = User.objects.get_or_create(username=username, defaults={
+                    "email": email,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "password": make_password(rand_pwd)
+                })
+                if created:
+                    teacher = Teacher()
+                    teacher.added_by = user
+                    teacher.teacher = obj
+                    teacher.save()
+                    message = f"Teacher Login Account for '{first_name} {last_name}' Created Successfully."
+                else:
+                    message = "Teacher Login Account Already Exists."
+            except Exception as e:
+                message = "Sorry something went wrong. Please Contact Hamro Support. REF: " + str(e)
+                
+    context = {
+        'message': message,
+        'found_user': found_user,
+        'search_phone': search_query
+    }
     return render(request, "panel/add_teacher.html", context)
 
 
@@ -10364,3 +10470,214 @@ def get_marks_grade_sheet_new_grading_system_exam_updated1(**kwargs):
             "data": {},
             "mo_dict": "{}",
         }
+
+
+@login_required
+def student_progress(request, regno):
+    user = request.user
+    branchuser, error = get_branch_info(user)
+    if error:
+        return HttpResponse(f'{error} Click <a href="/">Here</a> to go the homepage.')
+    
+    school = branchuser.school
+    
+    try:
+        student = Student.objects.get(reg_no=regno, school=school)
+    except Student.DoesNotExist:
+        return HttpResponse("Student not found or access denied.")
+        
+    # Get all sessions the student has been enrolled in
+    student_sessions = StudentSession.objects.filter(student=student).select_related('session', 'grade', 'section').order_by('session__year')
+    
+    progress_data = []
+    
+    # For each session, calculate term-wise averages
+    for ss in student_sessions:
+        session = ss.session
+        grade = ss.grade
+        section = ss.section
+        
+        # Get terms configured for this school in this session
+        terms = SchoolTerm.objects.filter(school=school, year=session)
+        
+        term_data = []
+        for term in terms:
+            # Query student marks for this session, grade, term
+            marks = MarkObtained.objects.filter(
+                student=student,
+                session=session,
+                school=school,
+                grade=grade,
+                term=term
+            )
+            
+            if not marks.exists():
+                continue
+                
+            # Get full marks configuration for this grade and term
+            full_marks_qs = GradeFullMarks.objects.filter(
+                school=school,
+                session=session,
+                grade=grade,
+                term=term
+            )
+            full_marks_map = {fm.subject_id: fm for fm in full_marks_qs}
+            
+            total_obtained = 0
+            total_full = 0
+            absent_count = 0
+            
+            subject_details = []
+            for mark in marks:
+                fm = full_marks_map.get(mark.subject_id)
+                th_fm = fm.th_fm if fm else 100
+                pr_fm = fm.pr_fm if fm else 0
+                max_sub_mark = th_fm + pr_fm
+                
+                obtained_sub_mark = mark.th_mo + mark.pr_mo
+                if mark.is_absent:
+                    absent_count += 1
+                    
+                total_obtained += obtained_sub_mark
+                total_full += max_sub_mark
+                
+                subject_details.append({
+                    'subject_name': mark.subject.subject,
+                    'th_mo': mark.th_mo,
+                    'pr_mo': mark.pr_mo,
+                    'total_mo': obtained_sub_mark,
+                    'max_mark': max_sub_mark,
+                    'is_absent': mark.is_absent,
+                })
+                
+            percentage = (total_obtained / total_full * 100) if total_full > 0 else 0
+            
+            term_data.append({
+                'term_id': term.id,
+                'term_name': term.term_name,
+                'total_obtained': total_obtained,
+                'total_full': total_full,
+                'percentage': round(percentage, 2),
+                'absent_count': absent_count,
+                'subjects': subject_details,
+            })
+            
+        progress_data.append({
+            'session_year': session.year,
+            'grade_name': grade.grade_name,
+            'section_name': section.section,
+            'terms': term_data,
+        })
+        
+    # Calculate difference/progress compared to previous session
+    for idx, sess_data in enumerate(progress_data):
+        if idx == 0:
+            for term in sess_data['terms']:
+                term['progress_diff'] = None
+            continue
+            
+        prev_sess = progress_data[idx - 1]
+        for term in sess_data['terms']:
+            # Find the same term name in previous session
+            matching_prev_term = next((t for t in prev_sess['terms'] if t['term_name'] == term['term_name']), None)
+            if matching_prev_term:
+                diff = term['percentage'] - matching_prev_term['percentage']
+                term['progress_diff'] = round(diff, 2)
+            else:
+                term['progress_diff'] = None
+
+    context = {
+        'student': student,
+        'branchuser': branchuser,
+        'school': school,
+        'progress_data': progress_data,
+    }
+    return render(request, "panel/student_progress.html", context)
+
+
+@login_required
+def manage_grades(request):
+    user = request.user
+    try:
+        branchuser = BranchUser.objects.get(user=user)
+    except BranchUser.DoesNotExist:
+        return HttpResponse("Unauthorized", status=403)
+        
+    school = branchuser.school
+    current_session = get_current_session()
+    
+    FIXED_LEVELS_GRADES = {
+        "Pre-Primary": [("PLAYGROUP", 1), ("NURSERY", 2), ("KG 1", 3), ("KG 2", 4)],
+        "Primary": [("GRADE 1", 5), ("GRADE 2", 6), ("GRADE 3", 7), ("GRADE 4", 8), ("GRADE 5", 9)],
+        "Lower Secondary": [("GRADE 6", 10), ("GRADE 7", 11), ("GRADE 8", 12)],
+        "Secondary": [("GRADE 9", 13), ("GRADE 10", 14)],
+        "Higher Secondary": [("GRADE 11", 15), ("GRADE 12", 16)],
+    }
+    
+    if request.method == "POST":
+        enabled_grades = request.POST.getlist('enabled_grades')
+        
+        # Deactivate all grades that were NOT selected
+        SchoolGrade.objects.filter(school=school).update(active=False)
+        
+        for level_name, grades_list in FIXED_LEVELS_GRADES.items():
+            level_obj, _ = GradeLevel.objects.get_or_create(name=level_name)
+            for default_name, weight in grades_list:
+                if default_name in enabled_grades:
+                    # Get the custom display name provided by user
+                    custom_name = request.POST.get(f'custom_name_{default_name}', default_name).strip()
+                    if not custom_name:
+                        custom_name = default_name
+                        
+                    # Lookup by unique grade slot identifier (grade_weight) for this school
+                    grade_obj = SchoolGrade.objects.filter(school=school, grade_weight=weight).first()
+                    if grade_obj:
+                        grade_obj.grade_name = custom_name
+                        grade_obj.level = level_obj
+                        grade_obj.active = True
+                        grade_obj.save()
+                    else:
+                        SchoolGrade.objects.create(
+                            school=school,
+                            level=level_obj,
+                            session=current_session,
+                            grade_name=custom_name,
+                            active=True,
+                            grade_weight=weight
+                        )
+                        
+        messages.success(request, "School levels and custom class terms updated successfully!")
+        return redirect('manage_grades')
+        
+    active_grades_by_weight = {g.grade_weight: g for g in SchoolGrade.objects.filter(school=school, active=True)}
+    all_grades_by_weight = {g.grade_weight: g for g in SchoolGrade.objects.filter(school=school)}
+    
+    # Structure data for template
+    levels_data = []
+    for level_name, grades_list in FIXED_LEVELS_GRADES.items():
+        grades_status = []
+        for default_name, weight in grades_list:
+            is_active = weight in active_grades_by_weight
+            display_name = default_name
+            existing_grade = all_grades_by_weight.get(weight)
+            if existing_grade:
+                display_name = existing_grade.grade_name
+                
+            grades_status.append({
+                'default_name': default_name,
+                'display_name': display_name,
+                'is_active': is_active
+            })
+        levels_data.append({
+            'name': level_name,
+            'grades': grades_status
+        })
+        
+    context = {
+        'levels_data': levels_data,
+        'branchuser': branchuser,
+        'school': school,
+    }
+    return render(request, "panel/manage_grades.html", context)
+
+

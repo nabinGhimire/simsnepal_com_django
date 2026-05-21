@@ -1,0 +1,99 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %}Manage Levels & Grades | SIMSNepal{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Settings</div>
+        <h2 class="page-title">Manage School Levels & Grades</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  <div class="col-12">
+    <form method="POST" action="">
+      {% csrf_token %}
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h3 class="card-title">Enable Grade Levels & Customize Class Display Names</h3>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="text-secondary mb-4">
+            Select the levels and classes that are offered by your school. You can also customize the display name for each class to match your terminology (e.g. rename <strong>GRADE 1</strong> to <strong>Class 1</strong>, <strong>Grade One</strong>, or <strong>Grade I</strong>).
+          </p>
+
+          <div class="row g-4">
+            {% for level in levels_data %}
+            <div class="col-12 col-md-6 col-lg-4">
+              <div class="card h-100 shadow-sm border-0" style="background-color: #fcfefe; border-top: 3px solid #008877 !important;">
+                <div class="card-body">
+                  <div class="d-flex align-items-center mb-3">
+                    <span class="avatar avatar-sm rounded bg-teal-lt me-3 text-teal" style="background-color: rgba(0, 136, 119, 0.1) !important; color: #008877 !important;">
+                      <i class="ti ti-school"></i>
+                    </span>
+                    <h3 class="card-title mb-0 fw-bold">{{ level.name }}</h3>
+                  </div>
+
+                  <div class="space-y-3">
+                    {% for grade in level.grades %}
+                    <div class="row align-items-center g-2 py-1">
+                      <div class="col-auto">
+                        <label class="form-check mb-0">
+                          <input class="form-check-input" type="checkbox" name="enabled_grades" value="{{ grade.default_name }}" {% if grade.is_active %}checked{% endif %}>
+                        </label>
+                      </div>
+                      <div class="col">
+                        <input type="text" class="form-control form-control-sm border-0 border-bottom bg-transparent" 
+                               name="custom_name_{{ grade.default_name }}" 
+                               value="{{ grade.display_name }}" 
+                               placeholder="{{ grade.default_name }}" 
+                               style="border-radius: 0; box-shadow: none; border-color: rgba(0, 136, 119, 0.1) !important;">
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="card-footer text-end">
+          <a href="/panel/" class="btn btn-link link-secondary me-2">Cancel</a>
+          <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
+            <i class="ti ti-check me-1"></i> Save Grade Settings
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock content %}
