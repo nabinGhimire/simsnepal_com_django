@@ -70,7 +70,7 @@ class SchoolBranch(models.Model):
     logo = models.FileField(upload_to='school/', blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     shortcode = models.CharField(
-        max_length=20, unique=True, blank=True, null=True)
+        max_length=40, unique=True, blank=True, null=True)
 
     status = models.BooleanField(default=True)
     is_branch = models.BooleanField(default=False)
