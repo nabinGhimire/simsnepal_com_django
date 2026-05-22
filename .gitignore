@@ -5,3 +5,4 @@ sso.txt
 .env
 ./sso/*/*.pyc
 sims_2026_02_16/*
+static/*
