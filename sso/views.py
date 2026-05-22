@@ -124,7 +124,7 @@ def auto_login(request):
     from sms.models import SuperBranchUser, SchoolBranch, BranchUser, EduSession
     
     # Ensure a default session exists
-    EduSession.objects.get_or_create(year="2082", defaults={"status": True})
+    EduSession.objects.get_or_create(year="2083", defaults={"status": True})
     
     sbu, _ = SuperBranchUser.objects.get_or_create(
         user=user,

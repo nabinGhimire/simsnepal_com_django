@@ -4,7 +4,7 @@ into every template. This ensures the Tabler navbar with grade menus renders
 on all pages — including print pages that previously had no nav.
 """
 from sms.models import BranchUser, GradeLevel, SchoolGrade, EduSession
-
+this_year = 2083
 
 def nav_context(request):
     """Return grade_level, grades, branchuser, school, current_session, and all_sessions."""
@@ -31,7 +31,7 @@ def nav_context(request):
 
     if not current_session:
         try:
-            current_session = EduSession.objects.get(year=2082)
+            current_session = EduSession.objects.get(year=this_year)
         except EduSession.DoesNotExist:
             current_session = EduSession.objects.filter(status=True).order_by('-year').first()
 

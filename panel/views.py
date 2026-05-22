@@ -35,7 +35,7 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-# this_year = 2083
+this_year = 2083
 
 def get_current_session():
     """Helper to get the current session without executing on import."""
@@ -50,7 +50,7 @@ def get_current_session():
                 pass
     try:
         # Hardcoded for now as per original logic, but wrapped in a function
-        return EduSession.objects.get(year=2082)
+        return EduSession.objects.get(year=this_year)
     except EduSession.DoesNotExist:
         return EduSession.objects.filter(status=True).order_by('-year').first()
 
