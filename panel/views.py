@@ -1,37 +1,84 @@
-from django.shortcuts import render
-from django.http import Http404, HttpResponse, HttpResponseRedirect
-from django.contrib.auth.decorators import login_required
-from django.views.generic import View
-from .forms import SignUpForm
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib import messages
+# # from django.shortcuts import render
+# # from django.http import Http404, HttpResponse, HttpResponseRedirect
+# # from django.contrib.auth.decorators import login_required
+# # from django.views.generic import View
+# # from .forms import SignUpForm
+# # from django.contrib.auth.models import User
+# # from django.contrib.auth import authenticate, update_session_auth_hash
+# # from django.contrib.auth.forms import PasswordChangeForm
+# # from django.contrib import messages
 
-from django.shortcuts import redirect
-from django.contrib.auth.hashers import make_password
-from sms.models import *
+# # from django.shortcuts import redirect
+# # from django.contrib.auth.hashers import make_password
+# # from sms.models import *
+# # import json
+
+# # from django.db.models import Max
+# # from random import randint
+# # from datetime import datetime
+# # from django.views.generic import View
+# # from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+# # from django.contrib.auth.decorators import login_required
+# # from collections import OrderedDict
+
+# # # Create your views here.
+# # from .func import *
+
+# # # from .student_reg import my_students
+# # from django.db.models import Q
+
+# # from io import BytesIO
+# # from django.template.loader import get_template
+# # # from xhtml2pdf import pisa
+# # import logging
+# # from collections import defaultdict
+
+# import logging
+# import secrets
+# import requests
+# from django.conf import settings
+# from django.shortcuts import render, redirect
+# from django.contrib.auth.decorators import login_required
+# from django.contrib.auth.hashers import make_password
+# from django.contrib.auth.models import User
+# from django.contrib import messages
+# from sms.models import *                     # Teacher, BranchUser, Subject, TeacherSubjectAccess
+# from sso.models import HamroUserProfile
+# # from session.models import get_current_session
+# from .func import *
+
+# Standard library
 import json
-
-from django.db.models import Max
-from random import randint
-from datetime import datetime
-from django.views.generic import View
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.contrib.auth.decorators import login_required
-from collections import OrderedDict
-
-# Create your views here.
-from .func import *
-
-# from .student_reg import my_students
-from django.db.models import Q
-
-from io import BytesIO
-from django.template.loader import get_template
-# from xhtml2pdf import pisa
 import logging
-from collections import defaultdict
+import secrets
+from collections import OrderedDict, defaultdict
+from datetime import datetime
+from io import BytesIO
+from random import randint
+
+# Third-party
+import requests
+
+# Django core
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import authenticate, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import User
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Max, Q
+from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.shortcuts import redirect, render
+from django.template.loader import get_template
+from django.views.generic import View
+
+# Local apps
+from .forms import SignUpForm
+from .func import *
+from sms.models import *   # Teacher, BranchUser, Subject, TeacherSubjectAccess
+from sso.models import HamroUserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -4959,113 +5006,319 @@ def guardian(request):
     return HttpResponse('Hi')
 
 
+# @login_required()
+# def add_teacher(request):
+#     import requests
+#     import secrets
+#     from django.conf import settings
+#     user = User.objects.get(id=request.user.id)
+#     message = ""
+#     found_user = None
+#     search_query = request.GET.get("search_phone", "").strip()
+
+#     if search_query:
+#         api_key = getattr(settings, 'HAMRO_BUSINESS_API_KEY', 'hamro_sys_key_789')
+#         headers = {
+#             'X-System-API-Key': api_key,
+#             'Content-Type': 'application/json',
+#             'Accept': 'application/json'
+#         }
+#         payload = {
+#             'contacts': [search_query]
+#         }
+#         api_base_url = getattr(settings, 'HAMRO_API_BASE_URL', 'https://serverin.hamro.com').rstrip('/')
+#         try:
+#             # Query the user from the Hamro Ecosystem API via POST request
+#             resp = requests.post(
+#                 f'{api_base_url}/api/v1/system/contacts/find',
+#                 json=payload,
+#                 headers=headers,
+#                 timeout=5,
+#                 verify=False
+#             )
+#             print(resp)
+#             print(resp.json())
+#             if resp.status_code == 200:
+#                 data = resp.json()
+#                 print(data)
+#                 results = data.get('data', [])
+#                 if results and len(results) > 0:
+#                     first_result = results[0]
+#                     if first_result.get('found'):
+#                         user_data = first_result.get('user', {})
+#                         if user_data:
+#                             # Map user_data according to the new API schema
+#                             # Split name into first and last name
+#                             name_parts = user_data.get('name', '').strip().split(' ', 1)
+#                             first_name = name_parts[0] if name_parts else ''
+#                             last_name = name_parts[1] if len(name_parts) > 1 else ''
+                            
+#                             found_user = {
+#                                 "username": user_data.get('username', ''),
+#                                 "hamro_uuid": user_data.get('id', ''),
+#                                 "avatar_url": user_data.get('avatar_url', ''),
+#                                 "first_name": first_name,
+#                                 "last_name": last_name,
+#                                 "email": user_data.get('email', ''),
+#                                 "phone": user_data.get('mobile_number', '')
+#                             }
+#                         else:
+#                             message = "User data missing from response."
+#                     else:
+#                         message = "User not found in Hamro Ecosystem."
+#                 else:
+#                     message = "Invalid response format received from Ecosystem."
+#             else:
+#                 # Fallback to local mock for offline development testing ONLY for specific test accounts
+#                 if search_query in ["9876543210", "teacher@example.com", "iostest@hamro.com", "iostest"]:
+#                     if search_query in ["iostest@hamro.com", "iostest"]:
+#                         found_user = {
+#                             "username": "iostest@hamro.com",
+#                             "first_name": "IOS",
+#                             "last_name": "Test",
+#                             "email": "iostest@hamro.com",
+#                             "phone": "9801234568"
+#                         }
+#                     else:
+#                         found_user = {
+#                             "username": "9876543210" if "@" not in search_query else search_query.split("@")[0],
+#                             "first_name": "Hari",
+#                             "last_name": "Bahadur",
+#                             "email": search_query if "@" in search_query else f"hari_{search_query}@hamro.com",
+#                             "phone": search_query if "@" not in search_query else "9876543210"
+#                         }
+#                 else:
+#                     message = f"User with identifier '{search_query}' not found."
+#         except Exception as e:
+#             # Fallback to local mock for offline development testing ONLY for specific test accounts
+#             if search_query in ["9876543210", "teacher@example.com", "iostest@hamro.com", "iostest"]:
+#                 if search_query in ["iostest@hamro.com", "iostest"]:
+#                     found_user = {
+#                         "username": "iostest@hamro.com",
+#                         "first_name": "IOS",
+#                         "last_name": "Test",
+#                         "email": "iostest@hamro.com",
+#                         "phone": "9801234568"
+#                     }
+#                 else:
+#                     found_user = {
+#                         "username": "9876543210" if "@" not in search_query else search_query.split("@")[0],
+#                         "first_name": "Hari",
+#                         "last_name": "Bahadur",
+#                         "email": search_query if "@" in search_query else f"hari_{search_query}@hamro.com",
+#                         "phone": search_query if "@" not in search_query else "9876543210"
+#                     }
+#             else:
+#                 message = f"Ecosystem connection failed: {str(e)}"
+
+#     if request.method == "POST":
+#         action = request.POST.get("action")
+#         if action == "add_sso_teacher":
+#             username = request.POST.get("username")
+#             email = request.POST.get("email")
+#             first_name = request.POST.get("first_name")
+#             last_name = request.POST.get("last_name")
+#             hamro_uuid = request.POST.get("hamro_uuid")
+#             avatar_url = request.POST.get("avatar_url")
+#             mobile_number = request.POST.get("mobile_number")
+            
+#             # SSO User password can be randomized since login is via SSO
+#             rand_pwd = secrets.token_urlsafe(16)
+#             try:
+#                 obj, created = User.objects.get_or_create(username=username, defaults={
+#                     "email": email,
+#                     "first_name": first_name,
+#                     "last_name": last_name,
+#                     "password": make_password(rand_pwd)
+#                 })
+                
+#                 if hamro_uuid:
+#                     from sso.models import HamroUserProfile
+#                     HamroUserProfile.objects.update_or_create(
+#                         user=obj,
+#                         defaults={
+#                             'hamro_uuid': hamro_uuid,
+#                             'avatar_url': avatar_url,
+#                             'mobile_number': mobile_number
+#                         }
+#                     )
+                
+#                 teacher, t_created = Teacher.objects.get_or_create(teacher=obj, defaults={"added_by": user})
+                
+#                 # Associate the teacher with the admin's current school branch via BranchUser
+#                 admin_branch = BranchUser.objects.filter(user=user, status=True).first()
+#                 if admin_branch:
+#                     BranchUser.objects.get_or_create(
+#                         school=admin_branch.school,
+#                         user=obj,
+#                         defaults={
+#                             "admin_status": False,
+#                             "status": True,
+#                             "added_by": admin_branch.added_by
+#                         }
+#                     )
+#                     # Automatically assign subjects for mock teachers for testing convenience
+#                     if username in ["iostest@hamro.com", "teacher", "9876543210"]:
+#                         current_session = get_current_session()
+#                         if current_session:
+#                             subjects = Subject.objects.filter(branch=admin_branch.school, session=current_session)
+#                             for sub in subjects:
+#                                 TeacherSubjectAccess.objects.get_or_create(
+#                                     session=current_session,
+#                                     teacher=obj,
+#                                     grade=sub.grade,
+#                                     section=sub.section,
+#                                     subject=sub,
+#                                     defaults={"status": True}
+#                                 )
+                
+#                 if t_created:
+#                     message = f"Teacher '{first_name} {last_name}' registered successfully from Hamro Ecosystem."
+#                 else:
+#                     message = f"Teacher '{first_name} {last_name}' is already registered as a teacher."
+#             except Exception as e:
+#                 message = "Error registering teacher: " + str(e)
+
+#         elif action == "create_manual":
+#             username = request.POST.get("username")
+#             email = request.POST.get("email")
+#             first_name = request.POST.get("first_name")
+#             last_name = request.POST.get("last_name")
+
+#             try:
+#                 # No manual password needed as teachers authenticate strictly using SSO
+#                 rand_pwd = secrets.token_urlsafe(16)
+#                 obj, created = User.objects.get_or_create(username=username, defaults={
+#                     "email": email,
+#                     "first_name": first_name,
+#                     "last_name": last_name,
+#                     "password": make_password(rand_pwd)
+#                 })
+#                 if created:
+#                     teacher = Teacher()
+#                     teacher.added_by = user
+#                     teacher.teacher = obj
+#                     teacher.save()
+                    
+#                     # Associate the teacher with the admin's current school branch via BranchUser
+#                     admin_branch = BranchUser.objects.filter(user=user, status=True).first()
+#                     if admin_branch:
+#                         BranchUser.objects.get_or_create(
+#                             school=admin_branch.school,
+#                             user=obj,
+#                             defaults={
+#                                 "admin_status": False,
+#                                 "status": True,
+#                                 "added_by": admin_branch.added_by
+#                             }
+#                         )
+#                         # Automatically assign subjects for mock teachers for testing convenience
+#                         if username in ["iostest@hamro.com", "teacher", "9876543210"]:
+#                             current_session = get_current_session()
+#                             if current_session:
+#                                 subjects = Subject.objects.filter(branch=admin_branch.school, session=current_session)
+#                                 for sub in subjects:
+#                                     TeacherSubjectAccess.objects.get_or_create(
+#                                         session=current_session,
+#                                         teacher=obj,
+#                                         grade=sub.grade,
+#                                         section=sub.section,
+#                                         subject=sub,
+#                                         defaults={"status": True}
+#                                     )
+                    
+#                     message = f"Teacher Login Account for '{first_name} {last_name}' Created Successfully."
+#                 else:
+#                     message = "Teacher Login Account Already Exists."
+#             except Exception as e:
+#                 message = "Sorry something went wrong. Please Contact Hamro Support. REF: " + str(e)
+                
+#     context = {
+#         'message': message,
+#         'found_user': found_user,
+#         'search_phone': search_query
+#     }
+#     return render(request, "panel/add_teacher.html", context)
+
+
 @login_required()
 def add_teacher(request):
-    import requests
-    import secrets
-    from django.conf import settings
-    user = User.objects.get(id=request.user.id)
+    user = request.user
     message = ""
     found_user = None
     search_query = request.GET.get("search_phone", "").strip()
 
+    # ------------------- SEARCH (REAL API ONLY) -------------------
     if search_query:
-        api_key = getattr(settings, 'HAMRO_BUSINESS_API_KEY', 'hamro_sys_key_789')
-        headers = {
-            'X-System-API-Key': api_key,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        }
-        payload = {
-            'contacts': [search_query]
-        }
-        api_base_url = getattr(settings, 'HAMRO_API_BASE_URL', 'https://serverin.hamro.com').rstrip('/')
-        try:
-            # Query the user from the Hamro Ecosystem API via POST request
-            resp = requests.post(
-                f'{api_base_url}/api/v1/system/contacts/find',
-                json=payload,
-                headers=headers,
-                timeout=5,
-                verify=False
-            )
-            print(resp)
-            print(resp.json())
-            if resp.status_code == 200:
-                data = resp.json()
-                print(data)
-                results = data.get('data', [])
-                if results and len(results) > 0:
-                    first_result = results[0]
-                    if first_result.get('found'):
-                        user_data = first_result.get('user', {})
-                        if user_data:
-                            # Map user_data according to the new API schema
-                            # Split name into first and last name
-                            name_parts = user_data.get('name', '').strip().split(' ', 1)
-                            first_name = name_parts[0] if name_parts else ''
-                            last_name = name_parts[1] if len(name_parts) > 1 else ''
-                            
-                            found_user = {
-                                "username": user_data.get('username', ''),
-                                "hamro_uuid": user_data.get('id', ''),
-                                "avatar_url": user_data.get('avatar_url', ''),
-                                "first_name": first_name,
-                                "last_name": last_name,
-                                "email": user_data.get('email', ''),
-                                "phone": user_data.get('mobile_number', '')
-                            }
-                        else:
-                            message = "User data missing from response."
-                    else:
-                        message = "User not found in Hamro Ecosystem."
-                else:
-                    message = "Invalid response format received from Ecosystem."
-            else:
-                # Fallback to local mock for offline development testing ONLY for specific test accounts
-                if search_query in ["9876543210", "teacher@example.com", "iostest@hamro.com", "iostest"]:
-                    if search_query in ["iostest@hamro.com", "iostest"]:
-                        found_user = {
-                            "username": "iostest@hamro.com",
-                            "first_name": "IOS",
-                            "last_name": "Test",
-                            "email": "iostest@hamro.com",
-                            "phone": "9801234568"
-                        }
-                    else:
-                        found_user = {
-                            "username": "9876543210" if "@" not in search_query else search_query.split("@")[0],
-                            "first_name": "Hari",
-                            "last_name": "Bahadur",
-                            "email": search_query if "@" in search_query else f"hari_{search_query}@hamro.com",
-                            "phone": search_query if "@" not in search_query else "9876543210"
-                        }
-                else:
-                    message = f"User with identifier '{search_query}' not found."
-        except Exception as e:
-            # Fallback to local mock for offline development testing ONLY for specific test accounts
-            if search_query in ["9876543210", "teacher@example.com", "iostest@hamro.com", "iostest"]:
-                if search_query in ["iostest@hamro.com", "iostest"]:
-                    found_user = {
-                        "username": "iostest@hamro.com",
-                        "first_name": "IOS",
-                        "last_name": "Test",
-                        "email": "iostest@hamro.com",
-                        "phone": "9801234568"
-                    }
-                else:
-                    found_user = {
-                        "username": "9876543210" if "@" not in search_query else search_query.split("@")[0],
-                        "first_name": "Hari",
-                        "last_name": "Bahadur",
-                        "email": search_query if "@" in search_query else f"hari_{search_query}@hamro.com",
-                        "phone": search_query if "@" not in search_query else "9876543210"
-                    }
-            else:
-                message = f"Ecosystem connection failed: {str(e)}"
+        api_key = getattr(settings, 'HAMRO_BUSINESS_API_KEY', None)
+        if not api_key:
+            message = "System misconfiguration: Missing API key. Contact support."
+        else:
+            headers = {
+                'X-System-API-Key': api_key,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+            payload = {'contacts': [search_query]}
+            api_base_url = getattr(settings, 'HAMRO_API_BASE_URL', 'https://messengerin.hamro.com').rstrip('/')
+            
+            try:
+                resp = requests.post(
+                    f'{api_base_url}/api/v1/system/contacts/find',
+                    json=payload,
+                    headers=headers,
+                    timeout=5,
+                    verify=True   # Use proper SSL verification in production
+                )
 
+                print(resp)
+                print(resp.json)
+                
+                if resp.status_code == 200:
+                    data = resp.json()
+                    results = data.get('data', [])
+                    if results and len(results) > 0:
+                        first_result = results[0]
+                        if first_result.get('found'):
+                            user_data = first_result.get('user', {})
+                            if user_data:
+                                name_parts = user_data.get('name', '').strip().split(' ', 1)
+                                first_name = name_parts[0] if name_parts else ''
+                                last_name = name_parts[1] if len(name_parts) > 1 else ''
+                                
+                                found_user = {
+                                    "username": user_data.get('username', ''),
+                                    "hamro_uuid": user_data.get('id', ''),
+                                    "avatar_url": user_data.get('avatar_url', ''),
+                                    "first_name": first_name,
+                                    "last_name": last_name,
+                                    "email": user_data.get('email', ''),
+                                    "phone": user_data.get('mobile_number', '')
+                                }
+                            else:
+                                message = "User data missing from Ecosystem response."
+                        else:
+                            message = "User not found in Hamro Ecosystem."
+                    else:
+                        message = "Invalid response format from Ecosystem."
+                else:
+                    logger.error(f"Ecosystem API error {resp.status_code}: {resp.text}")
+                    message = f"Ecosystem service error (HTTP {resp.status_code}). Please try again later."
+                    
+            except requests.exceptions.Timeout:
+                logger.error("Timeout connecting to Hamro Ecosystem API")
+                message = "Ecosystem service timeout. Please try again."
+            except requests.exceptions.ConnectionError:
+                logger.error("Connection error to Hamro Ecosystem API")
+                message = "Cannot reach Ecosystem service. Check your network."
+            except Exception as e:
+                logger.exception("Unexpected error during Ecosystem lookup")
+                message = f"Technical error: {str(e)}"
+
+    # ------------------- FORM HANDLING (ADD TEACHER) -------------------
     if request.method == "POST":
         action = request.POST.get("action")
+        
         if action == "add_sso_teacher":
             username = request.POST.get("username")
             email = request.POST.get("email")
@@ -5075,18 +5328,19 @@ def add_teacher(request):
             avatar_url = request.POST.get("avatar_url")
             mobile_number = request.POST.get("mobile_number")
             
-            # SSO User password can be randomized since login is via SSO
             rand_pwd = secrets.token_urlsafe(16)
             try:
-                obj, created = User.objects.get_or_create(username=username, defaults={
-                    "email": email,
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "password": make_password(rand_pwd)
-                })
+                obj, created = User.objects.get_or_create(
+                    username=username,
+                    defaults={
+                        "email": email,
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "password": make_password(rand_pwd)
+                    }
+                )
                 
                 if hamro_uuid:
-                    from sso.models import HamroUserProfile
                     HamroUserProfile.objects.update_or_create(
                         user=obj,
                         defaults={
@@ -5096,9 +5350,11 @@ def add_teacher(request):
                         }
                     )
                 
-                teacher, t_created = Teacher.objects.get_or_create(teacher=obj, defaults={"added_by": user})
+                teacher, t_created = Teacher.objects.get_or_create(
+                    teacher=obj,
+                    defaults={"added_by": user}
+                )
                 
-                # Associate the teacher with the admin's current school branch via BranchUser
                 admin_branch = BranchUser.objects.filter(user=user, status=True).first()
                 if admin_branch:
                     BranchUser.objects.get_or_create(
@@ -5110,8 +5366,8 @@ def add_teacher(request):
                             "added_by": admin_branch.added_by
                         }
                     )
-                    # Automatically assign subjects for mock teachers for testing convenience
-                    if username in ["iostest@hamro.com", "teacher", "9876543210"]:
+                    # Optional: auto-assign subjects only in development (remove for production)
+                    if settings.DEBUG and username in ["iostest@hamro.com", "teacher", "9876543210"]:
                         current_session = get_current_session()
                         if current_session:
                             subjects = Subject.objects.filter(branch=admin_branch.school, session=current_session)
@@ -5128,32 +5384,33 @@ def add_teacher(request):
                 if t_created:
                     message = f"Teacher '{first_name} {last_name}' registered successfully from Hamro Ecosystem."
                 else:
-                    message = f"Teacher '{first_name} {last_name}' is already registered as a teacher."
+                    message = f"Teacher '{first_name} {last_name}' is already registered."
+                    
             except Exception as e:
-                message = "Error registering teacher: " + str(e)
-
+                logger.exception("Teacher creation failed")
+                message = f"Error registering teacher: {str(e)}"
+        
         elif action == "create_manual":
             username = request.POST.get("username")
             email = request.POST.get("email")
             first_name = request.POST.get("first_name")
             last_name = request.POST.get("last_name")
-
+            
+            rand_pwd = secrets.token_urlsafe(16)
             try:
-                # No manual password needed as teachers authenticate strictly using SSO
-                rand_pwd = secrets.token_urlsafe(16)
-                obj, created = User.objects.get_or_create(username=username, defaults={
-                    "email": email,
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "password": make_password(rand_pwd)
-                })
+                obj, created = User.objects.get_or_create(
+                    username=username,
+                    defaults={
+                        "email": email,
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "password": make_password(rand_pwd)
+                    }
+                )
                 if created:
-                    teacher = Teacher()
-                    teacher.added_by = user
-                    teacher.teacher = obj
+                    teacher = Teacher(added_by=user, teacher=obj)
                     teacher.save()
                     
-                    # Associate the teacher with the admin's current school branch via BranchUser
                     admin_branch = BranchUser.objects.filter(user=user, status=True).first()
                     if admin_branch:
                         BranchUser.objects.get_or_create(
@@ -5165,8 +5422,7 @@ def add_teacher(request):
                                 "added_by": admin_branch.added_by
                             }
                         )
-                        # Automatically assign subjects for mock teachers for testing convenience
-                        if username in ["iostest@hamro.com", "teacher", "9876543210"]:
+                        if settings.DEBUG and username in ["iostest@hamro.com", "teacher", "9876543210"]:
                             current_session = get_current_session()
                             if current_session:
                                 subjects = Subject.objects.filter(branch=admin_branch.school, session=current_session)
@@ -5180,12 +5436,13 @@ def add_teacher(request):
                                         defaults={"status": True}
                                     )
                     
-                    message = f"Teacher Login Account for '{first_name} {last_name}' Created Successfully."
+                    message = f"Teacher account for '{first_name} {last_name}' created successfully."
                 else:
-                    message = "Teacher Login Account Already Exists."
+                    message = "Teacher login account already exists."
             except Exception as e:
-                message = "Sorry something went wrong. Please Contact Hamro Support. REF: " + str(e)
-                
+                logger.exception("Manual teacher creation failed")
+                message = f"Sorry, something went wrong. Reference: {str(e)}"
+
     context = {
         'message': message,
         'found_user': found_user,
