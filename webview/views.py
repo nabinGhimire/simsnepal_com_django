@@ -370,8 +370,10 @@ def teacher_homework(request):
                 status=True,
             ).select_related('grade', 'section', 'subject', 'grade__school')
             access_subjects = [t.subject for t in ts_access]
-
-            # Initialize message
+        # If no subjects are assigned, show a friendly message but still render the page
+        if not access_subjects:
+            message = "No subjects assigned for the selected school. Please contact the administrator."
+        else:
             message = ""
 
             # Process bulk POST submissions (save homework)
@@ -513,6 +515,8 @@ def teacher_marks(request):
     else:
         ts_access = TeacherSubjectAccess.objects.filter(teacher=user, session=current_session, grade__school=selected_school, status=True).select_related('grade', 'section', 'subject')
         access_subjects = [t.subject for t in ts_access]
+        if not access_subjects:
+            return render(request, "webview/error.html", {"error_title": "No Subjects Assigned", "error_message": "You have no subjects assigned for the selected school. Please contact the administrator."})
         
     unique_classes = set((sub.grade, sub.section) for sub in access_subjects)
     
