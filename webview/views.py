@@ -11,7 +11,7 @@ import nepali_datetime
 from django.urls import reverse
 import logging
 from types import SimpleNamespace
-from .models import EduSession, SchoolBranch, SchoolGrade, Section, Subject, Student, StudentSession, Homework, MarkObtained, SchoolTerm, TeacherSubjectAccess, BranchUser
+from sms.models import EduSession, SchoolBranch, SchoolGrade, Section, Subject, Student, StudentSession, Homework, MarkObtained, SchoolTerm, TeacherSubjectAccess, BranchUser
 
 
 User = get_user_model()
