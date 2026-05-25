@@ -6,6 +6,7 @@ from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 import json
+import traceback
 import nepali_datetime
 from django.urls import reverse
 
@@ -277,149 +278,159 @@ def parent_result(request):
 
 @csrf_exempt
 def teacher_homework(request):
-    user = validate_webview_token(request, "teacher")
-    token = request.GET.get('token') or request.POST.get('token')
-    if not user:
-        return render(request, "webview/error.html", {
-            "error_title": "Unauthorized Access",
-            "error_message": "Invalid or expired token. Please reopen the page from the app."
-        })
-        
-    current_session = get_current_session()
-    if not current_session:
-        return render(request, "webview/error.html", {"error_title": "Configuration Error", "error_message": "No active academic session configured."})
-        
-    branch_users = BranchUser.objects.filter(user=user, status=True)
-    if not branch_users.exists():
-        return render(request, "webview/error.html", {"error_title": "Access Denied", "error_message": "Your user profile is not associated with any school branch."})
-        
-    is_admin = branch_users.filter(admin_status=True).exists() or user.is_superuser
-    
-    # Identify available schools
-    if is_admin:
-        if user.is_superuser:
-            available_schools = list(SchoolBranch.objects.filter(status=True))
+    """Render teacher homework webview with robust error handling.
+
+    Any unexpected exception is logged with a full traceback and a generic
+    error page is displayed to the user.
+    """
+    try:
+        user = validate_webview_token(request, "teacher")
+        token = request.GET.get('token') or request.POST.get('token')
+        if not user:
+            return render(request, "webview/error.html", {
+                "error_title": "Unauthorized Access",
+                "error_message": "Invalid or expired token. Please reopen the page from the app."
+            })
+
+        current_session = get_current_session()
+        if not current_session:
+            return render(request, "webview/error.html", {"error_title": "Configuration Error", "error_message": "No active academic session configured."})
+
+        branch_users = BranchUser.objects.filter(user=user, status=True)
+        if not branch_users.exists():
+            return render(request, "webview/error.html", {"error_title": "Access Denied", "error_message": "Your user profile is not associated with any school branch."})
+
+        is_admin = branch_users.filter(admin_status=True).exists() or user.is_superuser
+
+        # Identify available schools
+        if is_admin:
+            if user.is_superuser:
+                available_schools = list(SchoolBranch.objects.filter(status=True))
+            else:
+                available_schools = [bu.school for bu in branch_users if bu.admin_status]
         else:
-            available_schools = [bu.school for bu in branch_users if bu.admin_status]
-    else:
-        ts_access = TeacherSubjectAccess.objects.filter(teacher=user, session=current_session, status=True).select_related('grade__school')
-        available_schools = list(set([t.grade.school for t in ts_access]))
-        
-    if not available_schools:
-        return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
-        
-    school_id = request.GET.get('school_id') or request.POST.get('school_id')
-    
-    # Force school selection if > 1 school and none selected
-    if len(available_schools) > 1 and not school_id:
-        return render(request, "webview/teacher_select_school.html", {
-            "schools": available_schools,
-            "token": token,
-            "next_url": request.path,
-        })
-        
-    if school_id:
-        try:
-            selected_school = SchoolBranch.objects.get(id=school_id)
-        except SchoolBranch.DoesNotExist:
-            selected_school = available_schools[0]
-    else:
-        selected_school = available_schools[0]
-        
-    selected_date_str = request.GET.get('date') or request.POST.get('date')
-    if selected_date_str:
-        try:
-            parts = selected_date_str.split('-')
-            selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
-        except Exception:
-            selected_date = nepali_datetime.date.today()
-    else:
-        selected_date = nepali_datetime.date.today()
-        
-    message = ""
-    
-    # Filter subjects by selected school
-    if is_admin:
-        access_subjects = Subject.objects.filter(
-            session=current_session,
-            branch=selected_school,
-            status=True
-        ).select_related('grade', 'section', 'branch')
-    else:
-        ts_access = TeacherSubjectAccess.objects.filter(
-            teacher=user,
-            session=current_session,
-            grade__school=selected_school,
-            status=True
-        ).select_related('grade', 'section', 'subject', 'grade__school')
-        access_subjects = [t.subject for t in ts_access]
-        
-    # Process Bulk POST
-    if request.method == "POST":
-        updates_by_class = {}
-        for subject in access_subjects:
-            input_name = f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}"
-            hw_text = request.POST.get(input_name)
-            if hw_text is not None:
-                class_key = (subject.grade_id, subject.section_id)
-                if class_key not in updates_by_class:
-                    updates_by_class[class_key] = {}
-                updates_by_class[class_key][str(subject.id)] = hw_text.strip()
-                
-        for (g_id, s_id), subjects_data in updates_by_class.items():
-            homework_obj, created = Homework.objects.get_or_create(
-                session=current_session, grade_id=g_id, section_id=s_id, nepali_date=selected_date,
-                defaults={"homework": "{}"}
-            )
+            ts_access = TeacherSubjectAccess.objects.filter(teacher=user, session=current_session, status=True).select_related('grade__school')
+            available_schools = list(set([t.grade.school for t in ts_access]))
+
+        if not available_schools:
+            return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
+
+        school_id = request.GET.get('school_id') or request.POST.get('school_id')
+
+        # Force school selection if > 1 school and none selected
+        if len(available_schools) > 1 and not school_id:
+            return render(request, "webview/teacher_select_school.html", {
+                "schools": available_schools,
+                "token": token,
+                "next_url": request.path,
+            })
+
+        if school_id:
             try:
-                hw_dict = json.loads(homework_obj.homework or "{}")
+                selected_school = SchoolBranch.objects.get(id=school_id)
+            except SchoolBranch.DoesNotExist:
+                selected_school = available_schools[0]
+        else:
+            selected_school = available_schools[0]
+
+        selected_date_str = request.GET.get('date') or request.POST.get('date')
+        if selected_date_str:
+            try:
+                parts = selected_date_str.split('-')
+                selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
             except Exception:
-                hw_dict = {}
-                
-            for sub_id_str, text in subjects_data.items():
-                if text: hw_dict[sub_id_str] = text
-                else: hw_dict.pop(sub_id_str, None)
-                    
-            homework_obj.homework = json.dumps(hw_dict)
-            homework_obj.save()
-            
-        message = "All homework entries saved successfully!"
-        
-    grade_section_pairs = set((sub.grade, sub.section) for sub in access_subjects)
-    existing_homework = {}
-    for grade, section in grade_section_pairs:
-        try:
-            hw_obj = Homework.objects.get(session=current_session, grade=grade, section=section, nepali_date=selected_date)
-            existing_homework[(grade.id, section.id)] = json.loads(hw_obj.homework or "{}")
-        except Homework.DoesNotExist:
-            existing_homework[(grade.id, section.id)] = {}
-            
-    grouped_ui = {}
-    for subject in access_subjects:
-        school_name = subject.grade.school.name
-        class_name = f"Grade {subject.grade.grade_name} - Section {subject.section.section}"
-        
-        if school_name not in grouped_ui:
-            grouped_ui[school_name] = {}
-        if class_name not in grouped_ui[school_name]:
-            grouped_ui[school_name][class_name] = []
-            
-        hw_dict = existing_homework.get((subject.grade_id, subject.section_id), {})
-        grouped_ui[school_name][class_name].append({
-            'subject': subject,
-            'input_name': f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}",
-            'value': hw_dict.get(str(subject.id), "")
+                selected_date = nepali_datetime.date.today()
+        else:
+            selected_date = nepali_datetime.date.today()
+
+        message = ""
+
+        # Filter subjects by selected school
+        if is_admin:
+            access_subjects = Subject.objects.filter(
+                session=current_session,
+                branch=selected_school,
+                status=True
+            ).select_related('grade', 'section', 'branch')
+        else:
+            ts_access = TeacherSubjectAccess.objects.filter(
+                teacher=user,
+                session=current_session,
+                grade__school=selected_school,
+                status=True
+            ).select_related('grade', 'section', 'subject', 'grade__school')
+            access_subjects = [t.subject for t in ts_access]
+
+        # Process Bulk POST
+        if request.method == "POST":
+            updates_by_class = {}
+            for subject in access_subjects:
+                input_name = f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}"
+                hw_text = request.POST.get(input_name)
+                if hw_text is not None:
+                    class_key = (subject.grade_id, subject.section_id)
+                    if class_key not in updates_by_class:
+                        updates_by_class[class_key] = {}
+                    updates_by_class[class_key][str(subject.id)] = hw_text.strip()
+
+            for (g_id, s_id), subjects_data in updates_by_class.items():
+                homework_obj, created = Homework.objects.get_or_create(
+                    session=current_session, grade_id=g_id, section_id=s_id, nepali_date=selected_date,
+                    defaults={"homework": "{}"}
+                )
+                try:
+                    hw_dict = json.loads(homework_obj.homework or "{}")
+                except Exception:
+                    hw_dict = {}
+                for sub_id_str, text in subjects_data.items():
+                    if text:
+                        hw_dict[sub_id_str] = text
+                    else:
+                        hw_dict.pop(sub_id_str, None)
+                homework_obj.homework = json.dumps(hw_dict)
+                homework_obj.save()
+            message = "All homework entries saved successfully!"
+
+        grade_section_pairs = set((sub.grade, sub.section) for sub in access_subjects)
+        existing_homework = {}
+        for grade, section in grade_section_pairs:
+            try:
+                hw_obj = Homework.objects.get(session=current_session, grade=grade, section=section, nepali_date=selected_date)
+                existing_homework[(grade.id, section.id)] = json.loads(hw_obj.homework or "{}")
+            except Homework.DoesNotExist:
+                existing_homework[(grade.id, section.id)] = {}
+
+        grouped_ui = {}
+        for subject in access_subjects:
+            school_name = subject.grade.school.name
+            class_name = f"Grade {subject.grade.grade_name} - Section {subject.section.section}"
+            if school_name not in grouped_ui:
+                grouped_ui[school_name] = {}
+            if class_name not in grouped_ui[school_name]:
+                grouped_ui[school_name][class_name] = []
+            hw_dict = existing_homework.get((subject.grade_id, subject.section_id), {})
+            grouped_ui[school_name][class_name].append({
+                'subject': subject,
+                'input_name': f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}",
+                'value': hw_dict.get(str(subject.id), "")
+            })
+
+        context = {
+            'is_admin': is_admin,
+            'selected_school': selected_school,
+            'grouped_ui': grouped_ui,
+            'selected_date': str(selected_date),
+            'message': message,
+            'token': token,
+        }
+        return render(request, "webview/teacher_homework.html", context)
+    except Exception as exc:
+        logger = logging.getLogger(__name__)
+        logger.error("Unexpected error in teacher_homework view: %s\nTraceback:\n%s", exc, traceback.format_exc())
+        return render(request, "webview/error.html", {
+            "error_title": "Server Error",
+            "error_message": "An unexpected error occurred while loading the page. Please contact support."
         })
-        
-    context = {
-        'is_admin': is_admin,
-        'selected_school': selected_school,
-        'grouped_ui': grouped_ui,
-        'selected_date': str(selected_date),
-        'message': message,
-        'token': token,
-    }
-    return render(request, "webview/teacher_homework.html", context)
 
 
 def teacher_marks(request):
