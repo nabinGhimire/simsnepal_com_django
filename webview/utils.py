@@ -5,7 +5,7 @@ import logging
 from django.conf import settings
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 
-from webview.models import Teacher, TeacherSubjectAccess
+from sms.models import Teacher, TeacherSubjectAccess
 from webview.views import get_current_session   # adjust import if helper lives elsewhere
 
 
