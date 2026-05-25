@@ -65,7 +65,8 @@ def generate_auth_token(request):
         if user and BranchUser.objects.filter(user=user, status=True).exists():
             response_data["exists"] = True
             response_data["roles"].append("teacher")
-    
+            # Generate a token for teacher access (required by webview apps)
+            response_data["teacher_token"] = signer.sign_object({"role": "teacher", "user_id": user.id})    
 
     return JsonResponse(response_data)
 
