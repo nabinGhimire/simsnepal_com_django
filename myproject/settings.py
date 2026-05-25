@@ -33,6 +33,8 @@ DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
+SIMS_WEBVIEW_SIGNER_KEY  = os.getenv('SIMS_WEBVIEW_SIGNER_KEY', 'hamro-sims-secure-api-key-2026')
+
 
 # Application definition
 
