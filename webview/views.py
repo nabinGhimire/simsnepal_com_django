@@ -378,6 +378,8 @@ def teacher_homework(request):
             if request.method == "POST":
                 updates_by_class = {}
                 for subject in access_subjects:
+                    if not subject.grade or not subject.section:
+                        continue
                     input_name = f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}"
                     hw_text = request.POST.get(input_name)
                     if hw_text is not None:
@@ -405,7 +407,11 @@ def teacher_homework(request):
                 message = "All homework entries saved successfully!"
 
             # Build existing homework dictionary for UI
-            grade_section_pairs = set((sub.grade, sub.section) for sub in access_subjects)
+            grade_section_pairs = set()
+            for sub in access_subjects:
+                if not sub.grade or not sub.section:
+                    continue
+                grade_section_pairs.add((sub.grade, sub.section))
             existing_homework = {}
             for grade, section in grade_section_pairs:
                 try:
@@ -417,13 +423,15 @@ def teacher_homework(request):
                     )
                     existing_homework[(grade.id, section.id)] = json.loads(hw_obj.homework or "{}")
                 except Homework.DoesNotExist:
-                    if grade is None or section is None:
+                    if not grade or not section:
                         continue
                     existing_homework[(grade.id, section.id)] = {}
 
             # Group UI data
             grouped_ui = {}
             for subject in access_subjects:
+                if not subject.grade or not subject.section:
+                    continue
                 school_name = subject.grade.school.name
                 class_name = f"Grade {subject.grade.grade_name} - Section {subject.section.section}"
                 grouped_ui.setdefault(school_name, {}).setdefault(class_name, []).append({
