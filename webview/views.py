@@ -362,14 +362,19 @@ def teacher_homework(request):
                     grade__school=selected_school,
                     status=True,
                 ).select_related('grade', 'section')
+            access_entries = access_subjects
         else:
+            # Teacher-specific subjects – keep the full access objects so we retain grade & section info
+            # Fetch all subjects assigned to the teacher for the current session.
+            # We do not filter by selected_school here because a teacher might have subjects across multiple schools.
+            # The grouping step will automatically associate each subject with its school via grade.school.
             ts_access = TeacherSubjectAccess.objects.filter(
                 teacher=user,
                 session=current_session,
-                grade__school=selected_school,
                 status=True,
-            ).select_related('grade', 'section', 'subject', 'grade__school')
-            access_subjects = [t.subject for t in ts_access]
+            ).select_related('grade', 'section', 'subject')
+            access_entries = list(ts_access)
+            access_subjects = [e.subject for e in access_entries]
         # If no subjects are assigned, show a friendly message but still render the page
         if not access_subjects:
             message = "No subjects assigned for the selected school. Please contact the administrator."
@@ -379,14 +384,17 @@ def teacher_homework(request):
             # Process bulk POST submissions (save homework)
             if request.method == "POST":
                 updates_by_class = {}
-                for subject in access_subjects:
-                    if not subject.grade or not subject.section:
+                for entry in access_entries:
+                    subject = entry.subject
+                    # Ensure grade and section are present
+                    if not entry.grade or not entry.section:
                         continue
-                    input_name = f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}"
+                    input_name = f"hw_{entry.grade_id}_{entry.section_id}_{subject.id}"
                     hw_text = request.POST.get(input_name)
                     if hw_text is not None:
-                        class_key = (subject.grade_id, subject.section_id)
+                        class_key = (entry.grade_id, entry.section_id)
                         updates_by_class.setdefault(class_key, {})[str(subject.id)] = hw_text.strip()
+
                 for (g_id, s_id), subjects_data in updates_by_class.items():
                     homework_obj, _ = Homework.objects.get_or_create(
                         session=current_session,
@@ -410,10 +418,11 @@ def teacher_homework(request):
 
             # Build existing homework dictionary for UI
             grade_section_pairs = set()
-            for sub in access_subjects:
-                if not sub.grade or not sub.section:
+            for entry in access_entries:
+                if not entry.grade or not entry.section:
                     continue
-                grade_section_pairs.add((sub.grade, sub.section))
+                grade_section_pairs.add((entry.grade, entry.section))
+
             existing_homework = {}
             for grade, section in grade_section_pairs:
                 try:
@@ -431,15 +440,16 @@ def teacher_homework(request):
 
             # Group UI data
             grouped_ui = {}
-            for subject in access_subjects:
-                if not subject.grade or not subject.section:
+            for entry in access_entries:
+                subject = entry.subject
+                if not entry.grade or not entry.section:
                     continue
-                school_name = subject.grade.school.name
-                class_name = f"Grade {subject.grade.grade_name} - Section {subject.section.section}"
+                school_name = entry.grade.school.name
+                class_name = f"Grade {entry.grade.grade_name} - Section {entry.section.section}"
                 grouped_ui.setdefault(school_name, {}).setdefault(class_name, []).append({
                     "subject": subject,
-                    "input_name": f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}",
-                    "value": existing_homework.get((subject.grade_id, subject.section_id), {}).get(str(subject.id), ""),
+                    "input_name": f"hw_{entry.grade_id}_{entry.section_id}_{subject.id}",
+                    "value": existing_homework.get((entry.grade_id, entry.section_id), {}).get(str(subject.id), ""),
                 })
 
             context = {

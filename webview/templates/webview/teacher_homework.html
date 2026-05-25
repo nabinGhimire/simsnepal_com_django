@@ -147,13 +147,17 @@
           </button>
         </div>
 
-      {% else %}
-        <div class="card border-0 shadow-sm text-center p-5" style="border-radius: 12px;">
-          <div class="text-secondary mb-3" style="font-size: 3rem;"><i class="ti ti-file-off"></i></div>
-          <h3 class="fw-bold text-dark">No Classes Assigned</h3>
-          <p class="text-secondary mb-0">You are not currently assigned to any subjects for the selected date or session.</p>
-        </div>
-      {% endif %}
+        {% else %}
+          <div class="card border-0 shadow-sm text-center p-5" style="border-radius: 12px;">
+            {% if message %}
+              <h3 class="fw-bold text-dark">{{ message }}</h3>
+            {% else %}
+              <div class="text-secondary mb-3" style="font-size: 3rem;"><i class="ti ti-file-off"></i></div>
+              <h3 class="fw-bold text-dark">No Classes Assigned</h3>
+              <p class="text-secondary mb-0">You are not currently assigned to any subjects for the selected date or session.</p>
+            {% endif %}
+          </div>
+        {% endif %}
     </form>
   </div>
 
