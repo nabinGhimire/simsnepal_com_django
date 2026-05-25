@@ -10,7 +10,7 @@ import traceback
 import nepali_datetime
 from django.urls import reverse
 import logging
-from sms.models import (
+from types import SimpleNamespace
     EduSession, SchoolBranch, SchoolGrade, Section, Subject,
     Student, StudentSession, Homework, MarkObtained, SchoolTerm,
     TeacherSubjectAccess, BranchUser
@@ -311,7 +311,11 @@ def teacher_homework(request):
                 available_schools = [bu.school for bu in branch_users if bu.admin_status]
         else:
             ts_access = TeacherSubjectAccess.objects.filter(teacher=user, session=current_session, status=True).select_related('grade__school')
-            available_schools = list(set([t.grade.school for t in ts_access]))
+            # Build list of schools from grade.school, ensuring non-null values
+            available_schools = list(set([t.grade.school for t in ts_access if t.grade and t.grade.school]))
+            # Fallback: if teacher has no grade.school assignments, use schools from branch_users
+            if not available_schools:
+                available_schools = list(set([bu.school for bu in branch_users]))
 
         if not available_schools:
             return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
@@ -350,16 +354,15 @@ def teacher_homework(request):
 
         # Admin access: try primary branch filter, fallback to grade's school if no subjects found
         if is_admin:
+            # Admin access: fetch all subjects for the current session regardless of school
             access_subjects = Subject.objects.filter(
                 session=current_session,
-                branch=selected_school,
                 status=True,
             ).select_related('grade', 'section', 'branch')
+            # If there are no subjects (unlikely), fallback to grade->school relationship
             if not access_subjects.exists():
-                # Fallback when Subject model uses grade.school relationship instead of branch
                 access_subjects = Subject.objects.filter(
                     session=current_session,
-                    grade__school=selected_school,
                     status=True,
                 ).select_related('grade', 'section')
             access_entries = access_subjects
@@ -373,11 +376,45 @@ def teacher_homework(request):
                 session=current_session,
                 status=True,
             ).select_related('grade', 'section', 'subject')
+            # Convert queryset to list for further processing
             access_entries = list(ts_access)
             access_subjects = [e.subject for e in access_entries]
-        # If no subjects are assigned, show a friendly message but still render the page
+            logger = logging.getLogger(__name__)
+            logger.debug('Teacher access entries count: %s', len(access_entries))
+            logger.debug('Teacher access subjects count: %s', len(access_subjects))
+        # If no subjects are assigned, try a fallback query using the Subject model for the selected school
         if not access_subjects:
-            message = "No subjects assigned for the selected school. Please contact the administrator."
+            # Try fallback using branch first, then grade school
+            fallback_subjects = Subject.objects.filter(
+                session=current_session,
+                branch=selected_school,
+                status=True,
+            ).select_related('grade', 'section')
+            if not fallback_subjects.exists():
+                fallback_subjects = Subject.objects.filter(
+                    session=current_session,
+                    grade__school=selected_school,
+                    status=True,
+                ).select_related('grade', 'section')
+            access_subjects = list(fallback_subjects)
+            # For fallback, we treat each subject as an entry without grade/section attributes
+            # Create dummy entries with grade and section attributes for UI grouping
+            # Build dummy access entries with required attributes for UI grouping
+            access_entries = []
+            for sub in fallback_subjects:
+                entry = SimpleNamespace(
+                    subject=sub,
+                    grade=sub.grade,
+                    section=sub.section,
+                    grade_id=sub.grade.id if sub.grade else None,
+                    section_id=sub.section.id if sub.section else None,
+                    subject_id=sub.id,
+                )
+                access_entries.append(entry)
+            if not access_subjects:
+                message = "No subjects assigned for the selected school. Please contact the administrator."
+            else:
+                message = ""
         else:
             message = ""
 
@@ -441,15 +478,22 @@ def teacher_homework(request):
             # Group UI data
             grouped_ui = {}
             for entry in access_entries:
-                subject = entry.subject
-                if not entry.grade or not entry.section:
+                # Determine the subject object based on entry type
+                if hasattr(entry, 'subject'):
+                    subject_obj = entry.subject
+                else:
+                    subject_obj = entry
+
+                # Ensure grade and section are present
+                if not getattr(entry, 'grade', None) or not getattr(entry, 'section', None):
                     continue
+
                 school_name = entry.grade.school.name
                 class_name = f"Grade {entry.grade.grade_name} - Section {entry.section.section}"
                 grouped_ui.setdefault(school_name, {}).setdefault(class_name, []).append({
-                    "subject": subject,
-                    "input_name": f"hw_{entry.grade_id}_{entry.section_id}_{subject.id}",
-                    "value": existing_homework.get((entry.grade_id, entry.section_id), {}).get(str(subject.id), ""),
+                    "subject": subject_obj,
+                    "input_name": f"hw_{entry.grade_id}_{entry.section_id}_{subject_obj.id}",
+                    "value": existing_homework.get((entry.grade_id, entry.section_id), {}).get(str(subject_obj.id), ""),
                 })
 
             context = {
