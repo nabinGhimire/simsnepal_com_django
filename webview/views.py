@@ -15,7 +15,7 @@ from sms.models import EduSession, SchoolBranch, SchoolGrade, Section, Subject, 
 
 
 User = get_user_model()
-signer = TimestampSigner()
+signer = TimestampSigner(key=settings.SIMS_WEBVIEW_SIGNER_KEY, salt='')
 
 def get_current_session():
     return EduSession.objects.filter(status=True).first()
