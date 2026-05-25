@@ -25,6 +25,9 @@ load_dotenv()
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-jj8caws+5x@2%fls&b=e84l0@q(%&gvg%cu@9%^y5l!(o%%)4f')
 
+# Allowed hosts for production and development
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,simsnepal.com').split(',')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
@@ -185,12 +188,21 @@ LOGGING = {
     'loggers': {},
 }
 
+# Configure root logger
+LOGGING['root'] = {
+    'handlers': ['console'] if ENV != 'production' else ['file'],
+    'level': 'ERROR',
+}
+
+
 if ENV == 'production':
     # Production: log errors to file
+    log_dir = BASE_DIR / 'logs'
+    os.makedirs(log_dir, exist_ok=True)
     LOGGING['handlers']['file'] = {
         'level': 'ERROR',
         'class': 'logging.FileHandler',
-        'filename': '/var/log/django/django_errors.log',
+        'filename': str(log_dir / 'django_errors.log'),
         'formatter': 'verbose',
     }
     LOGGING['loggers']['django'] = {
