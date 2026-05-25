@@ -347,87 +347,100 @@ def teacher_homework(request):
         message = ""
 
         # Filter subjects by selected school
+
+        # Admin access: try primary branch filter, fallback to grade's school if no subjects found
         if is_admin:
             access_subjects = Subject.objects.filter(
                 session=current_session,
                 branch=selected_school,
-                status=True
+                status=True,
             ).select_related('grade', 'section', 'branch')
+            if not access_subjects.exists():
+                # Fallback when Subject model uses grade.school relationship instead of branch
+                access_subjects = Subject.objects.filter(
+                    session=current_session,
+                    grade__school=selected_school,
+                    status=True,
+                ).select_related('grade', 'section')
         else:
             ts_access = TeacherSubjectAccess.objects.filter(
                 teacher=user,
                 session=current_session,
                 grade__school=selected_school,
-                status=True
+                status=True,
             ).select_related('grade', 'section', 'subject', 'grade__school')
             access_subjects = [t.subject for t in ts_access]
 
-        # Process Bulk POST
-        if request.method == "POST":
-            updates_by_class = {}
-            for subject in access_subjects:
-                input_name = f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}"
-                hw_text = request.POST.get(input_name)
-                if hw_text is not None:
-                    class_key = (subject.grade_id, subject.section_id)
-                    if class_key not in updates_by_class:
-                        updates_by_class[class_key] = {}
-                    updates_by_class[class_key][str(subject.id)] = hw_text.strip()
+            # Initialize message
+            message = ""
 
-            for (g_id, s_id), subjects_data in updates_by_class.items():
-                homework_obj, created = Homework.objects.get_or_create(
-                    session=current_session, grade_id=g_id, section_id=s_id, nepali_date=selected_date,
-                    defaults={"homework": "{}"}
-                )
+            # Process bulk POST submissions (save homework)
+            if request.method == "POST":
+                updates_by_class = {}
+                for subject in access_subjects:
+                    input_name = f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}"
+                    hw_text = request.POST.get(input_name)
+                    if hw_text is not None:
+                        class_key = (subject.grade_id, subject.section_id)
+                        updates_by_class.setdefault(class_key, {})[str(subject.id)] = hw_text.strip()
+                for (g_id, s_id), subjects_data in updates_by_class.items():
+                    homework_obj, _ = Homework.objects.get_or_create(
+                        session=current_session,
+                        grade_id=g_id,
+                        section_id=s_id,
+                        nepali_date=selected_date,
+                        defaults={"homework": "{}"},
+                    )
+                    try:
+                        hw_dict = json.loads(homework_obj.homework or "{}")
+                    except Exception:
+                        hw_dict = {}
+                    for sub_id_str, text in subjects_data.items():
+                        if text:
+                            hw_dict[sub_id_str] = text
+                        else:
+                            hw_dict.pop(sub_id_str, None)
+                    homework_obj.homework = json.dumps(hw_dict)
+                    homework_obj.save()
+                message = "All homework entries saved successfully!"
+
+            # Build existing homework dictionary for UI
+            grade_section_pairs = set((sub.grade, sub.section) for sub in access_subjects)
+            existing_homework = {}
+            for grade, section in grade_section_pairs:
                 try:
-                    hw_dict = json.loads(homework_obj.homework or "{}")
-                except Exception:
-                    hw_dict = {}
-                for sub_id_str, text in subjects_data.items():
-                    if text:
-                        hw_dict[sub_id_str] = text
-                    else:
-                        hw_dict.pop(sub_id_str, None)
-                homework_obj.homework = json.dumps(hw_dict)
-                homework_obj.save()
-            message = "All homework entries saved successfully!"
+                    hw_obj = Homework.objects.get(
+                        session=current_session,
+                        grade=grade,
+                        section=section,
+                        nepali_date=selected_date,
+                    )
+                    existing_homework[(grade.id, section.id)] = json.loads(hw_obj.homework or "{}")
+                except Homework.DoesNotExist:
+                    if grade is None or section is None:
+                        continue
+                    existing_homework[(grade.id, section.id)] = {}
 
-        grade_section_pairs = set((sub.grade, sub.section) for sub in access_subjects)
-        existing_homework = {}
-        for grade, section in grade_section_pairs:
-            try:
-                hw_obj = Homework.objects.get(session=current_session, grade=grade, section=section, nepali_date=selected_date)
-                existing_homework[(grade.id, section.id)] = json.loads(hw_obj.homework or "{}")
-            except Homework.DoesNotExist:
-                # Skip if grade or section is missing
-                if grade is None or section is None:
-                    continue
-                existing_homework[(grade.id, section.id)] = {}
+            # Group UI data
+            grouped_ui = {}
+            for subject in access_subjects:
+                school_name = subject.grade.school.name
+                class_name = f"Grade {subject.grade.grade_name} - Section {subject.section.section}"
+                grouped_ui.setdefault(school_name, {}).setdefault(class_name, []).append({
+                    "subject": subject,
+                    "input_name": f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}",
+                    "value": existing_homework.get((subject.grade_id, subject.section_id), {}).get(str(subject.id), ""),
+                })
 
-        grouped_ui = {}
-        for subject in access_subjects:
-            school_name = subject.grade.school.name
-            class_name = f"Grade {subject.grade.grade_name} - Section {subject.section.section}"
-            if school_name not in grouped_ui:
-                grouped_ui[school_name] = {}
-            if class_name not in grouped_ui[school_name]:
-                grouped_ui[school_name][class_name] = []
-            hw_dict = existing_homework.get((subject.grade_id, subject.section_id), {})
-            grouped_ui[school_name][class_name].append({
-                'subject': subject,
-                'input_name': f"hw_{subject.grade_id}_{subject.section_id}_{subject.id}",
-                'value': hw_dict.get(str(subject.id), "")
-            })
-
-        context = {
-            'is_admin': is_admin,
-            'selected_school': selected_school,
-            'grouped_ui': grouped_ui,
-            'selected_date': str(selected_date),
-            'message': message,
-            'token': token,
-        }
-        return render(request, "webview/teacher_homework.html", context)
+            context = {
+                'is_admin': is_admin,
+                'selected_school': selected_school,
+                'grouped_ui': grouped_ui,
+                'selected_date': str(selected_date),
+                'message': message,
+                'token': token,
+            }
+            return render(request, "webview/teacher_homework.html", context)
     except Exception as exc:
         logger = logging.getLogger(__name__)
         logger.error("Unexpected error in teacher_homework view: %s\nTraceback:\n%s", exc, traceback.format_exc())
