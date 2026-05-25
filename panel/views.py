@@ -5616,86 +5616,17 @@ def add_student_by_reg(request):
         regno = request.POST.get('regno')
         rollno = request.POST.get('rollno', 1)
         section = request.POST.get('section')
-        #dateofbirth = request.POST.get('dateofbirth', '')
-
-        #tempaddr = request.POST.get('tempaddr', '')
-        #peraddr = request.POST.get('peraddr', '')
-
-        #fathersname = request.POST.get('fathersname', '')
-        #fathersphone = request.POST.get('fathersphone', 0)
-        #fathersemail = request.POST.get('fathersemail', None)
-
-        #mothersname = request.POST.get('mothersname', '')
-        #mothersphone = request.POST.get('mothersphone', None)
-        #mothersemail = request.POST.get('mothersemail', None)
-
-        #gurdainsname = request.POST.get('guardiansname', '')
-        #gurdainsphone = request.POST.get('guardiansphone', None)
-        #gurdainsemail = request.POST.get('guardiansemail', None)
-
-        # print(gradelevel, grade, section)
-
+        
         grade = SchoolGrade.objects.get(id=gradelevel)
         userbranch = BranchUser.objects.get(user=user)
         section = Section.objects.get(id=section)
         school = userbranch.school
 
-        #new_reg_no = findNewRegNo(userbranch.school.id)
-
         try:
             student = Student.objects.get(reg_no= regno)
         except:
             return HttpResponseRedirect(redurl)
-        # student.reg_no = new_reg_no if regno == '' else regno
-
-        #student.roll_no = rollno
-        #student.dob = dateofbirth #datetime.strptime(dateofbirth, '%y/%m/%d')
-        #student.temporary_address = tempaddr
-        #student.permanent_address = peraddr
-        # student.grade = grade
-        # student.section = section
-        #student.fathers_name = fathersname
-        #try:
-        #    #fathersphone = int(fathersphone)
-        #    #student.fathers_phone = fathersphone
-        #except:
-        #    fathersphone = None
-        #    student.fathers_phone = fathersphone
-
-        #student.fathers_email = fathersemail
-
-        #student.mothers_name = mothersname
-        #student.mothers_email = mothersemail
-        #try:
-        #    mothersphone = int(mothersphone)
-        #    student.mothers_phone = mothersphone
-        #except:
-        #    mothersphone = None
-        #    student.mothers_phone = mothersphone
-
-        #student.guardian_name = gurdainsname
-        #try:
-            #gurdainsphone = int(gurdainsphone)
-            #student.guardian_phone = gurdainsphone
-        #except:
-        #    gurdainsphone = None
-        #    student.guardian_phone = gurdainsphone
-
-        #student.guardian_email = gurdainsemail
-
-        #student.school = userbranch.school
-        #print("going to save student")
-
-        #student.save()
-        #
-        # student_session = StudentSession()
-        # student_session.session = this_session
-        # student_session.student = student
-        # student_session.grade = grade
-        # student_session.section = section
-        # student_session.roll_no = rollno
-        #
-        # student_session.save()
+        
         if StudentSession.objects.filter(session=this_session, student=student).count() == 0:
             student_session = StudentSession()
             student_session.session = this_session
@@ -5727,17 +5658,6 @@ def add_student_by_reg(request):
                 student_session.roll_no = rollno
 
                 student_session.save()
-
-        # print(new_reg_no)
-        # print('ADD STUDENT')
-        # print(gradelevel, studentname, gender)#, username, gradelevel, userbranch.school.id, section)
-        # print(userbranch.school)
-
-        # BranchUser.objects.filter()
-
-        # Subject.objects.get_or_create(branch=userbranch.school, grade=grade,subject=subject.upper())
-
-        # Section.objects.get_or_create(grade=grade,section=sectionname.upper())
 
         for key, value in request.POST.items():
             print('Key: %s' % (key))
