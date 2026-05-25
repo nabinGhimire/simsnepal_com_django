@@ -83,6 +83,11 @@ def inspect_webview_token(token: str, *, max_age: int = 86400, show_access: bool
             # No direct FK – ignore
             pass
 
+            # New: try to locate teacher by username if present in the token payload
+            username = payload.get('username')
+            if username and not teacher:
+                teacher = Teacher.objects.filter(user__username=username).first()
+
     if not teacher and phone:
         teacher = Teacher.objects.filter(mobile_number=phone).first()
 
