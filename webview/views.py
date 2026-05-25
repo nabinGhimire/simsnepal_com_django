@@ -376,10 +376,24 @@ def teacher_homework(request):
                 ).select_related('grade', 'section')
             access_entries = access_subjects
         else:
-            # Teacher-specific subjects – keep the full access objects so we retain grade & section info
-            # Fetch all subjects assigned to the teacher for the current session.
-            # We do not filter by selected_school here because a teacher might have subjects across multiple schools.
-            # The grouping step will automatically associate each subject with its school via grade.school
+            # Teacher-specific subjects – try to locate the teacher record using various identifiers
+            logger = logging.getLogger(__name__)
+            phone = getattr(user, "mobile_number", None) or request.GET.get('phone')
+            logger.info("Teacher lookup phone: %s", phone)
+            # Primary attempt: direct FK relationship
+            ts_access = TeacherSubjectAccess.objects.filter(
+                teacher=user, session=current_session, status=True
+            ).select_related('grade__school')
+            if not ts_access.exists() and phone:
+                # Fallback: match on teacher's mobile_number field
+                ts_access = TeacherSubjectAccess.objects.filter(
+                    teacher__mobile_number=phone, session=current_session, status=True
+                ).select_related('grade__school')
+            if not ts_access.exists() and phone:
+                # Additional fallback: teacher model may store phone under a different field name
+                ts_access = TeacherSubjectAccess.objects.filter(
+                    teacher__phone=phone, session=current_session, status=True
+                ).select_related('grade__school')
             access_entries = list(ts_access)
             if not access_entries:
                 return render(request, "webview/error.html", {
