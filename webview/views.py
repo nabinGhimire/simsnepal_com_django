@@ -65,7 +65,7 @@ def generate_auth_token(request):
         if user and BranchUser.objects.filter(user=user, status=True).exists():
             response_data["exists"] = True
             response_data["roles"].append("teacher")
-            response_data["teacher_token"] = signer.sign_object({"role": "teacher", "user_id": user.id})
+    
 
     return JsonResponse(response_data)
 
@@ -398,6 +398,9 @@ def teacher_homework(request):
                 hw_obj = Homework.objects.get(session=current_session, grade=grade, section=section, nepali_date=selected_date)
                 existing_homework[(grade.id, section.id)] = json.loads(hw_obj.homework or "{}")
             except Homework.DoesNotExist:
+                # Skip if grade or section is missing
+                if grade is None or section is None:
+                    continue
                 existing_homework[(grade.id, section.id)] = {}
 
         grouped_ui = {}
