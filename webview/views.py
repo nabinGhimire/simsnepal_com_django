@@ -396,11 +396,38 @@ def teacher_homework(request):
                 ).select_related('grade__school')
             access_entries = list(ts_access)
             if not access_entries:
-                return render(request, "webview/error.html", {
-                    "error_title": "No Subjects Assigned",
-                    "error_message": "You have no subjects or classes assigned. Please contact the administrator."
-                })
-            access_subjects = [e.subject for e in access_entries]
+                # ---------------------------------------------------
+                # NEW: Branch‑User based fallback when no direct access rows
+                # ---------------------------------------------------
+                if branch_users:
+                    inferred_entries = []
+                    for bu in branch_users:
+                        # Find subjects for the branch, grade & section of this bu
+                        subject_qs = Subject.objects.filter(
+                            session=current_session,
+                            branch=bu.school,
+                            grade=bu.grade,
+                            section=bu.section,
+                            status=True,
+                        ).select_related('grade', 'section')
+                        for sub in subject_qs:
+                            entry = SimpleNamespace(
+                                subject=sub,
+                                grade=sub.grade,
+                                section=sub.section,
+                                grade_id=sub.grade.id if sub.grade else None,
+                                section_id=sub.section.id if sub.section else None,
+                            )
+                            inferred_entries.append(entry)
+                    access_entries = inferred_entries
+                if not access_entries:
+                    return render(request, "webview/error.html", {
+                        "error_title": "No Subjects Assigned",
+                        "error_message": "You have no subjects or classes assigned. Please contact the administrator."
+                    })
+                access_subjects = [e.subject for e in access_entries]
+            else:
+                access_subjects = [e.subject for e in access_entries]
         # If no subjects are assigned, try a fallback query using the Subject model for the selected school
         if not access_subjects:
             # Try fallback using branch first, then grade school
@@ -552,8 +579,22 @@ def teacher_marks(request):
         else:
             available_schools = [bu.school for bu in branch_users if bu.admin_status]
     else:
-        ts_access = TeacherSubjectAccess.objects.filter(teacher=user, session=current_session, status=True).select_related('grade__school')
-        available_schools = list(set([t.grade.school for t in ts_access]))
+        # Determine available schools for non-admin teachers
+        # First, try direct TeacherSubjectAccess entries
+        ts_access = TeacherSubjectAccess.objects.filter(
+            teacher=user, session=current_session, status=True
+        ).select_related('grade__school')
+        schools_from_access = list({
+            t.grade.school for t in ts_access if getattr(t, 'grade', None) and t.grade.school
+        })
+        # If no direct entries, fallback to BranchUser linked schools
+        if not schools_from_access:
+            if branch_users:
+                schools_from_access = list({bu.school for bu in branch_users})
+        # Ensure we have at least one school
+        if not schools_from_access:
+            schools_from_access = list(SchoolBranch.objects.filter(status=True))
+        available_schools = schools_from_access
         
     if not available_schools:
         return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
@@ -584,12 +625,35 @@ def teacher_marks(request):
         
     # 3. Grade & Section Selection
     if is_admin:
-        access_subjects = Subject.objects.filter(session=current_session, branch=selected_school, status=True).select_related('grade', 'section')
+        access_subjects = Subject.objects.filter(
+            session=current_session,
+            branch=selected_school,
+            status=True,
+        ).select_related('grade', 'section')
     else:
-        ts_access = TeacherSubjectAccess.objects.filter(teacher=user, session=current_session, grade__school=selected_school, status=True).select_related('grade', 'section', 'subject')
+        # Direct TeacherSubjectAccess for the selected school
+        ts_access = TeacherSubjectAccess.objects.filter(
+            teacher=user,
+            session=current_session,
+            grade__school=selected_school,
+            status=True,
+        ).select_related('grade', 'section', 'subject')
         access_subjects = [t.subject for t in ts_access]
-        if not access_subjects:
-            return render(request, "webview/error.html", {"error_title": "No Subjects Assigned", "error_message": "You have no subjects assigned for the selected school. Please contact the administrator."})
+        # Fallback to BranchUser subjects if none found
+        if not access_subjects and branch_users.filter(school=selected_school).exists():
+            inferred = []
+            for bu in branch_users.filter(school=selected_school):
+                subject_qs = Subject.objects.filter(
+                    session=current_session,
+                    branch=bu.school,
+                    grade=bu.grade,
+                    section=bu.section,
+                    status=True,
+                ).select_related('grade', 'section')
+                inferred.extend(subject_qs)
+            access_subjects = inferred
+    if not access_subjects:
+        return render(request, "webview/error.html", {"error_title": "No Subjects Assigned", "error_message": "You have no subjects assigned for the selected school. Please contact the administrator."})
         
     unique_classes = set((sub.grade, sub.section) for sub in access_subjects)
     
