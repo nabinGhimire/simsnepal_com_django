@@ -291,8 +291,17 @@ def teacher_homework(request):
                 "error_message": "Invalid or expired token. Please reopen the page from the app."
             })
 
+        # Get current academic session
+        current_session = get_current_session()
+        if not current_session:
+            return render(request, "webview/error.html", {
+                "error_title": "Configuration Error",
+                "error_message": "No active academic session configured."
+            })
+
         # Fetch branch user entries; may be empty for teachers added without explicit branch linkage
         branch_users = BranchUser.objects.filter(user=user, status=True)
+
         # Determine admin status based on branch admin flag or superuser
         is_admin = user.is_superuser or (branch_users.filter(admin_status=True).exists() if branch_users else False)
 
@@ -303,41 +312,19 @@ def teacher_homework(request):
             else:
                 available_schools = [bu.school for bu in branch_users if bu.admin_status]
         else:
-            # Teacher-specific schools: derive from TeacherSubjectAccess if branch_users empty or otherwise combine
-            ts_access = TeacherSubjectAccess.objects.filter(teacher=user, session=current_session, status=True).select_related('grade__school')
-            schools_from_access = list(set([t.grade.school for t in ts_access if t.grade and t.grade.school]))
+            # Teacher-specific schools derived from TeacherSubjectAccess; combine with branch_user schools if present
+            ts_access = TeacherSubjectAccess.objects.filter(
+                teacher=user, session=current_session, status=True
+            ).select_related('grade__school')
+            schools_from_access = list(set(
+                t.grade.school for t in ts_access if t.grade and t.grade.school
+            ))
             if branch_users:
-                # Combine schools from branch_user entries as fallback
                 available_schools = list(set(schools_from_access + [bu.school for bu in branch_users]))
             else:
                 available_schools = schools_from_access
-            # If still empty, fallback to all active schools (prevent silent failure)
             if not available_schools:
                 available_schools = list(SchoolBranch.objects.filter(status=True))
-
-        current_session = get_current_session()
-        if not current_session:
-            return render(request, "webview/error.html", {"error_title": "Configuration Error", "error_message": "No active academic session configured."})
-
-        branch_users = BranchUser.objects.filter(user=user, status=True)
-        if not branch_users.exists():
-            return render(request, "webview/error.html", {"error_title": "Access Denied", "error_message": "Your user profile is not associated with any school branch."})
-
-        is_admin = branch_users.filter(admin_status=True).exists() or user.is_superuser
-
-        # Identify available schools
-        if is_admin:
-            if user.is_superuser:
-                available_schools = list(SchoolBranch.objects.filter(status=True))
-            else:
-                available_schools = [bu.school for bu in branch_users if bu.admin_status]
-        else:
-            ts_access = TeacherSubjectAccess.objects.filter(teacher=user, session=current_session, status=True).select_related('grade__school')
-            # Build list of schools from grade.school, ensuring non-null values
-            available_schools = list(set([t.grade.school for t in ts_access if t.grade and t.grade.school]))
-            # Fallback: if teacher has no grade.school assignments, use schools from branch_users
-            if not available_schools:
-                available_schools = list(set([bu.school for bu in branch_users]))
 
         if not available_schools:
             return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
