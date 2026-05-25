@@ -11,7 +11,106 @@ from webview.views import get_current_session   # adjust import if helper lives 
 
 logger = logging.getLogger(__name__)
 
+# Helper to locate a Teacher from token payload using several identifiers
+
+def get_teacher_from_payload(payload):
+    """Return a Teacher instance based on payload data.
+
+    The payload may contain:
+    * ``username`` – the Laravel‑generated username
+    * ``phone`` – the mobile number of the teacher
+    * ``hamro_uuid`` – the UUID used by the Hamro system
+    The function tries each field in order of reliability.
+    """
+    # 1️⃣  Username (most direct match to the User record)
+    username = payload.get('username')
+    if username:
+        try:
+            user = User.objects.filter(username=username).first()
+            if user:
+                teacher = Teacher.objects.filter(user=user).first()
+                if teacher:
+                    return teacher
+        except Exception:
+            pass
+
+    # 2️⃣  hamro_uuid (matches the User.id used by the Hamro system)
+    hamro_uuid = payload.get('hamro_uuid')
+    if hamro_uuid:
+        try:
+            user = User.objects.filter(id=hamro_uuid).first()
+            teacher = Teacher.objects.filter(user=user).first()
+            if teacher:
+                return teacher
+        except Exception:
+            pass
+
+    # 3️⃣  phone number (fallback for legacy records)
+    phone = payload.get('phone')
+    if phone:
+        # Attempt lookup via the Teacher model's related User field
+        teacher = Teacher.objects.filter(user__mobile_number=phone).first()
+        if teacher:
+            return teacher
+        # Direct lookup on the Teacher model itself if it stores the phone
+        teacher = Teacher.objects.filter(teacher__mobile_number=phone).first()
+        if teacher:
+            return teacher
+        teacher = Teacher.objects.filter(teacher__phone=phone).first()
+        if teacher:
+            return teacher
+    return None
+
 def inspect_webview_token(token: str, *, max_age: int = 86400, show_access: bool = False):
+    """
+    Decode a Laravel‑generated web‑view token, print its payload,
+    and optionally list the related TeacherSubjectAccess rows.
+    """
+    # --------------------------------------------------------------
+    # 1️⃣  Grab the secret key that Laravel used to sign the token.
+    # --------------------------------------------------------------
+    signer_key = getattr(settings, "SIMS_WEBVIEW_SIGNER_KEY", None)
+    if not signer_key:
+        raise RuntimeError(
+            "SIMS_WEBVIEW_SIGNER_KEY is not defined in Django settings. Add the same value that Laravel uses."
+        )
+
+    signer = TimestampSigner(key=signer_key)
+
+    # --------------------------------------------------------------
+    # 2️⃣  Unsigned (decode) the token.
+    # --------------------------------------------------------------
+    try:
+        raw_payload = signer.unsign(token, max_age=max_age)
+    except SignatureExpired:
+        raise ValueError(f"Token has expired (max_age={max_age}s).")
+    except BadSignature:
+        raise ValueError("Token is malformed or signed with a different key.")
+
+    # Payload is JSON -> Python dict
+    try:
+        payload = json.loads(raw_payload)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Payload is not valid JSON: {exc}")
+
+    # --------------------------------------------------------------
+    # 3️⃣  Show the decoded payload.
+    # --------------------------------------------------------------
+    print("\n✅ Decoded token payload:")
+    print(json.dumps(payload, indent=4, ensure_ascii=False))
+
+    # --------------------------------------------------------------
+    # 4️⃣  Locate the Teacher record using the new helper.
+    # --------------------------------------------------------------
+    teacher = get_teacher_from_payload(payload)
+
+    if not teacher:
+        print("\n⚠️  No Teacher record found for this token data.")
+        return
+
+    phone = payload.get('phone')
+    print(f"\n👩‍🏫 Teacher found: {teacher} (phone={phone})")
+
     """
     Decode a Laravel‑generated web‑view token, print its payload,
     and optionally list the related TeacherSubjectAccess rows.
