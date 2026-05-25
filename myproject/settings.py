@@ -163,3 +163,50 @@ HAMRO_BUSINESS_API_KEY = os.getenv('X-Business-API-Key', 'hamro_sys_key_789').st
 HAMRO_API_BASE_URL = os.getenv('HAMRO_API_BASE_URL', 'https://serverin.hamro.com').strip(' "\'')
 
 WEBVIEW_API_KEY = os.getenv('WEBVIEW_API_KEY', 'hamro-sims-secure-api-key-2026')
+
+# Determine environment
+ENV = os.getenv('DJANGO_ENV', 'development')
+
+# Base logging config
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {},
+    'loggers': {},
+}
+
+if ENV == 'production':
+    # Production: log errors to file
+    LOGGING['handlers']['file'] = {
+        'level': 'ERROR',
+        'class': 'logging.FileHandler',
+        'filename': '/var/log/django/django_errors.log',
+        'formatter': 'verbose',
+    }
+    LOGGING['loggers']['django'] = {
+        'handlers': ['file'],
+        'level': 'ERROR',
+        'propagate': True,
+    }
+else:
+    # Development: log errors to console (visible in runserver output)
+    LOGGING['handlers']['console'] = {
+        'level': 'DEBUG',
+        'class': 'logging.StreamHandler',
+        'formatter': 'simple',
+    }
+    LOGGING['loggers']['django'] = {
+        'handlers': ['console'],
+        'level': 'ERROR',
+        'propagate': True,
+    }
