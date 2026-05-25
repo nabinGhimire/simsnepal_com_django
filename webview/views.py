@@ -283,13 +283,37 @@ def teacher_homework(request):
     error page is displayed to the user.
     """
     try:
-        user = validate_webview_token(request, "teacher")
         token = request.GET.get('token') or request.POST.get('token')
+        user = validate_webview_token(request, "teacher")
         if not user:
             return render(request, "webview/error.html", {
                 "error_title": "Unauthorized Access",
                 "error_message": "Invalid or expired token. Please reopen the page from the app."
             })
+
+        # Fetch branch user entries; may be empty for teachers added without explicit branch linkage
+        branch_users = BranchUser.objects.filter(user=user, status=True)
+        # Determine admin status based on branch admin flag or superuser
+        is_admin = user.is_superuser or (branch_users.filter(admin_status=True).exists() if branch_users else False)
+
+        # Identify available schools
+        if is_admin:
+            if user.is_superuser:
+                available_schools = list(SchoolBranch.objects.filter(status=True))
+            else:
+                available_schools = [bu.school for bu in branch_users if bu.admin_status]
+        else:
+            # Teacher-specific schools: derive from TeacherSubjectAccess if branch_users empty or otherwise combine
+            ts_access = TeacherSubjectAccess.objects.filter(teacher=user, session=current_session, status=True).select_related('grade__school')
+            schools_from_access = list(set([t.grade.school for t in ts_access if t.grade and t.grade.school]))
+            if branch_users:
+                # Combine schools from branch_user entries as fallback
+                available_schools = list(set(schools_from_access + [bu.school for bu in branch_users]))
+            else:
+                available_schools = schools_from_access
+            # If still empty, fallback to all active schools (prevent silent failure)
+            if not available_schools:
+                available_schools = list(SchoolBranch.objects.filter(status=True))
 
         current_session = get_current_session()
         if not current_session:
@@ -368,18 +392,14 @@ def teacher_homework(request):
             # Teacher-specific subjects – keep the full access objects so we retain grade & section info
             # Fetch all subjects assigned to the teacher for the current session.
             # We do not filter by selected_school here because a teacher might have subjects across multiple schools.
-            # The grouping step will automatically associate each subject with its school via grade.school.
-            ts_access = TeacherSubjectAccess.objects.filter(
-                teacher=user,
-                session=current_session,
-                status=True,
-            ).select_related('grade', 'section', 'subject')
-            # Convert queryset to list for further processing
+            # The grouping step will automatically associate each subject with its school via grade.school
             access_entries = list(ts_access)
+            if not access_entries:
+                return render(request, "webview/error.html", {
+                    "error_title": "No Subjects Assigned",
+                    "error_message": "You have no subjects or classes assigned. Please contact the administrator."
+                })
             access_subjects = [e.subject for e in access_entries]
-            logger = logging.getLogger(__name__)
-            logger.debug('Teacher access entries count: %s', len(access_entries))
-            logger.debug('Teacher access subjects count: %s', len(access_subjects))
         # If no subjects are assigned, try a fallback query using the Subject model for the selected school
         if not access_subjects:
             # Try fallback using branch first, then grade school
@@ -510,7 +530,7 @@ def teacher_homework(request):
             "error_title": "Server Error",
             "error_message": "An unexpected error occurred while loading the page. Please contact support."
         })
-    return HttpResponse("")
+    return render(request, "webview/error.html", {"error_title": "No Content", "error_message": "Unable to load teacher homework. Please ensure you are assigned to a school and subjects."})
 
 def teacher_marks(request):
     user = validate_webview_token(request, "teacher")
