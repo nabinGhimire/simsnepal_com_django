@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import JsonResponse, HttpResponseForbidden
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
@@ -510,7 +510,7 @@ def teacher_homework(request):
             "error_title": "Server Error",
             "error_message": "An unexpected error occurred while loading the page. Please contact support."
         })
-
+    return HttpResponse("")
 
 def teacher_marks(request):
     user = validate_webview_token(request, "teacher")
