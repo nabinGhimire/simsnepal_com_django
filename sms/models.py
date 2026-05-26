@@ -3,6 +3,7 @@ from django.db import models
 from datetime import datetime
 from nepali_datetime_field.models import NepaliDateField
 from sms.middleware import get_current_request
+from .managers import SafeBranchUserManager
 
 
 class SafeBranchUserQuerySet(models.QuerySet):
@@ -127,19 +128,20 @@ class SchoolGrade(models.Model):
 class Section(models.Model):
     session = models.ForeignKey(EduSession, on_delete=models.CASCADE)
     grade = models.ForeignKey(SchoolGrade, on_delete=models.CASCADE)
-    school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE)
+    school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE, null=True, blank=True)
     section = models.CharField(max_length=200)
 
     class Meta:
         unique_together = (('school', 'grade', 'section', 'session'),)
-        objects = SchoolScopedManager()
+
+    objects = SchoolScopedManager()
 
     def __str__(self):
         return self.section
 
 
 class SubjectMaster(models.Model):
-    school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE)
+    school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE, null=True, blank=True)
     code = models.CharField(max_length=20, unique=True)
     canonical_name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)

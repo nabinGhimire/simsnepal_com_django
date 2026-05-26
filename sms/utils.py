@@ -1,6 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 from sms.middleware import get_current_request
-from sms.models import SchoolBranch
+from django.apps import apps
 
 def get_current_school():
     """Return the :class:`SchoolBranch` associated with the logged‑in user.
@@ -15,6 +15,8 @@ def get_current_school():
     school_id = sso_business.get("id")
     if not school_id:
         return None
+    # Lazily get the SchoolBranch model to avoid circular imports
+    SchoolBranch = apps.get_model('sms', 'SchoolBranch')
     try:
         return SchoolBranch.objects.get(shortcode=school_id)
     except ObjectDoesNotExist:
