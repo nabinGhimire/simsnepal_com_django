@@ -436,15 +436,15 @@
                 <a href="{% url 'about' %}" class="{% block active_about %}{% endblock %}" id="nav-about-link">About Us</a>
                 <a href="{% url 'contact' %}" class="{% block active_contact %}{% endblock %}" id="nav-contact-link">Contact</a>
                 {% if user.is_authenticated %}
-                    <a href="{% url 'dashboard' %}" class="mobile-only-link" id="nav-mobile-dashboard">Dashboard Portal</a>
-                    <a href="{% url 'logout' %}" class="mobile-only-link" id="nav-mobile-logout" style="color: #ef4444;">Logout</a>
-                {% endif %}
+    <a href="/panel/" class="mobile-only-link" id="nav-mobile-dashboard">Dashboard Portal</a>
+    <a href="{% url 'logout' %}" class="mobile-only-link" id="nav-mobile-logout" style="color: #ef4444;">Logout</a>
+{% endif %}
             </nav>
 
             <!-- SSO Action CTA -->
             <div class="header-actions">
                 {% if user.is_authenticated %}
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline" id="nav-dashboard-button">Dashboard Portal</a>
+                    <a href="/panel/" class="btn btn-outline" id="nav-dashboard-button">Dashboard Portal</a>
                     <a href="{% url 'logout' %}" class="btn btn-primary" id="nav-logout-button">Logout</a>
                 {% else %}
                     <a href="https://business.hamro.com/login/qr/" class="btn btn-outline" id="nav-login-sso-btn">SSO Partner Login</a>

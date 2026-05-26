@@ -4,7 +4,7 @@
             <!-- Navigation Menu-->
             <ul class="navigation-menu">
                 <li>
-                    <a href="/gpanel/"><i class="mdi mdi-view-dashboard"></i>gPanel</a>
+                    <li><a href="/panel/"><i class="mdi mdi-view-dashboard"></i>Dashboard</a></li>
                 </li>
                 {%comment%}
                 <li class="has-submenu">
@@ -37,6 +37,7 @@
                               <li><a href="/sims/grades/{{ grade.name|lower }}/">{{ grade.name|upper }}</a></li>
                             {% endif %}
                         {% endfor %}
+                        <li><a href="/panel/">Dashboard</a></li>
                         <li><a href="/gpanel/{{ level.id }}/addgrade/">Add Grade</a></li>
                     </ul>
                     

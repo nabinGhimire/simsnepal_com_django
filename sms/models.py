@@ -32,26 +32,18 @@ class SafeBranchUserQuerySet(models.QuerySet):
 
 
 class SchoolScopedQuerySet(models.QuerySet):
-    def get(self, *args, **kwargs):
-        try:
-            return super().get(*args, **kwargs)
-        except self.model.MultipleObjectsReturned:
-            qs = self.filter(*args, **kwargs)
-            request = get_current_request()
-            if request and hasattr(request, 'session') and request.session:
-                sso_business = request.session.get('sso_business', {})
-                business_id = sso_business.get('id')
-                if business_id:
-                    preferred_qs = qs.filter(school__shortcode=business_id)
-                    if preferred_qs.exists():
-                        active_pref = preferred_qs.filter(status=True)
-                        if active_pref.exists():
-                            return active_pref.first()
-                        return preferred_qs.first()
-            active_qs = qs.filter(status=True)
-            if active_qs.exists():
-                return active_qs.first()
-            return qs.first()
+    def filter(self, *args, **kwargs):
+        """Automatically filter by current school if session provides it.
+        This ensures any QuerySet operation respects multi‑tenant isolation.
+        """
+        qs = super().filter(*args, **kwargs)
+        request = get_current_request()
+        if request and hasattr(request, "session") and request.session:
+            sso_business = request.session.get("sso_business", {})
+            business_id = sso_business.get("id")
+            if business_id:
+                qs = qs.filter(school__shortcode=business_id)
+        return qs
 
 class SchoolScopedManager(models.Manager):
     def get_queryset(self):
