@@ -30,9 +30,33 @@ class SafeBranchUserQuerySet(models.QuerySet):
             return qs.first()
 
 
-class SafeBranchUserManager(models.Manager):
+
+class SchoolScopedQuerySet(models.QuerySet):
+    def get(self, *args, **kwargs):
+        try:
+            return super().get(*args, **kwargs)
+        except self.model.MultipleObjectsReturned:
+            qs = self.filter(*args, **kwargs)
+            request = get_current_request()
+            if request and hasattr(request, 'session') and request.session:
+                sso_business = request.session.get('sso_business', {})
+                business_id = sso_business.get('id')
+                if business_id:
+                    preferred_qs = qs.filter(school__shortcode=business_id)
+                    if preferred_qs.exists():
+                        active_pref = preferred_qs.filter(status=True)
+                        if active_pref.exists():
+                            return active_pref.first()
+                        return preferred_qs.first()
+            active_qs = qs.filter(status=True)
+            if active_qs.exists():
+                return active_qs.first()
+            return qs.first()
+
+class SchoolScopedManager(models.Manager):
     def get_queryset(self):
-        return SafeBranchUserQuerySet(self.model, using=self._db)
+        return SchoolScopedQuerySet(self.model, using=self._db)
+
 
     def get(self, *args, **kwargs):
         return self.get_queryset().get(*args, **kwargs)
@@ -111,22 +135,28 @@ class SchoolGrade(models.Model):
 class Section(models.Model):
     session = models.ForeignKey(EduSession, on_delete=models.CASCADE)
     grade = models.ForeignKey(SchoolGrade, on_delete=models.CASCADE)
+    school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE)
     section = models.CharField(max_length=200)
 
     class Meta:
-        unique_together = (('grade', 'section', 'session'),)
+        unique_together = (('school', 'grade', 'section', 'session'),)
+        objects = SchoolScopedManager()
 
     def __str__(self):
         return self.section
 
 
 class SubjectMaster(models.Model):
+    school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE)
     code = models.CharField(max_length=20, unique=True)
     canonical_name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
 
-    def __str__(self):
-        return self.canonical_name
+    class Meta:
+        unique_together = (('school', 'code'), ('school', 'canonical_name'))
+
+    objects = SchoolScopedManager()
+
 
 
 class Subject(models.Model):
