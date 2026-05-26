@@ -37,8 +37,10 @@ def generate_auth_token(request):
 
     phone = data.get("phone")
     hamro_uuid = data.get("hamro_uuid")
+    username = data.get("username")
     
-    response_data = {"exists": False, "roles": []}
+    # response_data = {"exists": False, "roles": []}
+    response_data = {"exists": False, "roles": [], "phone": phone, "hamro_uuid": hamro_uuid, "username": username}
     
     if phone:
         try:
@@ -65,7 +67,7 @@ def generate_auth_token(request):
             response_data["roles"].append("teacher")
             # Generate a token for teacher access (required by webview apps)
             response_data["teacher_token"] = signer.sign_object({"role": "teacher", "user_id": user.id})    
-
+   
     return JsonResponse(response_data)
 
 
@@ -329,8 +331,8 @@ def teacher_homework(request):
         if not available_schools:
             return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
 
-        school_id = request.GET.get('school_id') or request.POST.get('school_id')
-
+        print("Available Schools: ",available_schools)
+        school_id = 1 #request.GET.get('school_id') or request.POST.get('school_id')
         # Force school selection if > 1 school and none selected
         if len(available_schools) > 1 and not school_id:
             return render(request, "webview/teacher_select_school.html", {
