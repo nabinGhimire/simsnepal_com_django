@@ -2,10 +2,12 @@
 
 <!-- FAQ Template -->
 {% block title %}Common FAQs | SIMS Nepal Student Management Software{% endblock %}
-{% block meta_description %}Find answers to frequently asked questions about SIMS Nepal. Learn about Hamro SSO integrations, student records security, and billing guidelines.{% endblock %}
+{% block meta_description %}Find answers to frequently asked questions about SIMS Nepal. Learn about Hamro SSO
+integrations, student records security, and billing guidelines.{% endblock %}
 
 {% block active_faq %}active{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/faq.css' %}">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'frontend/css/faq.css' %}">{% endblock %}
 {% block content %}
 
 
@@ -19,44 +21,57 @@
         <!-- FAQ 1 -->
         <div class="faq-item">
             <div class="faq-question">
-                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">How does Hamro Business SSO login operate?</h2>
+                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">How does Hamro Business SSO login
+                    operate?</h2>
                 <div class="faq-toggle-icon">+</div>
             </div>
             <div class="faq-answer">
-                <p>SIMS Nepal integrates directly with the Hamro Business SSO architecture. When clicking 'SSO Partner Login', you are securely redirected to the central authentication domain. Once successfully logged in, our system validates the session payload using robust HMAC cryptographic keys and creates/registers your active portal account seamlessly.</p>
+                <p>SIMS Nepal integrates directly with the Hamro Business SSO architecture. When clicking 'SSO Partner
+                    Login', you are securely redirected to the central authentication domain. Once successfully logged
+                    in, our system validates the session payload using robust HMAC cryptographic keys and
+                    creates/registers your active portal account seamlessly.</p>
             </div>
         </div>
 
         <!-- FAQ 2 -->
         <div class="faq-item">
             <div class="faq-question">
-                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">Is student record data private and secure?</h2>
+                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">Is student record data private and
+                    secure?</h2>
                 <div class="faq-toggle-icon">+</div>
             </div>
             <div class="faq-answer">
-                <p>Absolutely. Academic transcript data, student registration keys, and contact records are securely isolated. Our hosting systems use industry-standard SSL/TLS configurations, daily backups, and robust permission check matrices to ensure data remains strictly confidential.</p>
+                <p>Absolutely. Academic transcript data, student registration keys, and contact records are securely
+                    isolated. Our hosting systems use industry-standard SSL/TLS configurations, daily backups, and
+                    robust permission check matrices to ensure data remains strictly confidential.</p>
             </div>
         </div>
 
         <!-- FAQ 3 -->
         <div class="faq-item">
             <div class="faq-question">
-                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">Can parents track attendance updates via SMS?</h2>
+                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">Can parents track attendance updates
+                    via SMS?</h2>
                 <div class="faq-toggle-icon">+</div>
             </div>
             <div class="faq-answer">
-                <p>Yes. Our attendance module features automated real-time SMS pipelines. When administrative staff marks a student absent, our system can instantly send absent bulletins to saved parent/guardian phone logs, helping maintain excellent school-home transparency.</p>
+                <p>Yes. Our attendance module features automated real-time SMS pipelines. When administrative staff
+                    marks a student absent, our system can instantly send absent bulletins to saved parent/guardian
+                    phone logs, helping maintain excellent school-home transparency.</p>
             </div>
         </div>
 
         <!-- FAQ 4 -->
         <div class="faq-item">
             <div class="faq-question">
-                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">Does the pricing plan support custom municipal needs?</h2>
+                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">Does the pricing plan support custom
+                    municipal needs?</h2>
                 <div class="faq-toggle-icon">+</div>
             </div>
             <div class="faq-answer">
-                <p>Yes. If you represent regional government ward schools or require specific grading reports mapped to Nepalese secondary education outlines, reach out via our contact inquiry module. We offer customized packages and dedicated local assistance.</p>
+                <p>Yes. If you represent regional government ward schools or require specific grading reports mapped to
+                    Nepalese secondary education outlines, reach out via our contact inquiry module. We offer customized
+                    packages and dedicated local assistance.</p>
             </div>
         </div>
     </div>
@@ -71,5 +86,3 @@
     });
 </script>
 {% endblock %}
-
-

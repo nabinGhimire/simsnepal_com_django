@@ -1,7 +1,8 @@
 {% extends 'frontend/base.html' %}
+{% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/features.css' %}">
+<link rel="stylesheet" href="{% static 'frontend/css/features.css' %}">
 {% endblock %}
 
 {% block title %}System Features | SIMS Nepal Student Management Software{% endblock %}
@@ -163,4 +164,3 @@ and secure Hamro SSO identity management details.{% endblock %}
 
 </div>
 {% endblock %}
-

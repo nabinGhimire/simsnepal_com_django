@@ -1,12 +1,14 @@
 {% extends 'frontend/base.html' %}
 
 {% block title %}SIMS Nepal | Modern Student Information Management System{% endblock %}
-{% block meta_description %}Welcome to SIMS Nepal: The modern, cloud-based Student Information Management System empowering schools and colleges with unified academic excellence.{% endblock %}
+{% block meta_description %}Welcome to SIMS Nepal: The modern, cloud-based Student Information Management System
+empowering schools and colleges with unified academic excellence.{% endblock %}
 
 
 {% block active_home %}active{% endblock %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/home.css' %}">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'frontend/css/home.css' %}">{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
@@ -125,4 +127,3 @@
     </div>
 </section>
 {% endblock %}
-

@@ -1,10 +1,12 @@
 {% extends 'frontend/base.html' %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pricing.css' %}">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'frontend/css/pricing.css' %}">{% endblock %}
 
 <!-- Pricing Template -->
 {% block title %}Plans & Pricing | SIMS Nepal Student Management Software{% endblock %}
-{% block meta_description %}Explore modular pricing structures for SIMS Nepal. Basic, Standard, and Institutional packages designed for Nepalese educational spaces.{% endblock %}
+{% block meta_description %}Explore modular pricing structures for SIMS Nepal. Basic, Standard, and Institutional
+packages designed for Nepalese educational spaces.{% endblock %}
 
 {% block active_pricing %}active{% endblock %}
 
@@ -13,7 +15,8 @@
 <div class="page-container">
     <div class="page-header">
         <h1>Transparent Modular Pricing</h1>
-        <p>Simple, predictable billing scales with school enrollment levels. Choose the perfect operational features for your institution.</p>
+        <p>Simple, predictable billing scales with school enrollment levels. Choose the perfect operational features for
+            your institution.</p>
     </div>
 
     <div class="pricing-grid">
@@ -21,7 +24,7 @@
         <div class="pricing-card">
             <h2 class="plan-name">Academy Basic</h2>
             <div class="plan-price">NPR 4,999<span>/mo</span></div>
-            
+
             <ul class="plan-features">
                 <li>Up to 250 Student Records</li>
                 <li>Academic Marks Ledger</li>
@@ -31,7 +34,7 @@
                 <li class="disabled">Hamro SSO Integration</li>
                 <li class="disabled">Dedicated Server Support</li>
             </ul>
-            
+
             <a href="{% url 'contact' %}" class="btn btn-outline" style="width: 100%;">Select Basic</a>
         </div>
 
@@ -40,7 +43,7 @@
             <div class="premium-badge">Popular</div>
             <h2 class="plan-name">Standard Core</h2>
             <div class="plan-price">NPR 9,999<span>/mo</span></div>
-            
+
             <ul class="plan-features">
                 <li>Up to 1,000 Student Records</li>
                 <li>Academics & Transcript Grading</li>
@@ -50,7 +53,7 @@
                 <li>General E-Mail Bulletins</li>
                 <li class="disabled">24/7 Priority Support SLA</li>
             </ul>
-            
+
             <a href="{% url 'contact' %}" class="btn btn-primary" style="width: 100%;">Get Started Now</a>
         </div>
 
@@ -58,7 +61,7 @@
         <div class="pricing-card">
             <h2 class="plan-name">Institutional Suite</h2>
             <div class="plan-price">NPR 19,999<span>/mo</span></div>
-            
+
             <ul class="plan-features">
                 <li>Unlimited Student Records</li>
                 <li>Full Suite Administrative Modules</li>
@@ -68,11 +71,9 @@
                 <li>Dedicated Hosting & Backups</li>
                 <li>24/7 Priority Support SLA</li>
             </ul>
-            
+
             <a href="{% url 'contact' %}" class="btn btn-outline" style="width: 100%;">Contact Enterprise</a>
         </div>
     </div>
 </div>
 {% endblock %}
-
-
