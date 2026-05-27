@@ -7,18 +7,18 @@
 {% block active_pricing %}active{% endblock %}
 
 {% block content %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pricing.css' %}">{% endblock %}
+<link rel="stylesheet" href="{% static 'css/custom_pricing.css' %}">
 
 <div class="pricing-container">
     <div class="pricing-header">
-        <h1>Transparent Modular Pricing</h1>
+        <h2>Transparent Modular Pricing</h2>
         <p>Simple, predictable billing scales with school enrollment levels. Choose the perfect operational features for your institution.</p>
     </div>
 
     <div class="pricing-grid">
         <!-- Basic -->
         <div class="pricing-card">
-            <h2 class="plan-name">Academy Basic</h2>
+            <h3 class="plan-name">Academy Basic</h3>
             <div class="plan-price">NPR 4,999<span>/mo</span></div>
             
             <ul class="plan-features">
@@ -37,7 +37,7 @@
         <!-- Standard (Premium) -->
         <div class="pricing-card premium">
             <div class="premium-badge">Popular</div>
-            <h2 class="plan-name">Standard Core</h2>
+            <h3 class="plan-name">Standard Core</h3>
             <div class="plan-price">NPR 9,999<span>/mo</span></div>
             
             <ul class="plan-features">
@@ -55,7 +55,7 @@
 
         <!-- Enterprise -->
         <div class="pricing-card">
-            <h2 class="plan-name">Institutional Suite</h2>
+            <h3 class="plan-name">Institutional Suite</h3>
             <div class="plan-price">NPR 19,999<span>/mo</span></div>
             
             <ul class="plan-features">

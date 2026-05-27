@@ -1,275 +1,28 @@
 {% extends 'frontend/base.html' %}
 
 {% block title %}SIMS Nepal | Modern Student Information Management System{% endblock %}
-{% block meta_description %}Welcome to SIMS Nepal: The modern, cloud-based Student Information Management System empowering schools and colleges with unified academic excellence.{% endblock %}
-
 
 {% block active_home %}active{% endblock %}
 
 {% block content %}
-<style>
-    /* Home Page Hero Section */
-    .hero-section {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 4rem;
-        align-items: center;
-        padding: 4rem 0 6rem;
-        margin-bottom: 5rem;
-    }
-
-    @media (max-width: 900px) {
-        .hero-section {
-            grid-template-columns: 1fr;
-            text-align: center;
-            gap: 2rem;
-            padding: 2rem 0 4rem;
-        }
-    }
-
-    .hero-text h1 {
-        font-size: 3.5rem;
-        font-weight: 800;
-        line-height: 1.1;
-        letter-spacing: -1.5px;
-        margin-bottom: 1.5rem;
-        background: linear-gradient(135deg, #0f172a 40%, var(--accent-primary) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    .hero-text p {
-        font-size: 1.15rem;
-        color: var(--text-muted);
-        line-height: 1.6;
-        margin-bottom: 2.5rem;
-        max-width: 540px;
-    }
-
-    @media (max-width: 900px) {
-        .hero-text p {
-            margin-left: auto;
-            margin-right: auto;
-        }
-    }
-
-    .hero-cta-group {
-        display: flex;
-        gap: 1.25rem;
-    }
-
-    @media (max-width: 900px) {
-        .hero-cta-group {
-            justify-content: center;
-        }
-    }
-
-    /* Glowing Mockup Card - Light Mode Overhaul */
-    .mockup-container {
-        position: relative;
-        background: radial-gradient(circle, rgba(0, 137, 117, 0.05) 0%, rgba(0, 0, 0, 0) 70%);
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .mockup-card {
-        background: #ffffff;
-        border: 1px solid var(--panel-border);
-        border-radius: 20px;
-        width: 100%;
-        max-width: 480px;
-        padding: 2rem;
-        box-shadow: 0 10px 30px rgba(0, 137, 117, 0.06);
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
-        position: relative;
-    }
-
-    .mockup-card::after {
-        content: '';
-        position: absolute;
-        inset: -1px;
-        border-radius: 20px;
-        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-        z-index: -1;
-        opacity: 0.08;
-        transition: opacity 0.3s ease;
-    }
-
-    .mockup-card:hover {
-        transform: translateY(-4px);
-        border-color: var(--card-hover-border);
-        box-shadow: 0 15px 35px rgba(0, 137, 117, 0.12);
-    }
-
-    .mockup-card:hover::after {
-        opacity: 0.15;
-    }
-
-    .mockup-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 1.5rem;
-    }
-
-    .mockup-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background-color: #ef4444;
-    }
-
-    .mockup-dot:nth-child(2) {
-        background-color: #eab308;
-    }
-
-    .mockup-dot:nth-child(3) {
-        background-color: #22c55e;
-    }
-
-    .mockup-line {
-        height: 8px;
-        background: rgba(0, 137, 117, 0.05);
-        border-radius: 4px;
-        margin-bottom: 12px;
-    }
-
-    .mockup-line.short {
-        width: 60%;
-    }
-
-    .mockup-line.medium {
-        width: 80%;
-    }
-
-    .mockup-line.long {
-        width: 100%;
-    }
-
-    /* ── Shared Section & Card System (matches About page) ── */
-    .home-section {
-        text-align: center;
-        padding: 4rem 0;
-    }
-
-    .home-section + .home-section {
-        border-top: 1px solid rgba(0, 137, 117, 0.06);
-    }
-
-    .home-section-title {
-        font-size: 2.25rem;
-        font-weight: 800;
-        color: var(--text-main);
-        margin-bottom: 0.75rem;
-    }
-
-    .home-section-subtitle {
-        color: var(--text-muted);
-        font-size: 1.05rem;
-        max-width: 600px;
-        margin: 0 auto 2.5rem;
-        line-height: 1.6;
-    }
-
-    .card-grid {
-        display: grid;
-        gap: 2rem;
-    }
-
-    .card-grid.cols-3 {
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    @media (max-width: 768px) {
-        .card-grid.cols-3 {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .u-card {
-        background: #ffffff;
-        border: 1px solid var(--panel-border);
-        border-radius: 20px;
-        padding: 2.25rem 2rem;
-        text-align: center;
-        box-shadow: 0 4px 20px rgba(0, 137, 117, 0.02);
-        transition: all 0.3s ease;
-    }
-
-    .u-card:hover {
-        border-color: var(--card-hover-border);
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(0, 137, 117, 0.07);
-    }
-
-    .u-card-icon {
-        font-size: 2.5rem;
-        line-height: 1;
-        margin-bottom: 1rem;
-        display: block;
-    }
-
-    .u-card h3 {
-        font-size: 1.3rem;
-        font-weight: 700;
-        color: var(--accent-primary);
-        margin-bottom: 0.75rem;
-    }
-
-    .u-card p {
-        color: var(--text-muted);
-        font-size: 0.92rem;
-        line-height: 1.65;
-        margin-bottom: 0;
-    }
-
-    /* Bullet list variant */
-    .u-card ul {
-        list-style: none;
-        padding: 0;
-        margin: 1rem 0 0;
-        text-align: left;
-    }
-
-    .u-card ul li {
-        color: var(--text-muted);
-        font-size: 0.88rem;
-        line-height: 1.5;
-        padding: 0.35rem 0 0.35rem 1.4rem;
-        position: relative;
-    }
-
-    .u-card ul li::before {
-        content: '✦';
-        position: absolute;
-        left: 0;
-        color: var(--accent-primary);
-        font-size: 0.7rem;
-        top: 0.5rem;
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/custom_home.css' %}">
 
 <!-- Hero Section -->
 <section class="hero-section" id="sims-hero-banner">
     <div class="hero-text">
-        <h1>Unifying Academic Excellence</h1>
-        <p>A highly unified Student Information Management System built to optimize institutional administration,
-            academic scheduling, student portals, and financial structures.</p>
-
+        <h2>Unifying Academic Excellence</h2>
+        <p>A highly unified Student Information Management System built to optimize institutional administration, academic scheduling, student portals, and financial structures.</p>
+        
         <div class="hero-cta-group">
             {% if user.is_authenticated %}
-            <a href="{% url 'dashboard' %}" class="btn btn-primary" id="hero-portal-link">Enter Student Portal</a>
+                <a href="{% url 'dashboard' %}" class="btn btn-primary" id="hero-portal-link">Enter Student Portal</a>
             {% else %}
-            <a href="https://business.hamro.com/login/qr/" class="btn btn-primary" id="hero-sso-login-link">Login with
-                Hamro SSO</a>
-            <a href="{% url 'features' %}" class="btn btn-outline" id="hero-explore-features-link">Explore Modules</a>
+                <a href="http://127.0.0.1:8080" class="btn btn-primary" id="hero-sso-login-link">Login with Hamro SSO</a>
+                <a href="{% url 'features' %}" class="btn btn-outline" id="hero-explore-features-link">Explore Modules</a>
             {% endif %}
         </div>
     </div>
-
+    
     <div class="mockup-container">
         <div class="mockup-card">
             <div class="mockup-header">
@@ -277,93 +30,41 @@
                 <span class="mockup-dot"></span>
                 <span class="mockup-dot"></span>
             </div>
-            <div class="mockup-line short"
-                style="background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)); height: 12px; margin-bottom: 2rem;">
-            </div>
+            <div class="mockup-line short" style="background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)); height: 12px; margin-bottom: 2rem;"></div>
             <div class="mockup-line long"></div>
             <div class="mockup-line medium"></div>
             <div class="mockup-line long" style="margin-bottom: 2rem;"></div>
-
+            
             <div style="display: flex; gap: 1rem;">
-                <div
-                    style="flex: 1; height: 60px; background: rgba(0, 137, 117, 0.01); border: 1px solid var(--panel-border); border-radius: 8px;">
-                </div>
-                <div
-                    style="flex: 1; height: 60px; background: rgba(0, 137, 117, 0.01); border: 1px solid var(--panel-border); border-radius: 8px;">
-                </div>
+                <div style="flex: 1; height: 60px; background: rgba(0, 137, 117, 0.01); border: 1px solid var(--panel-border); border-radius: 8px;"></div>
+                <div style="flex: 1; height: 60px; background: rgba(0, 137, 117, 0.01); border: 1px solid var(--panel-border); border-radius: 8px;"></div>
             </div>
         </div>
     </div>
 </section>
 
 <!-- Brief Features Highlights -->
-<section class="home-section" id="sims-brief-features">
-    <h2 class="home-section-title">Engineered for Nepalese Classrooms</h2>
-    <p class="home-section-subtitle">SIMS Nepal provides complete cloud-based management for secondary schools and
-        higher institutions across local municipal wards.</p>
-
-    <div class="card-grid cols-3">
-        <div class="u-card">
-            <i class="fa-solid fa-folder-closed u-card-icon"></i>
+<section class="features-brief-section" id="sims-brief-features">
+    <h3 class="features-brief-title">Engineered for Nepalese Classrooms</h3>
+    <p class="features-brief-subtitle">SIMS Nepal provides complete cloud-based management for secondary schools and higher institutions across local municipal wards.</p>
+    
+    <div class="brief-grid">
+        <div class="brief-card">
+            <div class="brief-icon">01</div>
             <h3>Centralized Records</h3>
-            <p>Maintain digital files of all students including home addresses, guardian contacts, marks history, and
-                registration identifiers. This centralized database ensures that you never lose important student
-                information again.</p>
+            <p>Maintain digital files of all students including home addresses, guardian contacts, marks history, and registration identifiers.</p>
         </div>
-
-        <div class="u-card">
-            <i class="fa-solid fa-key u-card-icon"></i>
+        
+        <div class="brief-grid-item brief-card">
+            <div class="brief-icon">02</div>
             <h3>SSO Unified Access</h3>
-            <p>Integrated natively with the Hamro Business ecosystem for Single Sign-On credentials across connected
-                departments. Say goodbye to multiple passwords and experience a unified platform designed for efficiency
-                and modern education.</p>
+            <p>Integrated natively with the Hamro Business ecosystem for Single Sign-On credentials across connected departments.</p>
         </div>
-
-        <div class="u-card">
-            <i class="fa-solid fa-calendar-days u-card-icon"></i>
+        
+        <div class="brief-card">
+            <div class="brief-icon">03</div>
             <h3>Academic Schedules</h3>
-            <p>Manage courses, routine structures, section configurations, and grading reports easily in a sleek
-                dashboard panel. Empower teachers to seamlessly record academic data and automatically generate
-                comprehensive progress reports for students.</p>
-        </div>
-    </div>
-</section>
-
-<!-- Digital Infrastructure Section -->
-<section class="home-section" id="sims-digital-infrastructure">
-    <h2 class="home-section-title">Transform Digital Infrastructure</h2>
-    <p class="home-section-subtitle">Discover the tangible benefits of our next generation educational platform built
-        specifically for Nepalese schools.</p>
-
-    <div class="card-grid cols-3">
-        <div class="u-card">
-            <i class="fa-solid fa-satellite-dish u-card-icon"></i>
-            <h3>Digital Environment</h3>
-            <ul>
-                <li>Break free from traditional paper-based processes</li>
-                <li>Robust tools crafted for unique challenges in Nepal</li>
-                <li>Enhance collaboration between administrators and teachers</li>
-            </ul>
-        </div>
-
-        <div class="u-card">
-            <i class="fa-solid fa-bolt u-card-icon"></i>
-            <h3>Flexibility &amp; Security</h3>
-            <ul>
-                <li>Effortlessly manage attendance and grading schemes</li>
-                <li>Securely handle automated financial transactions</li>
-                <li>Cloud-native architecture with 99.9% uptime</li>
-            </ul>
-        </div>
-
-        <div class="u-card">
-            <i class="fa-solid fa-clipboard-list u-card-icon"></i>
-            <h3>Compliance &amp; Support</h3>
-            <ul>
-                <li>Dedicated support for regional compliance rules</li>
-                <li>Trusted by schools across multiple districts</li>
-                <li>Experience reduced administrative overhead</li>
-            </ul>
+            <p>Manage courses, routine structures, section configurations, and grading reports easily in a sleek dashboard panel.</p>
         </div>
     </div>
 </section>

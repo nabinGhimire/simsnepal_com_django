@@ -1,50 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    
     <!-- SEO Optimization Meta Tags -->
-    <meta name="description"
-        content="{% block meta_description %}SIMS Nepal: A modern Student Information Management System to streamline academic records, financials, and communications in Nepal.{% endblock %}">
-    <meta name="keywords"
-        content="SIMS Nepal, Student Information Management System, School Management Software Nepal, SMS Nepal, Academic Management, Hamro Business SSO">
+    <meta name="description" content="{% block meta_description %}SIMS Nepal - The premier modern Student Information Management System (SIMS). Streamline academic records, tracking, financials, and communications in Nepal.{% endblock %}">
+    <meta name="keywords" content="SIMS Nepal, Student Information Management System, School Management Software Nepal, SMS Nepal, Academic Management, Hamro Business SSO">
     <meta name="author" content="SIMS Nepal">
     <meta name="robots" content="index, follow">
-
-    <!-- Icons -->
-    <link rel="icon" type="image/x-icon" href="{% block favicon %}/static/favicon.ico{% endblock %}">
-    <link rel="apple-touch-icon" href="{% block apple_touch_icon %}/static/apple-touch-icon.png{% endblock %}">
-
+    
     <!-- Canonical URL to prevent duplicate content indexing -->
     <link rel="canonical" href="{{ request.build_absolute_uri }}">
-
+    
     <!-- Open Graph (Facebook/LinkedIn) -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
-    <meta property="og:title"
-        content="{% block og_title %}SIMS Nepal - Student Information Management System{% endblock %}">
-    <meta property="og:description"
-        content="Modern, fast, and feature-rich management software for schools and colleges across Nepal.">
+    <meta property="og:title" content="{% block og_title %}SIMS Nepal - Student Information Management System{% endblock %}">
+    <meta property="og:description" content="Modern, fast, and feature-rich management software for schools and colleges across Nepal.">
     <meta property="og:site_name" content="SIMS Nepal">
-
+    
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title"
-        content="{% block twitter_title %}SIMS Nepal - Student Information Management System{% endblock %}">
-    <meta name="twitter:description"
-        content="Modern, fast, and feature-rich management software for schools and colleges across Nepal.">
-
+    <meta name="twitter:title" content="{% block twitter_title %}SIMS Nepal - Student Information Management System{% endblock %}">
+    <meta name="twitter:description" content="Modern, fast, and feature-rich management software for schools and colleges across Nepal.">
+    
     <title>{% block title %}SIMS Nepal | Student Information Management System{% endblock %}</title>
-
+    
     <!-- Premium Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <!-- Structured JSON-LD Schema Data (SEO optimization) -->
     <script type="application/ld+json">
     {
@@ -69,12 +56,10 @@
       }
     }
     </script>
-
-
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    
+    <link rel="stylesheet" href="{% static 'css/custom_base.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
-
 <body>
 
     <!-- Ambient Glow wrapper to contain & clip vertical space -->
@@ -94,31 +79,25 @@
             <!-- Public Navigation Links -->
             <nav class="nav-links" id="main-navigation-links">
                 <a href="{% url 'home' %}" class="{% block active_home %}{% endblock %}" id="nav-home-link">Home</a>
-                <a href="{% url 'features' %}" class="{% block active_features %}{% endblock %}"
-                    id="nav-features-link">Features</a>
-                <a href="{% url 'pricing' %}" class="{% block active_pricing %}{% endblock %}"
-                    id="nav-pricing-link">Pricing</a>
+                <a href="{% url 'features' %}" class="{% block active_features %}{% endblock %}" id="nav-features-link">Features</a>
+                <a href="{% url 'pricing' %}" class="{% block active_pricing %}{% endblock %}" id="nav-pricing-link">Pricing</a>
                 <a href="{% url 'faq' %}" class="{% block active_faq %}{% endblock %}" id="nav-faq-link">FAQ</a>
-                <a href="{% url 'about' %}" class="{% block active_about %}{% endblock %}" id="nav-about-link">About
-                    Us</a>
-                <a href="{% url 'contact' %}" class="{% block active_contact %}{% endblock %}"
-                    id="nav-contact-link">Contact</a>
+                <a href="{% url 'about' %}" class="{% block active_about %}{% endblock %}" id="nav-about-link">About Us</a>
+                <a href="{% url 'contact' %}" class="{% block active_contact %}{% endblock %}" id="nav-contact-link">Contact</a>
                 {% if user.is_authenticated %}
-                <a href="/panel/" class="mobile-only-link" id="nav-mobile-dashboard">Dashboard Portal</a>
-                <a href="{% url 'logout' %}" class="mobile-only-link" id="nav-mobile-logout"
-                    style="color: #ef4444;">Logout</a>
-                {% endif %}
+    <a href="/panel/" class="mobile-only-link" id="nav-mobile-dashboard">Dashboard Portal</a>
+    <a href="{% url 'logout' %}" class="mobile-only-link" id="nav-mobile-logout" style="color: #ef4444;">Logout</a>
+{% endif %}
             </nav>
 
             <!-- SSO Action CTA -->
             <div class="header-actions">
                 {% if user.is_authenticated %}
-                <a href="/panel/" class="btn btn-outline" id="nav-dashboard-button">Dashboard Portal</a>
-                <a href="{% url 'logout' %}" class="btn btn-primary" id="nav-logout-button">Logout</a>
+                    <a href="/panel/" class="btn btn-outline" id="nav-dashboard-button">Dashboard Portal</a>
+                    <a href="{% url 'logout' %}" class="btn btn-primary" id="nav-logout-button">Logout</a>
                 {% else %}
-                <a href="https://business.hamro.com/login/qr/" class="btn btn-outline" id="nav-login-sso-btn">SSO
-                    Partner Login</a>
-                <a href="{% url 'features' %}" class="btn btn-primary" id="nav-cta-getstarted">Explore Features</a>
+                    <a href="https://business.hamro.com/login/qr/" class="btn btn-outline" id="nav-login-sso-btn">SSO Partner Login</a>
+                    <a href="{% url 'features' %}" class="btn btn-primary" id="nav-cta-getstarted">Explore Features</a>
                 {% endif %}
             </div>
 
@@ -141,10 +120,9 @@
         <div class="footer-grid">
             <div class="footer-about">
                 <h4>SIMS Nepal</h4>
-                <p>The highly intuitive, secure, and modern Student Information Management System built specifically to
-                    satisfy local, regional, and national school administration guidelines across Nepal.</p>
+                <p>The highly intuitive, secure, and modern Student Information Management System built specifically to satisfy local, regional, and national school administration guidelines across Nepal.</p>
             </div>
-
+            
             <div class="footer-links">
                 <h4>Solutions</h4>
                 <ul>
@@ -167,21 +145,19 @@
         </div>
 
         <div class="footer-bottom">
-            <p>&copy; 2026 SIMS Nepal. Made with <span class="love">♥</span> by <a href="https://nobins.com">Nobins Pvt
-                    Ltd</a>.</p>
+            <p>&copy; 2026 SIMS Nepal. Made with <span class="love">♥</span> by <a href="https://nobins.com">Nobins Pvt Ltd</a>.</p>
             <div class="footer-bottom-links">
-                <a href="https://safety.hamro.com/privacy">Privacy Policy</a>
-                <a href="https://safety.hamro.com/terms">Terms of Service</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
             </div>
         </div>
     </footer>
-
 
     <!-- Interactive navigation helper scripts -->
     <script>
         const toggleBtn = document.getElementById('mobile-menu-toggle-btn');
         const navMenu = document.getElementById('main-navigation-links');
-
+        
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => {
                 const isNavVisible = navMenu.style.display === 'flex';
@@ -202,5 +178,4 @@
         }
     </script>
 </body>
-
 </html>
