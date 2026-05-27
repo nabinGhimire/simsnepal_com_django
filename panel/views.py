@@ -368,9 +368,8 @@ def listgradeitems(request, gradelevel):
     grade_level = GradeLevel.objects.all()
     grades = SchoolGrade.objects.filter(school=schoolbranch).order_by("id")
 
-    avaiablesections = Section.objects.filter(grade=gradelevel)
+    avaiablesections = Section.objects.filter(grade=gradelevel, school=branchuser.school)
     gradelevel = SchoolGrade.objects.get(id=int(gradelevel))
-
     subjects = Subject.objects.filter(branch=branchuser.school, grade=gradelevel.id)
     students = Student.objects.filter(school=branchuser.school, grade=gradelevel.id)
 

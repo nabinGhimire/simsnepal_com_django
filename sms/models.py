@@ -37,14 +37,14 @@ class SchoolScopedQuerySet(models.QuerySet):
         """Automatically filter by current school if session provides it.
         This ensures any QuerySet operation respects multi‑tenant isolation.
         """
-        qs = super().filter(*args, **kwargs)
         request = get_current_request()
         if request and hasattr(request, "session") and request.session:
             sso_business = request.session.get("sso_business", {})
             business_id = sso_business.get("id")
             if business_id:
-                qs = qs.filter(school__shortcode=business_id)
-        return qs
+                # Add school filter directly to kwargs to avoid recursion
+                kwargs.setdefault('school__shortcode', business_id)
+        return super().filter(*args, **kwargs)
 
 class SchoolScopedManager(models.Manager):
     def get_queryset(self):
