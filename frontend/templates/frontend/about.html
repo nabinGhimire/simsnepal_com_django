@@ -1,5 +1,7 @@
 {% extends 'frontend/base.html' %}
 
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/about.css' %}">{% endblock %}
+
 <!-- About Page Template -->
 {% block title %}About Us | SIMS Nepal Student Management Software{% endblock %}
 {% block meta_description %}Learn about the mission, vision, and operational values of SIMS Nepal. Dedicated to
@@ -8,7 +10,6 @@ digitalizing school administrative systems across Nepal.{% endblock %}
 {% block active_about %}active{% endblock %}
 
 {% block content %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/custom_about.css' %}">{% endblock %}
 
 <!-- Hero Header -->
 <div class="hero-section">

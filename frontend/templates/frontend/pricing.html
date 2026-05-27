@@ -1,5 +1,7 @@
 {% extends 'frontend/base.html' %}
 
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pricing.css' %}">{% endblock %}
+
 <!-- Pricing Template -->
 {% block title %}Plans & Pricing | SIMS Nepal Student Management Software{% endblock %}
 {% block meta_description %}Explore modular pricing structures for SIMS Nepal. Basic, Standard, and Institutional packages designed for Nepalese educational spaces.{% endblock %}
@@ -7,7 +9,6 @@
 {% block active_pricing %}active{% endblock %}
 
 {% block content %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/custom_pricing.css' %}">{% endblock %}
 
 <div class="pricing-container">
     <div class="pricing-header">
@@ -73,3 +74,4 @@
     </div>
 </div>
 {% endblock %}
+

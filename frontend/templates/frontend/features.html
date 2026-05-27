@@ -1,5 +1,9 @@
 {% extends 'frontend/base.html' %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/features.css' %}">
+{% endblock %}
+
 {% block title %}System Features | SIMS Nepal Student Management Software{% endblock %}
 {% block meta_description %}Discover features of SIMS Nepal. Explore Academics, Routine Schedule planning, Attendance,
 and secure Hamro SSO identity management details.{% endblock %}
@@ -7,9 +11,6 @@ and secure Hamro SSO identity management details.{% endblock %}
 {% block active_features %}active{% endblock %}
 
 {% block content %}
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/custom_features.css' %}">
-{% endblock %}
 
 <div class="features-container">
     <div class="features-header">
