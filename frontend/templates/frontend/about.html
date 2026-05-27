@@ -2,52 +2,159 @@
 
 <!-- About Page Template -->
 {% block title %}About Us | SIMS Nepal Student Management Software{% endblock %}
-{% block meta_description %}Learn about the mission, vision, and operational values of SIMS Nepal. Dedicated to digitalizing school administrative systems across Nepal.{% endblock %}
+{% block meta_description %}Learn about the mission, vision, and operational values of SIMS Nepal. Dedicated to
+digitalizing school administrative systems across Nepal.{% endblock %}
 
 {% block active_about %}active{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/custom_about.css' %}">
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/custom_about.css' %}">{% endblock %}
 
-<div class="about-container">
-    <div class="about-header">
-        <h2>Streamlining Administration</h2>
-        <p>SIMS Nepal is dedicated to bridging technology gaps in academic spaces, creating fast, simple, and secured portals.</p>
-    </div>
-
-    <div class="about-grid">
-        <div class="about-card">
-            <h3>Our Mission</h3>
-            <p>Our goal is to modernize educational administration in primary, secondary, and higher secondary schools across Nepal. By transitioning legacy paper ledgers and fragmented offline files into a secure, fast, and unified cloud framework, we help schools improve operational efficiency.</p>
-            <p>Through our seamless SSO integration with the Hamro Business framework, school staff can securely share user access permissions across administration, financials, and library systems effortlessly.</p>
-        </div>
-
-        <div class="about-card">
-            <h3>Our Vision</h3>
-            <p>We envision a digitized future for Nepalese schools where academic statistics, grades, routines, and presence metrics are immediately and securely accessible. Digital workflows enable administration departments to focus less on records bureaucracy and more on improving classroom teaching standards.</p>
-            <p>With highly robust local server hosting setups and lightweight, performance-optimized codes, our platform loads instantly on mobile, tablet, and desktop systems even in low bandwidth environments.</p>
-        </div>
-    </div>
-
-    <!-- Core Values -->
-    <div class="values-section">
-        <h3 class="values-title">Operational Core Values</h3>
-        <div class="values-grid">
-            <div class="value-item">
-                <h4>Simplicity</h4>
-                <p>Designed with intuitive user interaction rules so teachers, office assistants, and parents can navigate easily without specialized technical training.</p>
-            </div>
-            
-            <div class="value-item">
-                <h4>Security</h4>
-                <p>Built with robust cryptographic checks and strict data isolation rules to ensure student records are kept confidential.</p>
-            </div>
-
-            <div class="value-item">
-                <h4>Sovereignty</h4>
-                <p>Compliant with school board guidelines and municipal regulations of the Ministry of Education in Nepal.</p>
-            </div>
+<!-- Hero Header -->
+<div class="hero-section">
+    <div class="hero-text">
+        <h1>Streamlining Administration</h1>
+        <p>SIMS Nepal is dedicated to bridging technology gaps in academic spaces, creating fast, simple, and secured portals for schools across Nepal.</p>
+        <div class="hero-cta-group">
+            {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-primary" id="about-portal-link">Enter Student Portal</a>
+            {% else %}
+            <a href="https://business.hamro.com/login/qr/" class="btn btn-primary" id="about-sso-login-link">Login with Hamro SSO</a>
+            <a href="{% url 'features' %}" class="btn btn-outline" id="about-cta-explore-link">Explore Modules</a>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Mission & Vision -->
+<section class="about-section">
+    <!-- <h2 class="about-section-title">Who We Are</h2>
+    <p class="about-section-subtitle">Built with purpose — empowering schools to transition from paper ledgers to a
+        secure, unified cloud framework.</p> -->
+
+    <div class="card-grid cols-2">
+        <div class="u-card wide-card">
+            <i class="fa-solid fa-bullseye u-card-icon"></i>
+            <h3>Our Mission</h3>
+            <p>Our goal is to modernize educational administration in primary, secondary, and higher secondary schools
+                across Nepal. By transitioning legacy paper ledgers and fragmented offline files into a secure, fast,
+                and unified cloud framework, we help schools improve operational efficiency.</p>
+            <p>Through our seamless SSO integration with the Hamro Business framework, school staff can securely share
+                user access permissions across administration, financials, and library systems effortlessly.</p>
+        </div>
+
+        <div class="u-card wide-card">
+            <i class="fa-solid fa-binoculars u-card-icon"></i>
+            <h3>Our Vision</h3>
+            <p>We envision a digitized future for Nepalese schools where academic statistics, grades, routines, and
+                presence metrics are immediately and securely accessible. Digital workflows enable administration
+                departments to focus less on records bureaucracy and more on improving classroom teaching standards.</p>
+            <p>With highly robust local server hosting setups and lightweight, performance-optimized codes, our platform
+                loads instantly on mobile, tablet, and desktop systems even in low bandwidth environments.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Core Values -->
+<section class="about-section">
+    <h2 class="about-section-title">Operational Core Values</h2>
+    <p class="about-section-subtitle">The principles that guide every decision we make while building for Nepalese
+        classrooms.</p>
+
+    <div class="card-grid cols-3">
+        <div class="u-card">
+            <i class="fa-solid fa-gem u-card-icon fa-2x"></i>
+
+            <h3>Simplicity</h3>
+            <p>Designed with intuitive user interaction rules so teachers, office assistants, and parents can navigate
+                easily without specialized technical training.</p>
+        </div>
+
+        <div class="u-card">
+            <i class="fa-solid fa-lock u-card-icon"></i>
+            <h3>Security</h3>
+            <p>Built with robust cryptographic checks and strict data isolation rules to ensure student records are kept
+                confidential and tamper-proof.</p>
+        </div>
+
+        <div class="u-card">
+            <i class="fa-solid fa-landmark u-card-icon"></i>
+            <h3>Sovereignty</h3>
+            <p>Compliant with school board guidelines and municipal regulations set by the Ministry of Education in
+                Nepal.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Why Choose SIMS -->
+<section class="about-section">
+    <h2 class="about-section-title">Why Choose SIMS Nepal</h2>
+    <p class="about-section-subtitle">Discover the tangible advantages of adopting our next-generation educational
+        management platform.</p>
+
+    <div class="card-grid cols-3">
+        <div class="u-card">
+            <i class="fa-solid fa-satellite-dish u-card-icon"></i>
+            <h3>Digital Environment</h3>
+            <ul>
+                <li>Break free from traditional paper-based processes</li>
+                <li>Robust tools crafted for unique challenges in Nepal</li>
+                <li>Enhanced collaboration between administrators and teachers</li>
+                <li>Instant access to student data from any device</li>
+            </ul>
+        </div>
+
+        <div class="u-card">
+            <i class="fa-solid fa-bolt u-card-icon"></i>
+            <h3>Flexibility &amp; Performance</h3>
+            <ul>
+                <li>Effortlessly manage attendance and grading schemes</li>
+                <li>Securely handle automated financial transactions</li>
+                <li>Cloud-native architecture with 99.9% uptime</li>
+                <li>Optimized for low bandwidth rural environments</li>
+            </ul>
+        </div>
+
+        <div class="u-card">
+            <i class="fa-solid fa-clipboard-list u-card-icon"></i>
+            <h3>Compliance &amp; Support</h3>
+            <ul>
+                <li>Dedicated support for regional compliance rules</li>
+                <li>Trusted by schools across multiple districts</li>
+                <li>Reduced administrative overhead and paperwork</li>
+                <li>Aligned with Ministry of Education standards</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- Our Impact -->
+<section class="about-section">
+    <h2 class="about-section-title">Our Impact</h2>
+    <p class="about-section-subtitle">Real numbers that reflect our commitment to transforming education in Nepal.</p>
+
+    <div class="card-grid cols-3">
+        <div class="u-card stat-card">
+            <i class="fa-solid fa-user-graduate u-card-icon"></i>
+            <h3>10,000+ Students</h3>
+            <p>Empowering thousands of learners across Nepal with digital records and seamless access to academic data.
+            </p>
+        </div>
+
+        <div class="u-card stat-card">
+            <i class="fa-solid fa-school u-card-icon"></i>
+            <h3>10+ Schools</h3>
+            <p>Modernizing educational administration for institutions across multiple districts and municipalities
+                nationwide.</p>
+        </div>
+
+        <div class="u-card stat-card">
+            <i class="fa-solid fa-check-circle u-card-icon"></i>
+            <h3>Compliance Certified</h3>
+            <p>Fully aligned with Ministry of Education standards and local municipal regulations for school management.
+            </p>
+        </div>
+    </div>
+</section>
+
 {% endblock %}

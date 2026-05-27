@@ -5,13 +5,13 @@
 {% block meta_description %}Find answers to frequently asked questions about SIMS Nepal. Learn about Hamro SSO integrations, student records security, and billing guidelines.{% endblock %}
 
 {% block active_faq %}active{% endblock %}
-
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/custom_faq.css' %}">{% endblock %}
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/custom_faq.css' %}">
+
 
 <div class="faq-container">
     <div class="faq-header">
-        <h2>Frequently Asked Queries</h2>
+        <h1>Frequently Asked Queries</h1>
         <p>Find answers to common integration, support, and administrative questions about our school portals.</p>
     </div>
 
@@ -19,7 +19,7 @@
         <!-- FAQ 1 -->
         <div class="faq-item">
             <div class="faq-question">
-                <span>How does Hamro Business SSO login operate?</span>
+                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">How does Hamro Business SSO login operate?</h2>
                 <div class="faq-toggle-icon">+</div>
             </div>
             <div class="faq-answer">
@@ -30,7 +30,7 @@
         <!-- FAQ 2 -->
         <div class="faq-item">
             <div class="faq-question">
-                <span>Is student record data private and secure?</span>
+                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">Is student record data private and secure?</h2>
                 <div class="faq-toggle-icon">+</div>
             </div>
             <div class="faq-answer">
@@ -41,7 +41,7 @@
         <!-- FAQ 3 -->
         <div class="faq-item">
             <div class="faq-question">
-                <span>Can parents track attendance updates via SMS?</span>
+                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">Can parents track attendance updates via SMS?</h2>
                 <div class="faq-toggle-icon">+</div>
             </div>
             <div class="faq-answer">
@@ -52,7 +52,7 @@
         <!-- FAQ 4 -->
         <div class="faq-item">
             <div class="faq-question">
-                <span>Does the pricing plan support custom municipal needs?</span>
+                <h2 style="font-size: inherit; font-weight: inherit; margin: 0;">Does the pricing plan support custom municipal needs?</h2>
                 <div class="faq-toggle-icon">+</div>
             </div>
             <div class="faq-answer">
