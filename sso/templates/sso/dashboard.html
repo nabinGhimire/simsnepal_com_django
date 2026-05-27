@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIMS Nepal - SSO Dashboard</title>
-    
+
     <!-- Premium Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -53,7 +55,7 @@
             left: -10%;
             width: 50vw;
             height: 50vw;
-            background: radial-gradient(circle, rgba(0, 137, 117, 0.06) 0%, rgba(0,0,0,0) 70%);
+            background: radial-gradient(circle, rgba(0, 137, 117, 0.06) 0%, rgba(0, 0, 0, 0) 70%);
             z-index: 1;
             pointer-events: none;
         }
@@ -64,7 +66,7 @@
             right: -10%;
             width: 50vw;
             height: 50vw;
-            background: radial-gradient(circle, rgba(0, 168, 144, 0.05) 0%, rgba(0,0,0,0) 70%);
+            background: radial-gradient(circle, rgba(0, 168, 144, 0.05) 0%, rgba(0, 0, 0, 0) 70%);
             z-index: 1;
             pointer-events: none;
         }
@@ -171,6 +173,7 @@
                 gap: 2rem;
                 padding: 1.5rem;
             }
+
             header {
                 padding: 1.5rem;
             }
@@ -364,7 +367,7 @@
             right: 0;
             width: 150px;
             height: 150px;
-            background: radial-gradient(circle, rgba(0, 137, 117, 0.08) 0%, rgba(0,0,0,0) 70%);
+            background: radial-gradient(circle, rgba(0, 137, 117, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
             pointer-events: none;
         }
 
@@ -467,6 +470,7 @@
                 border-color: rgba(5, 150, 105, 0.15);
                 box-shadow: 0 0 15px rgba(5, 150, 105, 0.02);
             }
+
             100% {
                 border-color: rgba(5, 150, 105, 0.4);
                 box-shadow: 0 0 25px rgba(5, 150, 105, 0.1);
@@ -474,6 +478,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="bg-glow-1"></div>
@@ -489,7 +494,7 @@
                     <p>Student Information Management System</p>
                 </div>
             </div>
-            
+
             <div class="connection-status">
                 <span class="status-dot"></span>
                 <span>SSO Authenticated</span>
@@ -498,47 +503,48 @@
 
         <!-- Dashboard Content Grid -->
         <div class="content-grid">
-            
+
             <!-- Left Panel - Profile Summary -->
             <div class="profile-card">
                 <div class="avatar-container">
                     {% if sso_user.avatar %}
-                        <img src="{{ sso_user.avatar }}" alt="User Avatar" class="avatar-img">
+                    <img src="{{ sso_user.avatar }}" alt="User Avatar" class="avatar-img">
                     {% else %}
-                        <div class="avatar-placeholder">
-                            {{ sso_user.full_name|slice:":1"|upper }}
-                        </div>
+                    <div class="avatar-placeholder">
+                        {{ sso_user.full_name|slice:":1"|upper }}
+                    </div>
                     {% endif %}
-                    
+
                     {% if sso_user.email_verified or sso_user.account_verified %}
-                        <div class="verified-badge" title="SSO Account Verified">✓</div>
+                    <div class="verified-badge" title="SSO Account Verified">✓</div>
                     {% endif %}
                 </div>
 
                 <h2 class="user-name">{{ sso_user.full_name }}</h2>
                 <p class="user-username">@{{ sso_user.username }}</p>
-                
+
                 <span class="user-badge">
                     {% if user.is_staff %}
-                        Staff Administrator
+                    Staff Administrator
                     {% else %}
-                        Client Member
+                    Client Member
                     {% endif %}
                 </span>
             </div>
 
             <!-- Right Panel - Detailed Info -->
             <div class="details-section">
-                
+
                 <!-- Business Info Card -->
                 <h3 class="section-title">Hamro Business Identity</h3>
                 <div class="business-hero">
                     <div class="business-title">{{ sso_business.name }}</div>
-                    
+
                     <div class="business-meta">
                         <div class="meta-item">
                             <span class="meta-label">Business ID</span>
-                            <span class="meta-value" style="font-family: monospace; font-size: 0.85rem;">{{ sso_business.id }}</span>
+                            <span class="meta-value" style="font-family: monospace; font-size: 0.85rem;">{{
+                                sso_business.id }}</span>
                         </div>
                         <div class="meta-item">
                             <span class="meta-label">Access Module</span>
@@ -554,7 +560,8 @@
                 <div class="info-card">
                     <div class="info-row">
                         <span class="info-label">SSO UUID</span>
-                        <span class="info-value" style="font-family: monospace; font-size: 0.85rem;">{{ sso_user.hamro_uuid|default:"N/A" }}</span>
+                        <span class="info-value" style="font-family: monospace; font-size: 0.85rem;">{{
+                            sso_user.hamro_uuid|default:"N/A" }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Email Address</span>
@@ -566,13 +573,15 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label">Email Verified</span>
-                        <span class="info-value" style="color: {% if sso_user.email_verified %}var(--success){% else %}var(--text-muted){% endif %}; font-weight: 800;">
+                        <span class="info-value"
+                            style="color: {% if sso_user.email_verified %}var(--success){% else %}var(--text-muted){% endif %}; font-weight: 800;">
                             {% if sso_user.email_verified %}Yes{% else %}No{% endif %}
                         </span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Phone Verified</span>
-                        <span class="info-value" style="color: {% if sso_user.phone_verified %}var(--success){% else %}var(--text-muted){% endif %}; font-weight: 800;">
+                        <span class="info-value"
+                            style="color: {% if sso_user.phone_verified %}var(--success){% else %}var(--text-muted){% endif %}; font-weight: 800;">
                             {% if sso_user.phone_verified %}Yes{% else %}No{% endif %}
                         </span>
                     </div>
@@ -580,7 +589,7 @@
 
                 <!-- Control actions -->
                 <div class="actions-bar">
-                    <a href="http://127.0.0.1:8080" class="btn btn-outline">Back to Hamro SSO</a>
+                    <a href="http://business.hamro.com" class="btn btn-outline">Back to Hamro SSO</a>
                     <a href="{% url 'logout' %}" class="btn btn-primary">Term Session</a>
                 </div>
             </div>
@@ -589,4 +598,5 @@
     </div>
 
 </body>
+
 </html>

@@ -2,188 +2,354 @@
 
 <!-- About Page Template -->
 {% block title %}About Us | SIMS Nepal Student Management Software{% endblock %}
-{% block meta_description %}Learn about the mission, vision, and operational values of SIMS Nepal. Dedicated to digitalizing school administrative systems across Nepal.{% endblock %}
+{% block meta_description %}Learn about the mission, vision, and operational values of SIMS Nepal. Dedicated to
+digitalizing school administrative systems across Nepal.{% endblock %}
 
 {% block active_about %}active{% endblock %}
 
 {% block content %}
 <style>
-    .about-container {
+    /* ── Unified About Page Design System ── */
+
+    /* Section Layout */
+    .about-section {
+        text-align: center;
         padding: 2rem 0;
     }
 
-    .about-header {
+
+
+    .about-section+.about-section {
+        border-top: 1px solid rgba(0, 137, 117, 0.06);
+    }
+
+    .about-section-title {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 0.75rem;
+    }
+
+    .about-section-subtitle {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        max-width: 600px;
+        margin: 0 auto 2.5rem;
+        line-height: 1.6;
+    }
+
+    /* Hero Header */
+    /* Reuse features-header styling for hero section */
+
+
+    .features-header {
         text-align: center;
         margin-bottom: 5rem;
     }
 
-    .about-header h2 {
-        font-size: 2.8rem;
-        font-weight: 800;
-        margin-bottom: 1rem;
-        background: linear-gradient(135deg, #0f172a 40%, var(--accent-primary) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
+    .features-header h1 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #0f172a 40%, var(--accent-primary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}    
 
-    .about-header p {
+
+    .features-header p {
         color: var(--text-muted);
         font-size: 1.1rem;
         max-width: 600px;
         margin: 0 auto;
+        line-height: 1.7;
     }
 
-    /* Info Grid */
-    .about-grid {
+    /* ── Unified Card Grid ── */
+    .card-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 4rem;
-        align-items: flex-start;
-        margin-bottom: 5rem;
+        gap: 2rem;
     }
 
-    @media (max-width: 800px) {
-        .about-grid {
+    .card-grid.cols-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .card-grid.cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: 768px) {
+        .features-header h2 {
+            font-size: 2rem;
+        }
+
+        .card-grid.cols-2,
+        .card-grid.cols-3 {
             grid-template-columns: 1fr;
-            gap: 2rem;
         }
     }
 
-    .about-card {
+    /* ── Unified Card ── */
+    .u-card {
         background: #ffffff;
         border: 1px solid var(--panel-border);
         border-radius: 20px;
-        padding: 2.5rem;
+        padding: 2.25rem 2rem;
+        text-align: center;
         box-shadow: 0 4px 20px rgba(0, 137, 117, 0.02);
-        backdrop-filter: blur(8px);
         transition: all 0.3s ease;
     }
 
-    .about-card:hover {
+    .u-card:hover {
         border-color: var(--card-hover-border);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(0, 137, 117, 0.06);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0, 137, 117, 0.07);
     }
 
-    .about-card h3 {
-        font-size: 1.5rem;
+    /* Card Icon — emoji or text symbol */
+    .u-card-icon {
+        font-size: 2.5rem;
+        line-height: 1;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    /* Card Heading */
+    .u-card h3 {
+        font-size: 1.3rem;
         font-weight: 700;
         color: var(--accent-primary);
-        margin-bottom: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Card Body Text */
+    .u-card p {
+        color: var(--text-muted);
+        font-size: 0.92rem;
+        line-height: 1.65;
+        margin-bottom: 0;
+    }
+
+    .u-card p+p {
+        margin-top: 0.75rem;
+    }
+
+    /* Card Bullet List */
+    .u-card ul {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0 0;
+        text-align: left;
+    }
+
+    .u-card ul li {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        line-height: 1.5;
+        padding: 0.35rem 0 0.35rem 1.4rem;
+        position: relative;
+    }
+
+    .u-card ul li::before {
+        content: '✦';
+        position: absolute;
+        left: 0;
+        color: var(--accent-primary);
+        font-size: 0.7rem;
+        top: 0.5rem;
+    }
+
+    /* Stat highlight variant */
+    .u-card.stat-card .u-card-icon {
+        font-size: 2.75rem;
+    }
+
+    .u-card.stat-card h3 {
+        font-size: 1.5rem;
+        font-weight: 800;
+    }
+
+    /* Wide card variant for Mission/Vision */
+    .u-card.wide-card {
+        text-align: left;
+        padding: 2.5rem;
+    }
+
+    .u-card.wide-card h3 {
+        font-size: 1.4rem;
         display: flex;
         align-items: center;
         gap: 12px;
+        margin-bottom: 1.25rem;
     }
 
-    .about-card h3::after {
+    .u-card.wide-card h3::after {
         content: '';
         flex: 1;
         height: 1px;
         background: linear-gradient(90deg, var(--accent-primary), transparent);
     }
 
-    .about-card p {
-        color: var(--text-muted);
-        font-size: 0.95rem;
-        line-height: 1.6;
-        margin-bottom: 1rem;
+    h1 {
+        display: block;
+        font-size: 2em;
+        margin-block-start: 0.67em;
+        margin-block-end: 0.67em;
+        margin-inline-start: 0px;
+        margin-inline-end: 0px;
+        font-weight: bold;
+        unicode-bidi: isolate;
     }
 
-    .about-card p:last-child {
-        margin-bottom: 0;
-    }
-
-    /* Core Values Block */
-    .values-section {
-        text-align: center;
-    }
-
-    .values-title {
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--text-main);
-        margin-bottom: 3rem;
-    }
-
-    .values-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 2rem;
-    }
-
-    @media (max-width: 768px) {
-        .values-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .value-item {
-        background: #ffffff;
-        border: 1px solid var(--panel-border);
-        border-radius: 16px;
-        padding: 2rem 1.5rem;
-        box-shadow: 0 4px 15px rgba(0, 137, 117, 0.02);
-        transition: all 0.2s ease;
-    }
-
-    .value-item:hover {
-        border-color: var(--card-hover-border);
-        transform: translateY(-1px);
-    }
-
-    .value-item h4 {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: var(--accent-primary);
-        margin-bottom: 0.5rem;
-    }
-
-    .value-item p {
-        color: var(--text-muted);
-        font-size: 0.85rem;
-        line-height: 1.5;
-    }
+    @media (max-width: 768px) {}
 </style>
 
-<div class="about-container">
-    <div class="about-header">
-        <h2>Streamlining Administration</h2>
-        <p>SIMS Nepal is dedicated to bridging technology gaps in academic spaces, creating fast, simple, and secured portals.</p>
-    </div>
-
-    <div class="about-grid">
-        <div class="about-card">
-            <h3>Our Mission</h3>
-            <p>Our goal is to modernize educational administration in primary, secondary, and higher secondary schools across Nepal. By transitioning legacy paper ledgers and fragmented offline files into a secure, fast, and unified cloud framework, we help schools improve operational efficiency.</p>
-            <p>Through our seamless SSO integration with the Hamro Business framework, school staff can securely share user access permissions across administration, financials, and library systems effortlessly.</p>
-        </div>
-
-        <div class="about-card">
-            <h3>Our Vision</h3>
-            <p>We envision a digitized future for Nepalese schools where academic statistics, grades, routines, and presence metrics are immediately and securely accessible. Digital workflows enable administration departments to focus less on records bureaucracy and more on improving classroom teaching standards.</p>
-            <p>With highly robust local server hosting setups and lightweight, performance-optimized codes, our platform loads instantly on mobile, tablet, and desktop systems even in low bandwidth environments.</p>
-        </div>
-    </div>
-
-    <!-- Core Values -->
-    <div class="values-section">
-        <h3 class="values-title">Operational Core Values</h3>
-        <div class="values-grid">
-            <div class="value-item">
-                <h4>Simplicity</h4>
-                <p>Designed with intuitive user interaction rules so teachers, office assistants, and parents can navigate easily without specialized technical training.</p>
-            </div>
-            
-            <div class="value-item">
-                <h4>Security</h4>
-                <p>Built with robust cryptographic checks and strict data isolation rules to ensure student records are kept confidential.</p>
-            </div>
-
-            <div class="value-item">
-                <h4>Sovereignty</h4>
-                <p>Compliant with school board guidelines and municipal regulations of the Ministry of Education in Nepal.</p>
-            </div>
+<!-- Hero Header -->
+<div class="hero-section">
+    <div class="hero-text">
+        <h1>Streamlining Administration</h1>
+        <p>SIMS Nepal is dedicated to bridging technology gaps in academic spaces, creating fast, simple, and secured portals for schools across Nepal.</p>
+        <div class="hero-cta-group">
+            {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-primary" id="about-portal-link">Enter Student Portal</a>
+            {% else %}
+            <a href="https://business.hamro.com/login/qr/" class="btn btn-primary" id="about-sso-login-link">Login with Hamro SSO</a>
+            <a href="{% url 'features' %}" class="btn btn-outline" id="about-cta-explore-link">Explore Modules</a>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Mission & Vision -->
+<section class="about-section">
+    <!-- <h2 class="about-section-title">Who We Are</h2>
+    <p class="about-section-subtitle">Built with purpose — empowering schools to transition from paper ledgers to a
+        secure, unified cloud framework.</p> -->
+
+    <div class="card-grid cols-2">
+        <div class="u-card wide-card">
+            <i class="fa-solid fa-bullseye u-card-icon"></i>
+            <h3>Our Mission</h3>
+            <p>Our goal is to modernize educational administration in primary, secondary, and higher secondary schools
+                across Nepal. By transitioning legacy paper ledgers and fragmented offline files into a secure, fast,
+                and unified cloud framework, we help schools improve operational efficiency.</p>
+            <p>Through our seamless SSO integration with the Hamro Business framework, school staff can securely share
+                user access permissions across administration, financials, and library systems effortlessly.</p>
+        </div>
+
+        <div class="u-card wide-card">
+            <i class="fa-solid fa-binoculars u-card-icon"></i>
+            <h3>Our Vision</h3>
+            <p>We envision a digitized future for Nepalese schools where academic statistics, grades, routines, and
+                presence metrics are immediately and securely accessible. Digital workflows enable administration
+                departments to focus less on records bureaucracy and more on improving classroom teaching standards.</p>
+            <p>With highly robust local server hosting setups and lightweight, performance-optimized codes, our platform
+                loads instantly on mobile, tablet, and desktop systems even in low bandwidth environments.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Core Values -->
+<section class="about-section">
+    <h2 class="about-section-title">Operational Core Values</h2>
+    <p class="about-section-subtitle">The principles that guide every decision we make while building for Nepalese
+        classrooms.</p>
+
+    <div class="card-grid cols-3">
+        <div class="u-card">
+            <i class="fa-solid fa-gem u-card-icon fa-2x"></i>
+
+            <h3>Simplicity</h3>
+            <p>Designed with intuitive user interaction rules so teachers, office assistants, and parents can navigate
+                easily without specialized technical training.</p>
+        </div>
+
+        <div class="u-card">
+            <i class="fa-solid fa-lock u-card-icon"></i>
+            <h3>Security</h3>
+            <p>Built with robust cryptographic checks and strict data isolation rules to ensure student records are kept
+                confidential and tamper-proof.</p>
+        </div>
+
+        <div class="u-card">
+            <i class="fa-solid fa-landmark u-card-icon"></i>
+            <h3>Sovereignty</h3>
+            <p>Compliant with school board guidelines and municipal regulations set by the Ministry of Education in
+                Nepal.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Why Choose SIMS -->
+<section class="about-section">
+    <h2 class="about-section-title">Why Choose SIMS Nepal</h2>
+    <p class="about-section-subtitle">Discover the tangible advantages of adopting our next-generation educational
+        management platform.</p>
+
+    <div class="card-grid cols-3">
+        <div class="u-card">
+            <i class="fa-solid fa-satellite-dish u-card-icon"></i>
+            <h3>Digital Environment</h3>
+            <ul>
+                <li>Break free from traditional paper-based processes</li>
+                <li>Robust tools crafted for unique challenges in Nepal</li>
+                <li>Enhanced collaboration between administrators and teachers</li>
+                <li>Instant access to student data from any device</li>
+            </ul>
+        </div>
+
+        <div class="u-card">
+            <i class="fa-solid fa-bolt u-card-icon"></i>
+            <h3>Flexibility &amp; Performance</h3>
+            <ul>
+                <li>Effortlessly manage attendance and grading schemes</li>
+                <li>Securely handle automated financial transactions</li>
+                <li>Cloud-native architecture with 99.9% uptime</li>
+                <li>Optimized for low bandwidth rural environments</li>
+            </ul>
+        </div>
+
+        <div class="u-card">
+            <i class="fa-solid fa-clipboard-list u-card-icon"></i>
+            <h3>Compliance &amp; Support</h3>
+            <ul>
+                <li>Dedicated support for regional compliance rules</li>
+                <li>Trusted by schools across multiple districts</li>
+                <li>Reduced administrative overhead and paperwork</li>
+                <li>Aligned with Ministry of Education standards</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- Our Impact -->
+<section class="about-section">
+    <h2 class="about-section-title">Our Impact</h2>
+    <p class="about-section-subtitle">Real numbers that reflect our commitment to transforming education in Nepal.</p>
+
+    <div class="card-grid cols-3">
+        <div class="u-card stat-card">
+            <i class="fa-solid fa-user-graduate u-card-icon"></i>
+            <h3>10,000+ Students</h3>
+            <p>Empowering thousands of learners across Nepal with digital records and seamless access to academic data.
+            </p>
+        </div>
+
+        <div class="u-card stat-card">
+            <i class="fa-solid fa-school u-card-icon"></i>
+            <h3>10+ Schools</h3>
+            <p>Modernizing educational administration for institutions across multiple districts and municipalities
+                nationwide.</p>
+        </div>
+
+        <div class="u-card stat-card">
+            <i class="fa-solid fa-check-circle u-card-icon"></i>
+            <h3>Compliance Certified</h3>
+            <p>Fully aligned with Ministry of Education standards and local municipal regulations for school management.
+            </p>
+        </div>
+    </div>
+</section>
+
 {% endblock %}

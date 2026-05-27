@@ -1,0 +1,485 @@
+/* ===========================
+   SIMS Color Palette
+   Generated Color Variables
+   =========================== */
+
+:root {
+  /* Primary Colors */
+  --color-blue: #008877;
+  --color-azure: #00a890;
+  --color-indigo: #4263eb;
+  --color-purple: #ae3ec9;
+  --color-pink: #d6336c;
+
+  /* Secondary Colors */
+  --color-red: #d63939;
+  --color-orange: #f76707;
+  --color-yellow: #f59f00;
+
+  /* Natural Colors */
+  --color-lime: #74b816;
+  --color-green: #2fb344;
+  --color-teal: #0ca678;
+  --color-cyan: #17a2b8;
+
+  /* Brand Color */
+  --color-brand: #008877;
+
+  /* Grayscale */
+  --color-white: #ffffff;
+  --color-light-gray: #f8f9fa;
+  --color-light: #e9ecef;
+  --color-gray: #6c757d;
+  --color-dark-gray: #495057;
+  --color-dark: #212529;
+  --color-black: #000000;
+}
+
+/* ===========================
+   Component Styles
+   =========================== */
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--color-blue);
+  border-color: var(--color-blue);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #006b5f;
+  border-color: #006b5f;
+}
+
+.btn-info {
+  background-color: var(--color-azure);
+  border-color: var(--color-azure);
+  color: white;
+}
+
+.btn-info:hover {
+  background-color: #008975;
+  border-color: #008975;
+}
+
+.btn-warning {
+  background-color: var(--color-orange);
+  border-color: var(--color-orange);
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: #e65e00;
+  border-color: #e65e00;
+}
+
+.btn-danger {
+  background-color: var(--color-red);
+  border-color: var(--color-red);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c12a2a;
+  border-color: #c12a2a;
+}
+
+.btn-success {
+  background-color: var(--color-green);
+  border-color: var(--color-green);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #26933a;
+  border-color: #26933a;
+}
+
+.btn-teal {
+  background-color: var(--color-brand);
+  border-color: var(--color-brand);
+  color: white;
+}
+
+.btn-teal:hover {
+  background-color: #006b5f;
+  border-color: #006b5f;
+}
+
+/* Cards & Panels */
+.card {
+  border-color: var(--color-light);
+}
+
+.card-header {
+  background-color: transparent;
+  border-bottom: none !important;
+  color: var(--color-dark);
+  padding: 1rem 1.25rem;
+}
+
+/* .card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+} */
+
+/* Panels */
+.panel {
+  border-color: var(--color-light);
+  background-color: var(--color-white);
+}
+
+.panel-sidebar {
+  background-color: var(--color-light-gray);
+  border-radius: 8px;
+  padding: 0;
+}
+
+.panel-sidebar .sidebar-menu li {
+  border-bottom: 1px solid var(--color-light);
+  padding: 0;
+}
+
+.panel-sidebar .sidebar-menu li a {
+  color: var(--color-dark-gray);
+  padding: 12px 16px;
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.panel-sidebar .sidebar-menu li a:hover {
+  background-color: var(--color-azure);
+  color: white;
+  padding-left: 20px;
+}
+
+.panel-sidebar .sidebar-menu li.active a {
+  background-color: var(--color-blue);
+  color: white;
+  border-left: 4px solid var(--color-brand);
+}
+
+.panel-sidebar .sidebar-menu li button {
+  background: none;
+  border: none;
+  color: var(--color-dark-gray);
+  padding: 12px 16px;
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.panel-sidebar .sidebar-menu li button:hover {
+  background-color: var(--color-azure);
+  color: white;
+  padding-left: 20px;
+}
+
+/* Forms */
+.form-control {
+  border-color: var(--color-light);
+  color: var(--color-dark);
+}
+
+.form-control:focus {
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 0.2rem rgba(6, 111, 209, 0.25);
+}
+
+.form-group label {
+  color: var(--color-dark);
+  font-weight: 500;
+}
+
+/* Tables */
+.modern-table {
+  border-collapse: collapse;
+  width: 100%;
+  background-color: var(--color-white);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.modern-table thead th {
+  background-color: var(--color-blue);
+  color: white;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.modern-table tbody tr {
+  border-bottom: 1px solid var(--color-light);
+  transition: all 0.2s ease;
+}
+
+.modern-table tbody tr:hover {
+  background-color: var(--color-light-gray);
+}
+
+.modern-table tbody td {
+  padding: 12px;
+  color: var(--color-dark);
+}
+
+.modern-table tbody a {
+  color: var(--color-blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.modern-table tbody a:hover {
+  color: var(--color-azure);
+  text-decoration: underline;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--color-dark);
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+}
+
+h3 {
+  color: var(--color-blue);
+  margin-bottom: 1rem;
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+}
+
+/* Links */
+a {
+  color: var(--color-blue);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-azure);
+  text-decoration: underline;
+}
+
+/* Modals */
+.modal-header {
+  background-color: var(--color-blue);
+  color: white;
+  border-bottom: 1px solid var(--color-light);
+}
+
+.modal-title {
+  color: white;
+  font-weight: 600;
+}
+
+.modal-body {
+  color: var(--color-dark);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--color-light);
+}
+
+/* Badges */
+.badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.badge-blue {
+  background-color: var(--color-blue);
+  color: white;
+}
+
+.badge-green {
+  background-color: var(--color-green);
+  color: white;
+}
+
+.badge-red {
+  background-color: var(--color-red);
+  color: white;
+}
+
+.badge-orange {
+  background-color: var(--color-orange);
+  color: white;
+}
+
+/* Alerts */
+.alert {
+  border-radius: 8px;
+  border: none;
+}
+
+.alert-info {
+  background-color: rgba(66, 153, 225, 0.1);
+  color: var(--color-azure);
+  border-left: 4px solid var(--color-azure);
+}
+
+.alert-success {
+  background-color: rgba(47, 179, 68, 0.1);
+  color: var(--color-green);
+  border-left: 4px solid var(--color-green);
+}
+
+.alert-warning {
+  background-color: rgba(247, 103, 7, 0.1);
+  color: var(--color-orange);
+  border-left: 4px solid var(--color-orange);
+}
+
+.alert-danger {
+  background-color: rgba(214, 57, 57, 0.1);
+  color: var(--color-red);
+  border-left: 4px solid var(--color-red);
+}
+
+/* UI Elements */
+.hr {
+  border: none !important;
+  border-top: 1px solid var(--color-light) !important;
+  margin: 20px 0;
+}
+
+/* Status Indicators */
+.status-enabled {
+  color: var(--color-green);
+  font-weight: 600;
+}
+
+.status-disabled {
+  color: var(--color-red);
+  font-weight: 600;
+}
+
+.status-pending {
+  color: var(--color-orange);
+  font-weight: 600;
+}
+
+.status-inactive {
+  color: var(--color-gray);
+  font-weight: 600;
+}
+
+body {
+  background-color: #f4f7fa;
+  color: var(--color-dark);
+}
+
+.navbar {
+  background-color: var(--color-white);
+  border-bottom: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: none !important;
+}
+
+/* Page Header */
+.page-header {
+  background-color: transparent;
+  border-bottom: none !important;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+}
+
+.page-title {
+  color: var(--color-blue);
+  font-weight: 700;
+  margin: 0;
+  border-bottom: none !important;
+  border: none !important;
+}
+
+.page-pretitle {
+  color: var(--color-gray);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: none !important;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  background-color: transparent;
+  padding: 0;
+}
+
+.breadcrumb-item.active {
+  color: var(--color-blue);
+}
+
+.breadcrumb-item a {
+  color: var(--color-blue);
+}
+
+.breadcrumb-item a:hover {
+  color: var(--color-azure);
+}
+
+/* Sidebar Navigation Icons */
+.panel-sidebar .sidebar-menu li a i,
+.panel-sidebar .sidebar-menu li button i {
+  margin-right: 8px;
+  font-size: 18px;
+  color: var(--color-blue);
+  vertical-align: middle;
+  transition: color 0.3s ease;
+}
+
+.panel-sidebar .sidebar-menu li a:hover i,
+.panel-sidebar .sidebar-menu li button:hover i {
+  color: white;
+}
+
+.panel-sidebar .sidebar-menu li.active a i {
+  color: white;
+}
+
+/* Print Styles */
+@media print {
+  .btn,
+  .sidebar-menu,
+  .page-header {
+    display: none;
+  }
+
+  body {
+    background-color: var(--color-white);
+    color: var(--color-dark);
+  }
+
+  .modern-table thead th {
+    background-color: var(--color-dark) !important;
+    color: white !important;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .panel-sidebar .sidebar-menu li a,
+  .panel-sidebar .sidebar-menu li button {
+    padding: 10px 12px;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .modern-table {
+    font-size: 13px;
+  }
+
+  .modern-table thead th,
+  .modern-table tbody td {
+    padding: 8px;
+  }
+}

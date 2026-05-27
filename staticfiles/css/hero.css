@@ -1,0 +1,17 @@
+/* hero.css - Consistent hero section styling across pages */
+.hero-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+    padding: 4rem 0 6rem;
+    margin-bottom: 5rem;
+}
+@media (max-width: 900px) {
+    .hero-section {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 2rem;
+        padding: 2rem 0 4rem;
+    }
+}

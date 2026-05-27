@@ -1,0 +1,16 @@
+# SIMS Nepal Site
+
+> A concise description of the SIMS Nepal platform.
+
+SIMS Nepal provides cloud-based student information management, SSO integration, and scheduling tools for Nepali schools.
+
+## Important Pages
+- [Home](/): Overview of the platform.
+- [Features](/features/): Detailed feature list.
+- [Pricing](/pricing/): Subscription options.
+- [About](/about/): Company mission and team.
+- [Contact](/contact/): Get in touch.
+
+## Contact
+- Phone: +977-1-555-1234
+- Email: info@simsnepal.com
