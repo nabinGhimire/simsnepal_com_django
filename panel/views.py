@@ -10922,9 +10922,10 @@ def manage_standard_subjects(request):
         if action == "delete":
             subject_id = request.POST.get('subject_id')
             try:
-                sm = SubjectMaster.objects.get(id=subject_id)
-                # Verify if it is referenced
-                if Subject.objects.filter(subject_master=sm).exists():
+                sm = SubjectMaster.objects.filter(id=subject_id, school=school).first()
+                if not sm:
+                    messages.error(request, "Subject not found or does not belong to your school.")
+                elif Subject.objects.filter(subject_master=sm).exists():
                     messages.error(request, f"Cannot delete standard subject '{sm.canonical_name}' because it is assigned to one or more grades/sections.")
                 else:
                     sm.delete()
@@ -10936,23 +10937,26 @@ def manage_standard_subjects(request):
         elif action == "edit":
             subject_id = request.POST.get('subject_id')
             try:
-                sm = SubjectMaster.objects.get(id=subject_id)
-                if not code or not canonical_name:
-                    messages.error(request, "Code and Canonical Name are required.")
-                else:
-                    # Check unique code (excluding itself)
-                    if SubjectMaster.objects.filter(code=code).exclude(id=sm.id).exists():
-                        messages.error(request, f"Standard subject with code '{code}' already exists.")
-                    # Check unique canonical name (excluding itself)
-                    elif SubjectMaster.objects.filter(canonical_name__iexact=canonical_name).exclude(id=sm.id).exists():
-                        messages.error(request, f"Standard subject with name '{canonical_name}' already exists.")
+                    # Ensure subject belongs to current school
+                    sm = SubjectMaster.objects.filter(id=subject_id, school=school).first()
+                    if not sm:
+                        messages.error(request, "Subject not found or does not belong to your school.")
+                    elif not code or not canonical_name:
+                        messages.error(request, "Code and Canonical Name are required.")
                     else:
-                        sm.code = code
-                        sm.canonical_name = canonical_name
-                        sm.description = description
-                        sm.save()
-                        messages.success(request, f"Standard subject '{canonical_name}' updated successfully.")
-                        return redirect('manage_standard_subjects')
+                        # Check unique code (excluding itself)
+                        if SubjectMaster.objects.filter(code=code).exclude(id=sm.id).exists():
+                            messages.error(request, f"Standard subject with code '{code}' already exists.")
+                        # Check unique canonical name (excluding itself)
+                        elif SubjectMaster.objects.filter(canonical_name__iexact=canonical_name).exclude(id=sm.id).exists():
+                            messages.error(request, f"Standard subject with name '{canonical_name}' already exists.")
+                        else:
+                            sm.code = code
+                            sm.canonical_name = canonical_name
+                            sm.description = description
+                            sm.save()
+                            messages.success(request, f"Standard subject '{canonical_name}' updated successfully.")
+                            return redirect('manage_standard_subjects')
             except SubjectMaster.DoesNotExist:
                 messages.error(request, "Subject not found.")
 
@@ -10968,7 +10972,8 @@ def manage_standard_subjects(request):
                     SubjectMaster.objects.create(
                         code=code,
                         canonical_name=canonical_name,
-                        description=description
+                        description=description,
+                        school=school
                     )
                     messages.success(request, f"Standard subject '{canonical_name}' created successfully.")
                     return redirect('manage_standard_subjects')
@@ -10976,25 +10981,22 @@ def manage_standard_subjects(request):
     # GET requests & fallbacks
     edit_id = request.GET.get('edit')
     if edit_id:
-        try:
-            editing_subject = SubjectMaster.objects.get(id=edit_id)
-        except (ValueError, SubjectMaster.DoesNotExist):
-            pass
+        editing_subject = SubjectMaster.objects.filter(id=edit_id, school=school).first()
+        # If not found or belongs to another school, ignore silently
 
     delete_id = request.GET.get('delete')
     if delete_id:
-        try:
-            sm = SubjectMaster.objects.get(id=delete_id)
-            if Subject.objects.filter(subject_master=sm).exists():
+                messages.error(request, "Subject not found or does not belong to your school.")
+            elif Subject.objects.filter(subject_master=sm).exists():
                 messages.error(request, f"Cannot delete '{sm.canonical_name}' because it is assigned to one or more grades/sections.")
             else:
                 sm.delete()
                 messages.success(request, f"Standard subject '{sm.canonical_name}' deleted successfully.")
-        except (ValueError, SubjectMaster.DoesNotExist):
+        except ValueError:
             messages.error(request, "Subject not found.")
         return redirect('manage_standard_subjects')
 
-    standard_subjects = SubjectMaster.objects.all().order_by('canonical_name')
+    standard_subjects = SubjectMaster.objects.filter(school=school).order_by('canonical_name')
     context = {
         'branchuser': branchuser,
         'school': school,
