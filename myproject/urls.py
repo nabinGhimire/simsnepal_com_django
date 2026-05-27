@@ -17,7 +17,7 @@ urlpatterns = [
     path('', include('sso.urls')),
     path('webview/', include('webview.urls')),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
-    path('llms.txt', TemplateView.as_view(template_name="frontend/llms.txt", content_type="text/plain")),
+    path('robots.txt', TemplateView.as_view(template_name="frontend/robots.txt", content_type="text/plain")),
 ]
 
 if settings.DEBUG:

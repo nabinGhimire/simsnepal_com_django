@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /panel/
-
-Sitemap: https://simsnepal.com/sitemap.xml
