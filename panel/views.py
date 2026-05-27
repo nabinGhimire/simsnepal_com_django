@@ -10986,14 +10986,14 @@ def manage_standard_subjects(request):
 
     delete_id = request.GET.get('delete')
     if delete_id:
-                messages.error(request, "Subject not found or does not belong to your school.")
-            elif Subject.objects.filter(subject_master=sm).exists():
-                messages.error(request, f"Cannot delete '{sm.canonical_name}' because it is assigned to one or more grades/sections.")
-            else:
-                sm.delete()
-                messages.success(request, f"Standard subject '{sm.canonical_name}' deleted successfully.")
-        except ValueError:
-            messages.error(request, "Subject not found.")
+        sm = SubjectMaster.objects.filter(id=delete_id, school=school).first()
+        if not sm:
+            messages.error(request, "Subject not found or does not belong to your school.")
+        elif Subject.objects.filter(subject_master=sm).exists():
+            messages.error(request, f"Cannot delete '{sm.canonical_name}' because it is assigned to one or more grades/sections.")
+        else:
+            sm.delete()
+            messages.success(request, f"Standard subject '{sm.canonical_name}' deleted successfully.")
         return redirect('manage_standard_subjects')
 
     standard_subjects = SubjectMaster.objects.filter(school=school).order_by('canonical_name')
