@@ -70,9 +70,9 @@
     }
     </script>
 
-    {% load static %}
-<link rel="stylesheet" href="{% static 'css/base.css' %}">
-{% block extra_css %}{% endblock %}
+
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
@@ -176,7 +176,7 @@
         </div>
     </footer>
 
-    
+
     <!-- Interactive navigation helper scripts -->
     <script>
         const toggleBtn = document.getElementById('mobile-menu-toggle-btn');

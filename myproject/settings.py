@@ -80,6 +80,9 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'panel.context_processors.nav_context',
             ],
+            'builtins': [
+                'django.templatetags.static',
+            ],
         },
     },
 ]
