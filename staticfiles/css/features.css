@@ -1,25 +1,9 @@
 /* Features page CSS – moved from inline <style> block */
-.features-header {
-    text-align: center;
-    margin-top: 5rem;
-    margin-bottom: 5rem;
-}
 
-.features-header h1 {
-    font-size: 2.8rem;
-    font-weight: 800;
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg, #0f172a 40%, var(--accent-primary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
 
-.features-header p {
-    color: var(--text-muted);
-    font-size: 1.1rem;
-    max-width: 600px;
-    margin: 0 auto;
-}
+
+
+
 
 /* Detailed Feature Blocks */
 .feature-block {
@@ -129,3 +113,4 @@
     padding: 4px 12px;
     border-radius: 50px;
 }
+

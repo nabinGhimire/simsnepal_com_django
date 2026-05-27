@@ -1,28 +1,11 @@
 /* FAQ page styles */
-.faq-container {
-    padding: 2rem 0;
-    max-width: 800px;
-    margin: 0 auto;
-}
 
-.faq-header {
-    text-align: center;
-    margin-bottom: 5rem;
-}
 
-.faq-header h1 {
-    font-size: 2.8rem;
-    font-weight: 800;
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg, #0f172a 40%, var(--accent-primary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
 
-.faq-header p {
-    color: var(--text-muted);
-    font-size: 1.1rem;
-}
+
+
+
+
 
 /* Accordion Styles */
 .faq-list {
@@ -97,3 +80,4 @@
     background: var(--accent-primary);
     color: #ffffff;
 }
+
