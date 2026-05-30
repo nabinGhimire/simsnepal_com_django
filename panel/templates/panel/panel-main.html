@@ -1,404 +1,500 @@
 {% load static %}
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>{% block title %}Hamro Panel | SIMSnepal.com{% endblock %}</title>
 
-    <!-- Tabler CSS -->
-    <link href="{% static 'tabler/css/tabler.min.css' %}" rel="stylesheet" />
-    <link href="{% static 'tabler/css/tabler-themes.min.css' %}" rel="stylesheet" />
-    <link href="{% static 'tabler/css/tabler-vendors.min.css' %}" rel="stylesheet" />
-    <link href="{% static 'tabler/css/tabler-compat.css' %}" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>{% block title %}Hamro Panel | SIMSnepal.com{% endblock %}</title>
 
-    <!-- SIMS Color Palette -->
-    <link href="{% static 'css/colors.css' %}" rel="stylesheet" />
+  <!-- Tabler CSS -->
+  <link href="{% static 'tabler/css/tabler.min.css' %}" rel="stylesheet" />
+  <link href="{% static 'tabler/css/tabler-themes.min.css' %}" rel="stylesheet" />
+  <link href="{% static 'tabler/css/tabler-vendors.min.css' %}" rel="stylesheet" />
+  <link href="{% static 'tabler/css/tabler-compat.css' %}" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 
-    <!-- Inter Font -->
-    <style>
-      @import url("https://rsms.me/inter/inter.css");
-      :root { font-family: 'Inter', sans-serif; }
-      @supports (font-variation-settings: normal) {
-        :root { font-family: 'Inter var', sans-serif; }
-      }
-      /* Keep old search bar working */
-      .nabsearch-form { max-width: 280px; }
-      /* Globally tighten header and content spacing */
-      html, body { width: 100vw; overflow-x: hidden; }
-      .page, .page-wrapper { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-      .page-wrapper { padding-top: 0.5rem !important; }
-      .page-header { margin: 0 !important; padding: 0 !important; }
-      .page-header .page-title { margin: 0 !important; }
-      .page-header .page-pretitle { margin: 0 !important; }
-      .page-body { margin-top: 0 !important; padding-top: 0.25rem !important; }
-      
-      /* Premium Navbar Aesthetics */
-      .navbar-premium {
-        background: linear-gradient(to right, rgba(0, 136, 119, 0.05) 0%, rgba(0, 168, 144, 0.1) 100%) !important;
-        border-bottom: 1px solid rgba(0, 136, 119, 0.1) !important;
-        box-shadow: 0 4px 20px -10px rgba(0, 136, 119, 0.1);
-      }
-      
-      /* Global Brand Teal Color System Overrides */
+  <!-- SIMS Color Palette -->
+  <link href="{% static 'css/colors.css' %}" rel="stylesheet" />
+
+  <!-- Inter Font -->
+  <style>
+    @import url("https://rsms.me/inter/inter.css");
+
+    :root {
+      font-family: 'Inter', sans-serif;
+    }
+
+    @supports (font-variation-settings: normal) {
       :root {
-        --tblr-primary: #008877 !important;
-        --tblr-primary-rgb: 0, 136, 119 !important;
-        --tblr-link-color: #008877 !important;
+        font-family: 'Inter var', sans-serif;
       }
-      .btn-primary, .btn-teal {
-        background-color: #008877 !important;
-        border-color: #008877 !important;
-        color: white !important;
-      }
-      .btn-primary:hover, .btn-teal:hover {
-        background-color: #006c5e !important;
-        border-color: #006c5e !important;
-      }
-      .btn-outline-primary {
-        color: #008877 !important;
-        border-color: #008877 !important;
-      }
-      .btn-outline-primary:hover {
-        background-color: #008877 !important;
-        color: white !important;
-      }
-      .text-primary, .text-teal {
-        color: #008877 !important;
-      }
-      .bg-primary-lt, .bg-teal-lt {
-        background-color: rgba(0, 136, 119, 0.1) !important;
-        color: #008877 !important;
-      }
-      .nav-link.active, .dropdown-item.active, .dropdown-item:active {
-        color: #008877 !important;
-      }
-      .navbar-light .navbar-nav .show > .nav-link, 
-      .navbar-light .navbar-nav .active > .nav-link, 
-      .navbar-light .navbar-nav .nav-link.show, 
-      .navbar-light .navbar-nav .nav-link.active {
-        color: #008877 !important;
-      }
-    </style>
+    }
 
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-142374714-1"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'UA-142374714-1');
-    </script>
-    {% block extra_css %}
-    {% endblock extra_css %}
-  </head>
-  <body class="antialiased">
-    <!-- Tabler theme script (must be before body content for correct theme) -->
-    <script src="{% static 'tabler/js/tabler-theme.min.js' %}"></script>
+    /* Keep old search bar working */
+    .nabsearch-form {
+      max-width: 280px;
+    }
 
-    <div class="page">
+    /* Globally tighten header and content spacing */
+    html,
+    body {
+      width: 100vw;
+      overflow-x: hidden;
+    }
 
-      <!-- ═══════════════════════════════════════════
+    .page,
+    .page-wrapper {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .page-wrapper {
+      padding-top: 0.5rem !important;
+    }
+
+    .page-header {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .page-header .page-title {
+      margin: 0 !important;
+    }
+
+    .page-header .page-pretitle {
+      margin: 0 !important;
+    }
+
+    .page-body {
+      margin-top: 0 !important;
+      padding-top: 0.25rem !important;
+    }
+
+    /* Premium Navbar Aesthetics */
+    .navbar-premium {
+      background: linear-gradient(to right, rgba(0, 136, 119, 0.05) 0%, rgba(0, 168, 144, 0.1) 100%) !important;
+      border-bottom: 1px solid rgba(0, 136, 119, 0.1) !important;
+      box-shadow: 0 4px 20px -10px rgba(0, 136, 119, 0.1);
+    }
+
+    /* Global Brand Teal Color System Overrides */
+    :root {
+      --tblr-primary: #008877 !important;
+      --tblr-primary-rgb: 0, 136, 119 !important;
+      --tblr-link-color: #008877 !important;
+    }
+
+    .btn-primary,
+    .btn-teal {
+      background-color: #008877 !important;
+      border-color: #008877 !important;
+      color: white !important;
+    }
+
+    .btn-primary:hover,
+    .btn-teal:hover {
+      background-color: #006c5e !important;
+      border-color: #006c5e !important;
+    }
+
+    .btn-outline-primary {
+      color: #008877 !important;
+      border-color: #008877 !important;
+    }
+
+    .btn-outline-primary:hover {
+      background-color: #008877 !important;
+      color: white !important;
+    }
+
+    .text-primary,
+    .text-teal {
+      color: #008877 !important;
+    }
+
+    .bg-primary-lt,
+    .bg-teal-lt {
+      background-color: rgba(0, 136, 119, 0.1) !important;
+      color: #008877 !important;
+    }
+
+    .nav-link.active,
+    .dropdown-item.active,
+    .dropdown-item:active {
+      color: #008877 !important;
+    }
+
+    .navbar-light .navbar-nav .show>.nav-link,
+    .navbar-light .navbar-nav .active>.nav-link,
+    .navbar-light .navbar-nav .nav-link.show,
+    .navbar-light .navbar-nav .nav-link.active {
+      color: #008877 !important;
+    }
+  </style>
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-142374714-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'UA-142374714-1');
+  </script>
+  {% block extra_css %}
+  {% endblock extra_css %}
+</head>
+
+<body class="antialiased">
+  <!-- Tabler theme script (must be before body content for correct theme) -->
+  <script src="{% static 'tabler/js/tabler-theme.min.js' %}"></script>
+
+  <div class="page">
+
+    <!-- ═══════════════════════════════════════════
            TOP NAVBAR  (logo + user controls)
       ═══════════════════════════════════════════ -->
-      <header class="navbar navbar-expand-md d-print-none navbar-premium">
-        <div class="container-xl">
+    <header class="navbar navbar-expand-md d-print-none navbar-premium">
+      <div class="container-xl">
 
-          <!-- Mobile toggler -->
-          <button class="navbar-toggler" type="button"
-                  data-bs-toggle="collapse" data-bs-target="#navbar-menu"
-                  aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
+        <!-- Mobile toggler -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu"
+          aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
 
-          <!-- Logo -->
-          <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
-            <a href="/panel/" aria-label="Hamro SIMS">
-              <img src="{% static '/images/sims.png' %}" alt="Hamro App Panel" height="36" class="navbar-brand-image">
-            </a>
+        <!-- Logo -->
+        <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+          <a href="/panel/" aria-label="Hamro SIMS">
+            <img src="{% static '/images/sims.png' %}" alt="Hamro App Panel" height="36" class="navbar-brand-image">
+          </a>
+        </div>
+
+        <!-- Right-side controls -->
+        <div class="navbar-nav flex-row order-md-last">
+
+          <!-- Search -->
+          <div class="nav-item d-none d-md-flex me-3">
+            <form role="search" class="nabsearch-form" action="/panel/search/">
+              <div class="input-group">
+                <input type="text" class="form-control" name="q" placeholder="Search…" aria-label="Search">
+                <button type="submit" class="btn input-group-text">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                  </svg>
+                </button>
+              </div>
+            </form>
           </div>
 
-          <!-- Right-side controls -->
-          <div class="navbar-nav flex-row order-md-last">
-
-            <!-- Search -->
-            <div class="nav-item d-none d-md-flex me-3">
-              <form role="search" class="nabsearch-form" action="/panel/search/">
-                <div class="input-group">
-                  <input type="text" class="form-control" name="q" placeholder="Search…" aria-label="Search">
-                  <button type="submit" class="btn input-group-text">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                    </svg>
-                  </button>
-                </div>
-              </form>
+          <!-- Dark / Light toggle -->
+          <div class="d-none d-md-flex">
+            <div class="nav-item">
+              <a href="?theme=dark" class="nav-link px-0 hide-theme-dark" title="Enable dark mode"
+                data-bs-toggle="tooltip" data-bs-placement="bottom">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  class="icon icon-1">
+                  <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+                </svg>
+              </a>
+              <a href="?theme=light" class="nav-link px-0 hide-theme-light" title="Enable light mode"
+                data-bs-toggle="tooltip" data-bs-placement="bottom">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  class="icon icon-1">
+                  <path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                  <path
+                    d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7" />
+                </svg>
+              </a>
             </div>
 
-            <!-- Dark / Light toggle -->
-            <div class="d-none d-md-flex">
-              <div class="nav-item">
-                <a href="?theme=dark" class="nav-link px-0 hide-theme-dark" title="Enable dark mode"
-                   data-bs-toggle="tooltip" data-bs-placement="bottom">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                       class="icon icon-1">
-                    <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"/>
-                  </svg>
-                </a>
-                <a href="?theme=light" class="nav-link px-0 hide-theme-light" title="Enable light mode"
-                   data-bs-toggle="tooltip" data-bs-placement="bottom">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                       class="icon icon-1">
-                    <path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/>
-                    <path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"/>
-                  </svg>
-                </a>
-              </div>
-
-              <!-- Session Switcher -->
-              {% if all_sessions %}
-              <div class="nav-item dropdown d-none d-md-flex me-3">
-                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                  <span class="avatar avatar-xs bg-teal-lt me-2" style="background-color: rgba(0, 136, 119, 0.1) !important; color: #008877 !important; width: 1.5rem; height: 1.5rem;">
-                    <i class="ti ti-calendar" style="font-size: 0.8rem;"></i>
-                  </span>
-                  <span class="font-weight-medium">Session: {{ current_session.year }}</span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                  <div class="dropdown-header">Select Academic Session</div>
-                  {% for sess in all_sessions %}
-                    <form method="POST" action="{% url 'switch_session' %}" class="d-inline">
-                      {% csrf_token %}
-                      <input type="hidden" name="session_id" value="{{ sess.id }}" />
-                      <button type="submit" class="dropdown-item d-flex justify-content-between align-items-center {% if sess.id == current_session.id %}active font-weight-bold text-teal{% endif %}" style="width: 100%; border: none; background: none; text-align: left; cursor: pointer;">
-                        <span>Session {{ sess.year }}</span>
-                        {% if sess.id == current_session.id %}
-                          <span class="badge bg-teal text-white">Active</span>
-                        {% endif %}
-                      </button>
-                    </form>
-                  {% endfor %}
-                </div>
-              </div>
-              {% endif %}
-
-              <!-- App Switcher -->
-              <div class="nav-item dropdown d-none d-md-flex me-3">
-                <a href="#" class="nav-link px-0" data-bs-toggle="dropdown"
-                   tabindex="-1" aria-label="Switch apps" data-bs-auto-close="outside"
-                   aria-expanded="false">
-                  <!-- apps icon -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                       class="icon icon-1">
-                    <path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/>
-                    <path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/>
-                    <path d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/>
-                    <path d="M14 7l6 0"/><path d="M17 4l0 6"/>
-                  </svg>
-                </a>
-                <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card">
-                  <div class="card">
-                    <div class="card-header">
-                      <div class="card-title">My Apps</div>
-                    </div>
-                    <div class="card-body scroll-y p-2" style="max-height: 50vh">
-                      <div class="row g-0">
-                        <div class="col-4">
-                          <a href="/panel/" class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
-                            <span class="avatar bg-blue-lt mb-2">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                   fill="none" stroke="currentColor" stroke-width="2" class="icon text-blue">
-                                <path d="M22 9l-10 -4l-10 4l10 4l10 -4v6"/>
-                                <path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4"/>
-                              </svg>
-                            </span>
-                            <span class="h5">SIMS</span>
-                          </a>
-                        </div>
-                        <div class="col-4">
-                          <a href="#" class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
-                            <span class="avatar bg-green-lt mb-2">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                   fill="none" stroke="currentColor" stroke-width="2" class="icon text-green">
-                                <path d="M3 19v-14a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"/>
-                                <path d="M9 16v-8"/><path d="M12 16v-6"/><path d="M15 16v-4"/>
-                              </svg>
-                            </span>
-                            <span class="h5">Grihakarya</span>
-                          </a>
-                        </div>
-                        <div class="col-4">
-                          <a href="#" class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
-                            <span class="avatar bg-orange-lt mb-2">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                   fill="none" stroke="currentColor" stroke-width="2" class="icon text-orange">
-                                <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
-                                <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/>
-                                <path d="M9 13l2 2l4 -4"/>
-                              </svg>
-                            </span>
-                            <span class="h5">Vacancy</span>
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-
-            <!-- User dropdown -->
-            <div class="nav-item dropdown ms-2">
-              <a href="#" class="nav-link d-flex lh-1 p-0 px-2"
-                 data-bs-toggle="dropdown" aria-label="Open user menu">
-                <span class="avatar avatar-sm"
-                      style="background-image: url('//static.hamro.com/{{ school.logo }}')">
+            <!-- Session Switcher -->
+            {% if all_sessions %}
+            <div class="nav-item dropdown d-none d-md-flex me-3">
+              <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="avatar avatar-xs bg-teal-lt me-2"
+                  style="background-color: rgba(0, 136, 119, 0.1) !important; color: #008877 !important; width: 1.5rem; height: 1.5rem;">
+                  <i class="ti ti-calendar" style="font-size: 0.8rem;"></i>
                 </span>
-                <div class="d-none d-xl-block ps-2">
-                  <div>{{ user.get_username }}</div>
-                  <div class="mt-1 small text-secondary">
-                    {% if branchuser.admin_status %}Administrator{% else %}Teacher{% endif %}
-                  </div>
-                </div>
+                <span class="font-weight-medium">Session: {{ current_session.year }}</span>
               </a>
               <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                <a href="/panel/profile/" class="dropdown-item">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                       fill="none" stroke="currentColor" stroke-width="2" class="icon me-2">
-                    <circle cx="12" cy="7" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/>
-                  </svg>
-                  Profile
-                </a>
-                {% if branchuser.admin_status %}
-                <a href="{% url 'manage_grades' %}" class="dropdown-item">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                       fill="none" stroke="currentColor" stroke-width="2" class="icon me-2">
-                    <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  Manage Grades & Levels
-                </a>
-                <a href="{% url 'manage_standard_subjects' %}" class="dropdown-item">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                       fill="none" stroke="currentColor" stroke-width="2" class="icon me-2">
-                    <path d="M19 4v16H5V4h14m0-2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                    <path d="M12 6H7v2h5V6zm5 4H7v2h10v-2zm0 4H7v2h10v-2z"/>
-                  </svg>
-                  Standard Subjects
-                </a>
-                {% endif %}
-                <a href="{% url 'lockscreen' %}" class="dropdown-item">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                       fill="none" stroke="currentColor" stroke-width="2" class="icon me-2">
-                    <rect x="3" y="11" width="18" height="11" rx="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
-                  Lock screen
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="{% url 'logout' %}" class="dropdown-item text-danger">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                       fill="none" stroke="currentColor" stroke-width="2" class="icon me-2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                  </svg>
-                  Logout
-                </a>
+                <div class="dropdown-header">Select Academic Session</div>
+                {% for sess in all_sessions %}
+                <form method="POST" action="{% url 'panel:switch_session' %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="session_id" value="{{ sess.id }}" />
+                  <button type="submit"
+                    class="dropdown-item d-flex justify-content-between align-items-center {% if sess.id == current_session.id %}active font-weight-bold text-teal{% endif %}"
+                    style="width: 100%; border: none; background: none; text-align: left; cursor: pointer;">
+                    <span>Session {{ sess.year }}</span>
+                    {% if sess.id == current_session.id %}
+                    <span class="badge bg-teal text-white">Active</span>
+                    {% endif %}
+                  </button>
+                </form>
+                {% endfor %}
               </div>
             </div>
-
-          </div><!-- /.navbar-nav -->
-        </div><!-- /.container-xl -->
-      </header><!-- /top navbar -->
-
-      <!-- ═══════════════════════════════════════════
-           SUB-NAVBAR  (injected by child templates)
-      ═══════════════════════════════════════════ -->
-      {% block navbar %}
-        {% if branchuser %}
-          {% if branchuser.admin_status %}
-            {% include 'snippets/nav_admin.html' %}
-          {% else %}
-            {% include 'snippets/nav_teacher.html' %}
-          {% endif %}
-        {% elif user.is_authenticated %}
-          {% include 'snippets/nav.html' %}
-        {% endif %}
-      {% endblock navbar %}
-
-      <!-- ═══════════════════════════════════════════
-           PAGE WRAPPER  (main content area)
-      ═══════════════════════════════════════════ -->
-      <div class="page-wrapper">
-        <!-- Page Header block -->
-        {% block page_header %}
-        {% endblock page_header %}
-
-        <div class="page-body">
-          <div class="container-xl">
-            {% if messages %}
-              <div class="row g-4 mb-3 d-print-none">
-                <div class="col-12">
-                  {% for message in messages %}
-                    <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% elif message.tags == 'info' %}alert-info{% else %}alert-success{% endif %} alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-left: 4px solid {% if message.tags == 'error' %}#d63939{% elif message.tags == 'warning' %}#f76707{% elif message.tags == 'info' %}#4299e1{% else %}#2fb344{% endif %} !important;">
-                      <div class="d-flex align-items-center">
-                        <div class="me-2">
-                          {% if message.tags == 'error' %}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-danger" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 8v4" /><path d="M12 16h.01" /></svg>
-                          {% elif message.tags == 'warning' %}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-warning" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9v4" /><path d="M12 17h.01" /><path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" /></svg>
-                          {% elif message.tags == 'info' %}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-info" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 9h.01" /><path d="M11 12h1v4h1" /></svg>
-                          {% else %}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-success" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
-                          {% endif %}
-                        </div>
-                        <div class="fw-medium text-secondary">
-                          {{ message }}
-                        </div>
-                      </div>
-                      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                  {% endfor %}
-                </div>
-              </div>
             {% endif %}
 
-            {% block content %}
-            {% endblock content %}
-
-          </div><!-- /.container-xl -->
-        </div><!-- /.page-body -->
-
-        <!-- Footer -->
-        <footer class="footer footer-transparent d-print-none">
-          <div class="container-xl">
-            <div class="row text-center align-items-center">
-              <div class="col-12 col-lg-auto">
-                <p class="text-secondary mb-0">
-                  &copy; 2016 - {% now "Y" %}
-                  <a href="https://hamro.com" class="link-secondary">HamroSoft™</a>
-                </p>
+            <!-- App Switcher -->
+            <div class="nav-item dropdown d-none d-md-flex me-3">
+              <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" tabindex="-1" aria-label="Switch apps"
+                data-bs-auto-close="outside" aria-expanded="false">
+                <!-- apps icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  class="icon icon-1">
+                  <path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+                  <path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+                  <path d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+                  <path d="M14 7l6 0" />
+                  <path d="M17 4l0 6" />
+                </svg>
+              </a>
+              <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card">
+                <div class="card">
+                  <div class="card-header">
+                    <div class="card-title">My Apps</div>
+                  </div>
+                  <div class="card-body scroll-y p-2" style="max-height: 50vh">
+                    <div class="row g-0">
+                      <div class="col-4">
+                        <a href="/panel/"
+                          class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
+                          <span class="avatar bg-blue-lt mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2" class="icon text-blue">
+                              <path d="M22 9l-10 -4l-10 4l10 4l10 -4v6" />
+                              <path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4" />
+                            </svg>
+                          </span>
+                          <span class="h5">SIMS</span>
+                        </a>
+                      </div>
+                      <div class="col-4">
+                        <a href="#"
+                          class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
+                          <span class="avatar bg-green-lt mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2" class="icon text-green">
+                              <path
+                                d="M3 19v-14a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" />
+                              <path d="M9 16v-8" />
+                              <path d="M12 16v-6" />
+                              <path d="M15 16v-4" />
+                            </svg>
+                          </span>
+                          <span class="h5">Grihakarya</span>
+                        </a>
+                      </div>
+                      <div class="col-4">
+                        <a href="#"
+                          class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
+                          <span class="avatar bg-orange-lt mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2" class="icon text-orange">
+                              <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                              <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                              <path d="M9 13l2 2l4 -4" />
+                            </svg>
+                          </span>
+                          <span class="h5">Vacancy</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </footer><!-- /footer -->
 
-      </div><!-- /.page-wrapper -->
-    </div><!-- /.page -->
 
-    <!-- Tabler JS -->
-    <script src="{% static 'tabler/js/tabler.min.js' %}"></script>
+          <!-- User dropdown -->
+          <div class="nav-item dropdown ms-2">
+            <a href="#" class="nav-link d-flex lh-1 p-0 px-2" data-bs-toggle="dropdown" aria-label="Open user menu">
+              <span class="avatar avatar-sm" style="background-image: url('//static.hamro.com/{{ school.logo }}')">
+              </span>
+              <div class="d-none d-xl-block ps-2">
+                <div>{{ user.get_username }}</div>
+                <div class="mt-1 small text-secondary">
+                  {% if branchuser.admin_status %}Administrator{% else %}Teacher{% endif %}
+                </div>
+              </div>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              <a href="/panel/profile/" class="dropdown-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" class="icon me-2">
+                  <circle cx="12" cy="7" r="4" />
+                  <path d="M20 21a8 8 0 1 0-16 0" />
+                </svg>
+                Profile
+              </a>
+              {% if branchuser.admin_status %}
+              <a href="{% url 'panel:manage_grades' %}" class="dropdown-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" class="icon me-2">
+                  <path
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                Manage Grades & Levels
+              </a>
+              <a href="{% url 'panel:manage_standard_subjects' %}" class="dropdown-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" class="icon me-2">
+                  <path
+                    d="M19 4v16H5V4h14m0-2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+                  <path d="M12 6H7v2h5V6zm5 4H7v2h10v-2zm0 4H7v2h10v-2z" />
+                </svg>
+                Standard Subjects
+              </a>
+              {% endif %}
+              <a href="{% url 'panel:lockscreen' %}" class="dropdown-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" class="icon me-2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Lock screen
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="{% url 'logout' %}" class="dropdown-item text-danger">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" class="icon me-2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Logout
+              </a>
+            </div>
+          </div>
 
-    {% block scripts %}
-    {% endblock scripts %}
+        </div><!-- /.navbar-nav -->
+      </div><!-- /.container-xl -->
+    </header><!-- /top navbar -->
 
-  </body>
+    <!-- ═══════════════════════════════════════════
+           SUB-NAVBAR  (injected by child templates)
+      ═══════════════════════════════════════════ -->
+    {% block navbar %}
+    {% if branchuser %}
+    {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+    {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+    {% endif %}
+    {% elif user.is_authenticated %}
+    {% include 'snippets/nav.html' %}
+    {% endif %}
+    {% endblock navbar %}
+
+    <!-- ═══════════════════════════════════════════
+           PAGE WRAPPER  (main content area)
+      ═══════════════════════════════════════════ -->
+    <div class="page-wrapper">
+      <!-- Page Header block -->
+      {% block page_header %}
+      {% endblock page_header %}
+
+      <div class="page-body">
+        <div class="container-xl">
+          {% if messages %}
+          <div class="row g-4 mb-3 d-print-none">
+            <div class="col-12">
+              {% for message in messages %}
+              <div
+                class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% elif message.tags == 'info' %}alert-info{% else %}alert-success{% endif %} alert-dismissible fade show border-0 shadow-sm"
+                role="alert"
+                style="border-left: 4px solid {% if message.tags == 'error' %}#d63939{% elif message.tags == 'warning' %}#f76707{% elif message.tags == 'info' %}#4299e1{% else %}#2fb344{% endif %} !important;">
+                <div class="d-flex align-items-center">
+                  <div class="me-2">
+                    {% if message.tags == 'error' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-danger" width="24" height="24"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+                      <path d="M12 8v4" />
+                      <path d="M12 16h.01" />
+                    </svg>
+                    {% elif message.tags == 'warning' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-warning" width="24" height="24"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 9v4" />
+                      <path d="M12 17h.01" />
+                      <path
+                        d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" />
+                    </svg>
+                    {% elif message.tags == 'info' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-info" width="24" height="24"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+                      <path d="M12 9h.01" />
+                      <path d="M11 12h1v4h1" />
+                    </svg>
+                    {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon text-success" width="24" height="24"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M5 12l5 5l10 -10" />
+                    </svg>
+                    {% endif %}
+                  </div>
+                  <div class="fw-medium text-secondary">
+                    {{ message }}
+                  </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% block content %}
+          {% endblock content %}
+
+        </div><!-- /.container-xl -->
+      </div><!-- /.page-body -->
+
+      <!-- Footer -->
+      <footer class="footer footer-transparent d-print-none">
+        <div class="container-xl">
+          <div class="row text-center align-items-center">
+            <div class="col-12 col-lg-auto">
+              <p class="text-secondary mb-0">
+                &copy; 2016 - {% now "Y" %}
+                <a href="https://hamro.com" class="link-secondary">HamroSoft™</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer><!-- /footer -->
+
+    </div><!-- /.page-wrapper -->
+  </div><!-- /.page -->
+
+  <!-- Tabler JS -->
+  <script src="{% static 'tabler/js/tabler.min.js' %}"></script>
+
+  {% block scripts %}
+  {% endblock scripts %}
+
+</body>
+
 </html>

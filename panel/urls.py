@@ -1,5 +1,8 @@
 from django.urls import path
 from . import views
+
+app_name = 'panel'
+
 urlpatterns = [
     path("addsection/", views.addsection, name="add_section"),
     path("addsubject/", views.addsubject, name="add_subject"),

@@ -1032,11 +1032,11 @@ def school_settings(request):
         if form.is_valid():
             form.save()
             messages.success(request, "School information updated successfully.")
-            return redirect("school_settings")
+            return redirect("panel:school_settings")
     else:
         form = SchoolForm(instance=school)
 
-    return render(request, "panel/school_settings.html", {"form": form, "school": school})@login_required
+    return render(request, "panel/school_settings.html", {"form": form, "school": school})
 def letterpincode(request):
     user = request.user
     branchuser, error = get_branch_info(user)

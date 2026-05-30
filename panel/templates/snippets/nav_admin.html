@@ -63,11 +63,13 @@
               <span class="nav-link-title">ADD</span>
             </a>
             <div class="dropdown-menu">
-              <a class="dropdown-item" href="{% url 'fullmarks' %}" target="_blank">Full Mark / Pass Mark</a>
-              <a class="dropdown-item" href="{% url 'subjectwisemarks' %}" target="_blank">Subjectwise Marks</a>
-              <a class="dropdown-item" href="{% url 'view_house' %}" target="_blank">House</a>
-              <a class="dropdown-item" href="{% url 'add_guardian' %}" target="_blank">Guardian</a>
-              <a class="dropdown-item" href="{% url 'add_teacher' %}" target="_blank">Teacher</a>
+              <a class="dropdown-item" href="{% url 'panel:fullmarks' %}" target="_blank">Full Mark / Pass Mark</a>
+              <a class="dropdown-item" href="{% url 'panel:subjectwisemarks' %}" target="_blank">Subjectwise Marks</a>
+              <form method="POST" action="{% url 'panel:switch_session' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item">Switch Session</button>
+                <a class="dropdown-item" href="{% url 'panel:add_teacher' %}" target="_blank">Teacher</a>
+              </form>
             </div>
           </li>
 
@@ -90,9 +92,9 @@
               <span class="nav-link-title">EXAM</span>
             </a>
             <div class="dropdown-menu">
-              <a class="dropdown-item" href="{% url 'subjectmanagement' %}" target="_blank">Subject Management</a>
-              <a class="dropdown-item" href="{% url 'termmanagement' %}">Term Management</a>
-              <a class="dropdown-item" href="{% url 'resultmanagement' %}">Result Management</a>
+              <a class="dropdown-item" href="{% url 'panel:subjectmanagement' %}" target="_blank">Subject Management</a>
+              <a class="dropdown-item" href="{% url 'panel:termmanagement' %}">Term Management</a>
+              <a class="dropdown-item" href="{% url 'panel:resultmanagement' %}">Result Management</a>
             </div>
           </li>
 
@@ -116,16 +118,17 @@
                 <div class="dropdown-menu-column">
                   <a class="dropdown-item" href="/panel/print/entrancecard/" target="_blank">Entrance Card</a>
                   <a class="dropdown-item" href="/panel/print/studentdetail/" target="_blank">Student Detail</a>
-                  <a class="dropdown-item" href="{% url 'printmarksform' %}?data=marksform" target="_blank">Marks
+                  <a class="dropdown-item" href="{% url 'panel:printmarksform' %}?data=marksform" target="_blank">Marks
                     Allocator</a>
-                  <a class="dropdown-item" href="{% url 'printpincodeletter' %}" target="_blank">Pincode Letter</a>
-                  <a class="dropdown-item" href="{% url 'printledger' %}" target="_blank">Ledger</a>
+                  <a class="dropdown-item" href="{% url 'panel:printpincodeletter' %}" target="_blank">Pincode
+                    Letter</a>
+                  <a class="dropdown-item" href="{% url 'panel:printledger' %}" target="_blank">Ledger</a>
                 </div>
                 <div class="dropdown-menu-column">
-                  <a class="dropdown-item" href="{% url 'marksgradesheet' %}">Marks/Grade Sheet</a>
-                  <a class="dropdown-item" href="{% url 'print_parents' %}">Guardian</a>
-                  <a class="dropdown-item" href="{% url 'print_teachers' %}">Teacher</a>
-                  <a class="dropdown-item" href="{% url 'print_homeworks' %}">Homework</a>
+                  <a class="dropdown-item" href="{% url 'panel:marksgradesheet' %}">Marks/Grade Sheet</a>
+                  <a class="dropdown-item" href="{% url 'panel:print_parents' %}">Guardian</a>
+                  <a class="dropdown-item" href="{% url 'panel:print_teachers' %}">Teacher</a>
+                  <a class="dropdown-item" href="{% url 'panel:print_homeworks' %}">Homework</a>
                 </div>
               </div>
             </div>
@@ -133,7 +136,8 @@
 
           <!-- Settings -->
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+            <a class="nav-link dropdown-toggle" href="#navbar-settings" data-bs-toggle="dropdown"
+              data-bs-auto-close="outside" role="button" aria-expanded="false">
               <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -148,15 +152,15 @@
             <div class="dropdown-menu">
               <div class="dropdown-menu-columns">
                 <div class="dropdown-menu-column">
-                  <a class="dropdown-item" href="{% url 'manage_grades' %}">
+                  <a class="dropdown-item" href="{% url 'panel:manage_grades' %}">
                     <i class="ti ti-school me-2 text-secondary"></i> Manage Levels & Grades
                   </a>
-                  <a class="dropdown-item" href="{% url 'manage_standard_subjects' %}">
+                  <a class="dropdown-item" href="{% url 'panel:manage_standard_subjects' %}">
                     <i class="ti ti-book me-2 text-secondary"></i> Standard Subjects
-                                      </a>
-                    <a class="dropdown-item" href="{% url 'school_settings' %}">
-                      <i class="ti ti-info-circle me-2 text-secondary"></i> School Information
-                    </a>
+                  </a>
+                  <a class="dropdown-item" href="{% url 'panel:school_settings' %}">
+                    <i class="ti ti-info-circle me-2 text-secondary"></i> School Information
+                  </a>
                 </div>
               </div>
             </div>

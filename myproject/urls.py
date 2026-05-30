@@ -12,7 +12,7 @@ sitemaps = {
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('panel/', include('panel.urls')),
+    path('panel/', include(('panel.urls', 'panel'), namespace='panel')),
     path('', include('frontend.urls')),
     path('', include('sso.urls')),
     path('webview/', include('webview.urls')),
