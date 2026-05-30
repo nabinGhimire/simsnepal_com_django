@@ -1,10 +1,10 @@
-venv/*
+venv/
 db.sqlite3
 sso.txt
 *.pyc
 .env
 ./sso/*/*.pyc
-sims_2026_02_16/*
-static/*
-zz_old_static/*
-billing/*sims_2026_02_16/
+sims_2026_02_16/
+static/
+zz_old_static/
+billing/
