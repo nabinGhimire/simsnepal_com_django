@@ -81,6 +81,9 @@
               <i class="ti ti-calendar-search me-1"></i>View
             </button>
           </div>
+          {% if token %}
+            <input type="hidden" name="token" value="{{ token }}">
+          {% endif %}
           {% if parent_phone %}
             <input type="hidden" name="parent_phone" value="{{ parent_phone }}">
           {% endif %}
