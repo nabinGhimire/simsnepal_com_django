@@ -2,6 +2,19 @@ from django.contrib.auth.models import User
 from django.db import models
 from datetime import datetime
 from nepali_datetime_field.models import NepaliDateField
+import nepali_datetime
+
+# Monkeypatch NepaliDateField to safely handle corrupt/out-of-range database dates
+def safe_from_db_value(self, value, expression, connection):
+    try:
+        if value is None or value == '':
+            return value
+        return nepali_datetime.date.from_datetime_date(value)
+    except (OverflowError, ValueError, TypeError):
+        return None
+
+NepaliDateField.from_db_value = safe_from_db_value
+
 from sms.middleware import get_current_request
 from .managers import SafeBranchUserManager
 
