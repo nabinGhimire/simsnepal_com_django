@@ -142,8 +142,8 @@ class Section(models.Model):
 
 class SubjectMaster(models.Model):
     school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE, null=True, blank=True)
-    code = models.CharField(max_length=20, unique=True)
-    canonical_name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=20)
+    canonical_name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
 
     class Meta:

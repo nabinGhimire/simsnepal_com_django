@@ -1,0 +1,5 @@
+{
+    "python.languageServer": "None",
+    "basedpyright.disableLanguageServices": false,
+    "basedpyright.analysis.typeCheckingMode": "basic"
+}
