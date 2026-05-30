@@ -148,10 +148,16 @@ def parent_homework(request):
         try:
             parts = selected_date_str.split('-')
             selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
+            logger = logging.getLogger(__name__)
+            logger.debug("parent_homework: token=%s, validated phone=%s, selected_date=%s", request.GET.get('token'), phone, selected_date)
         except Exception:
             selected_date = nepali_datetime.date.today()
+            logger = logging.getLogger(__name__)
+            logger.debug("Failed to parse date '%s', using today: %s", selected_date_str, selected_date)
     else:
         selected_date = nepali_datetime.date.today()
+        logger = logging.getLogger(__name__)
+        logger.debug("No date provided, using today: %s", selected_date)
         
     student_homeworks = []
     for student in students:
@@ -176,6 +182,10 @@ def parent_homework(request):
                 nepali_date=selected_date
             )
             hw_dict = json.loads(homework_obj.homework or "{}")
+            if hw_dict:
+                logger.debug("Homework found for grade %s, section %s on %s: %s", grade.id, section.id, selected_date, hw_dict)
+            else:
+                logger.debug("No homework entry for grade %s, section %s on %s", grade.id, section.id, selected_date)
         except Homework.DoesNotExist:
             hw_dict = {}
             
@@ -202,6 +212,7 @@ def parent_homework(request):
             'homeworks': hw_list
         })
         
+            logger.debug("Total student_homeworks entries built: %d", len(student_homeworks))
     context = {
         'student_homeworks': student_homeworks,
         'selected_date': str(selected_date),
@@ -363,15 +374,29 @@ def teacher_homework(request):
         else:
             selected_school = available_schools[0]
 
-        selected_date_str = request.GET.get('date') or request.POST.get('date')
+        selected_date_str = request.GET.get('date')
         if selected_date_str:
             try:
                 parts = selected_date_str.split('-')
                 selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
+                logger = logging.getLogger(__name__)
+                logger.debug("Parsed selected_date: %s", selected_date)
             except Exception:
                 selected_date = nepali_datetime.date.today()
+                logger = logging.getLogger(__name__)
+                logger.debug("Failed to parse date '%s', using today: %s", selected_date_str, selected_date)
         else:
             selected_date = nepali_datetime.date.today()
+            logger = logging.getLogger(__name__)
+            logger.debug("No date provided, using today: %s", selected_date)
+
+        # Prepare context for template rendering
+        context = {
+            'student_homeworks': student_homeworks,
+            'selected_date': str(selected_date),
+            'parent_phone': phone,
+            'token': request.GET.get("token", ""),
+        }
 
         message = ""
 
