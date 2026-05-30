@@ -8325,7 +8325,7 @@ def print_homeworks(request):
     grades = SchoolGrade.objects.filter(school=school_branch).order_by("id")
     teachers = Teacher.objects.filter(added_by=request.user)
     current_session = get_current_session()
-    homeworks = Homework.objects.filter(session=current_session, grade__school=school_branch).order_by('-nepali_date')
+    homeworks = Homework.objects.filter(session=current_session, grade__school=school_branch).order_by('grade', '-nepali_date')
     subjects = Subject.objects.filter(session=current_session, branch=school_branch, status=True)
 
     gs = {}
