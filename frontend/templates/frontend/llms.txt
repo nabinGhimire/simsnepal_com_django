@@ -1,16 +1,78 @@
-# SIMS Nepal Site
+# SIMS Nepal - llms.txt
+# Last Updated: May 2026
 
-> A concise description of the SIMS Nepal platform.
+## Overview
+SIMS Nepal is a modern, cloud-based *Student Information Management System (SIMS)* built specifically for schools and educational institutions in Nepal. It helps schools transition from paper-based or fragmented systems to a unified digital platform for student records, academics, attendance, finance, and administration.
 
-SIMS Nepal provides cloud-based student information management, SSO integration, and scheduling tools for Nepali schools.
+*Core Purpose*: Simplify school administration, improve data accuracy, enable real-time parent communication, and reduce paperwork while maintaining full compliance with Nepal’s Ministry of Education guidelines.
 
-## Important Pages
-- [Home](/): Overview of the platform.
-- [Features](/features/): Detailed feature list.
-- [Pricing](/pricing/): Subscription options.
-- [About](/about/): Company mission and team.
-- [Contact](/contact/): Get in touch.
+## Key Features
 
-## Contact
+### Academics & Grading
+- Course & subject management
+- Assignment tracking and evaluation
+- GPA calculation and grade ledger
+- Automated report card / transcript generation
+- Term and academic year configuration
+
+### Attendance Management
+- Daily student and staff attendance
+- Real-time SMS notifications to parents
+- Monthly attendance reports and percentage calculation
+- Holiday calendar integration
+
+### Single Sign-On (SSO)
+- Native integration with Hamro App and Hamro Business ecosystem
+- Unified login across modules
+- Secure cross-platform access
+
+### Financial Management
+- Fee collection and invoicing
+- Payroll and expense tracking
+- Financial reports and statements
+
+### Additional Modules
+- Library & resource management
+- Advanced reporting, analytics, and dashboards
+- Data export (CSV, Excel)
+- Human Resource Management (upcoming)
+
+## Target Users
+- Secondary and higher secondary schools in Nepal
+- Private and public educational institutions
+- School administrators, teachers, and office staff
+
+## Pricing Plans
+
+*One-Time Installation Charge: NPR **10,000*  
+(This covers initial setup, data migration, training, and configuration.)
+
+*Monthly Recurring Fee: NPR **10 per student per month*
+
+### Pricing Examples
+- 500 students → NPR 5,000 / month (after one-time 10k)
+- 1,000 students → NPR 10,000 / month
+- 2,000 students → NPR 20,000 / month
+- 5,000 students → NPR 50,000 / month
+
+*Key Benefits of This Model*:
+- Highly affordable and scalable for schools of all sizes
+- Predictable costs that grow with the number of students
+- No hidden charges for core features or basic support
+- Suitable for both small private schools and large institutions
+
+## Important Links
+- Home: https://simsnepal.com/
+- Features: https://simsnepal.com/features/
+- Pricing: https://simsnepal.com/pricing/
+- About Us: https://simsnepal.com/about/
+- Contact: https://simsnepal.com/contact/
+
+## Contact Information
 - Phone: +977-9764-463362
 - Email: support@hamro.com
+
+## Compliance & Values
+- Fully aligned with Ministry of Education, Nepal standards
+- Strong focus on data security, simplicity, and performance in low-bandwidth environments
+- Cloud-native with high uptime guarantee
