@@ -181,18 +181,51 @@ def parent_homework(request):
                 session=current_session,
                 grade=grade,
                 section=section,
-                nepali_date=selected_date
+                nepali_date=selected_date,
             )
+            logger.debug(
+                "Homework queryset count (nepali_date)=%d for grade %s, section %s, date %s",
+                homework_qs.count(), grade.id, section.id, selected_date,
+            )
+            if not homework_qs.exists():
+                # Fallback: try matching the Gregorian date field if Nepali date did not match
+                greg_date = selected_date.to_date()
+                homework_qs = Homework.objects.filter(
+                    session=current_session,
+                    grade=grade,
+                    section=section,
+                    date=greg_date,
+                )
+                logger.debug(
+                    "Fallback homework queryset count (date)=%d for grade %s, section %s, greg_date %s",
+                    homework_qs.count(), grade.id, section.id, greg_date,
+                )
             if homework_qs.exists():
                 homework_obj = homework_qs.first()
                 hw_dict = json.loads(homework_obj.homework or "{}")
                 if hw_dict:
-                    logger.debug("Homework found for grade %s, section %s on %s: %s", grade.id, section.id, selected_date, hw_dict)
+                    logger.debug(
+                        "Homework found for grade %s, section %s on %s: %s",
+                        grade.id,
+                        section.id,
+                        selected_date,
+                        hw_dict,
+                    )
                 else:
-                    logger.debug("Homework entry exists but empty for grade %s, section %s on %s", grade.id, section.id, selected_date)
+                    logger.debug(
+                        "Homework entry exists but empty for grade %s, section %s on %s",
+                        grade.id,
+                        section.id,
+                        selected_date,
+                    )
             else:
                 hw_dict = {}
-                logger.debug("No Homework entry for grade %s, section %s on %s", grade.id, section.id, selected_date)
+                logger.debug(
+                    "No Homework entry for grade %s, section %s on %s",
+                    grade.id,
+                    section.id,
+                    selected_date,
+                )
         except Homework.DoesNotExist:
             hw_dict = {}
             
