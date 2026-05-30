@@ -116,6 +116,8 @@ def parent_homework(request):
         })
         
     current_session = get_current_session()
+    logger = logging.getLogger(__name__)
+    logger.error("parent_homework called: phone=%s, current_session=%s (id=%s)", phone, current_session, current_session.id if current_session else None)
     if not current_session:
         return render(request, "webview/error.html", {
             "error_title": "Configuration Error",
@@ -138,6 +140,7 @@ def parent_homework(request):
     ).select_related('school')
     
     if not students.exists():
+        logger.error("No enrolled students found for phone: %s", phone)
         return render(request, "webview/error.html", {
             "error_title": "No Enrolled Students",
             "error_message": f"No student profiles are linked to phone number '{phone}'."
@@ -148,16 +151,13 @@ def parent_homework(request):
         try:
             parts = selected_date_str.split('-')
             selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
-            logger = logging.getLogger(__name__)
-            logger.debug("parent_homework: token=%s, validated phone=%s, selected_date=%s", request.GET.get('token'), phone, selected_date)
+            logger.error("parent_homework: token=%s, validated phone=%s, selected_date=%s", request.GET.get('token'), phone, selected_date)
         except Exception:
             selected_date = nepali_datetime.date.today()
-            logger = logging.getLogger(__name__)
-            logger.debug("Failed to parse date '%s', using today: %s", selected_date_str, selected_date)
+            logger.error("Failed to parse date '%s', using today: %s", selected_date_str, selected_date)
     else:
         selected_date = nepali_datetime.date.today()
-        logger = logging.getLogger(__name__)
-        logger.debug("No date provided, using today: %s", selected_date)
+        logger.error("No date provided, using today: %s", selected_date)
         
     student_homeworks = []
     for student in students:
@@ -168,25 +168,26 @@ def parent_homework(request):
         ).select_related('grade', 'section')
         
         if not ss_qs.exists():
+            logger.error("No active StudentSession for student %s (id=%s) in session %s", student.name, student.id, current_session.id if current_session else None)
             continue
             
         ss = ss_qs.first()
         grade = ss.grade
         section = ss.section
+        logger.error("Student %s session found: grade=%s (id=%s), section=%s (id=%s)", student.name, grade, grade.id if grade else None, section, section.id if section else None)
         
         try:
-            # Attempt to retrieve homework for the selected date.
-            # Use filter().first() to avoid DoesNotExist exception and allow debugging.
             homework_qs = Homework.objects.filter(
                 session=current_session,
                 grade=grade,
                 section=section,
                 nepali_date=selected_date,
             )
-            logger.debug(
-                "Homework queryset count (nepali_date)=%d for grade %s, section %s, date %s",
-                homework_qs.count(), grade.id, section.id, selected_date,
+            logger.error(
+                "Primary Query: session=%s, grade=%s, section=%s, nepali_date=%s, count=%d",
+                current_session.id, grade.id if grade else None, section.id if section else None, selected_date, homework_qs.count(),
             )
+            greg_date_val = None
             if not homework_qs.exists():
                 if hasattr(selected_date, "to_datetime_date"):
                     greg_date = selected_date.to_datetime_date()
@@ -207,38 +208,20 @@ def parent_homework(request):
                     section=section,
                     date=greg_date_val,
                 )
-                logger.debug(
-                    "Fallback homework queryset count (date)=%d for grade %s, section %s, greg_date %s",
-                    homework_qs.count(), grade.id, section.id, greg_date_val,
+                logger.error(
+                    "Fallback Query: session=%s, grade=%s, section=%s, date=%s, count=%d",
+                    current_session.id, grade.id if grade else None, section.id if section else None, greg_date_val, homework_qs.count(),
                 )
             if homework_qs.exists():
                 homework_obj = homework_qs.first()
                 hw_dict = json.loads(homework_obj.homework or "{}")
-                if hw_dict:
-                    logger.debug(
-                        "Homework found for grade %s, section %s on %s: %s",
-                        grade.id,
-                        section.id,
-                        selected_date,
-                        hw_dict,
-                    )
-                else:
-                    logger.debug(
-                        "Homework entry exists but empty for grade %s, section %s on %s",
-                        grade.id,
-                        section.id,
-                        selected_date,
-                    )
+                logger.error("Homework object found ID=%s, raw homework=%s, parsed hw_dict=%s", homework_obj.id, homework_obj.homework, hw_dict)
             else:
                 hw_dict = {}
-                logger.debug(
-                    "No Homework entry for grade %s, section %s on %s",
-                    grade.id,
-                    section.id,
-                    selected_date,
-                )
-        except Homework.DoesNotExist:
+                logger.error("No homework record found for student %s on date %s (greg_date_val=%s)", student.name, selected_date, greg_date_val)
+        except Exception as e:
             hw_dict = {}
+            logger.error("Exception querying/loading homework for student %s: %s\n%s", student.name, str(e), traceback.format_exc())
             
         subjects = Subject.objects.filter(
             session=current_session,
@@ -246,10 +229,12 @@ def parent_homework(request):
             section=section,
             status=True
         )
+        logger.error("Subjects found count=%d: %s", subjects.count(), [(s.id, s.subject) for s in subjects])
         
         hw_list = []
         for sub in subjects:
             content = hw_dict.get(str(sub.id))
+            logger.error("Checking subject ID=%s name=%s: content=%s", sub.id, sub.subject, content)
             if content:
                 hw_list.append({
                     'subject': sub.subject,
@@ -263,7 +248,7 @@ def parent_homework(request):
             'homeworks': hw_list
         })
         
-        logger.debug("Total student_homeworks entries built: %d", len(student_homeworks))
+        logger.error("Total student_homeworks entries built: %d", len(student_homeworks))
     context = {
         'student_homeworks': student_homeworks,
         'selected_date': str(selected_date),
