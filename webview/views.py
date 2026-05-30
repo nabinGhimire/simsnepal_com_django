@@ -189,7 +189,11 @@ def parent_homework(request):
             )
             if not homework_qs.exists():
                 # Fallback: try matching the Gregorian date field if Nepali date did not match
-                greg_date = selected_date.to_date()
+                # selected_date may be a NepaliDateField instance (has .to_date()) or a plain datetime.date
+                if hasattr(selected_date, "to_date"):
+                    greg_date = selected_date.to_date()
+                else:
+                    greg_date = selected_date
                 homework_qs = Homework.objects.filter(
                     session=current_session,
                     grade=grade,
