@@ -446,6 +446,7 @@ class Homework(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
     homework = models.TextField()
     nepali_date = NepaliDateField()
+    date = models.DateField(null=True, blank=True)
     added_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 

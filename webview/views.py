@@ -520,12 +520,13 @@ def teacher_homework(request):
                         updates_by_class.setdefault(class_key, {})[str(subject.id)] = hw_text.strip()
 
                 for (g_id, s_id), subjects_data in updates_by_class.items():
+                    # Ensure both Nepali and Gregorian dates are stored
                     homework_obj, _ = Homework.objects.get_or_create(
                         session=current_session,
                         grade_id=g_id,
                         section_id=s_id,
                         nepali_date=selected_date,
-                        defaults={"homework": "{}"},
+                        defaults={"homework": "{}", "date": selected_date.to_date()},
                     )
                     try:
                         hw_dict = json.loads(homework_obj.homework or "{}")
