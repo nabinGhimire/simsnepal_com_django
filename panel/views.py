@@ -850,29 +850,39 @@ def student_detail(request, grade=False, section=False):
         return render(request, "panel/student_detail_base.html", context)
 
     # Process filters from URL or POST
-    target_grade_id = grade or request.POST.get("grade")
-    target_section_id = section or request.POST.get("section")
-    info_type = request.POST.get("info_type", "current")
+    # target variables will be set below with 'all' handling
 
     grade_print = section_print = this_grade = this_section = False
     students = OrderedDict()
 
-    if target_grade_id:
+    # Determine target grade and section, supporting 'all' selection
+    target_grade_id = grade or request.POST.get("grade")
+    target_section_id = section or request.POST.get("section")
+    info_type = request.POST.get("info_type", "current")
+
+    grade_print = section_print = False
+    # If 'all' is selected for grade, treat as no specific grade filter
+    if not target_grade_id or target_grade_id == "all":
+        school_grade_qs = SchoolGrade.objects.filter(school=school, active=True).order_by('grade_weight')
+    else:
         school_grade_qs = SchoolGrade.objects.filter(id=target_grade_id)
         grade_print = True
-        if target_section_id:
-            try:
-                this_section = Section.objects.get(id=target_section_id)
-                section_print = True
-            except Section.DoesNotExist:
-                return HttpResponse('Section not found.')
+
+    # Handle section filter; ignore if 'all' selected
+    if target_section_id and target_section_id != "all":
+        try:
+            this_section = Section.objects.get(id=target_section_id)
+            section_print = True
+        except Section.DoesNotExist:
+            return HttpResponse('Section not found.')
     else:
-        school_grade_qs = SchoolGrade.objects.filter(school=school, active=True).order_by('grade_weight')
+        this_section = None
+
 
     for sg in school_grade_qs:
         this_grade = sg
         query = Q(session=current_session, grade=sg, status=True)
-        if target_section_id:
+        if this_section:
             query &= Q(section=this_section)
         
         student_in_session = StudentSession.objects.filter(query).select_related(
@@ -891,12 +901,13 @@ def student_detail(request, grade=False, section=False):
                 'fathers_name': sis.student.fathers_name,
                 'mothers_name': sis.student.mothers_name,
                 'guardian_name': sis.student.guardian_name,
+                'guardian_phone': sis.student.guardian_phone,
+                'guardian_email': sis.student.guardian_email,
                 'fathers_email': sis.student.fathers_email,
                 'mothers_email': sis.student.mothers_email,
-                'guardian_email': sis.student.guardian_email,
                 'fathers_phone': sis.student.fathers_phone,
                 'mothers_phone': sis.student.mothers_phone,
-                'guardian_phone': sis.student.guardian_phone,
+                'house': sis.student.house.name if sis.student.house else '',
                 'temporary_address': sis.student.temporary_address,
                 'permanent_address': sis.student.permanent_address,
                 'student_info': sis.student,
@@ -919,7 +930,7 @@ def student_detail(request, grade=False, section=False):
         writer = csv.writer(response)
         # Header row
         writer.writerow([
-            'Reg No', 'Name', 'Grade', 'Section', 'Roll No',
+            'Reg No', 'Name', 'Grade', 'Section', 'House', 'Roll No',
             'DOB', 'Gender', 'Temp Address', 'Perm Address',
             "Father's Name", "Father's Phone", "Father's Email",
             "Mother's Name", "Mother's Phone", "Mother's Email",
@@ -931,6 +942,7 @@ def student_detail(request, grade=False, section=False):
                 s.get('name'),
                 s.get('grade'),
                 s.get('section'),
+                s.get('house'),
                 s.get('roll_no'),
                 getattr(s.get('student_info'), 'dob', ''),
                 'M' if s.get('gender') else 'F',

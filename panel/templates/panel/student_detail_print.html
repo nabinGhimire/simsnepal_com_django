@@ -273,6 +273,7 @@ td{
             <th>Guardian Name</th>
             <th>Guardian Phone</th>
             <th>Guardian Email</th>
+            <th>House</th>
           </tr>
         </thead>
         <tbody>
@@ -297,6 +298,7 @@ td{
             <td><small>{{ student.guardian_name }}</small></td>
             <td><small>{{ student.guardian_phone }}</small></td>
             <td><small>{{ student.guardian_email }}</small></td>
+            <td><small>{{ student.house.name|default:"" }}</small></td>
           </tr>
           {% endfor %}
         </tbody>

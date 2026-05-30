@@ -35,13 +35,14 @@
 
           <div class="row g-3 mb-4">
             <div class="col-md-6">
-              <label class="form-label" for="grade">Select Grade</label>
-              <select name="grade" id="grade" class="form-select" onchange="populate(this.id,'section')" required>
-                <option value="" disabled selected>Choose Grade...</option>
-                {% for grade in grades %}
-                  <option value="{{ grade.id }}">{{ grade.grade_name|upper }}</option>
-                {% endfor %}
-              </select>
+                <label class="form-label" for="grade">Select Grade</label>
+                <select name="grade" id="grade" class="form-select" onchange="populate(this.id,'section')" required>
+                  <option value="" disabled selected>Choose Grade...</option>
+                  <option value="all">All Grades</option>
+                  {% for grade in grades %}
+                    <option value="{{ grade.id }}">{{ grade.grade_name|upper }}</option>
+                  {% endfor %}
+                </select>
             </div>
 
             <div class="col-md-6">
@@ -106,8 +107,10 @@
 
     var sl = section_list_obj[s1El.value] || {};
     var optionArray = ["|Select Section"];
+    // Add an option for all sections of the selected grade
+    optionArray.push("all|All Sections");
     for (var p in sl) {
-      optionArray.push("" + p + "|" + sl[p] + "");
+      optionArray.push(p + "|" + sl[p]);
     }
 
     for (var i = 0; i < optionArray.length; i++) {
@@ -115,7 +118,7 @@
       var newOption = document.createElement("option");
       newOption.value = pair[0];
       newOption.innerHTML = pair[1];
-      if(i === 0) newOption.disabled = true;
+      if(i === 0) newOption.disabled = true; // placeholder disabled
       s2El.options.add(newOption);
     }
   }
