@@ -252,49 +252,54 @@ td{
           {% if info_type == 'wide' %}
             <!-- Wide Layout: Every detail in a single row -->
             <table class="table table-sm table-bordered" style="font-size: 10px;">
-              <thead class="bg-light">
-                <tr>
-                  <th>S.N.</th>
-                  <th>Student Name</th>
-                  <th>Reg. No.</th>
-                  <th>Grade/Sec/Roll</th>
-                  <th>DOB/Gender</th>
-                  <th>Address (Temp/Perm)</th>
-                  <th>Father's Info (Name/Phone/Email)</th>
-                  <th>Mother's Info (Name/Phone/Email)</th>
-                  <th>Guardian's Info (Name/Phone/Email)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for key, student in students.items %}
-                <tr>
-                  <td>{{ forloop.counter }}</td>
-                  <td><strong>{{ student.name }}</strong></td>
-                  <td>{{ student.reg_no }}</td>
-                  <td>{{ student.grade }}/{{ student.section }}/{{ student.roll_no }}</td>
-                  <td>{{ student.student_info.dob }} <br>{% if  student.gender %}M{% else %}F{% endif %}</td>
-                  <td>
-                    <small>T: {{student.temporary_address}}</small><br>
-                    <small>P: {{student.permanent_address}}</small>
-                  </td>
-                  <td>
-                    <small>{{ student.fathers_name }}</small><br>
-                    <small>{{ student.fathers_phone }}</small><br>
-                    <small>{{ student.fathers_email }}</small>
-                  </td>
-                  <td>
-                    <small>{{ student.mothers_name }}</small><br>
-                    <small>{{ student.mothers_phone }}</small><br>
-                    <small>{{ student.mothers_email }}</small>
-                  </td>
-                  <td>
-                    <small>{{ student.guardian_name }}</small><br>
-                    <small>{{ student.guardian_phone }}</small><br>
-                    <small>{{ student.guardian_email }}</small>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
+        <thead class="bg-light">
+          <tr>
+            <th>S.N.</th>
+            <th>Student Name</th>
+            <th>Reg. No.</th>
+            <th>Grade</th>
+            <th>Section</th>
+            <th>Roll</th>
+            <th>DOB</th>
+            <th>Gender</th>
+            <th>Address (Temp)</th>
+            <th>Address (Perm)</th>
+            <th>Father Name</th>
+            <th>Father Phone</th>
+            <th>Father Email</th>
+            <th>Mother Name</th>
+            <th>Mother Phone</th>
+            <th>Mother Email</th>
+            <th>Guardian Name</th>
+            <th>Guardian Phone</th>
+            <th>Guardian Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key, student in students.items %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><strong>{{ student.name }}</strong></td>
+            <td>{{ student.reg_no }}</td>
+            <td>{{ student.grade }}</td>
+            <td>{{ student.section }}</td>
+            <td>{{ student.roll_no }}</td>
+            <td>{{ student.student_info.dob }}</td>
+            <td>{% if student.gender %}M{% else %}F{% endif %}</td>
+            <td><small>T: {{student.temporary_address}}</small></td>
+            <td><small>P: {{student.permanent_address}}</small></td>
+            <td><small>{{ student.fathers_name }}</small></td>
+            <td><small>{{ student.fathers_phone }}</small></td>
+            <td><small>{{ student.fathers_email }}</small></td>
+            <td><small>{{ student.mothers_name }}</small></td>
+            <td><small>{{ student.mothers_phone }}</small></td>
+            <td><small>{{ student.mothers_email }}</small></td>
+            <td><small>{{ student.guardian_name }}</small></td>
+            <td><small>{{ student.guardian_phone }}</small></td>
+            <td><small>{{ student.guardian_email }}</small></td>
+          </tr>
+          {% endfor %}
+        </tbody>
             </table>
           {% else %}
             <!-- Standard Layout: Multi-row per student card -->
