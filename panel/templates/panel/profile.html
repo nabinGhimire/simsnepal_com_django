@@ -3,11 +3,11 @@
 {% block title %}Profile - {{ user.get_full_name|default:user.username }} | SIMSNepal{% endblock %}
 
 {% block navbar %}
-  {% if branchuser.admin_status %}
-    {% include 'snippets/nav_admin.html' %}
-  {% else %}
-    {% include 'snippets/nav_teacher.html' %}
-  {% endif %}
+{% if branchuser.admin_status %}
+{% include 'snippets/nav_admin.html' %}
+{% else %}
+{% include 'snippets/nav_teacher.html' %}
+{% endif %}
 {% endblock navbar %}
 
 {% block page_header %}
@@ -30,33 +30,34 @@
     <div class="card text-center">
       <div class="card-body py-4">
         {% if request.session.sso_user.avatar %}
-          <img src="{{ request.session.sso_user.avatar }}" class="avatar avatar-xl mb-3 rounded-circle shadow-sm" alt="User Image" style="object-fit: cover;">
+        <img src="{{ request.session.sso_user.avatar }}" class="avatar avatar-xl mb-3 rounded-circle shadow-sm"
+          alt="User Image" style="object-fit: cover;">
         {% else %}
-          <span class="avatar avatar-xl mb-3 rounded-circle text-white shadow-sm"
-                style="background: linear-gradient(135deg, #008877, #00a890); font-size: 2rem; font-weight: 700;">
-            {{ user.username|slice:":1"|upper }}
-          </span>
+        <span class="avatar avatar-xl mb-3 rounded-circle text-white shadow-sm"
+          style="background: linear-gradient(135deg, #008877, #00a890); font-size: 2rem; font-weight: 700;">
+          {{ user.username|slice:":1"|upper }}
+        </span>
         {% endif %}
         <h3 class="mb-1">{{ user.get_full_name|default:user.username }}</h3>
         <div class="text-secondary small mb-3">@{{ user.username }}</div>
         <div class="mb-3">
           {% if branchuser.admin_status %}
-            <span class="badge bg-blue-lt text-blue">
-              <i class="ti ti-shield-check me-1"></i>Administrator
-            </span>
+          <span class="badge bg-blue-lt text-blue">
+            <i class="ti ti-shield-check me-1"></i>Administrator
+          </span>
           {% else %}
-            <span class="badge bg-green-lt text-green">
-              <i class="ti ti-chalkboard me-1"></i>Teacher
-            </span>
+          <span class="badge bg-green-lt text-green">
+            <i class="ti ti-chalkboard me-1"></i>Teacher
+          </span>
           {% endif %}
         </div>
         <div class="text-secondary small">
           <i class="ti ti-building-school me-1"></i>{{ school.name }}
         </div>
         {% if school.location %}
-          <div class="text-secondary small mt-1">
-            <i class="ti ti-map-pin me-1"></i>{{ school.location }}
-          </div>
+        <div class="text-secondary small mt-1">
+          <i class="ti ti-map-pin me-1"></i>{{ school.location }}
+        </div>
         {% endif %}
       </div>
     </div>
@@ -108,9 +109,9 @@
             <label class="form-label text-secondary small">Account Status</label>
             <div>
               {% if user.is_active %}
-                <span class="badge bg-success-lt text-success">Active</span>
+              <span class="badge bg-success-lt text-success">Active</span>
               {% else %}
-                <span class="badge bg-danger-lt text-danger">Inactive</span>
+              <span class="badge bg-danger-lt text-danger">Inactive</span>
               {% endif %}
             </div>
           </div>
@@ -154,16 +155,16 @@
             <label class="form-label text-secondary small">School Status</label>
             <div>
               {% if school.status %}
-                <span class="badge bg-success-lt text-success">Active</span>
+              <span class="badge bg-success-lt text-success">Active</span>
               {% else %}
-                <span class="badge bg-danger-lt text-danger">Disabled</span>
+              <span class="badge bg-danger-lt text-danger">Disabled</span>
               {% endif %}
             </div>
           </div>
         </div>
       </div>
       <div class="card-footer d-flex gap-2">
-        <a href="{% url 'lockscreen' %}" class="btn btn-outline-secondary btn-sm">
+        <a href="{% url 'panel:lockscreen' %}" class="btn btn-outline-secondary btn-sm">
           <i class="ti ti-lock me-1"></i> Lock Screen
         </a>
         <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">
