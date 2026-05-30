@@ -313,8 +313,11 @@
             <tbody>
               {% for student in students %}
               <tr>
-                <td><a href="/panel/edit/student/{{ student.student.reg_no }}/" target="_blank">{{
-                    student.student.reg_no }}</a></td>
+                <td>
+                  <a href="/panel/edit/student/{{ student.student.reg_no }}/" target="_blank">
+                    {{ student.student.reg_no }}
+                  </a>
+                </td>
                 <td>{{ student.student.pin_code }}</td>
                 <td>{{ student.student.name }}</td>
                 <td>{% if student.student.gender %}Male{% else %}Female{% endif %}</td>
