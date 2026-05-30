@@ -175,17 +175,24 @@ def parent_homework(request):
         section = ss.section
         
         try:
-            homework_obj = Homework.objects.get(
+            # Attempt to retrieve homework for the selected date.
+            # Use filter().first() to avoid DoesNotExist exception and allow debugging.
+            homework_qs = Homework.objects.filter(
                 session=current_session,
                 grade=grade,
                 section=section,
                 nepali_date=selected_date
             )
-            hw_dict = json.loads(homework_obj.homework or "{}")
-            if hw_dict:
-                logger.debug("Homework found for grade %s, section %s on %s: %s", grade.id, section.id, selected_date, hw_dict)
+            if homework_qs.exists():
+                homework_obj = homework_qs.first()
+                hw_dict = json.loads(homework_obj.homework or "{}")
+                if hw_dict:
+                    logger.debug("Homework found for grade %s, section %s on %s: %s", grade.id, section.id, selected_date, hw_dict)
+                else:
+                    logger.debug("Homework entry exists but empty for grade %s, section %s on %s", grade.id, section.id, selected_date)
             else:
-                logger.debug("No homework entry for grade %s, section %s on %s", grade.id, section.id, selected_date)
+                hw_dict = {}
+                logger.debug("No Homework entry for grade %s, section %s on %s", grade.id, section.id, selected_date)
         except Homework.DoesNotExist:
             hw_dict = {}
             
