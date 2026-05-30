@@ -164,7 +164,7 @@ class Subject(models.Model):
     heavy_weight = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = (('session', 'branch', 'grade', 'section', 'subject'),)
+        unique_together = (('session', 'branch', 'grade', 'section', 'subject'), ('session', 'grade', 'subject_master'),)
 
     def __str__(self):
         if self.section:
