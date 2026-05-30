@@ -20,6 +20,19 @@ signer = TimestampSigner(key=settings.SIMS_WEBVIEW_SIGNER_KEY, salt='')
 def get_current_session():
     return EduSession.objects.filter(status=True).first()
 
+def normalize_nepali_phone(phone_str):
+    if not phone_str:
+        return ""
+    phone = str(phone_str).strip()
+    if phone.startswith('+'):
+        phone = phone[1:]
+    if phone.startswith('00'):
+        phone = phone[2:]
+    if phone.startswith('977') and len(phone) > 10:
+        phone = phone[3:]
+    return phone
+
+
 @csrf_exempt
 def generate_auth_token(request):
     if request.method != "POST":
@@ -44,7 +57,8 @@ def generate_auth_token(request):
     
     if phone:
         try:
-            phone_int = int(phone)
+            normalized_phone = normalize_nepali_phone(phone)
+            phone_int = int(normalized_phone)
             parent_exists = Student.objects.filter(
                 Q(fathers_phone=phone_int) |
                 Q(mothers_phone=phone_int) |
@@ -54,7 +68,7 @@ def generate_auth_token(request):
             if parent_exists:
                 response_data["exists"] = True
                 response_data["roles"].append("parent")
-                response_data["parent_token"] = signer.sign_object({"role": "parent", "phone": str(phone)})
+                response_data["parent_token"] = signer.sign_object({"role": "parent", "phone": str(normalized_phone)})
         except ValueError:
             pass
 
