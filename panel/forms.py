@@ -26,3 +26,19 @@ class SignUpForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         del self.fields['password2']
+
+# Form for updating School information
+from sms.models import SchoolBranch
+
+class SchoolForm(forms.ModelForm):
+    class Meta:
+        model = SchoolBranch
+        fields = ['name', 'location', 'phone', 'email', 'logo', 'slogan']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.NumberInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'logo': forms.FileInput(attrs={'class': 'form-control-file'}),
+            'slogan': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }

@@ -76,7 +76,7 @@ from django.template.loader import get_template
 from django.views.generic import View
 
 # Local apps
-from .forms import SignUpForm
+from .forms import SignUpForm, SchoolForm
 from .func import *
 from sms.models import *   # Teacher, BranchUser, Subject, TeacherSubjectAccess
 from sso.models import HamroUserProfile
@@ -1001,6 +1001,30 @@ def printmarksform(request):
 
 
 @login_required
+def school_settings(request):
+    """
+    Allow admin users to view and update their school's basic information.
+    """
+    user = request.user
+    branchuser, error = get_branch_info(user)
+    if error:
+        return HttpResponse(f'{error} Click <a href="/panel/">Here</a> to go the panel.')
+
+    # Only admins may edit
+    if not getattr(branchuser, "admin_status", False):
+        return HttpResponse("Permission denied: admin access required.", status=403)
+
+    school = branchuser.school
+    if request.method == "POST":
+        form = SchoolForm(request.POST, request.FILES, instance=school)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "School information updated successfully.")
+            return redirect("school_settings")
+    else:
+        form = SchoolForm(instance=school)
+
+    return render(request, "panel/school_settings.html", {"form": form, "school": school})@login_required
 def letterpincode(request):
     user = request.user
     branchuser, error = get_branch_info(user)
