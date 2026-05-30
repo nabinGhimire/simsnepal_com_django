@@ -188,21 +188,28 @@ def parent_homework(request):
                 homework_qs.count(), grade.id, section.id, selected_date,
             )
             if not homework_qs.exists():
-                # Fallback: try matching the Gregorian date field if Nepali date did not match
-                # selected_date may be a NepaliDateField instance (has .to_date()) or a plain datetime.date
-                if hasattr(selected_date, "to_date"):
+                if hasattr(selected_date, "to_datetime_date"):
+                    greg_date = selected_date.to_datetime_date()
+                elif hasattr(selected_date, "to_date"):
                     greg_date = selected_date.to_date()
                 else:
                     greg_date = selected_date
+
+                # Format as ISO date string to be completely safe with Django's DateField
+                if hasattr(greg_date, "strftime"):
+                    greg_date_val = greg_date.strftime("%Y-%m-%d")
+                else:
+                    greg_date_val = greg_date
+
                 homework_qs = Homework.objects.filter(
                     session=current_session,
                     grade=grade,
                     section=section,
-                    date=greg_date,
+                    date=greg_date_val,
                 )
                 logger.debug(
                     "Fallback homework queryset count (date)=%d for grade %s, section %s, greg_date %s",
-                    homework_qs.count(), grade.id, section.id, greg_date,
+                    homework_qs.count(), grade.id, section.id, greg_date_val,
                 )
             if homework_qs.exists():
                 homework_obj = homework_qs.first()
@@ -563,6 +570,13 @@ def teacher_homework(request):
                         class_key = (entry.grade_id, entry.section_id)
                         updates_by_class.setdefault(class_key, {})[str(subject.id)] = hw_text.strip()
 
+                if hasattr(selected_date, "to_datetime_date"):
+                    greg_date_val = selected_date.to_datetime_date()
+                elif hasattr(selected_date, "to_date"):
+                    greg_date_val = selected_date.to_date()
+                else:
+                    greg_date_val = selected_date
+
                 for (g_id, s_id), subjects_data in updates_by_class.items():
                     # Ensure both Nepali and Gregorian dates are stored
                     homework_obj, _ = Homework.objects.get_or_create(
@@ -570,7 +584,7 @@ def teacher_homework(request):
                         grade_id=g_id,
                         section_id=s_id,
                         nepali_date=selected_date,
-                        defaults={"homework": "{}", "date": selected_date.to_date()},
+                        defaults={"homework": "{}", "date": greg_date_val},
                     )
                     try:
                         hw_dict = json.loads(homework_obj.homework or "{}")
