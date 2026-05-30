@@ -212,7 +212,7 @@ def parent_homework(request):
             'homeworks': hw_list
         })
         
-            logger.debug("Total student_homeworks entries built: %d", len(student_homeworks))
+        logger.debug("Total student_homeworks entries built: %d", len(student_homeworks))
     context = {
         'student_homeworks': student_homeworks,
         'selected_date': str(selected_date),
