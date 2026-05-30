@@ -51,6 +51,7 @@
 import json
 import logging
 import secrets
+import csv
 from collections import OrderedDict, defaultdict
 from datetime import datetime
 from io import BytesIO
@@ -910,6 +911,36 @@ def student_detail(request, grade=False, section=False):
         'section_print': section_print,
         'info_type': info_type
     }
+    # Export to Excel (CSV) if requested
+    if request.GET.get('export') == 'excel':
+        import csv
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="student_detail.csv"'
+        writer = csv.writer(response)
+        # Header row
+        writer.writerow([
+            'Reg No', 'Name', 'Grade', 'Section', 'Roll No',
+            'DOB', 'Gender', 'Temp Address', 'Perm Address',
+            "Father's Name", "Father's Phone", "Father's Email",
+            "Mother's Name", "Mother's Phone", "Mother's Email",
+            "Guardian's Name", "Guardian's Phone", "Guardian's Email"
+        ])
+        for s in students.values():
+            writer.writerow([
+                s.get('reg_no'),
+                s.get('name'),
+                s.get('grade'),
+                s.get('section'),
+                s.get('roll_no'),
+                getattr(s.get('student_info'), 'dob', ''),
+                'M' if s.get('gender') else 'F',
+                s.get('temporary_address'),
+                s.get('permanent_address'),
+                s.get('fathers_name'), s.get('fathers_phone'), s.get('fathers_email'),
+                s.get('mothers_name'), s.get('mothers_phone'), s.get('mothers_email'),
+                s.get('guardian_name'), s.get('guardian_phone'), s.get('guardian_email')
+            ])
+        return response
     return render(request, "panel/student_detail_print.html", context)
 
 @login_required
