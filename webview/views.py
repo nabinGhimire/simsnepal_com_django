@@ -224,9 +224,9 @@ def parent_homework(request):
             logger.error("Exception querying/loading homework for student %s: %s\n%s", student.name, str(e), traceback.format_exc())
             
         subjects = Subject.objects.filter(
+            Q(section=section) | Q(section__isnull=True),
             session=current_session,
             grade=grade,
-            section=section,
             status=True
         )
         logger.error("Subjects found count=%d: %s", subjects.count(), [(s.id, s.subject) for s in subjects])
