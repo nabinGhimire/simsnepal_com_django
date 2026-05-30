@@ -531,8 +531,7 @@
                 onchange="window.location = '?add=attendance&term=' + this.value + '&section=' + document.getElementById('section_filter').value">
                 <option value="">Select Term...</option>
                 {% for value in exam_types %}
-                <option value="{{ value.id }}" {% if this_term.id|int_filter == value.id|int_filter %} selected{% endif
-                  %}>{{ value.term_name }}</option>
+                <option value="{{ value.id }}" {% if this_term.id|int_filter == value.id|int_filter %} selected{% endif %}>{{ value.term_name }}</option>
                 {% endfor %}
               </select>
             </div>
