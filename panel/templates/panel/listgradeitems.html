@@ -7,57 +7,57 @@
 
 {% block navbar %}
 {% if branchuser.admin_status %}
-  {% include 'snippets/nav_admin.html' %}
+{% include 'snippets/nav_admin.html' %}
 {% else %}
-  {% include 'snippets/nav_teacher.html' %}
+{% include 'snippets/nav_teacher.html' %}
 {% endif %}
 {% endblock navbar %}
 
 {% block extra_css %}
 <style>
   /* Premium Sidebar Toggle Styles */
-  #layout-row { 
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-    display: flex; 
+  #layout-row {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
     width: 100%;
     margin: 0;
   }
-  
-  .sidebar-column { 
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-    width: 25%; 
+
+  .sidebar-column {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 25%;
     min-width: 250px;
     position: relative;
   }
-  
-  .content-column { 
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-    width: 75%; 
+
+  .content-column {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 75%;
     flex-grow: 1;
   }
 
   /* Collapsed States */
-  .sidebar-collapsed .sidebar-column { 
-    width: 100px !important; 
-    min-width: 100px !important; 
-    flex: 0 0 100px !important; 
+  .sidebar-collapsed .sidebar-column {
+    width: 100px !important;
+    min-width: 100px !important;
+    flex: 0 0 100px !important;
   }
-  
-  .sidebar-collapsed .content-column { 
-    width: calc(100% - 100px) !important; 
-    flex: 0 0 calc(100% - 100px) !important; 
-    max-width: calc(100% - 100px) !important; 
+
+  .sidebar-collapsed .content-column {
+    width: calc(100% - 100px) !important;
+    flex: 0 0 calc(100% - 100px) !important;
+    max-width: calc(100% - 100px) !important;
   }
-  
+
   .sidebar-collapsed .sidebar-menu a span,
   .sidebar-collapsed .sidebar-menu button span,
-  .sidebar-collapsed .toggle-text { 
-    display: none !important; 
+  .sidebar-collapsed .toggle-text {
+    display: none !important;
   }
 
   .sidebar-collapsed .sidebar-menu a i,
-  .sidebar-collapsed .sidebar-menu button i { 
-    margin-right: 0 !important; 
+  .sidebar-collapsed .sidebar-menu button i {
+    margin-right: 0 !important;
     font-size: 1.25rem;
     width: 100%;
     text-align: center;
@@ -71,7 +71,7 @@
   .sidebar-toggle-container {
     padding: 10px 0;
     margin-bottom: 10px;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -80,7 +80,7 @@
   .sidebar-toggle-btn {
     background: #fff;
     color: var(--tblr-primary);
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 50%;
     width: 32px;
     height: 32px;
@@ -88,11 +88,11 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: all 0.3s;
     z-index: 10;
   }
-  
+
   .sidebar-toggle-btn:hover {
     background: var(--tblr-primary);
     color: #fff;
@@ -109,7 +109,7 @@
     padding: 0;
     margin: 0;
   }
-  
+
   .sidebar-menu li a {
     display: flex;
     align-items: center;
@@ -120,7 +120,8 @@
     border-radius: 4px;
   }
 
-  .sidebar-menu li a:hover, .sidebar-menu li.active a {
+  .sidebar-menu li a:hover,
+  .sidebar-menu li.active a {
     color: var(--tblr-primary);
   }
 
@@ -189,16 +190,19 @@
           <a href="{{ request.path }}?assign=teacher"><i class="ti ti-school"></i> <span>Assign Teacher</span></a>
         </li>
         <li class="{% if request.GET.add == 'student_by_reg' %}active{% endif %}">
-          <a href="{{ request.path }}?add=student_by_reg"><i class="ti ti-id"></i> <span>Add Student By Reg. No</span></a>
+          <a href="{{ request.path }}?add=student_by_reg"><i class="ti ti-id"></i> <span>Add Student By Reg.
+              No</span></a>
         </li>
         <li class="{% if request.GET.add == 'attendance' %}active{% endif %}">
-          <a href="{{ request.path }}?add=attendance"><i class="ti ti-calendar-check"></i> <span>Add Attendance</span></a>
+          <a href="{{ request.path }}?add=attendance"><i class="ti ti-calendar-check"></i> <span>Add
+              Attendance</span></a>
         </li>
         <li class="{% if request.GET.list == 'student' %}active{% endif %}">
           <a href="{{ request.path }}?list=student"><i class="ti ti-users"></i> <span>List Student</span></a>
         </li>
         <li class="{% if request.GET.list == 'attendance' %}active{% endif %}">
-          <a href="{{ request.path }}?list=attendance"><i class="ti ti-clipboard-list"></i> <span>List Attendance</span></a>
+          <a href="{{ request.path }}?list=attendance"><i class="ti ti-clipboard-list"></i> <span>List
+              Attendance</span></a>
         </li>
         <li class="{% if request.GET.list == 'subject' %}active{% endif %}">
           <a href="{{ request.path }}?list=subject"><i class="ti ti-book-2"></i> <span>List Subjects</span></a>
@@ -221,47 +225,59 @@
   <div class="col-md-9 content-column">
     {% if list_subject %}
     <div class="card">
-      <div class="card-header"><h3 class="card-title">Subjects in {{ g_level.grade_name }}</h3></div>
+      <div class="card-header">
+        <h3 class="card-title">Subjects in {{ g_level.grade_name }}</h3>
+      </div>
       <div class="card-body">
         <div class="table-responsive">
           <table class="table table-vcenter card-table">
             <thead>
-              <tr><th>Subject</th><th>Section</th><th>Status</th><th>Priority</th><th>Assigned Teachers</th></tr>
+              <tr>
+                <th>Subject</th>
+                <th>Section</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Assigned Teachers</th>
+              </tr>
             </thead>
             <tbody>
               {% for subject in subjects %}
               <tr>
-                <td><a href="{{ request.path }}?cn={{ subject.id }}" data-bs-toggle="tooltip" title="Rename Subject">{{ subject.subject }}</a></td>
+                <td><a href="{{ request.path }}?cn={{ subject.id }}" data-bs-toggle="tooltip" title="Rename Subject">{{
+                    subject.subject }}</a></td>
                 <td><span class="badge bg-purple-lt">{{ subject.section.section|default:"All Sections" }}</span></td>
                 <td>
                   {% if subject.status %}
-                    <a href="{{ request.path }}?ed={{ subject.id }}" class="badge bg-green-lt">Enabled</a>
+                  <a href="{{ request.path }}?ed={{ subject.id }}" class="badge bg-green-lt">Enabled</a>
                   {% else %}
-                    <a href="{{ request.path }}?ed={{ subject.id }}" class="badge bg-red-lt">Disabled</a>
+                  <a href="{{ request.path }}?ed={{ subject.id }}" class="badge bg-red-lt">Disabled</a>
                   {% endif %}
                 </td>
                 <td>
                   {% if subject.heavy_weight %}
-                    <a href="{{ request.path }}?hw={{ subject.id }}" class="badge bg-green-lt">High</a>
+                  <a href="{{ request.path }}?hw={{ subject.id }}" class="badge bg-green-lt">High</a>
                   {% else %}
-                    <a href="{{ request.path }}?hw={{ subject.id }}" class="badge bg-red-lt">Low</a>
+                  <a href="{{ request.path }}?hw={{ subject.id }}" class="badge bg-red-lt">Low</a>
                   {% endif %}
                 </td>
                 <td>
                   <div class="d-flex flex-wrap gap-2">
                     {% for key,value in teacher_access.items %}
-                      {% if key == subject.id %}
-                        {% for ke,ve in value.items %}
-                          {% for k,v in ve.items %}
-                            <div class="text-center" style="width: 80px;">
-                              <a href="{{ request.path }}?uta={{ ke }}&sub={{ key }}&sec={{ k }}" class="d-block mb-1" data-bs-toggle="tooltip" title="{{ v.name }}">
-                                <div class="avatar avatar-md rounded" style="background-image: url({% if v.photo %}{{ v.photo }}{% else %}https://ui-avatars.com/api/?name={{ v.name|urlencode }}&background=random&color=fff{% endif %}); background-size: cover; width: 40px; height: 40px; margin: 0 auto;"></div>
-                              </a>
-                              <div class="small text-muted" style="font-size: 10px;">Sec {{ v.section }}</div>
-                            </div>
-                          {% endfor %}
-                        {% endfor %}
-                      {% endif %}
+                    {% if key == subject.id %}
+                    {% for ke,ve in value.items %}
+                    {% for k,v in ve.items %}
+                    <div class="text-center" style="width: 80px;">
+                      <a href="{{ request.path }}?uta={{ ke }}&sub={{ key }}&sec={{ k }}" class="d-block mb-1"
+                        data-bs-toggle="tooltip" title="{{ v.name }}">
+                        <div class="avatar avatar-md rounded"
+                          style="background-image: url({% if v.photo %}{{ v.photo }}{% else %}https://ui-avatars.com/api/?name={{ v.name|urlencode }}&background=random&color=fff{% endif %}); background-size: cover; width: 40px; height: 40px; margin: 0 auto;">
+                        </div>
+                      </a>
+                      <div class="small text-muted" style="font-size: 10px;">Sec {{ v.section }}</div>
+                    </div>
+                    {% endfor %}
+                    {% endfor %}
+                    {% endif %}
                     {% endfor %}
                   </div>
                 </td>
@@ -275,34 +291,53 @@
 
     {% elif list_student %}
     <div class="card">
-      <div class="card-header"><h3 class="card-title">List of Students in Grade {{ g_level.grade_name }}</h3></div>
+      <div class="card-header">
+        <h3 class="card-title">List of Students in Grade {{ g_level.grade_name }}</h3>
+      </div>
       <div class="card-body">
         <div class="table-responsive">
           <table class="table table-vcenter card-table">
             <thead>
-              <tr><th>Reg. No.</th><th>Pin Code</th><th>Name</th><th>Gender</th><th>Section</th><th>Roll No</th><th>House</th><th>Action</th><th>Status</th></tr>
+              <tr>
+                <th>Reg. No.</th>
+                <th>Pin Code</th>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Section</th>
+                <th>Roll No</th>
+                <th>House</th>
+                <th>Action</th>
+                <th>Status</th>
+              </tr>
             </thead>
             <tbody>
               {% for student in students %}
               <tr>
-                <td><a href="/panel/edit/student/{{ student.student.reg_no }}/" target="_blank">{{ student.student.reg_no }}</a></td>
+                <td><a href="/panel/edit/student/{{ student.student.reg_no }}/" target="_blank">{{
+                    student.student.reg_no }}</a></td>
                 <td>{{ student.student.pin_code }}</td>
                 <td>{{ student.student.name }}</td>
                 <td>{% if student.student.gender %}Male{% else %}Female{% endif %}</td>
                 <td>{{ student.section.section }}</td>
                 <td>{{ student.roll_no }}</td>
-                <td>{% if student.student.house %}{{ student.student.house }}{% else %}<span class="text-muted">N/A</span>{% endif %}</td>
+                <td>{% if student.student.house %}{{ student.student.house }}{% else %}<span
+                    class="text-muted">N/A</span>{% endif %}</td>
                 <td>
-                  <a href="/panel/edit/student/session/{{ student.student.reg_no }}/?return_path={{ request.get_full_path|question_and }}" class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Edit Session">
+                  <a href="/panel/edit/student/session/{{ student.student.reg_no }}/?return_path={{ request.get_full_path|question_and }}"
+                    class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Edit Session">
                     <i class="ti ti-pencil" style="font-size: 1.15rem;"></i>
                   </a>
                 </td>
                 <td>
                   <div class="d-flex gap-1">
-                    <a href="/panel/status/student/{{ student.student.reg_no }}/{{ student.id }}/?return_path={{ request.get_full_path }}" class="btn btn-sm btn-icon {% if not student.status %}btn-outline-danger{% else %}btn-outline-success{% endif %}" title="Toggle Student Status">
+                    <a href="/panel/status/student/{{ student.student.reg_no }}/{{ student.id }}/?return_path={{ request.get_full_path }}"
+                      class="btn btn-sm btn-icon {% if not student.status %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                      title="Toggle Student Status">
                       <i class="ti ti-user-circle" style="font-size: 1.15rem;"></i>
                     </a>
-                    <a href="/panel/status/result/{{ student.student.reg_no }}/?return_path={{ request.get_full_path }}" class="btn btn-sm btn-icon {% if not student.student.publish_result %}btn-outline-danger{% else %}btn-outline-success{% endif %}" title="Toggle Result Status">
+                    <a href="/panel/status/result/{{ student.student.reg_no }}/?return_path={{ request.get_full_path }}"
+                      class="btn btn-sm btn-icon {% if not student.student.publish_result %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                      title="Toggle Result Status">
                       <i class="ti ti-eye" style="font-size: 1.15rem;"></i>
                     </a>
                   </div>
@@ -317,29 +352,50 @@
 
     {% elif list_attendance %}
     <div class="card">
-      <div class="card-header"><h3 class="card-title">Attendance Report for Grade {{ g_level.grade_name|roman_grade }}</h3></div>
+      <div class="card-header">
+        <h3 class="card-title">Attendance Report for Grade {{ g_level.grade_name|roman_grade }}</h3>
+      </div>
       <div class="card-body">
         <div class="row g-3 align-items-center mb-4">
           <div class="col-md-4">
-            <select name="term" id="term_list" class="form-select" onchange="window.location = '?list=attendance&term=' + this.value + '&section=' + document.getElementById('section_filter_list').value">
+            <select name="term" id="term_list" class="form-select"
+              onchange="window.location = '?list=attendance&term=' + this.value + '&section=' + document.getElementById('section_filter_list').value">
               <option value="">Select Term...</option>
-              {% for value in exam_types %}<option value="{{ value.id }}" {% if this_term.id|int_filter == value.id|int_filter %}selected{% endif %}>{{ value.term_name }}</option>{% endfor %}
+              {% for value in exam_types %}<option value="{{ value.id }}" {% if
+                this_term.id|int_filter==value.id|int_filter %}selected{% endif %}>{{ value.term_name }}</option>{%
+              endfor %}
             </select>
           </div>
           <div class="col-md-4">
-            <select name="section_filter" id="section_filter_list" class="form-select" onchange="window.location = '?list=attendance&term=' + document.getElementById('term_list').value + '&section=' + this.value">
+            <select name="section_filter" id="section_filter_list" class="form-select"
+              onchange="window.location = '?list=attendance&term=' + document.getElementById('term_list').value + '&section=' + this.value">
               <option value="">All Sections</option>
-              {% for sec in avaiablesections %}<option value="{{ sec.id }}" {% if this_section.id == sec.id %}selected{% endif %}>{{ sec.section }}</option>{% endfor %}
+              {% for sec in avaiablesections %}<option value="{{ sec.id }}" {% if this_section.id==sec.id %}selected{%
+                endif %}>{{ sec.section }}</option>{% endfor %}
             </select>
           </div>
         </div>
         {% if this_term %}
         <div class="table-responsive">
           <table class="table table-vcenter card-table table-striped">
-            <thead><tr><th>Reg. No.</th><th>Name</th><th class="text-center">Present</th><th class="text-center">Absent</th><th class="text-center">Total</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Reg. No.</th>
+                <th>Name</th>
+                <th class="text-center">Present</th>
+                <th class="text-center">Absent</th>
+                <th class="text-center">Total</th>
+              </tr>
+            </thead>
             <tbody>
               {% for student in students %}
-              <tr><td>{{ student.reg_no.reg_no }}</td><td>{{ student.reg_no.name }}</td><td class="text-center">{{ student.no_of_present_days }}</td><td class="text-center">{{ student.no_of_absent_days }}</td><td class="text-center">{{ student.no_of_school_days }}</td></tr>
+              <tr>
+                <td>{{ student.reg_no.reg_no }}</td>
+                <td>{{ student.reg_no.name }}</td>
+                <td class="text-center">{{ student.no_of_present_days }}</td>
+                <td class="text-center">{{ student.no_of_absent_days }}</td>
+                <td class="text-center">{{ student.no_of_school_days }}</td>
+              </tr>
               {% endfor %}
             </tbody>
           </table>
@@ -350,19 +406,35 @@
 
     {% elif assign_house %}
     <div class="card">
-      <div class="card-header"><h3 class="card-title">Assign House for Grade {{ g_level.grade_name }}</h3></div>
+      <div class="card-header">
+        <h3 class="card-title">Assign House for Grade {{ g_level.grade_name }}</h3>
+      </div>
       <form method="POST" action="/panel/assign_house/">
-        {% csrf_token %}<input type="hidden" name="redurl" value="{{ request.get_full_path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
+        {% csrf_token %}<input type="hidden" name="redurl" value="{{ request.get_full_path }}" /><input type="hidden"
+          name="gradelevel" value="{{ gradelevel }}" />
         <div class="table-responsive">
           <table class="table table-vcenter card-table table-striped">
-            <thead><tr><th>Roll</th><th>Reg. No.</th><th>Name</th><th>Current House</th><th>Assign To</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Roll</th>
+                <th>Reg. No.</th>
+                <th>Name</th>
+                <th>Current House</th>
+                <th>Assign To</th>
+              </tr>
+            </thead>
             <tbody>
               {% for student in students %}
-              <tr><td>{{ student.roll_no }}</td><td>{{ student.student.reg_no }}</td><td>{{ student.student.name }}</td><td>{% if student.student.house %}{{ student.student.house.name }}{% else %}N/A{% endif %}</td>
+              <tr>
+                <td>{{ student.roll_no }}</td>
+                <td>{{ student.student.reg_no }}</td>
+                <td>{{ student.student.name }}</td>
+                <td>{% if student.student.house %}{{ student.student.house.name }}{% else %}N/A{% endif %}</td>
                 <td>
                   <select name="{{ student.student.reg_no }}" class="form-select">
                     <option value="0">Select House...</option>
-                    {% for house in houses %}<option value="{{house.id}}" {% if student.student.house.id == house.id %}selected{% endif %}>{{ house.name }}</option>{% endfor %}
+                    {% for house in houses %}<option value="{{house.id}}" {% if student.student.house.id==house.id
+                      %}selected{% endif %}>{{ house.name }}</option>{% endfor %}
                   </select>
                 </td>
               </tr>
@@ -376,19 +448,35 @@
 
     {% elif assign_section %}
     <div class="card">
-      <div class="card-header"><h3 class="card-title">Assign Section for Grade {{ g_level.grade_name|roman_grade }}</h3></div>
+      <div class="card-header">
+        <h3 class="card-title">Assign Section for Grade {{ g_level.grade_name|roman_grade }}</h3>
+      </div>
       <form method="POST" action="/panel/assign_section/">
-        {% csrf_token %}<input type="hidden" name="redurl" value="{{ request.get_full_path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
+        {% csrf_token %}<input type="hidden" name="redurl" value="{{ request.get_full_path }}" /><input type="hidden"
+          name="gradelevel" value="{{ gradelevel }}" />
         <div class="table-responsive">
           <table class="table table-vcenter card-table table-striped">
-            <thead><tr><th>Roll</th><th>Reg. No.</th><th>Name</th><th>Current Section</th><th>Move To</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Roll</th>
+                <th>Reg. No.</th>
+                <th>Name</th>
+                <th>Current Section</th>
+                <th>Move To</th>
+              </tr>
+            </thead>
             <tbody>
               {% for student in students %}
-              <tr><td>{{ student.roll_no }}</td><td>{{ student.student.reg_no }}</td><td>{{ student.student.name }}</td><td>{{ student.section.section }}</td>
+              <tr>
+                <td>{{ student.roll_no }}</td>
+                <td>{{ student.student.reg_no }}</td>
+                <td>{{ student.student.name }}</td>
+                <td>{{ student.section.section }}</td>
                 <td>
                   <select name="{{ student.student.reg_no }}" class="form-select">
                     <option value="0">Select Section...</option>
-                    {% for section in avaiablesections %}<option value="{{section.id}}" {% if student.section.id == section.id %}selected{% endif %}>{{ section.section }}</option>{% endfor %}
+                    {% for section in avaiablesections %}<option value="{{section.id}}" {% if
+                      student.section.id==section.id %}selected{% endif %}>{{ section.section }}</option>{% endfor %}
                   </select>
                 </td>
               </tr>
@@ -401,40 +489,96 @@
     </div>
 
     {% elif ed_subject %}
-    <div class="card"><div class="card-header"><h3 class="card-title">Enable / Disable Subject</h3></div><div class="card-body"><form action="/panel/edsubject/" method="POST">{% csrf_token %}<input type="hidden" name="redurl" value="{{ request.path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" /><input type="hidden" name="edsubjectid" value="{{ edsubject.id }}" /><p>Do you really want to {% if edsubject.status %}Disable{% else %}Enable{% endif %} Subject {{ edsubject.subject }}?</p><button type="submit" class="btn btn-danger">Yes</button> <a href="{{ request.path }}" class="btn btn-primary">No</a></form></div></div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Enable / Disable Subject</h3>
+      </div>
+      <div class="card-body">
+        <form action="/panel/edsubject/" method="POST">{% csrf_token %}<input type="hidden" name="redurl"
+            value="{{ request.path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" /><input
+            type="hidden" name="edsubjectid" value="{{ edsubject.id }}" />
+          <p>Do you really want to {% if edsubject.status %}Disable{% else %}Enable{% endif %} Subject {{
+            edsubject.subject }}?</p><button type="submit" class="btn btn-danger">Yes</button> <a
+            href="{{ request.path }}" class="btn btn-primary">No</a>
+        </form>
+      </div>
+    </div>
 
     {% elif hw_subject %}
-    <div class="card"><div class="card-header"><h3 class="card-title">Subject Priority Management</h3></div><div class="card-body"><form action="/panel/hwsubject/" method="POST">{% csrf_token %}<input type="hidden" name="redurl" value="{{ request.path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" /><input type="hidden" name="hwsubjectid" value="{{ hwsubject.id }}" /><p>Do you really want to {% if hwsubject.heavy_weight %}Decrease{% else %}Increase{% endif %} Priority of {{ hwsubject.subject }}?</p><button type="submit" class="btn btn-primary">Yes</button> <a href="{{ request.path }}" class="btn btn-secondary">No</a></form></div></div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Subject Priority Management</h3>
+      </div>
+      <div class="card-body">
+        <form action="/panel/hwsubject/" method="POST">{% csrf_token %}<input type="hidden" name="redurl"
+            value="{{ request.path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" /><input
+            type="hidden" name="hwsubjectid" value="{{ hwsubject.id }}" />
+          <p>Do you really want to {% if hwsubject.heavy_weight %}Decrease{% else %}Increase{% endif %} Priority of {{
+            hwsubject.subject }}?</p><button type="submit" class="btn btn-primary">Yes</button> <a
+            href="{{ request.path }}" class="btn btn-secondary">No</a>
+        </form>
+      </div>
+    </div>
 
     {% elif attendance %}
     <div class="card">
-      <div class="card-header"><h3 class="card-title">Add Attendance</h3></div>
+      <div class="card-header">
+        <h3 class="card-title">Add Attendance</h3>
+      </div>
       <div class="card-body">
         <form method="post" action="/panel/addattendance/">
           {% csrf_token %}
           <div class="row g-3 align-items-center mb-4">
             <div class="col-md-4">
-              <select name="term" id="term" class="form-select" onchange="window.location = '?add=attendance&term=' + this.value + '&section=' + document.getElementById('section_filter').value">
+              <select name="term" id="term" class="form-select"
+                onchange="window.location = '?add=attendance&term=' + this.value + '&section=' + document.getElementById('section_filter').value">
                 <option value="">Choose Term...</option>
-                {% for value in exam_types %}<option value="{{ value.id }}" {% if this_term.id|int_filter == value.id|int_filter %}selected{% endif %}>{{ value.term_name }}</option>{% endfor %}
+                {% for value in exam_types %}<option value="{{ value.id }}" {% if
+                  this_term.id|int_filter==value.id|int_filter %}selected{% endif %}>{{ value.term_name }}</option>{%
+                endfor %}
               </select>
             </div>
             <div class="col-md-4">
-              <select name="section_filter" id="section_filter" class="form-select" onchange="window.location = '?add=attendance&term=' + document.getElementById('term').value + '&section=' + this.value">
+              <select name="section_filter" id="section_filter" class="form-select"
+                onchange="window.location = '?add=attendance&term=' + document.getElementById('term').value + '&section=' + this.value">
                 <option value="">All Sections</option>
-                {% for sec in avaiablesections %}<option value="{{ sec.id }}" {% if this_section.id == sec.id %}selected{% endif %}>{{ sec.section }}</option>{% endfor %}
+                {% for sec in avaiablesections %}<option value="{{ sec.id }}" {% if this_section.id==sec.id %}selected{%
+                  endif %}>{{ sec.section }}</option>{% endfor %}
               </select>
             </div>
           </div>
           {% if this_term %}
           <input type="hidden" name="grade" value="{{ gradelevel }}" />
           <div class="row g-3 mb-4">
-            <div class="col-md-6"><label class="form-label">Total Days</label><input type="number" name="no_of_school_days" class="form-control" required /></div>
-            <div class="col-md-6"><label class="form-label">Mode</label><select name="data_type" class="form-select"><option value="present">Present</option><option value="absent">Absent</option></select></div>
+            <div class="col-md-6"><label class="form-label">Total Days</label><input type="number"
+                name="no_of_school_days" class="form-control" required /></div>
+            <div class="col-md-6"><label class="form-label">Mode</label><select name="data_type" class="form-select">
+                <option value="present">Present</option>
+                <option value="absent">Absent</option>
+              </select></div>
           </div>
-          <div class="table-responsive"><table class="table table-vcenter card-table"><thead><tr><th>Roll</th><th>Reg. No.</th><th>Name</th><th>Section</th><th>Days</th></tr></thead><tbody>
-          {% for student in students %}<tr><td>{{ student.roll_no }}</td><td>{{ student.student.reg_no }}</td><td>{{ student.student.name }}</td><td>{{ student.section.section }}</td><td><input type="number" name="{{ student.student.reg_no }}" class="form-control" /></td></tr>{% endfor %}
-          </tbody></table></div>
+          <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+              <thead>
+                <tr>
+                  <th>Roll</th>
+                  <th>Reg. No.</th>
+                  <th>Name</th>
+                  <th>Section</th>
+                  <th>Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for student in students %}<tr>
+                  <td>{{ student.roll_no }}</td>
+                  <td>{{ student.student.reg_no }}</td>
+                  <td>{{ student.student.name }}</td>
+                  <td>{{ student.section.section }}</td>
+                  <td><input type="number" name="{{ student.student.reg_no }}" class="form-control" /></td>
+                </tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
           <button type="submit" class="btn btn-primary mt-3">Submit Attendance</button>
           {% endif %}
         </form>
@@ -442,8 +586,31 @@
     </div>
 
     {% elif section %}
-    <div class="card mb-3"><div class="card-header"><h3 class="card-title">Add New Section</h3></div><div class="card-body"><form action="/panel/addsection/" method="POST">{% csrf_token %}<input type="hidden" name="redurl" value="{{ request.get_full_path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" /><div class="mb-3"><label class="form-label">Section Name</label><input type="text" class="form-control" name="sectionname" required /></div><button type="submit" class="btn btn-primary">Add Section</button></form></div></div>
-    <div class="card"><div class="card-header"><h3 class="card-title">Existing Sections</h3></div><div class="table-responsive"><table class="table table-vcenter card-table"><tbody>{% for sec in avaiablesections %}<tr><td>{{ sec.section }}</td><td><span class="badge bg-blue-lt">Active</span></td></tr>{% endfor %}</tbody></table></div></div>
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Add New Section</h3>
+      </div>
+      <div class="card-body">
+        <form action="/panel/addsection/" method="POST">{% csrf_token %}<input type="hidden" name="redurl"
+            value="{{ request.get_full_path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
+          <div class="mb-3"><label class="form-label">Section Name</label><input type="text" class="form-control"
+              name="sectionname" required /></div><button type="submit" class="btn btn-primary">Add Section</button>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Existing Sections</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <tbody>{% for sec in avaiablesections %}<tr>
+              <td>{{ sec.section }}</td>
+              <td><span class="badge bg-blue-lt">Active</span></td>
+            </tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </div>
 
     {% elif subject %}
     <div class="card mb-4 border-0 shadow-sm" style="border-top: 3px solid #008877 !important;">
@@ -455,13 +622,13 @@
           {% csrf_token %}
           <input type="hidden" name="redurl" value="{{ request.get_full_path }}" />
           <input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
-          
+
           <div class="mb-3">
             <label class="form-label required">Standard Subject (Canonical)</label>
             <select name="subject_master" class="form-select" required>
               <option value="" disabled selected>Select a standard subject...</option>
               {% for sm in standard_subjects %}
-                <option value="{{ sm.id }}">{{ sm.canonical_name }} ({{ sm.code }})</option>
+              <option value="{{ sm.id }}">{{ sm.canonical_name }} ({{ sm.code }})</option>
               {% endfor %}
             </select>
             <small class="form-hint">Choose the standard subject to associate with this grade/section.</small>
@@ -472,7 +639,7 @@
             <select name="section" class="form-select">
               <option value="">All Sections</option>
               {% for sec in avaiablesections %}
-                <option value="{{ sec.id }}">{{ sec.section }}</option>
+              <option value="{{ sec.id }}">{{ sec.section }}</option>
               {% endfor %}
             </select>
             <small class="form-hint">Select a specific section, or assign to "All Sections".</small>
@@ -480,8 +647,10 @@
 
           <div class="mb-3">
             <label class="form-label">Internal Custom Name (Optional)</label>
-            <input type="text" class="form-control" name="subjectname" placeholder="Leave blank to use canonical name" style="text-transform: uppercase;" />
-            <small class="form-hint">Enter an internal name if it differs from the canonical subject name (e.g. for reports).</small>
+            <input type="text" class="form-control" name="subjectname" placeholder="Leave blank to use canonical name"
+              style="text-transform: uppercase;" />
+            <small class="form-hint">Enter an internal name if it differs from the canonical subject name (e.g. for
+              reports).</small>
           </div>
 
           <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
@@ -511,9 +680,11 @@
               <td class="font-weight-medium">{{ sub.subject }}</td>
               <td class="text-secondary small">
                 {% if sub.subject_master %}
-                  {{ sub.subject_master.canonical_name }} <span class="badge bg-teal-lt" style="background-color: rgba(0, 136, 119, 0.1) !important; color: #008877 !important;">{{ sub.subject_master.code }}</span>
+                {{ sub.subject_master.canonical_name }} <span class="badge bg-teal-lt"
+                  style="background-color: rgba(0, 136, 119, 0.1) !important; color: #008877 !important;">{{
+                  sub.subject_master.code }}</span>
                 {% else %}
-                  <span class="text-muted italic">None (Legacy)</span>
+                <span class="text-muted italic">None (Legacy)</span>
                 {% endif %}
               </td>
               <td>
@@ -521,9 +692,9 @@
               </td>
               <td>
                 {% if sub.status %}
-                  <span class="badge bg-success-lt">Enabled</span>
+                <span class="badge bg-success-lt">Enabled</span>
                 {% else %}
-                  <span class="badge bg-danger-lt">Disabled</span>
+                <span class="badge bg-danger-lt">Disabled</span>
                 {% endif %}
               </td>
             </tr>
@@ -547,7 +718,7 @@
           {% csrf_token %}
           <input type="hidden" name="redurl" value="{{ request.get_full_path }}" />
           <input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
-          
+
           <div class="row g-3">
             <div class="col-md-6 mb-3">
               <label class="form-label required">Student Name</label>
@@ -568,7 +739,7 @@
               <label class="form-label required">Section</label>
               <select name="section" class="form-select" required>
                 {% for sec in avaiablesections %}
-                  <option value="{{ sec.id }}">{{ sec.section }}</option>
+                <option value="{{ sec.id }}">{{ sec.section }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -581,7 +752,7 @@
               <input type="file" class="form-control" name="avatar" accept="image/*" />
             </div>
           </div>
-          
+
           <hr class="my-3" />
           <h5 class="mb-3">Parent/Guardian Details</h5>
           <div class="row g-3">
@@ -641,7 +812,8 @@
           <div class="row g-3">
             <div class="col-md-6 mb-3">
               <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="parent_can_view_result" id="parent_can_view_result" checked>
+                <input class="form-check-input" type="checkbox" name="parent_can_view_result"
+                  id="parent_can_view_result" checked>
                 <label class="form-check-label" for="parent_can_view_result">
                   Parent can view Result
                 </label>
@@ -649,7 +821,8 @@
             </div>
             <div class="col-md-6 mb-3">
               <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="parent_can_view_homework" id="parent_can_view_homework" checked>
+                <input class="form-check-input" type="checkbox" name="parent_can_view_homework"
+                  id="parent_can_view_homework" checked>
                 <label class="form-check-label" for="parent_can_view_homework">
                   Parent can view Homework
                 </label>
@@ -665,28 +838,80 @@
     </div>
 
     {% elif student_by_reg %}
-    <div class="card"><div class="card-header"><h3 class="card-title">Add Student by Registration</h3></div><div class="card-body"><form action="/panel/add_student_by_reg/" method="POST">{% csrf_token %}<input type="hidden" name="redurl" value="{{ request.get_full_path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" /><div class="mb-3"><label class="form-label">Reg. No.</label><input type="number" class="form-control" name="regno" required /></div><div class="mb-3"><label class="form-label">Roll No.</label><input type="number" class="form-control" name="rollno" required /></div><div class="mb-3">{% for sec in avaiablesections %}<div class="form-check"><input type="radio" name="section" value="{{ sec.id }}" class="form-check-input" required><label class="form-check-label">{{ sec.section }}</label></div>{% endfor %}</div><button type="submit" class="btn btn-primary">Add Student</button></form></div></div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Add Student by Registration</h3>
+      </div>
+      <div class="card-body">
+        <form action="/panel/add_student_by_reg/" method="POST">{% csrf_token %}<input type="hidden" name="redurl"
+            value="{{ request.get_full_path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
+          <div class="mb-3"><label class="form-label">Reg. No.</label><input type="number" class="form-control"
+              name="regno" required /></div>
+          <div class="mb-3"><label class="form-label">Roll No.</label><input type="number" class="form-control"
+              name="rollno" required /></div>
+          <div class="mb-3">{% for sec in avaiablesections %}<div class="form-check"><input type="radio" name="section"
+                value="{{ sec.id }}" class="form-check-input" required><label class="form-check-label">{{ sec.section
+                }}</label></div>{% endfor %}</div><button type="submit" class="btn btn-primary">Add Student</button>
+        </form>
+      </div>
+    </div>
 
     {% elif teacher %}
-    <div class="card"><div class="card-header"><h3 class="card-title">Assign Teacher</h3></div><div class="card-body"><form action="{% url 'assign_teacher' %}" method="POST">{% csrf_token %}<input type="hidden" name="redurl" value="{{ request.path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" /><div class="mb-3"><label class="form-label">Teacher</label><select name="req_teacher" class="form-select">{% for t in teachers %}<option value="{{ t.teacher.id }}">{{ t.teacher.first_name }} {{ t.teacher.last_name }}</option>{% endfor %}</select></div><div class="mb-3"><label class="form-label">Section</label><select class="form-select" name="section">{% for sec in avaiablesections %}<option value="{{ sec.id }}">{{ sec.section }}</option>{% endfor %}</select></div><div class="mb-3"><label class="form-label">Subject</label><select class="form-select" name="subject">{% for sub in subjects %}<option value="{{ sub.id }}">{{ sub.subject }}</option>{% endfor %}</select></div><button type="submit" class="btn btn-primary">Assign</button></form></div></div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Assign Teacher</h3>
+      </div>
+      <div class="card-body">
+        <form action="{% url 'panel:assign_teacher' %}" method="POST">{% csrf_token %}<input type="hidden" name="redurl"
+            value="{{ request.path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
+          <div class="mb-3"><label class="form-label">Teacher</label><select name="req_teacher" class="form-select">{%
+              for t in teachers %}<option value="{{ t.teacher.id }}">{{ t.teacher.first_name }} {{ t.teacher.last_name
+                }}</option>{% endfor %}</select></div>
+          <div class="mb-3"><label class="form-label">Section</label><select class="form-select" name="section">{% for
+              sec in avaiablesections %}<option value="{{ sec.id }}">{{ sec.section }}</option>{% endfor %}</select>
+          </div>
+          <div class="mb-3"><label class="form-label">Subject</label><select class="form-select" name="subject">{% for
+              sub in subjects %}<option value="{{ sub.id }}">{{ sub.subject }}</option>{% endfor %}</select></div>
+          <button type="submit" class="btn btn-primary">Assign</button>
+        </form>
+      </div>
+    </div>
 
     {% elif change_name %}
-    <div class="card"><div class="card-header"><h3 class="card-title">Rename Subject</h3></div><div class="card-body"><form action="/panel/renamesubject/" method="POST">{% csrf_token %}<input type="hidden" name="redurl" value="{{ request.path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" /><input type="hidden" name="sid" value="{{ cn_subject.id }}" /><div class="mb-3"><label class="form-label">New Name</label><input type="text" class="form-control" name="subjectname" value="{{ cn_subject }}" required /></div><button type="submit" class="btn btn-primary">Rename</button></form></div></div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Rename Subject</h3>
+      </div>
+      <div class="card-body">
+        <form action="/panel/renamesubject/" method="POST">{% csrf_token %}<input type="hidden" name="redurl"
+            value="{{ request.path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" /><input
+            type="hidden" name="sid" value="{{ cn_subject.id }}" />
+          <div class="mb-3"><label class="form-label">New Name</label><input type="text" class="form-control"
+              name="subjectname" value="{{ cn_subject }}" required /></div><button type="submit"
+            class="btn btn-primary">Rename</button>
+        </form>
+      </div>
+    </div>
 
     {% else %}
     <div class="card">
       <div class="card-body">
         <!-- Grade Summary Dashboard -->
         <div style="margin-bottom: 30px;">
-          <h2 style="color: var(--tblr-primary); text-align: center; margin-bottom: 25px; font-size: 28px; font-weight: 700;">
+          <h2
+            style="color: var(--tblr-primary); text-align: center; margin-bottom: 25px; font-size: 28px; font-weight: 700;">
             📊 Grade {{ g_level.grade_name|roman_grade }} Summary
           </h2>
 
           <!-- Statistics Cards -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 40px;">
+          <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 40px;">
             <!-- Total Students Card -->
-            <div style="background: linear-gradient(135deg, #066fd1 0%, #4299e1 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 15px rgba(6, 111, 209, 0.2);">
-              <div style="font-size: 13px; opacity: 0.9; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Total Students</div>
+            <div
+              style="background: linear-gradient(135deg, #066fd1 0%, #4299e1 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 15px rgba(6, 111, 209, 0.2);">
+              <div
+                style="font-size: 13px; opacity: 0.9; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                Total Students</div>
               <div class="d-flex align-items-center justify-content-between">
                 <div style="font-size: 38px; font-weight: 700;">{{ students|length }}</div>
                 <div class="d-flex flex-column gap-2">
@@ -702,23 +927,31 @@
             </div>
 
             <!-- Total Sections Card -->
-            <div style="background: linear-gradient(135deg, #2fb344 0%, #74b816 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 15px rgba(47, 179, 68, 0.2);">
-              <div style="font-size: 13px; opacity: 0.9; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Total Sections</div>
+            <div
+              style="background: linear-gradient(135deg, #2fb344 0%, #74b816 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 15px rgba(47, 179, 68, 0.2);">
+              <div
+                style="font-size: 13px; opacity: 0.9; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                Total Sections</div>
               <div style="font-size: 38px; font-weight: 700; margin-bottom: 5px;">{{ avaiablesections|length }}</div>
               <div style="font-size: 12px; opacity: 0.8; margin-top: 10px;">Configured sections</div>
             </div>
 
             <!-- Total Subjects Card -->
-            <div style="background: linear-gradient(135deg, #f76707 0%, #f59f00 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 15px rgba(247, 103, 7, 0.2);">
-              <div style="font-size: 13px; opacity: 0.9; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Course Load</div>
+            <div
+              style="background: linear-gradient(135deg, #f76707 0%, #f59f00 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 15px rgba(247, 103, 7, 0.2);">
+              <div
+                style="font-size: 13px; opacity: 0.9; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">
+                Course Load</div>
               <div style="font-size: 38px; font-weight: 700; margin-bottom: 5px;">{{ subjects|length }}</div>
               <div style="font-size: 12px; opacity: 0.8; margin-top: 10px;">Active subjects in curriculum</div>
             </div>
           </div>
 
           <!-- Quick Actions Grid -->
-          <div style="background: rgba(var(--tblr-primary-rgb), 0.03); border-radius: 12px; padding: 25px; border: 1px dashed rgba(var(--tblr-primary-rgb), 0.2);">
-            <h4 style="color: var(--tblr-primary); margin-bottom: 20px; font-weight: 700; display: flex; align-items: center;">
+          <div
+            style="background: rgba(var(--tblr-primary-rgb), 0.03); border-radius: 12px; padding: 25px; border: 1px dashed rgba(var(--tblr-primary-rgb), 0.2);">
+            <h4
+              style="color: var(--tblr-primary); margin-bottom: 20px; font-weight: 700; display: flex; align-items: center;">
               <i class="ti ti-rocket me-2"></i> Quick Management Actions
             </h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
@@ -738,12 +971,14 @@
           </div>
 
           <!-- Guidance Card -->
-          <div style="margin-top: 25px; padding: 20px; background-color: #f8fafc; border-left: 5px solid var(--tblr-primary); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+          <div
+            style="margin-top: 25px; padding: 20px; background-color: #f8fafc; border-left: 5px solid var(--tblr-primary); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
             <strong style="color: var(--tblr-primary); font-size: 15px;">💡 Management Tips:</strong>
             <ul style="margin: 12px 0 0 20px; font-size: 14px; color: #475569; line-height: 1.6;">
               <li>Click <strong>"List Student"</strong> in the sidebar to manage enrollment and results.</li>
               <li>Use <strong>"List Attendance"</strong> for term-wise student attendance reporting.</li>
-              <li>Assign <strong>Houses</strong> and <strong>Sections</strong> using the respective tools in the menu.</li>
+              <li>Assign <strong>Houses</strong> and <strong>Sections</strong> using the respective tools in the menu.
+              </li>
               <li>You can collapse the sidebar for more space when viewing large student tables.</li>
             </ul>
           </div>
@@ -756,22 +991,30 @@
 
 <!-- Modal -->
 <div class="modal fade" id="printModal" tabindex="-1">
-  <div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Print Options</h5></div><div class="modal-body">
-    <a href="/panel/print/studentdetail/" target="_blank">Print All</a><br>
-    {% for sec in avaiablesections %}<a href="/panel/print/studentdetail/{{gradelevel}}/{{ sec.id }}/" target="_blank">Section {{ sec.section }}</a><br>{% endfor %}
-  </div></div></div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5>Print Options</h5>
+      </div>
+      <div class="modal-body">
+        <a href="/panel/print/studentdetail/" target="_blank">Print All</a><br>
+        {% for sec in avaiablesections %}<a href="/panel/print/studentdetail/{{gradelevel}}/{{ sec.id }}/"
+          target="_blank">Section {{ sec.section }}</a><br>{% endfor %}
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock content %}
 
 {% block scripts %}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
     const toggleBtn = document.getElementById('sidebar-toggle');
     const layoutRow = document.getElementById('layout-row');
     const toggleText = document.querySelector('.toggle-text');
     const savedState = localStorage.getItem('sidebar-collapsed');
     if (savedState === 'true') { layoutRow.classList.add('sidebar-collapsed'); toggleText.textContent = 'Expand'; }
-    toggleBtn.addEventListener('click', function() {
+    toggleBtn.addEventListener('click', function () {
       const isCollapsed = layoutRow.classList.toggle('sidebar-collapsed');
       localStorage.setItem('sidebar-collapsed', isCollapsed);
       toggleText.textContent = isCollapsed ? 'Expand' : 'Collapse View';
