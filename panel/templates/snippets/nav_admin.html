@@ -67,6 +67,8 @@
               <a class="dropdown-item" href="{% url 'panel:fullmarks' %}" target="_blank">Full Mark / Pass Mark</a>
               <a class="dropdown-item" href="{% url 'panel:subjectwisemarks' %}" target="_blank">Subjectwise Marks</a>
               <a class="dropdown-item" href="{% url 'panel:add_teacher' %}" target="_blank">Teacher</a>
+
+              {% comment %}
               {% if all_sessions %}
               <div class="dropdown-divider"></div>
               <div class="px-3 py-2">
@@ -76,12 +78,14 @@
                   <select name="session_id" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="" disabled selected>Select Session...</option>
                     {% for sess in all_sessions %}
-                    <option value="{{ sess.id }}" {% if sess.id == current_session.id %}selected{% endif %}>{{ sess.year }}</option>
+                    <option value="{{ sess.id }}" {% if sess.id==current_session.id %}selected{% endif %}>{{ sess.year
+                      }}</option>
                     {% endfor %}
                   </select>
                 </form>
               </div>
               {% endif %}
+              {% endcomment %}
             </div>
           </li>
 
