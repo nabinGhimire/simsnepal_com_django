@@ -361,17 +361,16 @@
             <select name="term" id="term_list" class="form-select"
               onchange="window.location = '?list=attendance&term=' + this.value + '&section=' + document.getElementById('section_filter_list').value">
               <option value="">Select Term...</option>
-              {% for value in exam_types %}<option value="{{ value.id }}" {% if
-                this_term.id|int_filter==value.id|int_filter %}selected{% endif %}>{{ value.term_name }}</option>{%
-              endfor %}
+              {% for value in exam_types %}<option value="{{ value.id }}" {% if this_term.id|int_filter == value.id|int_filter %}selected{% endif %}>{{ value.term_name }}</option>{% endfor %}
             </select>
           </div>
           <div class="col-md-4">
             <select name="section_filter" id="section_filter_list" class="form-select"
               onchange="window.location = '?list=attendance&term=' + document.getElementById('term_list').value + '&section=' + this.value">
               <option value="">All Sections</option>
-              {% for sec in avaiablesections %}<option value="{{ sec.id }}" {% if this_section.id==sec.id %}selected{%
-                endif %}>{{ sec.section }}</option>{% endfor %}
+              {% for sec in avaiablesections %}
+                <option value="{{ sec.id }}" {% if this_section.id == sec.id %}selected{% endif %}>{{ sec.section }}</option>
+              {% endfor %}
             </select>
           </div>
         </div>
@@ -433,8 +432,7 @@
                 <td>
                   <select name="{{ student.student.reg_no }}" class="form-select">
                     <option value="0">Select House...</option>
-                    {% for house in houses %}<option value="{{house.id}}" {% if student.student.house.id==house.id
-                      %}selected{% endif %}>{{ house.name }}</option>{% endfor %}
+                    {% for house in houses %}<option value="{{ house.id }}" {% if student.student.house.id == house.id %}selected{% endif %}>{{ house.name }}</option>{% endfor %}
                   </select>
                 </td>
               </tr>
@@ -475,8 +473,7 @@
                 <td>
                   <select name="{{ student.student.reg_no }}" class="form-select">
                     <option value="0">Select Section...</option>
-                    {% for section in avaiablesections %}<option value="{{section.id}}" {% if
-                      student.section.id==section.id %}selected{% endif %}>{{ section.section }}</option>{% endfor %}
+                    {% for section in avaiablesections %}<option value="{{section.id}}" {% if student.section.id == section.id %}selected{% endif %}>{{ section.section }}</option>{% endfor %}
                   </select>
                 </td>
               </tr>
@@ -532,18 +529,19 @@
             <div class="col-md-4">
               <select name="term" id="term" class="form-select"
                 onchange="window.location = '?add=attendance&term=' + this.value + '&section=' + document.getElementById('section_filter').value">
-                <option value="">Choose Term...</option>
-                {% for value in exam_types %}<option value="{{ value.id }}" {% if
-                  this_term.id|int_filter==value.id|int_filter %}selected{% endif %}>{{ value.term_name }}</option>{%
-                endfor %}
+                <option value="">Select Term...</option>
+              {% for value in exam_types %}
+                <option value="{{ value.id }}"{% if this_term.id|int_filter == value.id|int_filter %} selected{% endif %}>{{ value.term_name }}</option>
+              {% endfor %}
               </select>
             </div>
             <div class="col-md-4">
               <select name="section_filter" id="section_filter" class="form-select"
                 onchange="window.location = '?add=attendance&term=' + document.getElementById('term').value + '&section=' + this.value">
                 <option value="">All Sections</option>
-                {% for sec in avaiablesections %}<option value="{{ sec.id }}" {% if this_section.id==sec.id %}selected{%
-                  endif %}>{{ sec.section }}</option>{% endfor %}
+                {% for sec in avaiablesections %}
+                  <option value="{{ sec.id }}" {% if this_section.id == sec.id %}selected{% endif %}>{{ sec.section }}</option>
+                {% endfor %}
               </select>
             </div>
           </div>
@@ -849,9 +847,15 @@
               name="regno" required /></div>
           <div class="mb-3"><label class="form-label">Roll No.</label><input type="number" class="form-control"
               name="rollno" required /></div>
-          <div class="mb-3">{% for sec in avaiablesections %}<div class="form-check"><input type="radio" name="section"
-                value="{{ sec.id }}" class="form-check-input" required><label class="form-check-label">{{ sec.section
-                }}</label></div>{% endfor %}</div><button type="submit" class="btn btn-primary">Add Student</button>
+          <div class="mb-3">
+            {% for sec in avaiablesections %}
+            <div class="form-check">
+              <input type="radio" name="section" value="{{ sec.id }}" class="form-check-input" required>
+              <label class="form-check-label">{{ sec.section }}</label>
+            </div>
+            {% endfor %}
+          </div>
+          <button type="submit" class="btn btn-primary">Add Student</button>
         </form>
       </div>
     </div>
@@ -862,16 +866,34 @@
         <h3 class="card-title">Assign Teacher</h3>
       </div>
       <div class="card-body">
-        <form action="{% url 'panel:assign_teacher' %}" method="POST">{% csrf_token %}<input type="hidden" name="redurl"
-            value="{{ request.path }}" /><input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
-          <div class="mb-3"><label class="form-label">Teacher</label><select name="req_teacher" class="form-select">{%
-              for t in teachers %}<option value="{{ t.teacher.id }}">{{ t.teacher.first_name }} {{ t.teacher.last_name
-                }}</option>{% endfor %}</select></div>
-          <div class="mb-3"><label class="form-label">Section</label><select class="form-select" name="section">{% for
-              sec in avaiablesections %}<option value="{{ sec.id }}">{{ sec.section }}</option>{% endfor %}</select>
+        <form action="{% url 'panel:assign_teacher' %}" method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="redurl" value="{{ request.path }}" />
+          <input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
+          <div class="mb-3">
+            <label class="form-label">Teacher</label>
+            <select name="req_teacher" class="form-select">
+              {% for t in teachers %}
+              <option value="{{ t.teacher.id }}">{{ t.teacher.first_name }} {{ t.teacher.last_name }}</option>
+              {% endfor %}
+            </select>
           </div>
-          <div class="mb-3"><label class="form-label">Subject</label><select class="form-select" name="subject">{% for
-              sub in subjects %}<option value="{{ sub.id }}">{{ sub.subject }}</option>{% endfor %}</select></div>
+          <div class="mb-3">
+            <label class="form-label">Section</label>
+            <select class="form-select" name="section">
+              {% for sec in avaiablesections %}
+              <option value="{{ sec.id }}">{{ sec.section }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Subject</label>
+            <select class="form-select" name="subject">
+              {% for sub in subjects %}
+              <option value="{{ sub.id }}">{{ sub.subject }}</option>
+              {% endfor %}
+            </select>
+          </div>
           <button type="submit" class="btn btn-primary">Assign</button>
         </form>
       </div>
