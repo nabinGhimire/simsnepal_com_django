@@ -63,13 +63,25 @@
               <span class="nav-link-title">ADD</span>
             </a>
             <div class="dropdown-menu">
+              <a class="dropdown-item" href="{% url 'panel:view_house' %}" target="_blank">House</a>
               <a class="dropdown-item" href="{% url 'panel:fullmarks' %}" target="_blank">Full Mark / Pass Mark</a>
               <a class="dropdown-item" href="{% url 'panel:subjectwisemarks' %}" target="_blank">Subjectwise Marks</a>
-              <form method="POST" action="{% url 'panel:switch_session' %}" class="d-inline">
-                {% csrf_token %}
-                <button type="submit" class="dropdown-item">Switch Session</button>
-                <a class="dropdown-item" href="{% url 'panel:add_teacher' %}" target="_blank">Teacher</a>
-              </form>
+              <a class="dropdown-item" href="{% url 'panel:add_teacher' %}" target="_blank">Teacher</a>
+              {% if all_sessions %}
+              <div class="dropdown-divider"></div>
+              <div class="px-3 py-2">
+                <form method="POST" action="{% url 'panel:switch_session' %}" class="m-0">
+                  {% csrf_token %}
+                  <label class="form-label small text-muted mb-1">Switch Session</label>
+                  <select name="session_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="" disabled selected>Select Session...</option>
+                    {% for sess in all_sessions %}
+                    <option value="{{ sess.id }}" {% if sess.id == current_session.id %}selected{% endif %}>{{ sess.year }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+              </div>
+              {% endif %}
             </div>
           </li>
 
@@ -92,7 +104,8 @@
               <span class="nav-link-title">EXAM</span>
             </a>
             <div class="dropdown-menu">
-              <a class="dropdown-item" href="{% url 'panel:subjectmanagement' %}" target="_blank">Subject Management</a>
+              {# <a class="dropdown-item" href="{% url 'panel:subjectmanagement' %}" target="_blank">Subject
+                Management</a> #}
               <a class="dropdown-item" href="{% url 'panel:termmanagement' %}">Term Management</a>
               <a class="dropdown-item" href="{% url 'panel:resultmanagement' %}">Result Management</a>
             </div>

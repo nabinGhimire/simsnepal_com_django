@@ -1518,7 +1518,7 @@ def edgradeitems(request, gradelevel):
     
     grade_level_all = GradeLevel.objects.all()
     grades = SchoolGrade.objects.filter(school=schoolbranch).order_by("grade_weight")
-    standard_subjects = SubjectMaster.objects.all().order_by('canonical_name')
+    standard_subjects = SubjectMaster.objects.filter(school=schoolbranch).order_by('canonical_name')
     
     try:
         this_grade = SchoolGrade.objects.get(id=int(gradelevel))

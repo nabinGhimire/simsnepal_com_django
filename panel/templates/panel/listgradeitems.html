@@ -369,7 +369,8 @@
               onchange="window.location = '?list=attendance&term=' + document.getElementById('term_list').value + '&section=' + this.value">
               <option value="">All Sections</option>
               {% for sec in avaiablesections %}
-                <option value="{{ sec.id }}" {% if this_section.id == sec.id %}selected{% endif %}>{{ sec.section }}</option>
+              <option value="{{ sec.id }}" {% if this_section.id==sec.id %}selected{% endif %}>{{ sec.section }}
+              </option>
               {% endfor %}
             </select>
           </div>
@@ -432,7 +433,8 @@
                 <td>
                   <select name="{{ student.student.reg_no }}" class="form-select">
                     <option value="0">Select House...</option>
-                    {% for house in houses %}<option value="{{ house.id }}" {% if student.student.house.id == house.id %}selected{% endif %}>{{ house.name }}</option>{% endfor %}
+                    {% for house in houses %}<option value="{{ house.id }}" {% if student.student.house.id==house.id
+                      %}selected{% endif %}>{{ house.name }}</option>{% endfor %}
                   </select>
                 </td>
               </tr>
@@ -473,7 +475,8 @@
                 <td>
                   <select name="{{ student.student.reg_no }}" class="form-select">
                     <option value="0">Select Section...</option>
-                    {% for section in avaiablesections %}<option value="{{section.id}}" {% if student.section.id == section.id %}selected{% endif %}>{{ section.section }}</option>{% endfor %}
+                    {% for section in avaiablesections %}<option value="{{section.id}}" {% if
+                      student.section.id==section.id %}selected{% endif %}>{{ section.section }}</option>{% endfor %}
                   </select>
                 </td>
               </tr>
@@ -530,9 +533,10 @@
               <select name="term" id="term" class="form-select"
                 onchange="window.location = '?add=attendance&term=' + this.value + '&section=' + document.getElementById('section_filter').value">
                 <option value="">Select Term...</option>
-              {% for value in exam_types %}
-                <option value="{{ value.id }}"{% if this_term.id|int_filter == value.id|int_filter %} selected{% endif %}>{{ value.term_name }}</option>
-              {% endfor %}
+                {% for value in exam_types %}
+                <option value="{{ value.id }}" {% if this_term.id|int_filter == value.id|int_filter %} selected{% endif
+                  %}>{{ value.term_name }}</option>
+                {% endfor %}
               </select>
             </div>
             <div class="col-md-4">
@@ -540,7 +544,8 @@
                 onchange="window.location = '?add=attendance&term=' + document.getElementById('term').value + '&section=' + this.value">
                 <option value="">All Sections</option>
                 {% for sec in avaiablesections %}
-                  <option value="{{ sec.id }}" {% if this_section.id == sec.id %}selected{% endif %}>{{ sec.section }}</option>
+                <option value="{{ sec.id }}" {% if this_section.id==sec.id %}selected{% endif %}>{{ sec.section }}
+                </option>
                 {% endfor %}
               </select>
             </div>
