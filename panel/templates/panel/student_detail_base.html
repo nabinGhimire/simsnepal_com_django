@@ -2,11 +2,11 @@
 {% block title %}Print Student Details - SIMSNepal.com{% endblock %}
 
 {% block navbar %}
-  {% if branchuser.admin_status %}
-    {% include 'snippets/nav_admin.html' %}
-  {% else %}
-    {% include 'snippets/nav_teacher.html' %}
-  {% endif %}
+{% if branchuser.admin_status %}
+{% include 'snippets/nav_admin.html' %}
+{% else %}
+{% include 'snippets/nav_teacher.html' %}
+{% endif %}
 {% endblock navbar %}
 
 {% block page_header %}
@@ -30,19 +30,19 @@
         <h3 class="card-title">Filter Students</h3>
       </div>
       <div class="card-body">
-        <form action="{% url 'student_detail' %}" method="POST">
+        <form action="{% url 'panel:student_detail' %}" method="POST">
           {% csrf_token %}
 
           <div class="row g-3 mb-4">
             <div class="col-md-6">
-                <label class="form-label" for="grade">Select Grade</label>
-                <select name="grade" id="grade" class="form-select" onchange="populate(this.id,'section')" required>
-                  <option value="" disabled selected>Choose Grade...</option>
-                  <option value="all">All Grades</option>
-                  {% for grade in grades %}
-                    <option value="{{ grade.id }}">{{ grade.grade_name|upper }}</option>
-                  {% endfor %}
-                </select>
+              <label class="form-label" for="grade">Select Grade</label>
+              <select name="grade" id="grade" class="form-select" onchange="populate(this.id,'section')" required>
+                <option value="" disabled selected>Choose Grade...</option>
+                <option value="all">All Grades</option>
+                {% for grade in grades %}
+                <option value="{{ grade.id }}">{{ grade.grade_name|upper }}</option>
+                {% endfor %}
+              </select>
             </div>
 
             <div class="col-md-6">
@@ -75,7 +75,8 @@
                     </div>
                     <div>
                       <span class="d-block mb-1"><strong>Wide Layout (Every Detail)</strong></span>
-                      <span class="text-secondary small">All information in a single row per student. Best for landscape printing.</span>
+                      <span class="text-secondary small">All information in a single row per student. Best for landscape
+                        printing.</span>
                     </div>
                   </div>
                 </label>
@@ -118,7 +119,7 @@
       var newOption = document.createElement("option");
       newOption.value = pair[0];
       newOption.innerHTML = pair[1];
-      if(i === 0) newOption.disabled = true; // placeholder disabled
+      if (i === 0) newOption.disabled = true; // placeholder disabled
       s2El.options.add(newOption);
     }
   }
