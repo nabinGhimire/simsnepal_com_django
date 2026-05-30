@@ -66,6 +66,7 @@ urlpatterns = [
     path("profile/", views.profile, name="profile"),
     path("profile/change-password/", views.change_password, name="change_password"),
     path("settings/grades/", views.manage_grades, name="manage_grades"),
+    path("settings/switch-session/", views.switch_session, name="switch_session"),
     path("settings/standard-subjects/", views.manage_standard_subjects, name="manage_standard_subjects"),
     path("settings/school/", views.school_settings, name="school_settings"),
     path("migration", views.migration, name="migration"),
