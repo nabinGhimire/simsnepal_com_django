@@ -427,6 +427,7 @@ def teacher_homework(request):
             logger.debug("No date provided, using today: %s", selected_date)
 
         # Prepare context for template rendering
+        student_homeworks = []
         context = {
             'student_homeworks': student_homeworks,
             'selected_date': str(selected_date),
