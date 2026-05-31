@@ -243,8 +243,8 @@
             <tbody>
               {% for subject in subjects %}
               <tr>
-                <td><a href="{{ request.path }}?cn={{ subject.id }}" data-bs-toggle="tooltip" title="Rename Subject">{{
-                    subject.subject }}</a></td>
+                <td><a href="{{ request.path }}?cn={{ subject.id }}" data-bs-toggle="tooltip" title="Rename Subject">
+                {{ subject.subject }}</a></td>
                 <td><span class="badge bg-purple-lt">{{ subject.section.section|default:"All Sections" }}</span></td>
                 <td>
                   {% if subject.status %}
@@ -682,8 +682,8 @@
               <td class="text-secondary small">
                 {% if sub.subject_master %}
                 {{ sub.subject_master.canonical_name }} <span class="badge bg-teal-lt"
-                  style="background-color: rgba(0, 136, 119, 0.1) !important; color: #008877 !important;">{{
-                  sub.subject_master.code }}</span>
+                  style="background-color: rgba(0, 136, 119, 0.1) !important; color: #008877 !important;">
+                  {{ sub.subject_master.code }}</span>
                 {% else %}
                 <span class="text-muted italic">None (Legacy)</span>
                 {% endif %}
