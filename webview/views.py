@@ -431,7 +431,6 @@ def teacher_homework(request):
         context = {
             'student_homeworks': student_homeworks,
             'selected_date': str(selected_date),
-            'parent_phone': phone,
             'token': request.GET.get("token", ""),
         }
 
