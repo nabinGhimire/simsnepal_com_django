@@ -8407,12 +8407,15 @@ def print_homeworks(request):
     home_works_by_date = defaultdict(list)
 
     for item in homeworks:
-        date_key = str(item.nepali_date)
+        # Use Gregorian date for grouping and ordering
+        date_key = item.date.isoformat() if item.date else str(item.nepali_date)
         hw_data = {
             "id": item.id,
             "grade": item.grade,
             "section": item.section,
-            "hw": {}
+            "hw": {},
+            "nepali_date": str(item.nepali_date),
+            "date": date_key,
         }
 
         hw_items = json.loads(item.homework)
@@ -8421,9 +8424,9 @@ def print_homeworks(request):
 
         home_works_by_date[date_key].append(hw_data)
 
-    # Convert to list and keep dates in order
+    # Convert to list and keep dates in order (sorted by Gregorian date descending)
     dates_ordered = sorted(home_works_by_date.keys(), reverse=True)
-    home_works_list = [{"date": date, "homeworks": home_works_by_date[date]} for date in dates_ordered]
+    home_works_list = [{"date": date, "nepali_date": next((hw["nepali_date"] for hw in home_works_by_date[date]), ""), "homeworks": home_works_by_date[date]} for date in dates_ordered]
 
     subject_access = dict()
     for teacher in teachers:

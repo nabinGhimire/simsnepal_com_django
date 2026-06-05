@@ -1,5 +1,13 @@
 {
     "python.languageServer": "None",
     "basedpyright.disableLanguageServices": false,
-    "basedpyright.analysis.typeCheckingMode": "basic"
+    "basedpyright.analysis.typeCheckingMode": "basic",
+    "files.associations": {
+        "**/templates/**/*.html": "django-html",
+        "**/*.html": "html"
+    },
+    "[django-html]": {
+        "editor.defaultFormatter": "monosans.djlint",
+        "editor.formatOnSave": true
+    }
 }
