@@ -8392,7 +8392,10 @@ def print_homeworks(request):
     grades = SchoolGrade.objects.filter(school=school_branch).order_by("id")
     teachers = Teacher.objects.filter(added_by=request.user)
     current_session = get_current_session()
-    homeworks = Homework.objects.filter(session=current_session, grade__school=school_branch).order_by('grade', '-date')
+    # Filter homeworks for today or newer (recently added)
+    from datetime import date
+    today = date.today()
+    homeworks = Homework.objects.filter(session=current_session, grade__school=school_branch).order_by('-date', 'grade')
     subjects = Subject.objects.filter(session=current_session, branch=school_branch, status=True)
 
     gs = {}
@@ -8446,6 +8449,7 @@ def print_homeworks(request):
         # In single-page mode, homework_days will just have one day entry
         homework_days = page_obj.object_list
 
+    today_nepali_date = str(nepali_datetime.date.today())
     context = {
         'teachers': teachers,
         'homework_days': homework_days,
@@ -8457,6 +8461,7 @@ def print_homeworks(request):
         'school_branch': school_branch,
         "subject_access": subject_access,
         "school": school_branch,
+        "today_nepali_date": today_nepali_date,
     }
     return render(request, "panel/homeworks.html", context)
     
