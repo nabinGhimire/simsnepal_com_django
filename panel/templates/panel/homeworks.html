@@ -4,9 +4,15 @@
 {% block extra_css %}
 <style>
   @media print {
+
     /* Reset global overflows and heights that truncate content 
        This is critical for fixing the "half page" or "one page" truncation */
-    html, body, .page, .page-wrapper, .page-body, .container-xl {
+    html,
+    body,
+    .page,
+    .page-wrapper,
+    .page-body,
+    .container-xl {
       overflow: visible !important;
       height: auto !important;
       min-height: auto !important;
@@ -15,17 +21,22 @@
       padding: 0 !important;
       display: block !important;
     }
-    
+
     /* Ensure the main container doesn't have flex issues during print */
     .page-wrapper {
       display: block !important;
     }
 
     /* Hide UI elements */
-    .navbar, .page-header, .pagination, .page-pretitle, .d-print-none, .footer {
+    .navbar,
+    .page-header,
+    .pagination,
+    .page-pretitle,
+    .d-print-none,
+    .footer {
       display: none !important;
     }
-    
+
     /* Page break after each day's homework card */
     .card {
       page-break-after: always;
@@ -34,34 +45,42 @@
       box-shadow: none !important;
       margin-bottom: 2rem !important;
     }
-    
+
     /* Ensure tables don't scroll and show all content */
     .table-responsive {
       overflow: visible !important;
       display: block !important;
     }
+
     .table {
       width: 100% !important;
       border-collapse: collapse !important;
     }
-    .table th, .table td {
+
+    .table th,
+    .table td {
       word-wrap: break-word !important;
       white-space: normal !important;
     }
 
     /* Tighten spacing for print */
-    .card-body { padding: 1rem !important; }
-    .mb-4 { margin-bottom: 1rem !important; }
+    .card-body {
+      padding: 1rem !important;
+    }
+
+    .mb-4 {
+      margin-bottom: 1rem !important;
+    }
   }
 </style>
 {% endblock extra_css %}
 
 {% block navbar %}
-  {% if branch_user.admin_status %}
-    {% include 'snippets/nav_admin.html' %}
-  {% else %}
-    {% include 'snippets/nav_teacher.html' %}
-  {% endif %}
+{% if branch_user.admin_status %}
+{% include 'snippets/nav_admin.html' %}
+{% else %}
+{% include 'snippets/nav_teacher.html' %}
+{% endif %}
 {% endblock navbar %}
 
 {% block page_header %}
@@ -75,13 +94,13 @@
       <div class="col-auto ms-auto d-print-none">
         <div class="btn-list">
           {% if show_all %}
-            <a href="?" class="btn btn-outline-primary">
-              <i class="ti ti-list me-1"></i> View Paginated
-            </a>
+          <a href="?" class="btn btn-outline-primary">
+            <i class="ti ti-list me-1"></i> View Paginated
+          </a>
           {% else %}
-            <a href="?all=true" class="btn btn-outline-primary">
-              <i class="ti ti-files me-1"></i> Prepare All for Print
-            </a>
+          <a href="?all=true" class="btn btn-outline-primary">
+            <i class="ti ti-files me-1"></i> Prepare All for Print
+          </a>
           {% endif %}
           <button class="btn btn-outline-success" onclick="exportToCSV()">
             <i class="ti ti-file-spreadsheet me-1"></i> Export CSV
@@ -98,88 +117,88 @@
 
 {% block content %}
 {% if homework_days %}
-  {% for day_data in homework_days %}
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3 class="card-title">Homeworks for: {{ day_data.date }}</h3>
-      </div>
-      <div class="card-body">
-        {% for homework in day_data.homeworks %}
-          <div class="mb-4">
-            <div class="mb-2 text-secondary">
-              Grade: <strong>{{ homework.grade }}</strong>
-              <span class="mx-2">•</span>
-              Section: <strong>{{ homework.section }}</strong>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-vcenter table-striped">
-                <thead>
-                  <tr>
-                    <th style="width: 30%;">Subject</th>
-                    <th>Homework</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for subject_name, homework_text in homework.hw.items %}
-                    <tr>
-                      <td class="fw-semibold">{{ subject_name }}</td>
-                      <td>{{ homework_text }}</td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  {% endfor %}
-{% else %}
-  <div class="empty">
-    <div class="empty-icon">
-      <i class="ti ti-inbox fs-1"></i>
-    </div>
-    <p class="empty-title">No homeworks found</p>
-    <p class="empty-subtitle text-secondary">There are no homeworks for the current session.</p>
+{% for day_data in homework_days %}
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title">Homeworks for: {{ day_data.nepali_date }}</h3>
   </div>
+  <div class="card-body">
+    {% for homework in day_data.homeworks %}
+    <div class="mb-4">
+      <div class="mb-2 text-secondary">
+        Grade: <strong>{{ homework.grade }}</strong>
+        <span class="mx-2">•</span>
+        Section: <strong>{{ homework.section }}</strong>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter table-striped">
+          <thead>
+            <tr>
+              <th style="width: 30%;">Subject</th>
+              <th>Homework</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for subject_name, homework_text in homework.hw.items %}
+            <tr>
+              <td class="fw-semibold">{{ subject_name }}</td>
+              <td>{{ homework_text }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="empty">
+  <div class="empty-icon">
+    <i class="ti ti-inbox fs-1"></i>
+  </div>
+  <p class="empty-title">No homeworks found</p>
+  <p class="empty-subtitle text-secondary">There are no homeworks for the current session.</p>
+</div>
 {% endif %}
 
 {% if page_obj.has_other_pages %}
-  <div class="mt-4">
-    <ul class="pagination justify-content-center">
-      {% if page_obj.has_previous %}
-        <li class="page-item">
-          <a class="page-link" href="?page=1">First</a>
-        </li>
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-        </li>
-      {% else %}
-        <li class="page-item disabled"><span class="page-link">First</span></li>
-        <li class="page-item disabled"><span class="page-link">Previous</span></li>
-      {% endif %}
+<div class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?page=1">First</a>
+    </li>
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+    </li>
+    {% else %}
+    <li class="page-item disabled"><span class="page-link">First</span></li>
+    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+    {% endif %}
 
-      {% for num in page_obj.paginator.page_range %}
-        {% if num == page_obj.number %}
-          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-        {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
-          <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-        {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    {% if num == page_obj.number %}
+    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+    {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:'-2' and num <=
+      page_obj.number|add:'2' %} <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+      {% endif %}
       {% endfor %}
 
       {% if page_obj.has_next %}
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-        </li>
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
-        </li>
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+      </li>
       {% else %}
-        <li class="page-item disabled"><span class="page-link">Next</span></li>
-        <li class="page-item disabled"><span class="page-link">Last</span></li>
+      <li class="page-item disabled"><span class="page-link">Next</span></li>
+      <li class="page-item disabled"><span class="page-link">Last</span></li>
       {% endif %}
-    </ul>
-  </div>
+  </ul>
+</div>
 {% endif %}
 {% endblock content %}
 
@@ -190,7 +209,7 @@
     if (!tables.length) { alert('No homework data to export.'); return; }
 
     var csv = ['"Date","Grade","Section","Subject","Homework"'];
-    tables.forEach(function(table) {
+    tables.forEach(function (table) {
       // Get the date from the closest card header
       var card = table.closest('.card');
       var date = '';
@@ -214,7 +233,7 @@
       var grade = parts[0] ? parts[0].replace('Grade:', '').trim() : '';
       var section = parts[1] ? parts[1].replace('Section:', '').trim() : '';
 
-      table.querySelectorAll('tbody tr').forEach(function(tr) {
+      table.querySelectorAll('tbody tr').forEach(function (tr) {
         var tds = tr.querySelectorAll('td');
         if (tds.length >= 2) {
           var subject = tds[0].textContent.trim().replace(/"/g, '""');
