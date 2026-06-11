@@ -614,7 +614,7 @@ def addstudent(request):
 
         student = Student(
             reg_no=reg_no,
-            pin_code=optional_fields["pin_code"] or 0,
+            pin_code=optional_fields["pin_code"] or randint(1000, 9999),
             name=studentname,
             gender=gender,
             dob=optional_fields["dob"],
