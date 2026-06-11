@@ -5316,7 +5316,7 @@ def add_teacher(request):
 
     # ------------------- SEARCH (REAL API ONLY) -------------------
     if search_query:
-        api_key = getattr(settings, 'HAMRO_BUSINESS_API_KEY', None)
+        api_key = getattr(settings, 'HAMRO_SYSTEM_API_KEY', None)
         if not api_key:
             message = "System misconfiguration: Missing API key. Contact support."
         else:
