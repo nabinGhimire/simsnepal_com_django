@@ -591,7 +591,7 @@ def addstudent(request):
         school = branchuser.school
 
         # Generate new registration number
-        reg_no = findNewRegNo(school)
+        reg_no = findNewRegNo(school.id)
 
         # Gather optional fields
         optional_fields = {
