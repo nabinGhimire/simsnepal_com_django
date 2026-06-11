@@ -555,85 +555,115 @@ def addteacher(request):
 
 
 @login_required
+@login_required
 def addstudent(request):
     user = request.user
     if request.method == "POST":
         gradelevel = request.POST.get("gradelevel")
         redurl = request.POST.get("redurl")
 
-        studentname = request.POST.get("studentname")
-        rollno = request.POST.get("rollno", 1)
-        gender = request.POST.get("gender") == "True"
+        # Required fields
+        studentname = request.POST.get("studentname", "").strip()
+        rollno = request.POST.get("rollno")
+        gender_str = request.POST.get("gender")
         section = request.POST.get("section")
-        dateofbirth = request.POST.get("dateofbirth", "")
 
-        tempaddr = request.POST.get("tempaddr", "")
-        peraddr = request.POST.get("peraddr", "")
-        fathersname = request.POST.get("fathersname", "")
-        fathersphone = request.POST.get("fathersphone")
-        fathersemail = request.POST.get("fathersemail", "")
-        mothersname = request.POST.get("mothersname", "")
-        mothersphone = request.POST.get("mothersphone")
-        mothersemail = request.POST.get("mothersemail", "")
-        guardianname = request.POST.get("guardianname", "")
-        guardianphone = request.POST.get("guardianphone")
-        guardianemail = request.POST.get("guardianemail", "")
-        
-        parent_can_view_result = request.POST.get("parent_can_view_result") == "on"
-        parent_can_view_homework = request.POST.get("parent_can_view_homework") == "on"
-        
-        avatar = request.FILES.get("avatar")
+        missing_fields = []
+        if not studentname:
+            missing_fields.append("Student Name")
+        if not rollno:
+            missing_fields.append("Roll No.")
+        if gender_str not in ["True", "False"]:
+            missing_fields.append("Gender")
+        if not section:
+            missing_fields.append("Section")
 
-        grade = SchoolGrade.objects.get(id=gradelevel)
-        userbranch = BranchUser.objects.get(user=user)
-        section_obj = Section.objects.get(id=section)
-        school = userbranch.school
-        current_session = get_current_session()
+        if missing_fields:
+            messages.error(request, f"Missing required fields: {', '.join(missing_fields)}")
+            return HttpResponseRedirect(redurl or "/panel/")
 
-        new_reg_no = findNewRegNo(userbranch.school.id)
-        pincode = randint(1000, 9999)
+        gender = gender_str == "True"
+        # Begin student creation logic
+        branchuser, err = get_branch_info(user)
+        if err:
+            messages.error(request, err)
+            return HttpResponseRedirect(redurl or "/panel/")
+        school = branchuser.school
 
-        student = Student()
-        student.reg_no = new_reg_no
-        student.pin_code = pincode
-        student.name = studentname
-        student.gender = gender
-        student.dob = dateofbirth
-        student.temporary_address = tempaddr
-        student.permanent_address = peraddr
-        student.fathers_name = fathersname
-        student.fathers_phone = fathersphone
-        student.fathers_email = fathersemail
-        student.mothers_name = mothersname
-        student.mothers_phone = mothersphone
-        student.mothers_email = mothersemail
-        student.guardian_name = guardianname
-        student.guardian_phone = guardianphone
-        student.guardian_email = guardianemail
-        student.school = school
-        
-        if avatar:
-            student.avatar = avatar
+        # Generate new registration number
+        reg_no = findNewRegNo(school)
 
+        # Gather optional fields
+        optional_fields = {
+            "pin_code": request.POST.get("pin_code"),
+            "dob": request.POST.get("dob"),
+            "iemis": request.POST.get("iemis"),
+            "house_id": request.POST.get("house"),
+            "temporary_address": request.POST.get("temporary_address"),
+            "permanent_address": request.POST.get("permanent_address"),
+            "fathers_name": request.POST.get("fathers_name"),
+            "fathers_phone": request.POST.get("fathers_phone"),
+            "fathers_email": request.POST.get("fathers_email"),
+            "mothers_name": request.POST.get("mothers_name"),
+            "mothers_phone": request.POST.get("mothers_phone"),
+            "mothers_email": request.POST.get("mothers_email"),
+            "guardian_name": request.POST.get("guardian_name"),
+            "guardian_phone": request.POST.get("guardian_phone"),
+            "guardian_email": request.POST.get("guardian_email"),
+        }
+
+        student = Student(
+            reg_no=reg_no,
+            pin_code=optional_fields["pin_code"] or 0,
+            name=studentname,
+            gender=gender,
+            dob=optional_fields["dob"],
+            iemis=optional_fields["iemis"],
+            school=school,
+            status=True,
+            publish_result=True,
+        )
+        # Set optional foreign keys if provided
+        if optional_fields["house_id"]:
+            try:
+                student.house = House.objects.get(id=optional_fields["house_id"])
+            except House.DoesNotExist:
+                pass
+        # Assign remaining optional fields
+        student.temporary_address = optional_fields["temporary_address"]
+        student.permanent_address = optional_fields["permanent_address"]
+        student.fathers_name = optional_fields["fathers_name"]
+        student.fathers_phone = optional_fields["fathers_phone"]
+        student.fathers_email = optional_fields["fathers_email"]
+        student.mothers_name = optional_fields["mothers_name"]
+        student.mothers_phone = optional_fields["mothers_phone"]
+        student.mothers_email = optional_fields["mothers_email"]
+        student.guardian_name = optional_fields["guardian_name"]
+        student.guardian_phone = optional_fields["guardian_phone"]
+        student.guardian_email = optional_fields["guardian_email"]
         student.save()
 
-        student_session = StudentSession.objects.create(
-            session=current_session,
+        # Resolve grade and section objects
+        try:
+            grade_obj = SchoolGrade.objects.get(id=gradelevel)
+            section_obj = Section.objects.get(id=section)
+        except (SchoolGrade.DoesNotExist, Section.DoesNotExist):
+            messages.error(request, "Invalid grade or section.")
+            return HttpResponseRedirect(redurl or "/panel/")
+
+        # Create StudentSession linking to grade and section
+        StudentSession.objects.create(
+            session=get_current_session(),
             student=student,
-            grade=grade,
+            grade=grade_obj,
             section=section_obj,
             roll_no=rollno,
             status=True,
-            parent_can_view_result=parent_can_view_result,
-            parent_can_view_homework=parent_can_view_homework
         )
 
-        return HttpResponseRedirect(redurl)
+        messages.success(request, f"Student {student.name} added successfully.")
+        return HttpResponseRedirect(redurl or "/panel/")
 
-    else:
-        return HttpResponse(
-            'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
-        )
 
 
 def findNewRegNo(school):
