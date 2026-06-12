@@ -269,9 +269,16 @@
                     <div class="text-center" style="width: 80px;">
                       <a href="{{ request.path }}?uta={{ ke }}&sub={{ key }}&sec={{ k }}" class="d-block mb-1 position-relative"
                         data-bs-toggle="tooltip" title="{{ v.name }} {% if v.status %}(Access Enabled){% else %}(Access Disabled){% endif %}">
+                        {% if v.photo %}
                         <div class="avatar avatar-md rounded"
-                          style="background-image: url({% if v.photo %}{{ v.photo }}{% else %}https://ui-avatars.com/api/?name={{ v.name|urlencode }}&background=random&color=fff{% endif %}); background-size: cover; width: 40px; height: 40px; margin: 0 auto; {% if v.status %}box-shadow: 0 0 0 2px #2fb344;{% else %}box-shadow: 0 0 0 2px #d63939; filter: grayscale(100%); opacity: 0.6;{% endif %}">
+                          style="background-image: url({{ v.photo }}); background-size: cover; width: 40px; height: 40px; margin: 0 auto; {% if v.status %}box-shadow: 0 0 0 2px #2fb344;{% else %}box-shadow: 0 0 0 2px #d63939; filter: grayscale(100%); opacity: 0.6;{% endif %}">
                         </div>
+                        {% else %}
+                        <div class="avatar avatar-md rounded bg-teal-lt text-teal fw-bold d-flex align-items-center justify-content-center"
+                          style="width: 40px; height: 40px; margin: 0 auto; font-size: 14px; {% if v.status %}box-shadow: 0 0 0 2px #2fb344;{% else %}box-shadow: 0 0 0 2px #d63939; filter: grayscale(100%); opacity: 0.6;{% endif %}">
+                          {{ v.name|slice:":2"|upper }}
+                        </div>
+                        {% endif %}
                         {% if v.status %}
                         <span class="badge bg-green badge-notification badge-pill"></span>
                         {% else %}

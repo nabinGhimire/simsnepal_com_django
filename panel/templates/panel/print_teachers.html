@@ -129,7 +129,7 @@
                 <td class="text-muted text-center">{{ forloop.counter }}</td>
                 <td class="text-center align-middle">
                   {% if teacher.teacher.hamro_profile.avatar_url %}
-                    <img src="{{ teacher.teacher.hamro_profile.avatar_url }}" class="avatar-circle" alt="Teacher Photo">
+                    <img src="{{ teacher.teacher.hamro_profile.avatar_url }}" class="avatar-circle" style="cursor: pointer;" alt="Teacher Photo" onclick="showTeacherImage('{{ teacher.teacher.hamro_profile.avatar_url }}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')" data-bs-toggle="tooltip" title="Click to view large">
                   {% else %}
                     <span class="avatar-placeholder bg-teal-lt text-teal">
                       {% if teacher.teacher.first_name or teacher.teacher.last_name %}
@@ -177,6 +177,20 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Teacher Image Modal -->
+<div class="modal modal-blur fade" id="teacherImageModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-body text-center py-4">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-2" data-bs-dismiss="modal" aria-label="Close"></button>
+        <img id="modalTeacherImage" src="" class="img-fluid rounded shadow-sm" style="max-height: 400px; object-fit: contain;">
+        <h3 id="modalTeacherName" class="mt-3 mb-0"></h3>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock content %}
 
 {% block scripts %}
@@ -227,6 +241,15 @@
 
   function exportToPDF() {
     window.print();
+  }
+
+  function showTeacherImage(smUrl, name) {
+    var lgUrl = smUrl.replace('/sm/', '/lg/');
+    document.getElementById('modalTeacherImage').src = lgUrl;
+    document.getElementById('modalTeacherName').textContent = name;
+    
+    var modal = new bootstrap.Modal(document.getElementById('teacherImageModal'));
+    modal.show();
   }
 </script>
 {% endblock scripts %}
