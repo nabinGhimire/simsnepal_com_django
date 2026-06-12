@@ -1567,7 +1567,7 @@ def edgradeitems(request, gradelevel):
     # Optimize teacher access lookup
     teacher_subject_access = TeacherSubjectAccess.objects.filter(
         session=current_session, grade=this_grade
-    ).select_related('teacher', 'subject', 'section')
+    ).select_related('teacher', 'teacher__hamro_profile', 'subject', 'section')
     
     teacher_access = {}
     for tsa in teacher_subject_access:
@@ -1580,11 +1580,18 @@ def edgradeitems(request, gradelevel):
         if t_id not in teacher_access[sub_id]:
             teacher_access[sub_id][t_id] = {}
             
+        try:
+            photo_url = tsa.teacher.hamro_profile.avatar_url
+            if not photo_url:
+                photo_url = None
+        except Exception:
+            photo_url = None
+
         teacher_access[sub_id][t_id][sec_id] = {
             'name': f"{tsa.teacher.first_name} {tsa.teacher.last_name}",
             'section': tsa.section.section,
             'status': tsa.status,
-            'photo': tsa.teacher.profile.photo.url if hasattr(tsa.teacher, 'profile') and tsa.teacher.profile.photo else None
+            'photo': photo_url
         }
 
     # Rest of the logic simplified
