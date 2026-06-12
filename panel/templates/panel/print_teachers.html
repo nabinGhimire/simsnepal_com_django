@@ -65,23 +65,35 @@
   .table th { background: #ebfbee; font-weight: 600; }
   .table tbody tr:hover { background: #f3fdf5; }
   .avatar-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1.5px solid #e9ecef;
-  }
-  .avatar-placeholder {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.8rem;
-    border: 1.5px solid #e9ecef;
-  }
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid #e9ecef;
+  transition: transform 0.2s ease-in-out;
+  cursor: pointer;
+}
+.avatar-circle:hover {
+  transform: scale(1.5);
+  z-index: 10;
+}
+.avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border: 1.5px solid #e9ecef;
+  transition: transform 0.2s ease-in-out;
+  cursor: pointer;
+}
+.avatar-placeholder:hover {
+  transform: scale(1.5);
+  z-index: 10;
+}
 </style>
 
 <div class="card">
@@ -125,20 +137,20 @@
           </thead>
           <tbody>
             {% for teacher in teachers %}
-              <tr>
+              <tr onclick="showTeacherImage('{% if teacher.teacher.hamro_profile.avatar_url %}{{ teacher.teacher.hamro_profile.avatar_url }}{% else %}{% static 'img/avatar-placeholder.png' %}{% endif %}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')">
                 <td class="text-muted text-center">{{ forloop.counter }}</td>
                 <td class="text-center align-middle">
                   {% if teacher.teacher.hamro_profile.avatar_url %}
-                    <img src="{{ teacher.teacher.hamro_profile.avatar_url }}" class="avatar-circle" style="cursor: pointer;" alt="Teacher Photo" onclick="showTeacherImage('{{ teacher.teacher.hamro_profile.avatar_url }}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')" data-bs-toggle="tooltip" title="Click to view large">
-                  {% else %}
-                    <span class="avatar-placeholder bg-teal-lt text-teal">
-                      {% if teacher.teacher.first_name or teacher.teacher.last_name %}
-                        {{ teacher.teacher.first_name|slice:":1"|upper }}{{ teacher.teacher.last_name|slice:":1"|upper }}
-                      {% else %}
-                        {{ teacher.teacher.username|slice:":2"|upper }}
-                      {% endif %}
-                    </span>
-                  {% endif %}
+  <img src="{{ teacher.teacher.hamro_profile.avatar_url }}" class="avatar-circle" style="cursor: pointer;" alt="Teacher Photo" onclick="showTeacherImage('{{ teacher.teacher.hamro_profile.avatar_url }}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')" data-bs-toggle="tooltip" title="Click to view large">
+{% else %}
+  <span class="avatar-placeholder bg-teal-lt text-teal" onclick="showTeacherImage('{% static 'img/avatar-placeholder.png' %}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')" data-bs-toggle="tooltip" title="Click to view">
+    {% if teacher.teacher.first_name or teacher.teacher.last_name %}
+      {{ teacher.teacher.first_name|slice:":1"|upper }}{{ teacher.teacher.last_name|slice:":1"|upper }}
+    {% else %}
+      {{ teacher.teacher.username|slice:":2"|upper }}
+    {% endif %}
+  </span>
+{% endif %}
                 </td>
                 <td class="fw-semibold">
                   {% if teacher.teacher.first_name or teacher.teacher.last_name %}
@@ -244,7 +256,12 @@
   }
 
   function showTeacherImage(smUrl, name) {
-    var lgUrl = smUrl.replace('/sm/', '/lg/');
+    var lgUrl;
+    if (smUrl.includes('avatar-placeholder.png')) {
+      lgUrl = smUrl;
+    } else {
+      lgUrl = smUrl.replace('/sm/', '/lg/');
+    }
     document.getElementById('modalTeacherImage').src = lgUrl;
     document.getElementById('modalTeacherName').textContent = name;
     

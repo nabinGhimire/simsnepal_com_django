@@ -81,13 +81,40 @@
     background: #fff;
     color: var(--tblr-primary);
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+    .avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid #e9ecef;
+  transition: transform 0.2s ease-in-out;
+  cursor: pointer;
+}
+.avatar-circle:hover {
+  transform: scale(1.5);
+  z-index: 10;
+}
+.avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border: 1.5px solid #e9ecef;
+  transition: transform 0.2s ease-in-out;
+  cursor: pointer;
+}
+.avatar-placeholder:hover {
+  transform: scale(1.5);
+  z-index: 10;
+}
+   .avatar-circle:hover {
+     transform: scale(1.5);
+     z-index: 10;
+   } cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: all 0.3s;
     z-index: 10;
@@ -267,23 +294,23 @@
                     {% for ke,ve in value.items %}
                     {% for k,v in ve.items %}
                     <div class="text-center" style="width: 80px;">
-                      <a href="{{ request.path }}?uta={{ ke }}&sub={{ key }}&sec={{ k }}" class="d-block mb-1 position-relative"
+                      <a href="{{ request.path }}?list=subject&uta={{ ke }}&sub={{ key }}&sec={{ k }}" class="d-block mb-1 position-relative"
                         data-bs-toggle="tooltip" title="{{ v.name }} {% if v.status %}(Access Enabled){% else %}(Access Disabled){% endif %}">
-                        {% if v.photo %}
-                        <div class="avatar avatar-md rounded"
-                          style="background-image: url({{ v.photo }}); background-size: cover; width: 40px; height: 40px; margin: 0 auto; {% if v.status %}box-shadow: 0 0 0 2px #2fb344;{% else %}box-shadow: 0 0 0 2px #d63939; filter: grayscale(100%); opacity: 0.6;{% endif %}">
+                        <div class="position-relative d-inline-block">
+                          {% if v.photo %}
+                          <div class="avatar avatar-md rounded"
+                            style="background-image: url({{ v.photo }}); background-size: cover; width: 40px; height: 40px; margin: 0 auto; {% if v.status %}box-shadow: 0 0 0 2px #2fb344;{% else %}box-shadow: 0 0 0 2px #d63939; filter: grayscale(100%); opacity: 0.6;{% endif %}">
+                          </div>
+                          {% else %}
+                          <img src="{% static 'img/avatar-placeholder.png' %}" class="avatar-placeholder" style="cursor: pointer;" alt="No Photo" onclick="showTeacherImage('{% static 'img/avatar-placeholder.png' %}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')" data-bs-toggle="tooltip" title="No image available">
+  </div>
+                          {% endif %}
+                          {% if v.status %}
+                          <span class="position-absolute top-0 start-100 translate-middle bg-success border border-white rounded-circle" style="width:8px;height:8px;"></span>
+                          {% else %}
+                          <span class="position-absolute top-0 start-100 translate-middle bg-danger border border-white rounded-circle" style="width:8px;height:8px;"></span>
+                          {% endif %}
                         </div>
-                        {% else %}
-                        <div class="avatar avatar-md rounded bg-teal-lt text-teal fw-bold d-flex align-items-center justify-content-center"
-                          style="width: 40px; height: 40px; margin: 0 auto; font-size: 14px; {% if v.status %}box-shadow: 0 0 0 2px #2fb344;{% else %}box-shadow: 0 0 0 2px #d63939; filter: grayscale(100%); opacity: 0.6;{% endif %}">
-                          {{ v.name|slice:":2"|upper }}
-                        </div>
-                        {% endif %}
-                        {% if v.status %}
-                        <span class="badge bg-green badge-notification badge-pill"></span>
-                        {% else %}
-                        <span class="badge bg-red badge-notification badge-pill"></span>
-                        {% endif %}
                       </a>
                       <div class="small text-muted" style="font-size: 10px;">Sec {{ v.section }}</div>
                     </div>
