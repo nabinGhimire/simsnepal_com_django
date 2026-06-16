@@ -137,19 +137,13 @@
           </thead>
           <tbody>
             {% for teacher in teachers %}
-              <tr onclick="showTeacherImage('{% if teacher.teacher.hamro_profile.avatar_url %}{{ teacher.teacher.hamro_profile.avatar_url }}{% else %}{% static 'img/avatar-placeholder.png' %}{% endif %}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')">
+              <tr>
                 <td class="text-muted text-center">{{ forloop.counter }}</td>
                 <td class="text-center align-middle">
                   {% if teacher.teacher.hamro_profile.avatar_url %}
-  <img src="{{ teacher.teacher.hamro_profile.avatar_url }}" class="avatar-circle" style="cursor: pointer;" alt="Teacher Photo" onclick="showTeacherImage('{{ teacher.teacher.hamro_profile.avatar_url }}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')" data-bs-toggle="tooltip" title="Click to view large">
+    <img src="{{ teacher.teacher.hamro_profile.avatar_url }}" class="avatar-circle" style="cursor: pointer;" alt="Teacher Photo" data-sm="{{ teacher.teacher.hamro_profile.avatar_url }}" data-name="{{ teacher.teacher.first_name|default:teacher.teacher.username }}" onclick="showTeacherImage(this.dataset.sm, this.dataset.name)" />
 {% else %}
-  <span class="avatar-placeholder bg-teal-lt text-teal" onclick="showTeacherImage('{% static 'img/avatar-placeholder.png' %}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')" data-bs-toggle="tooltip" title="Click to view">
-    {% if teacher.teacher.first_name or teacher.teacher.last_name %}
-      {{ teacher.teacher.first_name|slice:":1"|upper }}{{ teacher.teacher.last_name|slice:":1"|upper }}
-    {% else %}
-      {{ teacher.teacher.username|slice:":2"|upper }}
-    {% endif %}
-  </span>
+   <span class="avatar-placeholder bg-teal-lt text-teal" style="cursor:pointer;" data-sm="https://via.placeholder.com/32?text=No+Img" data-name="{{ teacher.teacher.first_name|default:teacher.teacher.username }}" onclick="showTeacherImage(this.dataset.sm, this.dataset.name)">{% if teacher.teacher.first_name or teacher.teacher.last_name %}{{ teacher.teacher.first_name|slice:":1"|upper }}{{ teacher.teacher.last_name|slice:":1"|upper }}{% else %}{{ teacher.teacher.username|slice:":2"|upper }}{% endif %}</span>
 {% endif %}
                 </td>
                 <td class="fw-semibold">
@@ -255,18 +249,27 @@
     window.print();
   }
 
-  function showTeacherImage(smUrl, name) {
-    var lgUrl;
-    if (smUrl.includes('avatar-placeholder.png')) {
+   function showTeacherImage(smUrl, name) {
+     var lgUrl;
+    if (smUrl.includes('avatar-placeholder.png') || smUrl.includes('placeholder.com')) {
       lgUrl = smUrl;
     } else {
       lgUrl = smUrl.replace('/sm/', '/lg/');
     }
-    document.getElementById('modalTeacherImage').src = lgUrl;
-    document.getElementById('modalTeacherName').textContent = name;
-    
-    var modal = new bootstrap.Modal(document.getElementById('teacherImageModal'));
-    modal.show();
-  }
+     document.getElementById('modalTeacherImage').src = lgUrl;
+     document.getElementById('modalTeacherName').textContent = name;
+     var modal = bootstrap.Modal.getInstance(document.getElementById('teacherImageModal'));
+     if (!modal) {
+       modal = new bootstrap.Modal(document.getElementById('teacherImageModal'));
+     }
+     modal.show();
+   }
+   function hideTeacherImage() {
+     var modalEl = document.getElementById('teacherImageModal');
+     var modal = bootstrap.Modal.getInstance(modalEl);
+     if (modal) {
+       modal.hide();
+     }
+   }
 </script>
 {% endblock scripts %}

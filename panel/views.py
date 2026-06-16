@@ -437,16 +437,24 @@ def listgradeitems(request, gradelevel):
 def addsection(request):
     if request.method == "POST":
         gradelevel = request.POST.get("gradelevel")
-        redurl = request.POST.get("redurl")
         sectionname = request.POST.get("sectionname")
-        print(gradelevel)
-
+        # Get branch user info
+        branchuser, err = get_branch_info(request.user)
+        if err:
+            return HttpResponse(err)
+        # Current session
+        session = get_current_session()
+        # Retrieve grade object
         grade = SchoolGrade.objects.get(id=gradelevel)
-
-        Section.objects.get_or_create(grade=grade, section=sectionname.upper())
-
-        return HttpResponseRedirect(redurl)
-
+        # Create or get Section with required fields
+        Section.objects.get_or_create(
+            session=session,
+            school=branchuser.school,
+            grade=grade,
+            section=sectionname.upper()
+        )
+        # Redirect to the grade page without query parameters
+        return HttpResponseRedirect(f"/panel/grades/{grade.id}/")
     else:
         return HttpResponse(
             'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
