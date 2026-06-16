@@ -387,28 +387,24 @@ def listgradeitems(request, gradelevel):
 
     if request.method == "GET" and "add" in request.GET:
         add = request.GET["add"]
-
         if add == "section":
-            section = True
-        elif add == "subject":
-            subject = True
-        elif add == "student":
-            student = True
-        elif add == "teacher":
-            teacher = True
-            # mainuser = BranchUser.objects.get(user=request.user)
-            # print(mainuser.id)
-
-            # schoolgrade = SchoolGrade.objects.get(school=mainuser.school, id=gradelevel.id)
-            # # allsection = Section.objects.filter(grade=gradelevel)
-            # # print(allsection)
-            # print(schoolgrade)
-            # section = Section.objects.filter(grade=schoolgrade)
-            # print(section)
+            # Redirect to the same page with a 'section' flag so the template renders the Add Section form
+            query_params = request.GET.copy()
+            query_params.pop('add', None)
+            query_params['section'] = '1'
+            return HttpResponseRedirect(f"{request.path}?{query_params.urlencode()}")
         else:
-            return HttpResponse(
-                'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
-            )
+            # Existing logic for other add types (subject, student, teacher)
+            if add == "subject":
+                subject = True
+            elif add == "student":
+                student = True
+            elif add == "teacher":
+                teacher = True
+            else:
+                return HttpResponse(
+                    'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
+                )
 
     context = {
         "grade_level": grade_level,
@@ -453,8 +449,12 @@ def addsection(request):
             grade=grade,
             section=sectionname.upper()
         )
-        # Redirect to the grade page without query parameters
-        return HttpResponseRedirect(f"/panel/grades/{grade.id}/")
+        # Redirect back to the referring page (preserve query parameters)
+        redurl = request.POST.get('redurl')
+        if redurl:
+            return HttpResponseRedirect(redurl)
+        else:
+            return HttpResponseRedirect(f"/panel/grades/{grade.id}/?add=section")
     else:
         return HttpResponse(
             'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
