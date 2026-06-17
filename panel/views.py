@@ -419,23 +419,21 @@ def listgradeitems(request, gradelevel):
     if request.method == "GET" and "add" in request.GET:
         add = request.GET["add"]
         if add == "section":
-            # Redirect to the same page with a 'section' flag so the template renders the Add Section form
-            query_params = request.GET.copy()
-            query_params.pop('add', None)
-            query_params['section'] = '1'
-            return HttpResponseRedirect(f"{request.path}?{query_params.urlencode()}")
+            # Show the Add Section form on the same page; preserve all query parameters
+            section = True
+        elif add == "subject":
+            subject = True
+        elif add == "student":
+            student = True
+        elif add == "teacher":
+            teacher = True
         else:
-            # Existing logic for other add types (subject, student, teacher)
-            if add == "subject":
-                subject = True
-            elif add == "student":
-                student = True
-            elif add == "teacher":
-                teacher = True
-            else:
-                return HttpResponse(
-                    'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
-                )
+            return HttpResponse(
+                'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
+            )
+
+    if request.method == "GET" and "section" in request.GET:
+        section = True
 
     context = {
         "grade_level": grade_level,
@@ -469,31 +467,24 @@ def addsection(request):
         branchuser, err = get_branch_info(request.user)
         if err:
             return HttpResponse(err)
-        # Current session
-        session = get_current_session()
-        # Retrieve grade object
-        grade = SchoolGrade.objects.get(id=gradelevel)
         # Security check: ensure grade belongs to user's school
         resp = ensure_branch_user(request, grade)
         if resp:
             return resp
-        # Create or get Section with required fields
+        # Create or get Section with required fields (ensure school_id is set)
         Section.objects.get_or_create(
-            session=session,
-            school=branchuser.school,
+            session=this_session,
+            school_id=branchuser.school.id,
             grade=grade,
             section=sectionname.upper()
         )
         # Redirect back to the referring page (preserve query parameters)
-        redurl = request.POST.get('redurl')
         if redurl:
             return HttpResponseRedirect(redurl)
         else:
             return HttpResponseRedirect(f"/panel/grades/{grade.id}/?add=section")
     else:
-        return HttpResponse(
-            'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
-        )
+        return HttpResponse('Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.')
 
 
 @login_required
@@ -5606,14 +5597,31 @@ def addsection(request):
         gradelevel = request.POST.get('gradelevel')
         redurl = request.POST.get('redurl')
         sectionname = request.POST.get('sectionname')
-        print(gradelevel)
-
-        grade = SchoolGrade.objects.get(id=gradelevel)
-
-        Section.objects.get_or_create(grade=grade, section=sectionname.upper(), session=this_session)
-
-        return HttpResponseRedirect(redurl)
-
+        # Retrieve grade object
+        try:
+            grade = SchoolGrade.objects.get(id=gradelevel)
+        except (ValueError, SchoolGrade.DoesNotExist):
+            return HttpResponse("Grade not found.")
+        # Get branch user info
+        branchuser, err = get_branch_info(request.user)
+        if err:
+            return HttpResponse(err)
+        # Security check: ensure grade belongs to user's school
+        resp = ensure_branch_user(request, grade)
+        if resp:
+            return resp
+        # Create or get Section with required fields (ensure school_id is set)
+        Section.objects.get_or_create(
+            session=this_session,
+            school_id=branchuser.school.id,
+            grade=grade,
+            section=sectionname.upper()
+        )
+        # Redirect back to the referring page (preserve query parameters)
+        if redurl:
+            return HttpResponseRedirect(redurl)
+        else:
+            return HttpResponseRedirect(f"/panel/grades/{grade.id}/?add=section")
     else:
         return HttpResponse('Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.')
 
