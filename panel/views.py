@@ -102,6 +102,7 @@ def get_current_session():
     except EduSession.DoesNotExist:
         return EduSession.objects.filter(status=True).order_by('-year').first()
 
+
 def get_branch_info(user):
     """Helper to get branch and school info for a user."""
     try:
@@ -114,6 +115,29 @@ def get_branch_info(user):
     except Exception as e:
         logger.error(f'Error in get_branch_info: {e}')
         return None, "Sorry! You are not allowed to access this page."
+
+# Security utility to ensure the accessed object belongs to the user's school
+def ensure_branch_user(request, obj):
+    """Raise HttpResponseForbidden if obj does not belong to the user's school.
+    Supports objects with a direct `school` attribute or a related `grade.school`.
+    """
+    from django.http import HttpResponseForbidden
+    branchuser, err = get_branch_info(request.user)
+    if err:
+        return HttpResponseForbidden(err)
+    # Determine the object's school
+    if hasattr(obj, 'school'):
+        obj_school = obj.school
+    elif hasattr(obj, 'grade') and hasattr(obj.grade, 'school'):
+        obj_school = obj.grade.school
+    else:
+        # Unknown object type, deny access
+        return HttpResponseForbidden('Access denied.')
+    if obj_school.id != branchuser.school.id:
+        # Render custom error page
+        return HttpResponseForbidden(render(request, 'panel/access_denied.html'))
+    # If all good, return None (no response)
+    return None
 
 exam_board = [10]
 
@@ -350,6 +374,7 @@ def addgrade(request, level):
 
 @login_required
 def listgradeitems(request, gradelevel):
+
     user = request.user
     message = " "
     success = ""
@@ -370,8 +395,14 @@ def listgradeitems(request, gradelevel):
     grades = SchoolGrade.objects.filter(school=schoolbranch).order_by("id")
 
     avaiablesections = Section.objects.filter(grade=gradelevel, school=branchuser.school)
-    gradelevel = SchoolGrade.objects.get(id=int(gradelevel))
-    subjects = Subject.objects.filter(branch=branchuser.school, grade=gradelevel.id)
+    grade_obj = SchoolGrade.objects.get(id=int(gradelevel))
+    # Security check: ensure grade belongs to user's school
+    resp = ensure_branch_user(request, grade_obj)
+    if resp:
+        return resp
+    subjects = Subject.objects.filter(branch=branchuser.school, grade=grade_obj.id)
+    # Use grade_obj for further logic
+    gradelevel = grade_obj
     students = Student.objects.filter(school=branchuser.school, grade=gradelevel.id)
 
     section = False
@@ -442,6 +473,10 @@ def addsection(request):
         session = get_current_session()
         # Retrieve grade object
         grade = SchoolGrade.objects.get(id=gradelevel)
+        # Security check: ensure grade belongs to user's school
+        resp = ensure_branch_user(request, grade)
+        if resp:
+            return resp
         # Create or get Section with required fields
         Section.objects.get_or_create(
             session=session,
@@ -541,6 +576,10 @@ def addteacher(request):
         # print(gradelevel, grade, section)
 
         grade = SchoolGrade.objects.get(id=gradelevel)
+        # Security check: ensure grade belongs to user's school
+        resp = ensure_branch_user(request, grade)
+        if resp:
+            return resp
         userbranch, error = get_branch_info(user)
         if error:
             return HttpResponse(error)
