@@ -563,7 +563,6 @@ def addteacher(request):
 
 
 @login_required
-@login_required
 def addstudent(request):
     user = request.user
     if request.method == "POST":
@@ -603,26 +602,25 @@ def addstudent(request):
 
         # Gather optional fields
         optional_fields = {
-            "pin_code": request.POST.get("pin_code"),
             "dob": request.POST.get("dob"),
             "iemis": request.POST.get("iemis"),
             "house_id": request.POST.get("house"),
-            "temporary_address": request.POST.get("temporary_address"),
-            "permanent_address": request.POST.get("permanent_address"),
-            "fathers_name": request.POST.get("fathers_name"),
-            "fathers_phone": request.POST.get("fathers_phone"),
-            "fathers_email": request.POST.get("fathers_email"),
-            "mothers_name": request.POST.get("mothers_name"),
-            "mothers_phone": request.POST.get("mothers_phone"),
-            "mothers_email": request.POST.get("mothers_email"),
-            "guardian_name": request.POST.get("guardian_name"),
-            "guardian_phone": request.POST.get("guardian_phone"),
-            "guardian_email": request.POST.get("guardian_email"),
+            "temporary_address": request.POST.get("tempaddr"),
+            "permanent_address": request.POST.get("peraddr"),
+            "fathers_name": request.POST.get("fathersname"),
+            "fathers_phone": request.POST.get("fathersphone"),
+            "fathers_email": request.POST.get("fathersemail"),
+            "mothers_name": request.POST.get("mothersname"),
+            "mothers_phone": request.POST.get("mothersphone"),
+            "mothers_email": request.POST.get("mothersemail"),
+            "guardian_name": request.POST.get("guardianname"),
+            "guardian_phone": request.POST.get("guardianphone"),
+            "guardian_email": request.POST.get("guardianemail"),
         }
 
         student = Student(
             reg_no=reg_no,
-            pin_code=optional_fields["pin_code"] or randint(1000, 9999),
+            pin_code= randint(1000, 9999),
             name=studentname,
             gender=gender,
             dob=optional_fields["dob"],
