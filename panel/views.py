@@ -605,20 +605,20 @@ def addstudent(request):
 
         # Gather optional fields
         optional_fields = {
-            "dob": request.POST.get("dob"),
-            "iemis": request.POST.get("iemis"),
-            "house_id": request.POST.get("house"),
-            "temporary_address": request.POST.get("tempaddr"),
-            "permanent_address": request.POST.get("peraddr"),
-            "fathers_name": request.POST.get("fathersname"),
-            "fathers_phone": request.POST.get("fathersphone"),
-            "fathers_email": request.POST.get("fathersemail"),
-            "mothers_name": request.POST.get("mothersname"),
-            "mothers_phone": request.POST.get("mothersphone"),
-            "mothers_email": request.POST.get("mothersemail"),
-            "guardian_name": request.POST.get("guardianname"),
-            "guardian_phone": request.POST.get("guardianphone"),
-            "guardian_email": request.POST.get("guardianemail"),
+            "dob": request.POST.get("dob") or None,
+            "iemis": request.POST.get("iemis") or None,
+            "house_id": request.POST.get("house") or None,
+            "temporary_address": request.POST.get("tempaddr") or None,
+            "permanent_address": request.POST.get("peraddr") or None,
+            "fathers_name": request.POST.get("fathersname") or None,
+            "fathers_phone": request.POST.get("fathersphone") or None,
+            "fathers_email": request.POST.get("fathersemail") or None,
+            "mothers_name": request.POST.get("mothersname") or None,
+            "mothers_phone": request.POST.get("mothersphone") or None,
+            "mothers_email": request.POST.get("mothersemail") or None,
+            "guardian_name": request.POST.get("guardianname") or None,
+            "guardian_phone": request.POST.get("guardianphone") or None,
+            "guardian_email": request.POST.get("guardianemail") or None,
         }
 
         student = Student(
@@ -650,27 +650,40 @@ def addstudent(request):
         student.guardian_name = optional_fields["guardian_name"]
         student.guardian_phone = optional_fields["guardian_phone"]
         student.guardian_email = optional_fields["guardian_email"]
-        student.save()
 
-        # Resolve grade and section objects
+        from django.db import IntegrityError
+        from django.utils import timezone
+        
+        # Explicitly set modified to avoid NOT NULL constraint failure
+        student.modified = timezone.now()
+
         try:
-            grade_obj = SchoolGrade.objects.get(id=gradelevel)
-            section_obj = Section.objects.get(id=section)
-        except (SchoolGrade.DoesNotExist, Section.DoesNotExist):
-            messages.error(request, "Invalid grade or section.")
-            return HttpResponseRedirect(redurl or "/panel/")
+            student.save()
 
-        # Create StudentSession linking to grade and section
-        StudentSession.objects.create(
-            session=get_current_session(),
-            student=student,
-            grade=grade_obj,
-            section=section_obj,
-            roll_no=rollno,
-            status=True,
-        )
+            # Resolve grade and section objects
+            try:
+                grade_obj = SchoolGrade.objects.get(id=gradelevel)
+                section_obj = Section.objects.get(id=section)
+            except (SchoolGrade.DoesNotExist, Section.DoesNotExist):
+                messages.error(request, "Invalid grade or section.")
+                return HttpResponseRedirect(redurl or "/panel/")
 
-        messages.success(request, f"Student {student.name} added successfully.")
+            # Create StudentSession linking to grade and section
+            StudentSession.objects.create(
+                session=get_current_session(),
+                student=student,
+                grade=grade_obj,
+                section=section_obj,
+                roll_no=rollno,
+                status=True,
+            )
+
+            messages.success(request, f"Student {student.name} added successfully.")
+        except IntegrityError as e:
+            messages.error(request, f"Failed to register student due to a database error (e.g. duplicate roll number or missing required field).")
+        except Exception as e:
+            messages.error(request, f"An unexpected error occurred: {str(e)}")
+
         return HttpResponseRedirect(redurl or "/panel/")
 
 
