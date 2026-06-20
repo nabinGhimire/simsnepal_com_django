@@ -5398,6 +5398,13 @@ def add_teacher(request):
                                 first_name = name_parts[0] if name_parts else ''
                                 last_name = name_parts[1] if len(name_parts) > 1 else ''
                                 
+                                is_already_registered = False
+                                existing_user = User.objects.filter(username=user_data.get('username', '')).first()
+                                if existing_user:
+                                    admin_branch = BranchUser.objects.filter(user=request.user, status=True).first()
+                                    if admin_branch and BranchUser.objects.filter(user=existing_user, school=admin_branch.school).exists():
+                                        is_already_registered = True
+
                                 found_user = {
                                     "username": user_data.get('username', ''),
                                     "hamro_uuid": user_data.get('id', ''),
@@ -5405,7 +5412,8 @@ def add_teacher(request):
                                     "first_name": first_name,
                                     "last_name": last_name,
                                     "email": user_data.get('email', ''),
-                                    "phone": user_data.get('mobile_number', '')
+                                    "phone": user_data.get('mobile_number', ''),
+                                    "is_already_registered": is_already_registered
                                 }
                             else:
                                 message = "User data missing from Ecosystem response."
@@ -11007,7 +11015,7 @@ def manage_grades(request):
                         )
                         
         messages.success(request, "School levels and custom class terms updated successfully!")
-        return redirect('manage_grades')
+        return redirect('panel:manage_grades')
         
     active_grades_by_weight = {g.grade_weight: g for g in SchoolGrade.objects.filter(school=school, active=True)}
     all_grades_by_weight = {g.grade_weight: g for g in SchoolGrade.objects.filter(school=school)}
@@ -11070,7 +11078,7 @@ def manage_standard_subjects(request):
                     messages.success(request, f"Standard subject '{sm.canonical_name}' deleted successfully.")
             except SubjectMaster.DoesNotExist:
                 messages.error(request, "Subject not found.")
-            return redirect('manage_standard_subjects')
+            return redirect('panel:manage_standard_subjects')
 
         elif action == "edit":
             subject_id = request.POST.get('subject_id')
@@ -11094,7 +11102,7 @@ def manage_standard_subjects(request):
                             sm.description = description
                             sm.save()
                             messages.success(request, f"Standard subject '{canonical_name}' updated successfully.")
-                            return redirect('manage_standard_subjects')
+                            return redirect('panel:manage_standard_subjects')
             except SubjectMaster.DoesNotExist:
                 messages.error(request, "Subject not found.")
 
@@ -11114,7 +11122,7 @@ def manage_standard_subjects(request):
                         school=school
                     )
                     messages.success(request, f"Standard subject '{canonical_name}' created successfully.")
-                    return redirect('manage_standard_subjects')
+                    return redirect('panel:manage_standard_subjects')
 
     # GET requests & fallbacks
     edit_id = request.GET.get('edit')
@@ -11132,7 +11140,7 @@ def manage_standard_subjects(request):
         else:
             sm.delete()
             messages.success(request, f"Standard subject '{sm.canonical_name}' deleted successfully.")
-        return redirect('manage_standard_subjects')
+        return redirect('panel:manage_standard_subjects')
 
     standard_subjects = SubjectMaster.objects.filter(school=school).order_by('canonical_name')
     context = {

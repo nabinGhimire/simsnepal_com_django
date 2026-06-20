@@ -111,9 +111,15 @@
                   <input type="hidden" name="avatar_url" value="{{ found_user.avatar_url }}">
                   <input type="hidden" name="mobile_number" value="{{ found_user.phone }}">
                   
+                  {% if found_user.is_already_registered %}
+                  <button type="button" class="btn btn-secondary px-4 btn-pill" disabled>
+                    <i class="ti ti-check me-2"></i> Already Registered
+                  </button>
+                  {% else %}
                   <button type="submit" class="btn btn-teal px-4 btn-pill">
                     <i class="ti ti-user-plus me-2"></i> Register {{ found_user.first_name }} {{ found_user.last_name }} as Teacher
                   </button>
+                  {% endif %}
                 </form>
               </div>
               {% elif search_phone %}
