@@ -458,33 +458,6 @@ def listgradeitems(request, gradelevel):
     return render(request, "panel/listgradeitems.html", context)
 
 
-@login_required
-def addsection(request):
-    if request.method == "POST":
-        gradelevel = request.POST.get("gradelevel")
-        sectionname = request.POST.get("sectionname")
-        # Get branch user info
-        branchuser, err = get_branch_info(request.user)
-        if err:
-            return HttpResponse(err)
-        # Security check: ensure grade belongs to user's school
-        resp = ensure_branch_user(request, grade)
-        if resp:
-            return resp
-        # Create or get Section with required fields (ensure school_id is set)
-        Section.objects.get_or_create(
-            session=this_session,
-            school_id=branchuser.school.id,
-            grade=grade,
-            section=sectionname.upper()
-        )
-        # Redirect back to the referring page (preserve query parameters)
-        if redurl:
-            return HttpResponseRedirect(redurl)
-        else:
-            return HttpResponseRedirect(f"/panel/grades/{grade.id}/?add=section")
-    else:
-        return HttpResponse('Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.')
 
 
 @login_required
