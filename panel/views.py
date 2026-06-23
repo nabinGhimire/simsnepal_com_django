@@ -1222,7 +1222,7 @@ def school_settings(request):
     else:
         form = SchoolForm(instance=school)
 
-    return render(request, "panel/school_settings.html", {"form": form, "school": school})
+    return render(request, "panel/school_settings.html", {"form": form, "school": school, "branchuser": branchuser})
 def letterpincode(request):
     user = request.user
     branchuser, error = get_branch_info(user)
