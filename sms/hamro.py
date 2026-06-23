@@ -76,93 +76,55 @@ def ensure_group(name, session_id, grade=None, section=None):
     group = Group.objects.filter(name=name, session_id=session_id).first()
     if group and group.external_id:
         return group
-    url = f"{get_base_url()}/groups/"
-    payload = {
-        'name': name,
-        'session_id': session_id,
-    }
-    if grade:
-        payload['grade_id'] = grade.id
-    if section:
-        payload['section_id'] = section.id
-    try:
-        response = requests.post(url, json=payload, headers=get_headers())
-        response.raise_for_status()
-        data = response.json()
-        external_id = data.get('id')
-        group = Group.objects.create(
-            name=name,
-            session_id=session_id,
-            grade=grade,
-            section=section,
-            external_id=external_id,
-            is_broadcast=False,
-        )
-        return group
-    except Exception as e:
-        logger.error(f'Failed to ensure group {name}: {e}')
+        
+    external_id = create_thread('group', name, f"Group for {name}")
+    if external_id:
+        if group:
+            # Group exists but no external_id, update it
+            group.external_id = external_id
+            group.save()
+            return group
+        else:
+            group = Group.objects.create(
+                name=name,
+                session_id=session_id,
+                grade=grade,
+                section=section,
+                external_id=external_id,
+                is_broadcast=False,
+            )
+            return group
+    else:
+        logger.error(f'Failed to ensure group {name}')
         return None
 
 def add_user_to_group(user_external_id, group_external_id):
     """Add a user to a Hamro group.
     Returns True on success.
     """
-    url = f"{get_base_url()}/groups/{group_external_id}/members/"
-    payload = {'user_id': user_external_id}
-    try:
-        response = requests.post(url, json=payload, headers=get_headers())
-        response.raise_for_status()
-        return True
-    except Exception as e:
-        logger.error(f'Failed to add user {user_external_id} to group {group_external_id}: {e}')
-        return False
+    return add_user_to_thread(group_external_id, user_external_id)
 
 def remove_user_from_group(user_external_id, group_external_id):
     """Remove a user from a Hamro group.
     Returns True on success.
     """
-    url = f"{get_base_url()}/groups/{group_external_id}/members/{user_external_id}/"
-    try:
-        response = requests.delete(url, headers=get_headers())
-        if response.status_code in (200, 204, 202):
-            return True
-        response.raise_for_status()
-        return False
-    except Exception as e:
-        logger.error(f'Failed to remove user {user_external_id} from group {group_external_id}: {e}')
-        return False
+    return remove_user_from_thread(group_external_id, user_external_id)
+
+def format_phone(phone):
+    if not phone:
+        return phone
+    phone = str(phone).strip()
+    if phone.startswith('+'):
+        phone = phone[1:]
+    if len(phone) == 10:
+        phone = '977' + phone
+    return '+' + phone
 
 def user_exists_in_hamro(email=None, phone=None):
     """Check if a user exists on Hamro by email or phone.
-    If not, create and return the new external_id.
+    Returns the external_id if found, else None.
     """
-    base = get_base_url()
-    if email:
-        lookup_url = f"{base}/users?email={email}"
-    elif phone:
-        lookup_url = f"{base}/users?phone={phone}"
-    else:
-        return None
-    try:
-        resp = requests.get(lookup_url, headers=get_headers())
-        resp.raise_for_status()
-        data = resp.json()
-        if data and isinstance(data, list) and len(data) > 0:
-            return data[0].get('id')
-        # Not found – create
-        create_url = f"{base}/users/"
-        payload = {}
-        if email:
-            payload['email'] = email
-        if phone:
-            payload['phone'] = phone
-        create_resp = requests.post(create_url, json=payload, headers=get_headers())
-        create_resp.raise_for_status()
-        created = create_resp.json()
-        return created.get('id')
-    except Exception as e:
-        logger.error(f'Failed to lookup/create Hamro user (email={email}, phone={phone}): {e}')
-        return None
+    return lookup_hamro_user(email=email, phone=phone)
 
 def create_thread(thread_type, name, description=""):
     """Create a new thread (group or channel) in Hamro platform."""
@@ -174,7 +136,7 @@ def create_thread(thread_type, name, description=""):
     }
     try:
         response = requests.post(url, json=payload, headers=get_headers())
-        if response.status_code == 201:
+        if response.status_code in (200, 201):
             data = response.json()
             return data.get('id')
         else:
@@ -239,6 +201,8 @@ def lookup_hamro_user(email=None, phone=None):
     """
     url = f"{get_base_url()}/api/v1/platform/users/lookup"
     params = {}
+    if phone:
+        phone = format_phone(phone)
     if email:
         params['email'] = email
     elif phone:
@@ -262,9 +226,16 @@ def lookup_hamro_users_batch(emails=None, phones=None):
     Returns a dictionary of {email_or_phone: user_id}.
     """
     url = f"{get_base_url()}/api/v1/platform/users/lookup/batch"
+    
+    formatted_phones = []
+    if phones:
+        for p in phones:
+            if p:
+                formatted_phones.append(format_phone(p))
+                
     payload = {
         'emails': emails or [],
-        'phones': [str(p) for p in (phones or []) if p]
+        'phones': formatted_phones
     }
     results = {}
     try:

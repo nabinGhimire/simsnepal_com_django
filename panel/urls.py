@@ -83,6 +83,8 @@ urlpatterns = [
     path("2083", views.new_session, name="2083"),
     path("set-theme/", views.set_theme, name="set_theme"),
     path("student/<regno>/progress/", views.student_progress, name="student_progress"),
+    path("student/<regno>/messages/", views.student_message_history, name="student_message_history"),
+    path("send_parent_message/", views.send_parent_message, name="send_parent_message"),
     path("", views.index, name="index"),
 
 ]

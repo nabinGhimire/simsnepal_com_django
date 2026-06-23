@@ -309,9 +309,9 @@
                             style="background-image: url({{ v.photo }}); background-size: cover; width: 40px; height: 40px; margin: 0 auto; {% if v.status %}box-shadow: 0 0 0 2px #2fb344;{% else %}box-shadow: 0 0 0 2px #d63939; filter: grayscale(100%); opacity: 0.6;{% endif %}">
                           </div>
                           {% else %}
-                          <img src="{% static 'img/avatar-placeholder.png' %}" class="avatar-placeholder" style="cursor: pointer;" alt="No Photo" onclick="showTeacherImage('{% static 'img/avatar-placeholder.png' %}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')" data-bs-toggle="tooltip" title="No image available">
-  </div>
-                          {% endif %}
+                          <img src="{% static 'img/avatar-placeholder.png' %}" class="avatar-placeholder" style="cursor: pointer;" alt="No Photo" onclick="showTeacherImage('{% static 'img/avatar-placeholder.png' %}', '{% if teacher.teacher.first_name %}{{ teacher.teacher.first_name|escapejs }} {{ teacher.teacher.last_name|escapejs }}{% else %}{{ teacher.teacher.username|escapejs }}{% endif %}')" >
+                        {% endif %}
+
                           {% if v.status %}
                           <span class="position-absolute top-0 start-100 translate-middle bg-success border border-white rounded-circle" style="width:8px;height:8px;"></span>
                           {% else %}
@@ -376,6 +376,15 @@
                     class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Edit Session">
                     <i class="ti ti-pencil" style="font-size: 1.15rem;"></i>
                   </a>
+                  {% if parent_exists|get_item:student.student.reg_no %}
+                    <button type="button" class="btn btn-sm btn-icon btn-outline-primary" onclick="sendMessage('{{ student.student.reg_no }}')" title="Send Message">
+                        <i class="ti ti-message" style="font-size: 1.15rem;"></i>
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-sm btn-icon btn-outline-warning" disabled title="Send Message (Parent Not Registered)">
+                        <i class="ti ti-message" style="font-size: 1.15rem;"></i>
+                    </button>
+                    {% endif %}
                 </td>
                 <td>
                   <div class="d-flex gap-1">

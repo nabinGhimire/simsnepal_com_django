@@ -18,6 +18,13 @@
         <div class="page-pretitle">Settings</div>
         <h2 class="page-title">Admin Broadcast</h2>
       </div>
+      <div class="col-auto ms-auto d-print-none">
+        <div class="btn-list">
+          <a href="{% url 'panel:sync_platform' %}" class="btn btn-primary d-none d-sm-inline-block">
+            <i class="ti ti-refresh me-1"></i> Sync Channels & Groups
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -42,9 +49,16 @@
       <form method="POST" class="needs-validation" novalidate>
         {% csrf_token %}
         <div class="card-body">
-          <p class="text-secondary mb-4">
-            Send dynamic broadcast messages to your school channels or grade groups on the Hamro platform.
-          </p>
+          <div class="alert alert-info alert-important" role="alert">
+            <div class="d-flex">
+              <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+              </div>
+              <div>
+                <strong>Important:</strong> Please ensure you click the <strong>Sync Channels & Groups</strong> button at the top right before sending your first message, or after updating any student/parent information, to ensure all contacts are up to date!
+              </div>
+            </div>
+          </div>
 
           <!-- Level 1: Recipient Type -->
           <div class="mb-3">
@@ -81,11 +95,7 @@
           </div>
         </div>
         <div class="card-footer text-end">
-          <a href="{% url 'panel:sync_platform' %}" class="btn btn-outline-secondary float-start">
-            <i class="ti ti-refresh me-1"></i> Sync Channels & Groups
-          </a>
-          <a href="{% url 'panel:index' %}" class="btn btn-link link-secondary me-2">Cancel</a>
-          <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
+          <button type="submit" class="btn btn-primary">
             <i class="ti ti-send me-1"></i> Send Broadcast
           </button>
         </div>

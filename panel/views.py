@@ -709,8 +709,9 @@ def listgradeitems(request, gradelevel):
     gradelevel = grade_obj
     students = Student.objects.filter(school=branchuser.school, grade=gradelevel.id)
 
-    # Determine parent registration status for each student
+    # Determine parent registration status for each student and build a lookup dict
     from sms.hamro import user_exists_in_hamro
+    parent_exists = {}
     for s in students:
         registered = False
         if getattr(s, "fathers_phone", None):
@@ -720,6 +721,7 @@ def listgradeitems(request, gradelevel):
             if user_exists_in_hamro(phone=s.mothers_phone):
                 registered = True
         s.parent_registered = registered
+        parent_exists[s.reg_no] = registered
 
     section = False
     teacher = False
@@ -769,7 +771,8 @@ def listgradeitems(request, gradelevel):
         "female_count": female_count,
         "subjects": subjects,
         "list_student": list_student,
-        "school":schoolbranch,
+        "school": schoolbranch,
+        "parent_exists": parent_exists,
     }
     return render(request, "panel/listgradeitems.html", context)
 
@@ -2042,6 +2045,21 @@ def edgradeitems(request, gradelevel):
             section_students = StudentSession.objects.filter(grade=this_grade, session=current_session, section=this_section).values_list('student__reg_no', flat=True)
             students = students.filter(reg_no__in=section_students)
 
+    # Build parent_exists dictionary for list_student
+    parent_exists = {}
+    if list_student:
+        from sms.hamro import user_exists_in_hamro
+        for s_sess in students:
+            s = s_sess.student
+            registered = False
+            if getattr(s, "fathers_phone", None):
+                if user_exists_in_hamro(phone=s.fathers_phone):
+                    registered = True
+            if not registered and getattr(s, "mothers_phone", None):
+                if user_exists_in_hamro(phone=s.mothers_phone):
+                    registered = True
+            parent_exists[s.reg_no] = registered
+
     context = {
         "grade_level": grade_level_all,
         "g_level": this_grade,
@@ -2077,7 +2095,8 @@ def edgradeitems(request, gradelevel):
         "assign_house": assign_house,
         "houses": houses,
         "assign_section": assign_section,
-        "this_section": this_section
+        "this_section": this_section,
+        "parent_exists": parent_exists
     }
     return render(request, "panel/listgradeitems.html", context)
 
@@ -4389,91 +4408,6 @@ def grading(percent):
         return ("N", 0, "Try Next Time")
         # return(result)
 
-"""
-def search(request):
-    user = request.user
-    branchuser = BranchUser.objects.get(user=user)
-    school = SchoolBranch.objects.get(id=branchuser.school.id)
-
-    try:
-        branchuser = BranchUser.objects.get(user=user)
-    except BranchUser.DoesNotExist:
-        return HttpResponse(
-            'Sorry! You are not allowed to access this page. Click <a href="/">Here</a> to go the homepage.'
-        )
-
-    # gradelevel= GradeLevel.objects.get(id=level)
-    schoolbranch = SchoolBranch.objects.get(id=branchuser.school_id)
-
-    grade_level = GradeLevel.objects.all()
-    grades = SchoolGrade.objects.filter(school=schoolbranch).order_by("id")
-
-    resulttype = SchoolResultType.objects.filter(school=school, session=this_session)
-    schoolresulttype = False
-    if resulttype.count() == 0:
-        resulttype_exists = False
-    else:
-        resulttype_exists = True
-        schoolresulttype = SchoolResultType.objects.get(
-            school=school, session=this_session
-        )
-
-    data = request.GET.get("q")
-    # print(data)
-    if data.isdigit() == True:
-        # print('True')
-        # exam_years = Examyears.objects.all().order_by('-id')
-        # exam_types = Examtypes.objects.all()
-        # year = s['year']
-        students = (
-            Student.objects.all()
-                .filter(reg_no__contains=data, school=schoolbranch)
-                .order_by("reg_no")
-        )
-    else:
-        # exam_years = Examyears.objects.all().order_by('-id')
-        # exam_types = Examtypes.objects.all()
-        # year = s['year']
-        students = (
-            Student.objects.all()
-                .filter(name__icontains=data, school=schoolbranch)
-                .order_by("reg_no")
-        )
-
-    paginator = Paginator(students, 100)
-    page = request.GET.get("page", 1)
-    try:
-        student = paginator.page(page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver first page
-        student = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range, deliver last page of results.
-        student = paginator.page(paginator.num_pages)
-
-    # Determine parent registration status for each student in the current page
-    from sms.hamro import user_exists_in_hamro
-    for s in student.object_list:
-        registered = False
-        if getattr(s, "fathers_phone", None):
-            if user_exists_in_hamro(phone=s.fathers_phone):
-                registered = True
-        if not registered and getattr(s, "mothers_phone", None):
-            if user_exists_in_hamro(phone=s.mothers_phone):
-                registered = True
-        s.parent_registered = registered
-
-    result = {
-        "data": data,
-        "students": student,
-        "grade_level": grade_level,
-        "grades": grades,
-        "branchuser": branchuser,
-        "resulttype_exists": resulttype_exists,
-        "schoolresulttype": schoolresulttype,
-    }  # 'exam_years': exam_years, 'exam_types': exam_types, 'year':year,}
-    return render(request, "panel/search1.html", result)
-"""
 
 def search(request):
     this_session = get_current_session()
@@ -4532,6 +4466,20 @@ def search(request):
         # If page is out of range (e.g. 9999), deliver last page of results.
         student = paginator.page(paginator.num_pages)
 
+    # Build parent_exists dictionary
+    from sms.hamro import user_exists_in_hamro
+    parent_exists = {}
+    for s_sess in student:
+        s = s_sess.student
+        registered = False
+        if getattr(s, "fathers_phone", None):
+            if user_exists_in_hamro(phone=s.fathers_phone):
+                registered = True
+        if not registered and getattr(s, "mothers_phone", None):
+            if user_exists_in_hamro(phone=s.mothers_phone):
+                registered = True
+        parent_exists[s.reg_no] = registered
+
     result = {
         "data": data,
         "students": student,
@@ -4541,8 +4489,9 @@ def search(request):
         "resulttype_exists": resulttype_exists,
         "schoolresulttype": schoolresulttype,
         "school": school,
+        "parent_exists": parent_exists,
     }  # 'exam_years': exam_years, 'exam_types': exam_types, 'year':year,}
-    return render(request, "panel/search1.html", result)
+    return render(request, "panel/search.html", result)
 
 @login_required
 def school_private(request, regno):
@@ -11509,4 +11458,118 @@ def switch_session(request):
         return redirect(referer)
     return redirect('index')
 
+
+
+def send_parent_message(request):
+    """Handle sending a free‑form message to a student's parents via Hamro.
+    Expects POST with 'reg_no' and 'message_body'.
+    """
+    from django.http import HttpResponseForbidden, JsonResponse
+    from django.contrib import messages
+    from django.shortcuts import redirect
+    from sms.models import Student
+    
+    if request.method != "POST":
+        return HttpResponseForbidden('Invalid request method')
+    
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+    reg_no = request.POST.get('reg_no')
+    message_body = request.POST.get('message_body', '').strip()
+    
+    if not reg_no or not message_body:
+        if is_ajax: return JsonResponse({'success': False, 'error': 'Student and message are required.'})
+        messages.error(request, 'Student and message are required.')
+        return redirect(request.META.get('HTTP_REFERER', 'panel:index'))
+        
+    try:
+        student = Student.objects.get(reg_no=reg_no)
+    except Student.DoesNotExist:
+        if is_ajax: return JsonResponse({'success': False, 'error': 'Student not found.'})
+        messages.error(request, 'Student not found.')
+        return redirect(request.META.get('HTTP_REFERER', 'panel:index'))
+        
+    # Gather parent contacts without creating new Hamro users
+    contacts = []
+    if student.fathers_phone:
+        contacts.append(('phone', student.fathers_phone))
+    if student.fathers_email:
+        contacts.append(('email', student.fathers_email))
+    if student.mothers_phone:
+        contacts.append(('phone', student.mothers_phone))
+    if student.mothers_email:
+        contacts.append(('email', student.mothers_email))
+        
+    parent_ids = []
+    from sms.hamro import lookup_hamro_user
+    def lookup_external_id(kind, val):
+        if kind == 'email': return lookup_hamro_user(email=val)
+        else: return lookup_hamro_user(phone=val)
+        
+    for kind, val in contacts:
+        ext_id = lookup_external_id(kind, val)
+        if ext_id: parent_ids.append(ext_id)
+            
+    if not parent_ids:
+        if is_ajax: return JsonResponse({'success': False, 'error': 'No registered parent found on Hamro for this student.'})
+        messages.error(request, 'No registered parent found on Hamro for this student.')
+        return redirect(request.META.get('HTTP_REFERER', 'panel:index'))
+        
+    # Ensure group exists (or create)
+    from sms.hamro import ensure_group, add_user_to_group, send_message_to_thread
+    group_name = f"Student_{reg_no}_Parents"
+    current_session = get_current_session()
+    group = ensure_group(group_name, current_session.id)
+    if not group:
+        if is_ajax: return JsonResponse({'success': False, 'error': 'Failed to create or retrieve Hamro group.'})
+        messages.error(request, 'Failed to create or retrieve Hamro group.')
+        return redirect(request.META.get('HTTP_REFERER', 'panel:index'))
+        
+    # Add parents to group (deduplicate)
+    for pid in set(parent_ids):
+        add_user_to_group(pid, group.external_id)
+        
+    # Send message to group's thread
+    hamro_msg_id = send_message_to_thread(group.external_id, message_body)
+    
+    # Log the message
+    from sms.models import ParentMessageLog
+    log = ParentMessageLog.objects.create(
+        sender=request.user,
+        student=student,
+        content=message_body,
+        hamro_message_id=hamro_msg_id,
+        status='SENT' if hamro_msg_id else 'FAILED'
+    )
+    
+    if is_ajax:
+        return JsonResponse({
+            'success': True if hamro_msg_id else False,
+            'message': 'Message sent successfully.' if hamro_msg_id else 'Message could not be delivered to Hamro.',
+            'log': {
+                'content': log.content,
+                'sent_at': log.sent_at.strftime('%b %d, %Y %H:%M'),
+                'sender': log.sender.username,
+                'status': log.status
+            }
+        })
+        
+    if hamro_msg_id: messages.success(request, 'Message sent successfully.')
+    else: messages.warning(request, 'Message could not be delivered to Hamro.')
+    return redirect(request.META.get('HTTP_REFERER', 'panel:index'))
+
+def student_message_history(request, regno):
+    """Return JSON history of messages sent to a student's parents."""
+    from django.http import JsonResponse
+    from sms.models import ParentMessageLog
+    
+    logs = ParentMessageLog.objects.filter(student__reg_no=regno).select_related('sender').order_by('sent_at')
+    history = []
+    for log in logs:
+        history.append({
+            'content': log.content,
+            'sent_at': log.sent_at.strftime('%b %d, %Y %I:%M %p'),
+            'sender': log.sender.username if log.sender else 'System',
+            'status': log.status
+        })
+    return JsonResponse({'history': history})
 

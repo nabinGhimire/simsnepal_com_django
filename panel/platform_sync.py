@@ -1,7 +1,7 @@
 import logging
 from django.db.models import Q
 from sms.models import Group, Teacher, StudentSession, TeacherSubjectAccess, Section, SchoolGrade
-from sms.hamro import create_thread, add_users_to_thread_batch, lookup_hamro_users_batch
+from sms.hamro import create_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +73,11 @@ def sync_school_channel(school, session):
     for ss in student_sessions:
         student = ss.student
         if student.fathers_email: parent_emails.append(student.fathers_email)
-        if student.fathers_phone: parent_phones.append(str(student.fathers_phone))
+        if student.fathers_phone: parent_phones.append(format_phone(str(student.fathers_phone)))
         if student.mothers_email: parent_emails.append(student.mothers_email)
-        if student.mothers_phone: parent_phones.append(str(student.mothers_phone))
+        if student.mothers_phone: parent_phones.append(format_phone(str(student.mothers_phone)))
         if student.guardian_email: parent_emails.append(student.guardian_email)
-        if student.guardian_phone: parent_phones.append(str(student.guardian_phone))
+        if student.guardian_phone: parent_phones.append(format_phone(str(student.guardian_phone)))
 
     # Run batch lookup for all emails and phones
     all_emails = list(set(emails_to_lookup + parent_emails))
@@ -242,11 +242,11 @@ def sync_single_group(group_name, grade, section, session, school):
     for ss in student_sessions:
         student = ss.student
         if student.fathers_email: parent_emails.append(student.fathers_email)
-        if student.fathers_phone: parent_phones.append(str(student.fathers_phone))
+        if student.fathers_phone: parent_phones.append(format_phone(str(student.fathers_phone)))
         if student.mothers_email: parent_emails.append(student.mothers_email)
-        if student.mothers_phone: parent_phones.append(str(student.mothers_phone))
+        if student.mothers_phone: parent_phones.append(format_phone(str(student.mothers_phone)))
         if student.guardian_email: parent_emails.append(student.guardian_email)
-        if student.guardian_phone: parent_phones.append(str(student.guardian_phone))
+        if student.guardian_phone: parent_phones.append(format_phone(str(student.guardian_phone)))
 
     # Batch lookup
     all_emails = list(set(teacher_emails + parent_emails))

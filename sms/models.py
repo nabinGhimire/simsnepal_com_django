@@ -501,6 +501,23 @@ class GroupMembership(models.Model):
     def __str__(self):
         return f"{self.user.username} in {self.group.name} ({self.role})"
 
+# New model to log messages sent to parents
+class ParentMessageLog(models.Model):
+    STATUS_CHOICES = [
+        ('SENT', 'Sent'),
+        ('FAILED', 'Failed'),
+    ]
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_parent_messages')
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_parent_messages', null=True, blank=True)
+    hamro_message_id = models.CharField(max_length=200, blank=True, null=True)
+    content = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='SENT')
+
+    def __str__(self):
+        return f"Message to {self.parent.username} about {self.student.reg_no} ({self.status})"
+
 
 
 class Homework(models.Model):

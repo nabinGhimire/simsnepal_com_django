@@ -495,6 +495,167 @@
   {% block scripts %}
   {% endblock scripts %}
 
+  <!-- Message History Modal -->
+  <div class="modal modal-blur fade" id="messageHistoryModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content shadow-lg border-0">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title text-white d-flex align-items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 14l-3 -3h-7a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1h9a1 1 0 0 1 1 1v10" /><path d="M14 15v2a1 1 0 0 1 -1 1h-7l-3 3v-10a1 1 0 0 1 1 -1h2" /></svg>
+            Messages for Student:&nbsp;<span id="modalStudentRegNo" class="fw-bold"></span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4" style="height: 400px; overflow-y: auto; background-color: #f8f9fa;" id="messageHistoryContainer">
+          <div class="text-center text-muted mt-5" id="messageHistoryLoading">
+            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div><br>
+            Loading history...
+          </div>
+          <div id="messageHistoryList" class="d-flex flex-column gap-3"></div>
+        </div>
+        <div class="modal-footer bg-light border-top-0 p-3">
+          <form id="sendMessageForm" class="w-100 d-flex gap-2 m-0" onsubmit="submitMessage(event)">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <input type="hidden" name="reg_no" id="modalRegNoInput">
+            <input type="text" class="form-control form-control-lg border-1 shadow-sm" name="message_body" id="modalMessageInput" placeholder="Type your message here..." required autocomplete="off">
+            <button type="submit" class="btn btn-primary btn-lg px-4 shadow-sm" id="modalSendBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-send" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+                <path d="M21 3l-6.5 18a0.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a0.55 .55 0 0 1 0 -1l18 -6.5"></path>
+              </svg>
+              Send
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden button to trigger modal via Tabler's built-in handlers -->
+  <button id="hiddenMessageModalBtn" data-bs-toggle="modal" data-bs-target="#messageHistoryModal" style="display:none;"></button>
+
+  <script>
+    function openMessageModal(reg_no) {
+        document.getElementById('modalStudentRegNo').textContent = reg_no;
+        document.getElementById('modalRegNoInput').value = reg_no;
+        document.getElementById('modalMessageInput').value = '';
+        document.getElementById('messageHistoryLoading').style.display = 'block';
+        document.getElementById('messageHistoryList').innerHTML = '';
+        
+        // Trigger modal using the hidden button
+        document.getElementById('hiddenMessageModalBtn').click();
+
+        // Focus input after a short delay to allow modal animation
+        setTimeout(function() {
+            document.getElementById('modalMessageInput').focus();
+        }, 300);
+
+        fetch(`/panel/student/${reg_no}/messages/`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('messageHistoryLoading').style.display = 'none';
+                renderHistory(data.history);
+            })
+            .catch(err => {
+                document.getElementById('messageHistoryLoading').innerHTML = '<span class="text-danger">Failed to load history.</span>';
+            });
+    }
+
+    function renderHistory(history) {
+        const container = document.getElementById('messageHistoryList');
+        if (!history || history.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted mt-3 py-4 bg-white rounded shadow-sm border border-dashed">No previous messages found. Start a conversation!</div>';
+            return;
+        }
+        
+        let html = '';
+        history.forEach(msg => {
+            html += `
+                <div class="card p-3 shadow-sm border-0" style="max-width: 85%; align-self: flex-end; background: linear-gradient(135deg, #e6f2ff, #cce4ff); border-radius: 16px 16px 0 16px;">
+                    <div class="d-flex justify-content-between mb-2 align-items-center" style="font-size: 0.75rem; color: #495057;">
+                        <strong class="text-primary"><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm me-1" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="7" r="4" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>${msg.sender}</strong>
+                        <span>${msg.sent_at}</span>
+                    </div>
+                    <div style="white-space: pre-wrap; font-size: 0.95rem; color: #1e293b;">${msg.content}</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        const body = document.getElementById('messageHistoryContainer');
+        body.scrollTop = body.scrollHeight;
+    }
+
+    function submitMessage(e) {
+        e.preventDefault();
+        const form = e.target;
+        const btn = document.getElementById('modalSendBtn');
+        const input = document.getElementById('modalMessageInput');
+        const bodyText = input.value.trim();
+        
+        if (!bodyText) return;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+        
+        const formData = new FormData(form);
+        
+        fetch("{% url 'panel:send_parent_message' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-send" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="10" y1="14" x2="21" y2="3"></line><path d="M21 3l-6.5 18a0.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a0.55 .55 0 0 1 0 -1l18 -6.5"></path></svg> Send`;
+            
+            if (data.success) {
+                input.value = '';
+                
+                const container = document.getElementById('messageHistoryList');
+                if (container.innerHTML.includes('No previous messages found')) {
+                    container.innerHTML = '';
+                }
+                
+                const html = `
+                    <div class="card p-3 shadow-sm border-0 mb-0" style="max-width: 85%; align-self: flex-end; background: linear-gradient(135deg, #e6f2ff, #cce4ff); border-radius: 16px 16px 0 16px; animation: slideIn 0.3s ease-out forwards;">
+                        <div class="d-flex justify-content-between mb-2 align-items-center" style="font-size: 0.75rem; color: #495057;">
+                            <strong class="text-primary"><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm me-1" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="7" r="4" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>${data.log.sender}</strong>
+                            <span>${data.log.sent_at}</span>
+                        </div>
+                        <div style="white-space: pre-wrap; font-size: 0.95rem; color: #1e293b;">${data.log.content}</div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+                scrollToBottom();
+            } else {
+                alert(data.error || data.message || 'Failed to send message.');
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-send" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="10" y1="14" x2="21" y2="3"></line><path d="M21 3l-6.5 18a0.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a0.55 .55 0 0 1 0 -1l18 -6.5"></path></svg> Send`;
+            alert('A network error occurred.');
+        });
+    }
+    
+    // Ensure backwards compatibility with buttons expecting sendMessage()
+    window.sendMessage = openMessageModal;
+  </script>
+  <style>
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+
 </body>
 
 </html>
