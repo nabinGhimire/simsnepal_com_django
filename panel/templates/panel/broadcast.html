@@ -1,0 +1,154 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %}Admin Broadcast | SIMSNepal{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Settings</div>
+        <h2 class="page-title">Admin Broadcast</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-md-8 col-lg-6 mx-auto">
+    {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h3 class="card-title">Send Broadcast Message</h3>
+      </div>
+      <form method="POST" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="card-body">
+          <p class="text-secondary mb-4">
+            Send dynamic broadcast messages to your school channels or grade groups on the Hamro platform.
+          </p>
+
+          <!-- Level 1: Recipient Type -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Select Recipient Type</label>
+            <select name="recipient_type" id="recipient_type" class="form-select" required>
+              <option value="school">School Channel (All Staff & Parents)</option>
+              <option value="teachers">Teachers Only Group</option>
+              <option value="class_section">Grade & Section</option>
+            </select>
+          </div>
+
+          <!-- Level 2: Grade Selection (Visible only when type is class_section) -->
+          <div class="mb-3" id="grade_container" style="display: none;">
+            <label class="form-label fw-bold">Select Grade</label>
+            <select name="grade_id" id="grade_id" class="form-select">
+              <option value="">-- Choose Grade --</option>
+              {% for grade in grades %}
+              <option value="{{ grade.id }}">{{ grade.grade_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Level 3: Section Selection (Visible only when grade is selected) -->
+          <div class="mb-3" id="section_container" style="display: none;">
+            <label class="form-label fw-bold">Select Section</label>
+            <select name="section_id" id="section_id" class="form-select">
+              <option value="all">All Sections (Sent to all section groups of this grade)</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Message Content</label>
+            <textarea name="message_body" class="form-control" rows="6" placeholder="Type your broadcast message here..." required></textarea>
+          </div>
+        </div>
+        <div class="card-footer text-end">
+          <a href="{% url 'panel:sync_platform' %}" class="btn btn-outline-secondary float-start">
+            <i class="ti ti-refresh me-1"></i> Sync Channels & Groups
+          </a>
+          <a href="{% url 'panel:index' %}" class="btn btn-link link-secondary me-2">Cancel</a>
+          <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
+            <i class="ti ti-send me-1"></i> Send Broadcast
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var recipientType = document.getElementById('recipient_type');
+    var gradeContainer = document.getElementById('grade_container');
+    var gradeSelect = document.getElementById('grade_id');
+    var sectionContainer = document.getElementById('section_container');
+    var sectionSelect = document.getElementById('section_id');
+
+    // Parse sections JSON from Django context
+    var sectionsData = {{ sections_json|safe }};
+
+    recipientType.addEventListener('change', function() {
+      if (this.value === 'class_section') {
+        gradeContainer.style.display = 'block';
+        gradeSelect.setAttribute('required', 'required');
+      } else {
+        gradeContainer.style.display = 'none';
+        sectionContainer.style.display = 'none';
+        gradeSelect.removeAttribute('required');
+        sectionSelect.removeAttribute('required');
+        gradeSelect.value = '';
+        sectionSelect.value = 'all';
+      }
+    });
+
+    gradeSelect.addEventListener('change', function() {
+      var selectedGradeId = this.value;
+      if (selectedGradeId) {
+        // Reset section select options, keeping "All Sections"
+        sectionSelect.innerHTML = '<option value="all">All Sections (Sent to all section groups of this grade)</option>';
+        
+        // Filter sections belonging to selected grade
+        var filtered = sectionsData.filter(function(sec) {
+          return sec.grade_id == selectedGradeId;
+        });
+
+        if (filtered.length > 0) {
+          filtered.forEach(function(sec) {
+            var opt = document.createElement('option');
+            opt.value = sec.id;
+            opt.textContent = sec.name;
+            sectionSelect.appendChild(opt);
+          });
+          sectionContainer.style.display = 'block';
+          sectionSelect.setAttribute('required', 'required');
+        } else {
+          // If no section exists, default to all sections / hide dropdown
+          sectionContainer.style.display = 'none';
+          sectionSelect.removeAttribute('required');
+        }
+      } else {
+        sectionContainer.style.display = 'none';
+        sectionSelect.removeAttribute('required');
+      }
+    });
+  });
+</script>
+{% endblock %}

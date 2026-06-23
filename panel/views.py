@@ -131,8 +131,190 @@ def platform_setting_view(request):
     }
     return render(request, 'settings/platform_key.html', context)
 
+from panel.platform_sync import sync_school_channel, sync_grade_groups, sync_teachers_group
+from sms.models import BroadcastMessage
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
 @login_required
+def sync_platform_view(request):
+    """Trigger manual syncing of school channel, teachers group and class/section groups to Hamro platform."""
+    try:
+        branch_user = BranchUser.objects.select_related('school__owner').get(user=request.user)
+    except BranchUser.DoesNotExist:
+        return HttpResponseForbidden('Unauthorized')
+        
+    is_admin = (branch_user.school.owner.user == request.user)
+    if not is_admin:
+        return HttpResponseForbidden('Only school admin can sync platform settings')
+
+    school = branch_user.school
+    session = get_current_session()
+    
+    school_chan = sync_school_channel(school, session)
+    teachers_grp = sync_teachers_group(school, session)
+    grade_groups = sync_grade_groups(school, session)
+    
+    if school_chan or teachers_grp or grade_groups:
+        messages.success(request, "Successfully synced school channels and groups to Hamro platform.")
+    else:
+        messages.error(request, "Failed to sync platform channels/groups. Ensure your API keys are configured correctly.")
+        
+    return redirect('panel:broadcast')
+
 @login_required
+def broadcast_view(request):
+    """Admin dashboard to compose and send broadcast messages to Hamro channels/groups."""
+    try:
+        branch_user = BranchUser.objects.select_related('school__owner').get(user=request.user)
+    except BranchUser.DoesNotExist:
+        return HttpResponseForbidden('Unauthorized')
+        
+    is_admin = (branch_user.school.owner.user == request.user)
+    if not is_admin:
+        return HttpResponseForbidden('Only school admin can send broadcast messages')
+
+    school = branch_user.school
+    current_session = get_current_session()
+
+    if request.method == 'POST':
+        recipient_type = request.POST.get('recipient_type')
+        message_body = request.POST.get('message_body', '').strip()
+        
+        if not message_body:
+            messages.error(request, "Message content cannot be empty.")
+            return redirect('panel:broadcast')
+            
+        from sms.hamro import send_message_to_thread
+        
+        target_threads = []
+        recipient_name = ""
+        
+        if recipient_type == 'school':
+            school_chan = Group.objects.filter(name=school.name, session=current_session, is_broadcast=True).first()
+            if school_chan and school_chan.external_id:
+                target_threads.append((school_chan.external_id, school.name))
+                recipient_name = f"School Channel ({school.name})"
+        elif recipient_type == 'teachers':
+            teachers_grp = Group.objects.filter(name=f"{school.name} Teachers {current_session.year}", session=current_session).first()
+            if teachers_grp and teachers_grp.external_id:
+                target_threads.append((teachers_grp.external_id, teachers_grp.name))
+                recipient_name = f"All Teachers Group"
+        elif recipient_type == 'class_section':
+            grade_id = request.POST.get('grade_id')
+            section_id = request.POST.get('section_id')
+            
+            if grade_id:
+                grade_obj = SchoolGrade.objects.filter(id=grade_id, school=school).first()
+                if grade_obj:
+                    if section_id == 'all':
+                        groups = Group.objects.filter(grade_id=grade_id, session=current_session)
+                        for g in groups:
+                            if g.external_id:
+                                target_threads.append((g.external_id, g.name))
+                        recipient_name = f"Grade {grade_obj.grade_name} (All Sections)"
+                    elif section_id:
+                        sec_obj = Section.objects.filter(id=section_id, grade=grade_obj, school=school, session=current_session).first()
+                        if sec_obj:
+                            group = Group.objects.filter(grade=grade_obj, section=sec_obj, session=current_session).first()
+                            if group and group.external_id:
+                                target_threads.append((group.external_id, group.name))
+                            recipient_name = f"Grade {grade_obj.grade_name} - Section {sec_obj.section}"
+
+        if not target_threads:
+            messages.error(request, "No registered Hamro groups found for the selected recipient. Try syncing first.")
+            return redirect('panel:broadcast')
+            
+        sent_count = 0
+        failed_count = 0
+        
+        for thread_id, thread_name in target_threads:
+            msg_id = send_message_to_thread(thread_id, message_body)
+            if msg_id:
+                sent_count += 1
+                # Log sent message in DB
+                BroadcastMessage.objects.create(
+                    school=school,
+                    session=current_session,
+                    sender=request.user,
+                    recipient_type=recipient_type,
+                    recipient_name=thread_name,
+                    body=message_body,
+                    platform_message_id=msg_id,
+                    status='sent'
+                )
+            else:
+                failed_count += 1
+                BroadcastMessage.objects.create(
+                    school=school,
+                    session=current_session,
+                    sender=request.user,
+                    recipient_type=recipient_type,
+                    recipient_name=thread_name,
+                    body=message_body,
+                    platform_message_id=None,
+                    status='failed'
+                )
+                
+        if sent_count > 0:
+            messages.success(request, f"Successfully sent broadcast message to {sent_count} group(s).")
+        if failed_count > 0:
+            messages.warning(request, f"Failed to deliver message to {failed_count} group(s).")
+            
+        return redirect('panel:broadcast_history')
+
+    # Load data for UI
+    grades = SchoolGrade.objects.filter(school=school, active=True).order_by('grade_weight')
+    sections = Section.objects.filter(school=school, session=current_session).select_related('grade').order_by('grade__grade_weight', 'section')
+
+    # Serialize sections for javascript dropdowns
+    sections_data = []
+    for sec in sections:
+        sections_data.append({
+            'id': sec.id,
+            'grade_id': sec.grade.id,
+            'name': sec.section
+        })
+
+    context = {
+        'branchuser': branch_user,
+        'grades': grades,
+        'sections_json': json.dumps(sections_data),
+    }
+    return render(request, 'panel/broadcast.html', context)
+
+@login_required
+def broadcast_history_view(request):
+    """View paginated list of previously sent broadcast messages."""
+    try:
+        branch_user = BranchUser.objects.select_related('school__owner').get(user=request.user)
+    except BranchUser.DoesNotExist:
+        return HttpResponseForbidden('Unauthorized')
+        
+    is_admin = (branch_user.school.owner.user == request.user)
+    if not is_admin:
+        return HttpResponseForbidden('Only school admin can access broadcast history')
+
+    school = branch_user.school
+    current_session = get_current_session()
+    
+    messages_list = BroadcastMessage.objects.filter(school=school, session=current_session).order_by('-created_at')
+    
+    paginator = Paginator(messages_list, 10) # 10 messages per page
+    page = request.GET.get('page')
+    
+    try:
+        broadcast_messages = paginator.page(page)
+    except PageNotAnInteger:
+        broadcast_messages = paginator.page(1)
+    except EmptyPage:
+        broadcast_messages = paginator.page(paginator.num_pages)
+        
+    context = {
+        'branchuser': branch_user,
+        'broadcast_messages': broadcast_messages,
+    }
+    return render(request, 'panel/broadcast_history.html', context)
+
 @login_required
 def settings_home(request):
     """Dashboard for admin settings: links to platform integration and other admin tools."""

@@ -163,3 +163,142 @@ def user_exists_in_hamro(email=None, phone=None):
     except Exception as e:
         logger.error(f'Failed to lookup/create Hamro user (email={email}, phone={phone}): {e}')
         return None
+
+def create_thread(thread_type, name, description=""):
+    """Create a new thread (group or channel) in Hamro platform."""
+    url = f"{get_base_url()}/api/v1/platform/threads"
+    payload = {
+        'type': thread_type,
+        'name': name,
+        'description': description
+    }
+    try:
+        response = requests.post(url, json=payload, headers=get_headers())
+        if response.status_code == 201:
+            data = response.json()
+            return data.get('id')
+        else:
+            logger.error(f"Failed to create thread {name}: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error creating thread {name}: {e}")
+    return None
+
+def add_user_to_thread(thread_id, user_id):
+    """Add a user to a thread in Hamro platform."""
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
+    payload = {
+        'user_id': user_id
+    }
+    try:
+        response = requests.post(url, json=payload, headers=get_headers())
+        if response.status_code in (200, 201):
+            return True
+        else:
+            logger.error(f"Failed to add user {user_id} to thread {thread_id}: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error adding user to thread: {e}")
+    return False
+
+def remove_user_from_thread(thread_id, user_id):
+    """Remove a user from a thread in Hamro platform."""
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
+    payload = {
+        'user_id': user_id
+    }
+    try:
+        response = requests.delete(url, json=payload, headers=get_headers())
+        if response.status_code in (200, 204, 202):
+            return True
+        else:
+            logger.error(f"Failed to remove user {user_id} from thread {thread_id}: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error removing user from thread: {e}")
+    return False
+
+def send_message_to_thread(thread_id, body):
+    """Send a message to a thread in Hamro platform."""
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/messages"
+    payload = {
+        'body': body,
+        'type': 'text'
+    }
+    try:
+        response = requests.post(url, json=payload, headers=get_headers())
+        if response.status_code in (200, 201):
+            data = response.json()
+            return data.get('id') or "success"
+        else:
+            logger.error(f"Failed to send message to thread {thread_id}: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error sending message to thread: {e}")
+    return None
+
+def lookup_hamro_user(email=None, phone=None):
+    """Lookup a user on Hamro platform by email or phone.
+    Returns external user ID if found, else None.
+    """
+    url = f"{get_base_url()}/api/v1/platform/users/lookup"
+    params = {}
+    if email:
+        params['email'] = email
+    elif phone:
+        params['phone'] = phone
+    else:
+        return None
+    try:
+        response = requests.get(url, params=params, headers=get_headers())
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('exists') and data.get('user'):
+                return data['user'].get('id')
+        else:
+            logger.error(f"User lookup failed: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error looking up user (email={email}, phone={phone}): {e}")
+    return None
+
+def lookup_hamro_users_batch(emails=None, phones=None):
+    """Lookup multiple users on Hamro platform by lists of emails and phones.
+    Returns a dictionary of {email_or_phone: user_id}.
+    """
+    url = f"{get_base_url()}/api/v1/platform/users/lookup/batch"
+    payload = {
+        'emails': emails or [],
+        'phones': [str(p) for p in (phones or []) if p]
+    }
+    results = {}
+    try:
+        response = requests.post(url, json=payload, headers=get_headers())
+        if response.status_code == 200:
+            data = response.json()
+            users_list = data.get('users', [])
+            for u in users_list:
+                u_id = u.get('id')
+                if u_id:
+                    if u.get('email'):
+                        results[u['email']] = u_id
+                    if u.get('phone'):
+                        results[str(u['phone'])] = u_id
+        else:
+            logger.error(f"Batch user lookup failed: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error in batch user lookup: {e}")
+    return results
+
+def add_users_to_thread_batch(thread_id, user_ids):
+    """Add multiple users to a thread in Hamro platform using batch endpoint."""
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/batch"
+    payload = {
+        'user_ids': list(set(user_ids))
+    }
+    try:
+        response = requests.post(url, json=payload, headers=get_headers())
+        if response.status_code in (200, 201):
+            return response.json()
+        else:
+            logger.error(f"Failed to batch add users to thread {thread_id}: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error in batch adding users to thread: {e}")
+    return None
+
+

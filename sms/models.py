@@ -544,3 +544,18 @@ class StudentComplain(models.Model):
     
     def __str__(self):
         return f"{self.student.name} - {self.teacher.username} - {self.term.term_name}"
+
+class BroadcastMessage(models.Model):
+    school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE)
+    session = models.ForeignKey(EduSession, on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    recipient_type = models.CharField(max_length=50) # 'school', 'teachers', 'grade', 'section'
+    recipient_name = models.CharField(max_length=255)
+    body = models.TextField()
+    platform_message_id = models.CharField(max_length=100, blank=True, null=True)
+    status = models.CharField(max_length=20, default='sent')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"To {self.recipient_name} at {self.created_at}"
+
