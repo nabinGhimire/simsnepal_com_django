@@ -13,19 +13,62 @@
         {% csrf_token %}
         <div class="mb-3">
           <label class="form-label">Platform Name</label>
-          <input type="text" name="platform_name" class="form-control" value="{{ platform_key_obj.value|default:'Hamro' }}" placeholder="Platform Name">
+          <input type="text" name="platform_name" id="platform_name_input" class="form-control" value="{{ platform_key_obj.value|default:'Hamro' }}" placeholder="Platform Name" {% if business_key %}disabled{% endif %}>
         </div>
         {% if is_admin %}
         <div class="mb-3">
           <label class="form-label">Business Key</label>
-          <input type="text" name="business_key" class="form-control" value="{{ business_key }}" placeholder="Business Key">
+          <input type="text" name="business_key" id="business_key_input" class="form-control" value="{{ business_key }}" placeholder="Business Key" {% if business_key %}disabled{% endif %}>
         </div>
         {% endif %}
-        <button type="submit" class="btn btn-success mt-3">
+        
+        {% if business_key %}
+        <button type="button" id="edit-btn" class="btn btn-warning mt-3">
+          <i class="ti ti-edit me-1"></i> Edit Settings
+        </button>
+        <button type="button" id="cancel-btn" class="btn btn-secondary mt-3" style="display: none;">
+          <i class="ti ti-x me-1"></i> Cancel
+        </button>
+        {% endif %}
+        
+        <button type="submit" id="save-btn" class="btn btn-success mt-3" {% if business_key %}style="display: none;"{% endif %}>
           <i class="ti ti-save me-1"></i> Save Settings
         </button>
       </form>
     </div>
   </div>
 </div>
+
+{% if business_key %}
+<script>
+  var originalPlatformName = document.getElementById('platform_name_input').value;
+  var busInput = document.getElementById('business_key_input');
+  var originalBusinessKey = busInput ? busInput.value : '';
+
+  document.getElementById('edit-btn').addEventListener('click', function() {
+    document.getElementById('platform_name_input').removeAttribute('disabled');
+    if (busInput) {
+      busInput.removeAttribute('disabled');
+    }
+    document.getElementById('save-btn').style.display = 'inline-block';
+    document.getElementById('cancel-btn').style.display = 'inline-block';
+    this.style.display = 'none';
+  });
+
+  document.getElementById('cancel-btn').addEventListener('click', function() {
+    var platformInput = document.getElementById('platform_name_input');
+    platformInput.value = originalPlatformName;
+    platformInput.setAttribute('disabled', 'disabled');
+    
+    if (busInput) {
+      busInput.value = originalBusinessKey;
+      busInput.setAttribute('disabled', 'disabled');
+    }
+    
+    document.getElementById('save-btn').style.display = 'none';
+    this.style.display = 'none';
+    document.getElementById('edit-btn').style.display = 'inline-block';
+  });
+</script>
+{% endif %}
 {% endblock %}
