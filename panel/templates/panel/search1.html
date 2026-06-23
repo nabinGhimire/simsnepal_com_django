@@ -89,6 +89,15 @@
                                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modal-{{ student.student.reg_no }}">
                                             <i class="ti ti-info-circle me-1"></i> Details
                                         </button>
+                                        {% if student.student.parent_registered %}
+                                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="sendMessage('{{ student.student.reg_no }}')">
+                                            <i class="ti ti-message me-1"></i> Send Message
+                                        </button>
+                                        {% else %}
+                                        <button type="button" class="btn btn-sm btn-outline-warning" disabled>
+                                            <i class="ti ti-message me-1"></i> Send Message
+                                        </button>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>

@@ -1,0 +1,21 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %}Admin Settings - SIMS{% endblock %}
+
+{% block content %}
+<div class="container-xl mt-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h3 class="card-title mb-0">Admin Settings Dashboard</h3>
+    </div>
+    <div class="card-body d-flex flex-wrap gap-3">
+      <a href="{% url 'panel:platform_setting' %}" class="btn btn-teal btn-lg">
+        <i class="ti ti-settings me-2"></i>Platform Integration
+      </a>
+      <a href="#" class="btn btn-indigo btn-lg disabled" title="Coming soon">
+        <i class="ti ti-atom me-2"></i>Create Channels & Groups
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

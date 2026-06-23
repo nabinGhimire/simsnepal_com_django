@@ -188,6 +188,13 @@
   </div>
 </div>
 {% endblock page_header %}
+<div class="container-xl mt-2">
+{% if branchuser.admin_status %}
+  <a href="{% url 'panel:create_groups' gradelevel.id %}" class="btn btn-teal">
+    <i class="ti ti-plus me-1"></i>Create Group for this Grade
+  </a>
+{% endif %}
+</div>
 
 {% block content %}
 <div class="row g-4" id="layout-row">

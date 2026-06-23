@@ -75,7 +75,129 @@ from django.shortcuts import redirect, render
 from django.template.loader import get_template
 from django.views.generic import View
 
-# Local apps
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponseForbidden
+from .forms import PlatformSettingForm
+from sms.models import SchoolBranch, BranchUser, Teacher, Group, StudentSession, Student, Section, GroupMembership, SchoolGrade, GradeLevel, EduSession, SchoolTerm
+from sms.hamro import ensure_channel, ensure_group, add_user_to_group, user_exists_in_hamro
+from django.contrib import messages
+
+@login_required
+def platform_setting_view(request):
+    """Platform integration settings – only school owner (admin) can edit."""
+    # Admin verification (owner of the school)
+    try:
+        branch_user = BranchUser.objects.select_related('school__owner').get(user=request.user)
+    except BranchUser.DoesNotExist:
+        return HttpResponseForbidden('Unauthorized')
+    is_admin = (branch_user.school.owner.user == request.user)
+    if not is_admin:
+        return HttpResponseForbidden('Only school owner can edit settings')
+
+    # Load existing Platform and Business keys
+    platform_key_obj = PlatformSetting.objects.filter(key='PLATFORM_KEY').first()
+    business_key_obj = PlatformSetting.objects.filter(key='BUSINESS_KEY').first()
+
+    if request.method == 'POST':
+        # Platform Name (value of PLATFORM_KEY)
+        platform_name = request.POST.get('platform_name')
+        # Business Key (separate field)
+        business_key = request.POST.get('business_key')
+        # Update or create PLATFORM_KEY setting
+        if platform_key_obj:
+            if platform_name:
+                platform_key_obj.value = platform_name
+                platform_key_obj.save()
+        else:
+            PlatformSetting.objects.create(key='PLATFORM_KEY', value=platform_name or 'Hamro')
+        # Update or create BUSINESS_KEY setting (admin only)
+        if is_admin and business_key is not None:
+            if business_key_obj:
+                business_key_obj.value = business_key
+                business_key_obj.save()
+            else:
+                PlatformSetting.objects.create(key='BUSINESS_KEY', value=business_key)
+        messages.success(request, 'Platform settings saved')
+        return redirect('panel:platform_setting')
+    else:
+        # No form used; fields will be rendered manually
+        pass
+    context = {
+        'branchuser': branch_user,
+        'platform_key_obj': platform_key_obj,
+        'business_key': business_key_obj.value if business_key_obj else '',
+        'is_admin': is_admin,
+    }
+    return render(request, 'settings/platform_key.html', context)
+
+@login_required
+@login_required
+@login_required
+def settings_home(request):
+    """Dashboard for admin settings: links to platform integration and other admin tools."""
+    # Ensure user is admin (owner of the school)
+    try:
+        branch_user = BranchUser.objects.select_related('school__owner').get(user=request.user)
+    except BranchUser.DoesNotExist:
+        return HttpResponseForbidden('Unauthorized')
+    is_admin = (branch_user.school.owner.user == request.user)
+    if not is_admin:
+        return HttpResponseForbidden('Only school owner can access settings')
+    # Add flag to context
+    return render(request, 'settings/settings_home.html', {'branchuser': branch_user, 'is_admin': is_admin})
+
+@login_required
+def create_groups_view(request, grade_id):
+    """Create channel and groups for a grade (admin only)."""
+    # Only admin
+    try:
+        branch_user = BranchUser.objects.get(user=request.user)
+    except BranchUser.DoesNotExist:
+        return HttpResponseForbidden('Unauthorized')
+    if not getattr(branch_user, 'admin_status', False):
+        return HttpResponseForbidden('Only school owner can create groups')
+    school = branch_user.school
+    grade = get_object_or_404(SchoolGrade, id=grade_id, school=school)
+    # Ensure broadcast channel for the school
+    channel_id = ensure_channel(school.name)
+    # Get current session
+    current_session = get_current_session()
+    # Create overall grade group
+    grade_group_name = f"{grade.grade_name} {current_session.year}"
+    grade_group = ensure_group(grade_group_name, current_session.id, grade=grade)
+    # Add teachers to channel and grade group
+    teachers = Teacher.objects.filter(added_by=branch_user.user)
+    for teacher in teachers:
+        if not teacher.external_id:
+            # assume external_id fetched elsewhere
+            continue
+        add_user_to_group(teacher.external_id, channel_id)
+        add_user_to_group(teacher.external_id, grade_group.external_id)
+    # Process sections
+    sections = Section.objects.filter(grade=grade, school=school)
+    for sec in sections:
+        sec_group_name = f"{grade.grade_name} {sec.section} {current_session.year}"
+        sec_group = ensure_group(sec_group_name, current_session.id, grade=grade, section=sec)
+        # Add teachers to section group
+        for teacher in teachers:
+            if teacher.external_id:
+                add_user_to_group(teacher.external_id, sec_group.external_id)
+        # Add parents of active students in this section
+        student_sessions = StudentSession.objects.filter(session=current_session, grade=grade, section=sec, status=True)
+        for ss in student_sessions:
+            student = ss.student
+            # Resolve parent contact info (example: father's email/phone)
+            parent_email = student.fathers_email or student.mothers_email
+            parent_phone = student.fathers_phone or student.mothers_phone
+            parent_ext_id = user_exists_in_hamro(email=parent_email, phone=parent_phone)
+            if parent_ext_id:
+                add_user_to_group(parent_ext_id, channel_id)
+                add_user_to_group(parent_ext_id, grade_group.external_id)
+                add_user_to_group(parent_ext_id, sec_group.external_id)
+    messages.success(request, 'Groups created and members added')
+    return redirect('panel:edgradeitems', gradelevel=grade.id)
+
 from .forms import SignUpForm, SchoolForm
 from .func import *
 from sms.models import *   # Teacher, BranchUser, Subject, TeacherSubjectAccess
@@ -404,6 +526,18 @@ def listgradeitems(request, gradelevel):
     # Use grade_obj for further logic
     gradelevel = grade_obj
     students = Student.objects.filter(school=branchuser.school, grade=gradelevel.id)
+
+    # Determine parent registration status for each student
+    from sms.hamro import user_exists_in_hamro
+    for s in students:
+        registered = False
+        if getattr(s, "fathers_phone", None):
+            if user_exists_in_hamro(phone=s.fathers_phone):
+                registered = True
+        if not registered and getattr(s, "mothers_phone", None):
+            if user_exists_in_hamro(phone=s.mothers_phone):
+                registered = True
+        s.parent_registered = registered
 
     section = False
     teacher = False
@@ -4129,11 +4263,23 @@ def search(request):
     try:
         student = paginator.page(page)
     except PageNotAnInteger:
-        # If page is not an integer, deliver first pa
+        # If page is not an integer, deliver first page
         student = paginator.page(1)
     except EmptyPage:
-        # If page is out of range (e.g. 9999), deliver last page of results.
+        # If page is out of range, deliver last page of results.
         student = paginator.page(paginator.num_pages)
+
+    # Determine parent registration status for each student in the current page
+    from sms.hamro import user_exists_in_hamro
+    for s in student.object_list:
+        registered = False
+        if getattr(s, "fathers_phone", None):
+            if user_exists_in_hamro(phone=s.fathers_phone):
+                registered = True
+        if not registered and getattr(s, "mothers_phone", None):
+            if user_exists_in_hamro(phone=s.mothers_phone):
+                registered = True
+        s.parent_registered = registered
 
     result = {
         "data": data,

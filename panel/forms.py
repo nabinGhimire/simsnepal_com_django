@@ -42,3 +42,20 @@ class SchoolForm(forms.ModelForm):
             'logo': forms.FileInput(attrs={'class': 'form-control-file'}),
             'slogan': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+from sms.models import PlatformSetting
+
+class PlatformSettingForm(forms.ModelForm):
+    class Meta:
+        model = PlatformSetting
+        fields = ['key', 'value']
+        widgets = {
+            'key': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Hamro'}),
+            'value': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Hamro'}),
+        }
+
+    def clean_value(self):
+        value = self.cleaned_data.get('value')
+        if not value:
+            return 'Hamro'
+        return value

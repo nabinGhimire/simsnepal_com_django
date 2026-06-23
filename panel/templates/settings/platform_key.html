@@ -1,0 +1,31 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %}Platform Settings - Hamro Panel{% endblock %}
+
+{% block content %}
+<div class="container-xl mt-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h3 class="card-title mb-0">Platform Integration Settings</h3>
+    </div>
+    <div class="card-body">
+      <form method="POST" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Platform Name</label>
+          <input type="text" name="platform_name" class="form-control" value="{{ platform_key_obj.value|default:'Hamro' }}" placeholder="Platform Name">
+        </div>
+        {% if is_admin %}
+        <div class="mb-3">
+          <label class="form-label">Business Key</label>
+          <input type="text" name="business_key" class="form-control" value="{{ business_key }}" placeholder="Business Key">
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-success mt-3">
+          <i class="ti ti-save me-1"></i> Save Settings
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -436,6 +436,8 @@ class CreatedUsers(models.Model):
 class Teacher(models.Model):
     added_by = models.ForeignKey(User, on_delete=models.CASCADE)
     teacher = models.ForeignKey(User, related_name="usernames", on_delete=models.CASCADE)
+    # External Hamro platform user ID for the teacher (cached)
+    external_id = models.CharField(max_length=100, blank=True, null=True)
     added_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
     previous_data = models.TextField(blank=True, null=True)
@@ -451,6 +453,54 @@ class TeacherSubjectAccess(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     status = models.BooleanField(default=True)
+class PlatformSetting(models.Model):
+    """Key‑value store for platform configuration (e.g., PLATFORM_KEY, HAMRO_API_BASE_URL)."""
+    key = models.CharField(max_length=100, unique=True)
+    value = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.key}: {self.value}"
+
+class UserRegistrationStatus(models.Model):
+    """Tracks whether a parent (or any user) is registered on the Hamro platform."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_registered = models.BooleanField(default=False)
+    last_checked = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {'Registered' if self.is_registered else 'Unregistered'}"
+
+class Group(models.Model):
+    """Represents a chat group/channel on Hamro platform."""
+    name = models.CharField(max_length=200)
+    session = models.ForeignKey('EduSession', on_delete=models.CASCADE)
+    grade = models.ForeignKey('SchoolGrade', on_delete=models.SET_NULL, null=True, blank=True)
+    section = models.ForeignKey('Section', on_delete=models.SET_NULL, null=True, blank=True)
+    is_broadcast = models.BooleanField(default=False)
+    external_id = models.CharField(max_length=100, blank=True, null=True)  # Hamro group ID
+
+    class Meta:
+        unique_together = (('name', 'session'),)
+
+    def __str__(self):
+        return self.name
+
+class GroupMembership(models.Model):
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('member', 'Member'),
+    ]
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='member')
+    external_id = models.CharField(max_length=100, blank=True, null=True)  # Cached Hamro member ID if needed
+
+    class Meta:
+        unique_together = (('group', 'user'),)
+
+    def __str__(self):
+        return f"{self.user.username} in {self.group.name} ({self.role})"
+
 
 
 class Homework(models.Model):
