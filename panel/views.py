@@ -2048,16 +2048,34 @@ def edgradeitems(request, gradelevel):
     # Build parent_exists dictionary for list_student
     parent_exists = {}
     if list_student:
-        from sms.hamro import user_exists_in_hamro
+        from sms.hamro import lookup_hamro_users_batch, format_phone
+        phones_to_check = set()
+        for s_sess in students:
+            s = s_sess.student
+            if getattr(s, "fathers_phone", None):
+                phones_to_check.add(s.fathers_phone)
+            if getattr(s, "mothers_phone", None):
+                phones_to_check.add(s.mothers_phone)
+                
+        batch_results = lookup_hamro_users_batch(phones=list(phones_to_check))
+        
         for s_sess in students:
             s = s_sess.student
             registered = False
-            if getattr(s, "fathers_phone", None):
-                if user_exists_in_hamro(phone=s.fathers_phone):
+            
+            f_phone = getattr(s, "fathers_phone", None)
+            if f_phone:
+                f_phone_str = format_phone(f_phone)
+                if f_phone_str and str(f_phone_str) in batch_results:
                     registered = True
-            if not registered and getattr(s, "mothers_phone", None):
-                if user_exists_in_hamro(phone=s.mothers_phone):
-                    registered = True
+                    
+            if not registered:
+                m_phone = getattr(s, "mothers_phone", None)
+                if m_phone:
+                    m_phone_str = format_phone(m_phone)
+                    if m_phone_str and str(m_phone_str) in batch_results:
+                        registered = True
+                        
             parent_exists[s.reg_no] = registered
 
     context = {
