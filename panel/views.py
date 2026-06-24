@@ -2056,6 +2056,8 @@ def edgradeitems(request, gradelevel):
                 phones_to_check.add(s.fathers_phone)
             if getattr(s, "mothers_phone", None):
                 phones_to_check.add(s.mothers_phone)
+            if getattr(s, "guardian_phone", None):
+                phones_to_check.add(s.guardian_phone)
                 
         batch_results = lookup_hamro_users_batch(phones=list(phones_to_check))
         
@@ -2074,6 +2076,13 @@ def edgradeitems(request, gradelevel):
                 if m_phone:
                     m_phone_str = format_phone(m_phone)
                     if m_phone_str and str(m_phone_str) in batch_results:
+                        registered = True
+                        
+            if not registered:
+                g_phone = getattr(s, "guardian_phone", None)
+                if g_phone:
+                    g_phone_str = format_phone(g_phone)
+                    if g_phone_str and str(g_phone_str) in batch_results:
                         registered = True
                         
             parent_exists[s.reg_no] = registered
@@ -11516,6 +11525,10 @@ def send_parent_message(request):
         contacts.append(('phone', student.mothers_phone))
     if student.mothers_email:
         contacts.append(('email', student.mothers_email))
+    if student.guardian_phone:
+        contacts.append(('phone', student.guardian_phone))
+    if student.guardian_email:
+        contacts.append(('email', student.guardian_email))
         
     parent_ids = []
     from sms.hamro import lookup_hamro_user
