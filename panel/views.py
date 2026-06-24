@@ -2050,6 +2050,7 @@ def edgradeitems(request, gradelevel):
     if list_student:
         from sms.hamro import lookup_hamro_users_batch, format_phone
         phones_to_check = set()
+        emails_to_check = set()
         for s_sess in students:
             s = s_sess.student
             if getattr(s, "fathers_phone", None):
@@ -2058,32 +2059,33 @@ def edgradeitems(request, gradelevel):
                 phones_to_check.add(s.mothers_phone)
             if getattr(s, "guardian_phone", None):
                 phones_to_check.add(s.guardian_phone)
+            if getattr(s, "fathers_email", None):
+                emails_to_check.add(s.fathers_email)
+            if getattr(s, "mothers_email", None):
+                emails_to_check.add(s.mothers_email)
+            if getattr(s, "guardian_email", None):
+                emails_to_check.add(s.guardian_email)
                 
-        batch_results = lookup_hamro_users_batch(phones=list(phones_to_check))
+        batch_results = lookup_hamro_users_batch(emails=list(emails_to_check), phones=list(phones_to_check))
         
         for s_sess in students:
             s = s_sess.student
             registered = False
             
-            f_phone = getattr(s, "fathers_phone", None)
-            if f_phone:
-                f_phone_str = format_phone(f_phone)
-                if f_phone_str and str(f_phone_str) in batch_results:
+            for email_attr in ["fathers_email", "mothers_email", "guardian_email"]:
+                email = getattr(s, email_attr, None)
+                if email and email in batch_results:
                     registered = True
+                    break
                     
             if not registered:
-                m_phone = getattr(s, "mothers_phone", None)
-                if m_phone:
-                    m_phone_str = format_phone(m_phone)
-                    if m_phone_str and str(m_phone_str) in batch_results:
-                        registered = True
-                        
-            if not registered:
-                g_phone = getattr(s, "guardian_phone", None)
-                if g_phone:
-                    g_phone_str = format_phone(g_phone)
-                    if g_phone_str and str(g_phone_str) in batch_results:
-                        registered = True
+                for phone_attr in ["fathers_phone", "mothers_phone", "guardian_phone"]:
+                    phone = getattr(s, phone_attr, None)
+                    if phone:
+                        phone_str = format_phone(phone)
+                        if phone_str and str(phone_str) in batch_results:
+                            registered = True
+                            break
                         
             parent_exists[s.reg_no] = registered
 

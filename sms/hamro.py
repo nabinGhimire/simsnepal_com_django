@@ -221,6 +221,11 @@ def lookup_hamro_user(email=None, phone=None):
         logger.error(f"Error looking up user (email={email}, phone={phone}): {e}")
     return None
 
+def chunk_list(lst, chunk_size):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), chunk_size):
+        yield lst[i:i + chunk_size]
+
 def lookup_hamro_users_batch(emails=None, phones=None):
     """Lookup multiple users on Hamro platform by lists of emails and phones.
     Returns a dictionary of {email_or_phone: user_id}.
@@ -233,43 +238,75 @@ def lookup_hamro_users_batch(emails=None, phones=None):
             if p:
                 formatted_phones.append(format_phone(p))
                 
-    payload = {
-        'emails': emails or [],
-        'phones': formatted_phones
-    }
+    emails = emails or []
     results = {}
-    try:
-        response = requests.post(url, json=payload, headers=get_headers())
-        if response.status_code == 200:
-            data = response.json()
-            users_list = data.get('users', [])
-            for u in users_list:
-                u_id = u.get('id')
-                if u_id:
-                    if u.get('email'):
-                        results[u['email']] = u_id
-                    if u.get('phone'):
-                        results[str(u['phone'])] = u_id
-        else:
-            logger.error(f"Batch user lookup failed: status={response.status_code}, response={response.text}")
-    except Exception as e:
-        logger.error(f"Error in batch user lookup: {e}")
+    
+    # Process in chunks of 50 to avoid payload limits
+    email_chunks = list(chunk_list(emails, 50)) or [[]]
+    phone_chunks = list(chunk_list(formatted_phones, 50)) or [[]]
+    
+    # Pad chunks to have same length for zip
+    max_chunks = max(len(email_chunks), len(phone_chunks))
+    while len(email_chunks) < max_chunks: email_chunks.append([])
+    while len(phone_chunks) < max_chunks: phone_chunks.append([])
+    
+    for e_chunk, p_chunk in zip(email_chunks, phone_chunks):
+        if not e_chunk and not p_chunk: continue
+        payload = {
+            'emails': e_chunk,
+            'phones': p_chunk
+        }
+        try:
+            response = requests.post(url, json=payload, headers=get_headers())
+            if response.status_code == 200:
+                data = response.json()
+                users_list = data.get('users', [])
+                for u in users_list:
+                    u_id = u.get('id')
+                    if u_id:
+                        if u.get('email'):
+                            results[u['email']] = u_id
+                        if u.get('phone'):
+                            results[str(u['phone'])] = u_id
+            else:
+                logger.error(f"Batch user lookup failed: status={response.status_code}, response={response.text}")
+        except Exception as e:
+            logger.error(f"Error in batch user lookup: {e}")
     return results
 
 def add_users_to_thread_batch(thread_id, user_ids):
     """Add multiple users to a thread in Hamro platform using batch endpoint."""
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/batch"
-    payload = {
-        'user_ids': list(set(user_ids))
-    }
+    user_ids = list(set(user_ids))
+    last_response = None
+    
+    # Chunk the user_ids to avoid 413 errors
+    for chunk in chunk_list(user_ids, 50):
+        if not chunk: continue
+        payload = {
+            'user_ids': chunk
+        }
+        try:
+            response = requests.post(url, json=payload, headers=get_headers())
+            if response.status_code in (200, 201):
+                last_response = response.json()
+            else:
+                logger.error(f"Failed to batch add users to thread {thread_id}: status={response.status_code}, response={response.text}")
+        except Exception as e:
+            logger.error(f"Error in batch adding users to thread: {e}")
+            
+    return last_response
+
+def get_thread_users(thread_id):
+    """Fetch current user_ids in a thread from Hamro platform."""
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
     try:
-        response = requests.post(url, json=payload, headers=get_headers())
-        if response.status_code in (200, 201):
-            return response.json()
+        response = requests.get(url, headers=get_headers())
+        if response.status_code == 200:
+            users_list = response.json()
+            return [u.get('user_id') for u in users_list if u.get('user_id')]
         else:
-            logger.error(f"Failed to batch add users to thread {thread_id}: status={response.status_code}, response={response.text}")
+            logger.error(f"Failed to fetch users for thread {thread_id}: {response.status_code}, response={response.text}")
     except Exception as e:
-        logger.error(f"Error in batch adding users to thread: {e}")
-    return None
-
-
+        logger.error(f"Error fetching thread users: {e}")
+    return []

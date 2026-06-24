@@ -1,7 +1,7 @@
 import logging
 from django.db.models import Q
 from sms.models import Group, Teacher, StudentSession, TeacherSubjectAccess, Section, SchoolGrade
-from sms.hamro import create_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone
+from sms.hamro import create_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone, get_thread_users, remove_user_from_thread
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def sync_school_channel(school, session):
     ]
     
     emails_to_lookup = [t.email for t in teacher_users if t.email]
-    phones_to_lookup = [] # teacher model doesn't store phone directly on User usually, but we check if we have it
+    phones_to_lookup = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
     
     # Gather all parents of active students in the school
     student_sessions = StudentSession.objects.filter(session=session, student__school=school, status=True)
@@ -113,11 +113,17 @@ def sync_school_channel(school, session):
     if to_add_ids:
         add_users_to_thread_batch(channel_group.external_id, to_add_ids)
         
+    # Remove stale users
+    current_users = get_thread_users(channel_group.external_id)
+    for u_id in current_users:
+        if u_id not in to_add_ids:
+            remove_user_from_thread(channel_group.external_id, u_id)
+            
     return channel_group
 
 def sync_teachers_group(school, session):
     """Ensure a teachers-only discussion group exists and populate with all teachers (batch mode)."""
-    group_name = f"{school.name} Teachers {session.year}"
+    group_name = f"{school.name} Teachers"
     group_obj = Group.objects.filter(name=group_name, session=session, is_broadcast=False, grade=None, section=None).first()
     
     if not group_obj:
@@ -149,7 +155,8 @@ def sync_teachers_group(school, session):
     ]
     
     emails_to_lookup = [t.email for t in teacher_users if t.email]
-    users_map = get_platform_users_map(emails_to_lookup, [])
+    phones_to_lookup = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
+    users_map = get_platform_users_map(emails_to_lookup, phones_to_lookup)
 
     to_add_ids = []
     for t_user in teacher_users:
@@ -168,6 +175,12 @@ def sync_teachers_group(school, session):
     if to_add_ids:
         add_users_to_thread_batch(group_obj.external_id, to_add_ids)
         
+    # Remove stale users
+    current_users = get_thread_users(group_obj.external_id)
+    for u_id in current_users:
+        if u_id not in to_add_ids:
+            remove_user_from_thread(group_obj.external_id, u_id)
+            
     return group_obj
 
 def sync_grade_groups(school, session):
@@ -233,6 +246,7 @@ def sync_single_group(group_name, grade, section, session, school):
     ]
     
     teacher_emails = [t.email for t in teaching_users if t.email]
+    teacher_phones = [format_phone(t.username) for t in teaching_users if t.username and t.username.isdigit()]
 
     # Get section parents
     student_sessions = StudentSession.objects.filter(session=session, grade=grade, section=section, status=True)
@@ -250,7 +264,7 @@ def sync_single_group(group_name, grade, section, session, school):
 
     # Batch lookup
     all_emails = list(set(teacher_emails + parent_emails))
-    all_phones = list(set(parent_phones))
+    all_phones = list(set(parent_phones + teacher_phones))
     users_map = get_platform_users_map(all_emails, all_phones)
 
     # Collect members
