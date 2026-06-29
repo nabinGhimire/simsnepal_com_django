@@ -24,7 +24,7 @@ def run_import():
         return
 
     try:
-        current_session = EduSession.objects.get(session_year=TARGET_SESSION_YEAR)
+        current_session = EduSession.objects.get(year=TARGET_SESSION_YEAR)
     except EduSession.DoesNotExist:
         print(f"ERROR: Session year '{TARGET_SESSION_YEAR}' not found in database.")
         return
