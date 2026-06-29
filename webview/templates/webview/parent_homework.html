@@ -137,7 +137,14 @@
               <div class="d-flex align-items-center mb-2">
                 <span class="subject-badge">{{ hw.subject }}</span>
               </div>
-              <div class="text-dark" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;">{{ hw.content }}</div>
+              {% for e in hw.entries %}
+                <div class="mb-{% if not forloop.last %}3{% else %}1{% endif %}">
+                  <div class="text-dark" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;">{{ e.text }}</div>
+                  {% if e.teacher_name %}
+                    <div class="text-muted mt-1" style="font-size: 0.8rem;"><i class="ti ti-user-edit me-1"></i>Assigned by {{ e.teacher_name }}</div>
+                  {% endif %}
+                </div>
+              {% endfor %}
             </div>
           {% endfor %}
         {% else %}

@@ -233,13 +233,30 @@ def parent_homework(request):
         
         hw_list = []
         for sub in subjects:
-            content = hw_dict.get(str(sub.id))
-            logger.debug("Checking subject ID=%s name=%s: content=%s", sub.id, sub.subject, content)
-            if content:
+            content_data = hw_dict.get(str(sub.id))
+            if not content_data:
+                continue
+
+            if isinstance(content_data, str):
+                # Legacy string format (no teacher info)
                 hw_list.append({
                     'subject': sub.subject,
-                    'content': content
+                    'entries': [{'teacher_name': None, 'text': content_data}]
                 })
+            elif isinstance(content_data, dict):
+                # New nested dictionary format
+                entries = []
+                for t_id, t_data in content_data.items():
+                    if isinstance(t_data, dict) and t_data.get("text"):
+                        entries.append({
+                            'teacher_name': t_data.get("teacher_name"),
+                            'text': t_data.get("text")
+                        })
+                if entries:
+                    hw_list.append({
+                        'subject': sub.subject,
+                        'entries': entries
+                    })
                 
         student_homeworks.append({
             'student': student,
@@ -576,10 +593,19 @@ def teacher_homework(request):
                     except Exception:
                         hw_dict = {}
                     for sub_id_str, text in subjects_data.items():
+                        if sub_id_str not in hw_dict or isinstance(hw_dict.get(sub_id_str), str):
+                            hw_dict[sub_id_str] = {}
+
                         if text:
-                            hw_dict[sub_id_str] = text
+                            hw_dict[sub_id_str][str(user.id)] = {
+                                "teacher_name": user.get_full_name() or user.username,
+                                "text": text
+                            }
                         else:
-                            hw_dict.pop(sub_id_str, None)
+                            if isinstance(hw_dict.get(sub_id_str), dict):
+                                hw_dict[sub_id_str].pop(str(user.id), None)
+                                if not hw_dict[sub_id_str]:
+                                    hw_dict.pop(sub_id_str, None)
                     homework_obj.homework = json.dumps(hw_dict)
                     homework_obj.save()
                 message = "All homework entries saved successfully!"
@@ -607,6 +633,15 @@ def teacher_homework(request):
                     existing_homework[(grade.id, section.id)] = {}
 
             # Group UI data
+            def get_teacher_hw_text(hw_data, teacher_id_str):
+                if isinstance(hw_data, str):
+                    return hw_data
+                elif isinstance(hw_data, dict):
+                    t_data = hw_data.get(teacher_id_str)
+                    if isinstance(t_data, dict):
+                        return t_data.get("text", "")
+                return ""
+
             grouped_ui = {}
             for entry in access_entries:
                 # Determine the subject object based on entry type
@@ -621,10 +656,13 @@ def teacher_homework(request):
 
                 school_name = entry.grade.school.name
                 class_name = f"Grade {entry.grade.grade_name} - Section {entry.section.section}"
+                
+                hw_val = existing_homework.get((entry.grade_id, entry.section_id), {}).get(str(subject_obj.id), "")
+                
                 grouped_ui.setdefault(school_name, {}).setdefault(class_name, []).append({
                     "subject": subject_obj,
                     "input_name": f"hw_{entry.grade_id}_{entry.section_id}_{subject_obj.id}",
-                    "value": existing_homework.get((entry.grade_id, entry.section_id), {}).get(str(subject_obj.id), ""),
+                    "value": get_teacher_hw_text(hw_val, str(user.id)),
                 })
 
             context = {

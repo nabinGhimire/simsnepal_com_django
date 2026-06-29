@@ -13,7 +13,7 @@
       font-family: 'Inter', sans-serif;
       background-color: #f4f7f6;
       color: #2c3e50;
-      padding-bottom: 90px; /* Space for sticky button */
+      padding-bottom: 50vh; /* Extra space for sticky button and mobile keyboard */
     }
     .header-bar {
       background: linear-gradient(135deg, #008877, #00a890);
@@ -177,6 +177,15 @@
         });
       }
     };
+
+    // Smooth scroll input fields into view to avoid being hidden by the mobile keyboard
+    document.addEventListener('focusin', function(e) {
+      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
+        setTimeout(function() {
+          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 400); // 400ms delay to allow the keyboard to finish animating up
+      }
+    });
   </script>
 </body>
 </html>
