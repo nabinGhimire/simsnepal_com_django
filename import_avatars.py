@@ -7,8 +7,8 @@ from sms.models import Student, StudentSession, EduSession
 # CONFIGURATION
 # ==========================================
 # Replace these with your actual absolute paths
-CSV_FILE_PATH = r"C:\path\to\your\file.csv"
-IMAGES_FOLDER_PATH = r"C:\path\to\your\images\folder"
+CSV_FILE_PATH = r"/import/samata_itahari_2083.csv"
+IMAGES_FOLDER_PATH = r"/import/images/samata_itahari_2083"
 TARGET_SESSION_YEAR = "2083"
 # ==========================================
 
