@@ -1091,13 +1091,14 @@ def editstudentdetailbyregno(request, regno):
 
 
 # def printentrancecard(request):
-#     user = request.user
-#     if user.id != 16:
-#         width = 50
-#         logo = "https://grihakarya.hamro.com/samataeast/images/logo1.jpg"
-#     else:
-#         width = 50
-#         logo = "http://school3.nep.onl/wp-content/uploads/sites/8/2019/12/51150449_1650894705012798_8214025074135531520_n.png"
+    user = request.user
+    branchuser = BranchUser.objects.get(user=user)
+    school = SchoolBranch.objects.get(id=branchuser.school.id)
+    
+    if school.logo:
+        logo = school.logo.url
+    else:
+        logo = ''
 #     branchuser = BranchUser.objects.get(user=user)
 #     school = SchoolBranch.objects.get(id=branchuser.school.id)
 #
@@ -5048,19 +5049,19 @@ def importstudent(request):
     return HttpResponse("STUDENTS ADDED SUCCESSFULLY")
 
 
-@login_required
-def subjectmanagement(request):
-    user = request.user
-    branchuser = BranchUser.objects.get(user=user)
-    schoolbranch = SchoolBranch.objects.get(id=branchuser.school_id)
-    grades = SchoolGrade.objects.filter(school=schoolbranch, active=True).order_by("id")
-
-    for grade in grades:
-        subjects = Subject.objects.filter(branch=schoolbranch, grade=grade, status=True)
-        print(grade, subjects)
-
-    context = {"grades": grades}
-    return render(request, "panel/subjectmanagement.html", context)
+# @login_required
+# def subjectmanagement(request):
+#     user = request.user
+#     branchuser = BranchUser.objects.get(user=user)
+#     schoolbranch = SchoolBranch.objects.get(id=branchuser.school_id)
+#     grades = SchoolGrade.objects.filter(school=schoolbranch, active=True).order_by("id")
+# 
+#     for grade in grades:
+#         subjects = Subject.objects.filter(branch=schoolbranch, grade=grade, status=True)
+#         print(grade, subjects)
+# 
+#     context = {"grades": grades}
+#     return render(request, "panel/subjectmanagement.html", context)
 
 
 @login_required
@@ -6135,12 +6136,14 @@ def add_student_by_reg(request):
 @login_required()
 def printentrancecard(request):
     user = request.user
-    if user.id != 16:
-        width = 55
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
+    branchuser = BranchUser.objects.get(user=user)
+    school = SchoolBranch.objects.get(id=branchuser.school.id)
+    
+    width = 55
+    if school.logo:
+        logo = school.logo.url
     else:
-        width = 55
-        logo = "http://school3.nep.onl/wp-content/uploads/sites/8/2019/12/51150449_1650894705012798_8214025074135531520_n.png"
+        logo = ''
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
 
@@ -6188,6 +6191,12 @@ def printentrancecard(request):
                         std_reg[sis.student.reg_no]['grade'] = sis.grade.grade_name
                         std_reg[sis.student.reg_no]['section'] = sis.section
                         std_reg[sis.student.reg_no]['roll_no'] = sis.roll_no
+                        if sis.avatar:
+                            std_reg[sis.student.reg_no]['avatar'] = sis.avatar.url
+                        elif sis.student.avatar:
+                            std_reg[sis.student.reg_no]['avatar'] = sis.student.avatar.url
+                        else:
+                            std_reg[sis.student.reg_no]['avatar'] = None
 
         term_exam = SchoolTerm.objects.get(id=term)
 
@@ -11628,4 +11637,5 @@ def student_message_history(request, regno):
             'status': log.status
         })
     return JsonResponse({'history': history})
+
 

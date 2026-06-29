@@ -26,14 +26,6 @@
 {% block content %}
 <div class="row g-4">
   <div class="col-12">
-    {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    {% endfor %}
-    {% endif %}
 
     <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
       {% csrf_token %}
@@ -56,4 +48,52 @@
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Find the logo input element inside the generated form
+    var logoInput = document.querySelector("input[name='logo']");
+    if (logoInput) {
+        var container = document.createElement("div");
+        container.style.marginTop = "10px";
+        container.style.display = "flex";
+        container.style.gap = "20px";
+        
+        var oldLogoHTML = "";
+        {% if school.logo %}
+            oldLogoHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Current Logo</div>
+                    <img src="{{ school.logo.url }}" style="height: 100px; border: 1px solid #ccc; padding: 5px; border-radius: 4px; object-fit: contain;">
+                </div>
+            `;
+        {% endif %}
+        
+        container.innerHTML = oldLogoHTML + `
+            <div id="new-logo-preview" style="text-align: center; display: none;">
+                <div style="font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #008877;">New Logo Preview</div>
+                <img id="new-logo-img" style="height: 100px; border: 2px solid #008877; padding: 5px; border-radius: 4px; object-fit: contain;">
+            </div>
+        `;
+        
+        logoInput.parentNode.appendChild(container);
+        
+        logoInput.addEventListener("change", function(e) {
+            var file = e.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById("new-logo-img").src = e.target.result;
+                    document.getElementById("new-logo-preview").style.display = "block";
+                }
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById("new-logo-preview").style.display = "none";
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

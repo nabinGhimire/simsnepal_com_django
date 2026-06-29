@@ -33,14 +33,15 @@ from sms.models import SchoolBranch
 class SchoolForm(forms.ModelForm):
     class Meta:
         model = SchoolBranch
-        fields = ['name', 'location', 'phone', 'email', 'logo', 'slogan']
+        fields = ['name', 'location', 'phone', 'email', 'website', 'logo', 'slogan']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
             'phone': forms.NumberInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'website': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://www.yourschool.edu.np'}),
             'logo': forms.FileInput(attrs={'class': 'form-control-file'}),
-            'slogan': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'slogan': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': '"Quality Education for All"'}),
         }
 
 from sms.models import PlatformSetting

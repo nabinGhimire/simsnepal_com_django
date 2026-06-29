@@ -50,7 +50,7 @@
                     <a href="{{ request.path }}?action=result_calc"><i class="ti ti-calculator"></i> Result Calculation</a>
                 </li>
                 <li>
-                    <a href="{% url 'weighted_result_calculation' %}"><i class="ti ti-adjustments"></i> Weighted Calculation</a>
+                    <a href="{% url 'panel:weighted_result_calculation' %}"><i class="ti ti-adjustments"></i> Weighted Calculation</a>
                 </li>
             </ul>
         </div>
@@ -138,6 +138,7 @@
                                 <th>Exam Status</th>
                                 <th>Is Final Term</th>
                                 <th>Final Term Name</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -165,6 +166,16 @@
                                         {% if term.final_term %}
                                             {{ term.final_term_name }}
                                         {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="/panel/print/entrancecard/" target="_blank" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="term" value="{{ term.id }}">
+                                            <input type="hidden" name="whattype" value="image">
+                                            <button type="submit" class="btn btn-sm btn-teal" title="Print Entrance Cards with Image">
+                                                <i class="ti ti-printer me-1"></i> Print Cards
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             {% endfor %}
