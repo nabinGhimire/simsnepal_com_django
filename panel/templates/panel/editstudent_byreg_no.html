@@ -52,7 +52,7 @@
           {% endif %}
         {% endif %}
 
-        <form action="/panel/edit/student/{{ student.reg_no }}/" method="POST" class="card shadow-sm">
+        <form action="/panel/edit/student/{{ student.reg_no }}/" method="POST" enctype="multipart/form-data" class="card shadow-sm">
           {% csrf_token %}
           <input type="hidden" name="redurl" value="{{ request.get_full_path }}">
           <input type="hidden" name="gradelevel" value="{{ gradelevel }}">
@@ -71,6 +71,37 @@
                   <span class="fs-4">Student Information</span>
                 </div>
               </legend>
+              
+              <div class="row mb-4">
+                <div class="col-12 text-center">
+                  <div class="d-flex justify-content-center gap-4 align-items-end mb-3">
+                    <div id="currentAvatarContainerEdit" class="text-center">
+                      <div class="text-muted small mb-1">Old Image</div>
+                      {% if student_session and student_session.avatar %}
+                      <div class="mb-2">
+                        <img src="{{ student_session.avatar.url }}" alt="Current Avatar" class="avatar avatar-xl rounded" style="width: 120px; height: 120px; object-fit: cover; box-shadow: 0 0 0 2px #e9ecef;">
+                      </div>
+                      {% else %}
+                      <div class="mb-2">
+                        <span class="avatar avatar-xl rounded bg-muted-lt" style="width: 120px; height: 120px; font-size: 3rem; display: inline-flex; align-items: center; justify-content: center;">
+                          <i class="ti ti-user"></i>
+                        </span>
+                      </div>
+                      {% endif %}
+                    </div>
+                    <div id="avatarPreviewContainerEdit" class="text-center" style="display: none;">
+                      <div class="text-primary small mb-1 fw-bold">New Image</div>
+                      <div class="mb-2">
+                        <img id="avatarPreviewEdit" src="#" alt="New Image Preview" class="avatar avatar-xl rounded" style="width: 120px; height: 120px; object-fit: cover; box-shadow: 0 0 0 2px #e9ecef;">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-2 text-muted small fw-bold">Student Photo</div>
+                  <div class="mt-2 d-inline-block text-start" style="max-width: 250px;">
+                    <input type="file" class="form-control form-control-sm" name="avatar" id="avatarInputEdit" accept="image/*">
+                  </div>
+                </div>
+              </div>
               
               <div class="row">
                 <div class="col-md-6 mb-3">
@@ -258,4 +289,29 @@
     </div>
   </div>
 </div>
+{% block extra_js %}
+{{ block.super }}
+<script>
+  const avatarInputEdit = document.getElementById('avatarInputEdit');
+  if (avatarInputEdit) {
+    avatarInputEdit.addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      const previewContainer = document.getElementById('avatarPreviewContainerEdit');
+      const previewImg = document.getElementById('avatarPreviewEdit');
+      
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          previewImg.src = e.target.result;
+          previewContainer.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+      } else {
+        previewContainer.style.display = 'none';
+        previewImg.src = '#';
+      }
+    });
+  }
+</script>
+{% endblock extra_js %}
 {% endblock %}

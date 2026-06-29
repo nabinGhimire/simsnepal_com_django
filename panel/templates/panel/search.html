@@ -65,6 +65,7 @@
                     <table class="table table-vcenter card-table table-hover">
                         <thead>
                             <tr>
+                                <th>Image</th>
                                 <th>Class</th>
                                 <th>Roll No</th>
                                 <th>Name</th>
@@ -76,6 +77,17 @@
                         <tbody>
                             {% for student in students %}
                             <tr>
+                                <td>
+                                  <a href="#" data-bs-toggle="modal" data-bs-target="#modal-{{ student.student.reg_no }}" style="text-decoration: none;">
+                                    {% if student.avatar %}
+                                    <div class="avatar avatar-md rounded" style="background-image: url({{ student.avatar.url }}); width: 40px; height: 40px; cursor: pointer;"></div>
+                                    {% else %}
+                                    <span class="avatar avatar-md rounded bg-muted-lt" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                                      <i class="ti ti-user" style="font-size: 1.5rem;"></i>
+                                    </span>
+                                    {% endif %}
+                                  </a>
+                                </td>
                                 <td><span class="badge bg-azure-lt">{{ student.grade }}</span></td>
                                 <td class="text-secondary">{{ student.roll_no }}</td>
                                 <td class="fw-bold">{{ student.student.name }}</td>
@@ -166,10 +178,23 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <div class="text-center mb-4">
+                    {% if student.avatar %}
+                    <img src="{{ student.avatar.url }}" alt="Student Avatar" class="avatar avatar-xl rounded" style="width: 120px; height: 120px; object-fit: cover; box-shadow: 0 0 0 2px #e9ecef;">
+                    {% else %}
+                    <span class="avatar avatar-xl rounded bg-muted-lt" style="width: 120px; height: 120px; font-size: 3rem; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="ti ti-user"></i>
+                    </span>
+                    {% endif %}
+                </div>
                 <div class="row g-3">
                     <div class="col-6">
                         <label class="form-label text-muted small">Registration No</label>
                         <div class="fw-bold">{{ student.student.reg_no }}</div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small">Pin Code</label>
+                        <div class="fw-bold">{{ student.student.pin_code|default:"—" }}</div>
                     </div>
                     <div class="col-6">
                         <label class="form-label text-muted small">Gender</label>
@@ -183,45 +208,78 @@
                       <label class="form-label text-muted small">Roll No</label>
                       <div class="fw-bold">{{ student.roll_no }}</div>
                     </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small">House</label>
+                        <div class="fw-bold">{{ student.student.house|default:"—" }}</div>
+                    </div>
                     <div class="col-12">
                         <hr class="my-2">
-                        <h4 class="text-primary mb-2"><i class="ti ti-users me-1"></i>Parental Information</h4>
+                        <h4 class="text-primary mb-2"><i class="ti ti-man me-1"></i>Father's Information</h4>
                     </div>
-                    <div class="col-6">
+                    <div class="col-12">
                         <label class="form-label text-muted small">Father's Name</label>
                         <div class="fw-bold">{{ student.student.fathers_name|default:"—" }}</div>
                     </div>
                     <div class="col-6">
-                        <label class="form-label text-muted small">Father's Phone</label>
+                        <label class="form-label text-muted small">Phone Number</label>
                         <div class="fw-bold">{{ student.student.fathers_phone|default:"—" }}</div>
                     </div>
                     <div class="col-6">
+                        <label class="form-label text-muted small">Email Address</label>
+                        <div class="fw-bold">{{ student.student.fathers_email|default:"—" }}</div>
+                    </div>
+                    
+                    <div class="col-12">
+                        <hr class="my-2">
+                        <h4 class="text-primary mb-2"><i class="ti ti-woman me-1"></i>Mother's Information</h4>
+                    </div>
+                    <div class="col-12">
                         <label class="form-label text-muted small">Mother's Name</label>
                         <div class="fw-bold">{{ student.student.mothers_name|default:"—" }}</div>
                     </div>
                     <div class="col-6">
-                        <label class="form-label text-muted small">Mother's Phone</label>
+                        <label class="form-label text-muted small">Phone Number</label>
                         <div class="fw-bold">{{ student.student.mothers_phone|default:"—" }}</div>
                     </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small">Email Address</label>
+                        <div class="fw-bold">{{ student.student.mothers_email|default:"—" }}</div>
+                    </div>
+
                     <div class="col-12">
                         <hr class="my-2">
-                        <h4 class="text-primary mb-2"><i class="ti ti-shield me-1"></i>Guardian Contact</h4>
+                        <h4 class="text-primary mb-2"><i class="ti ti-shield-lock me-1"></i>Guardian's Information</h4>
                     </div>
-                    <div class="col-6">
-                        <label class="form-label text-muted small">Guardian Name</label>
+                    <div class="col-12">
+                        <label class="form-label text-muted small">Guardian's Name</label>
                         <div class="fw-bold">{{ student.student.guardian_name|default:"—" }}</div>
                     </div>
                     <div class="col-6">
-                        <label class="form-label text-muted small">Guardian Phone</label>
+                        <label class="form-label text-muted small">Phone Number</label>
                         <div class="fw-bold">{{ student.student.guardian_phone|default:"—" }}</div>
                     </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small">Email Address</label>
+                        <div class="fw-bold">{{ student.student.guardian_email|default:"—" }}</div>
+                    </div>
                     <div class="col-12">
-                        <label class="form-label text-muted small">Address</label>
-                        <div class="fw-bold">{{ student.student.permanent_address|default:student.student.temporary_address|default:"—" }}</div>
+                        <hr class="my-2">
+                        <h4 class="text-primary mb-2"><i class="ti ti-map-pin me-1"></i>Address Details</h4>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small">Temporary Address</label>
+                        <div class="fw-bold">{{ student.student.temporary_address|default:"—" }}</div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small">Permanent Address</label>
+                        <div class="fw-bold">{{ student.student.permanent_address|default:"—" }}</div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
+                <a href="/panel/edit/student/session/{{ student.student.reg_no }}/?return_path={{ request.get_full_path|question_and }}" class="btn btn-outline-primary">
+                    <i class="ti ti-adjustments me-1"></i> Edit Session
+                </a>
                 <a href="/panel/edit/student/{{ student.student.reg_no }}/" class="btn btn-primary">
                     <i class="ti ti-edit me-1"></i> Edit Details
                 </a>

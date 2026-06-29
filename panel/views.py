@@ -896,6 +896,7 @@ def addstudent(request):
         rollno = request.POST.get("rollno")
         gender_str = request.POST.get("gender")
         section = request.POST.get("section")
+        avatar = request.FILES.get("avatar")
 
         missing_fields = []
         if not studentname:
@@ -977,6 +978,8 @@ def addstudent(request):
         student.modified = timezone.now()
 
         try:
+            if avatar:
+                student.avatar = avatar
             student.save()
 
             # Resolve grade and section objects
@@ -988,7 +991,7 @@ def addstudent(request):
                 return HttpResponseRedirect(redurl or "/panel/")
 
             # Create StudentSession linking to grade and section
-            StudentSession.objects.create(
+            student_session = StudentSession.objects.create(
                 session=get_current_session(),
                 student=student,
                 grade=grade_obj,
@@ -996,6 +999,9 @@ def addstudent(request):
                 roll_no=rollno,
                 status=True,
             )
+            if avatar:
+                student_session.avatar = avatar
+                student_session.save()
 
             messages.success(request, f"Student {student.name} added successfully.")
         except IntegrityError as e:
@@ -6238,10 +6244,14 @@ def edit_student(request, regno):
         student = Student.objects.get(reg_no=regno)
         if branchuser.school == student.school:
             # avaiablesections = Section.objects.filter(grade=student.grade)
+            current_session = get_current_session()
+            student_session = StudentSession.objects.filter(student=student, session=current_session, status=True).first()
+            
             if request.method == 'POST':
                 studentname = request.POST.get('studentname')
                 rollno = request.POST.get('rollno')
                 gender = request.POST.get('gender')
+                avatar = request.FILES.get('avatar')
 
                 dateofbirth = request.POST.get('dateofbirth', '')
 
@@ -6300,6 +6310,9 @@ def edit_student(request, regno):
                 print("going to save student")
                 try:
                     student.save()
+                    if avatar and student_session:
+                        student_session.avatar = avatar
+                        student_session.save()
                 except Exception as err:
                     mes = 'Sorry! something went wrong. Click <a href="/panel/">Here</a> to go the panel.'+ err
                     return HttpResponse(mes)
@@ -6308,11 +6321,11 @@ def edit_student(request, regno):
                 student = Student.objects.get(reg_no=regno)
                 message = 'Details of Student ' + student.name + ' has been updated.'
 
-                context = {'student': student, 'message': message, 'success': success}
+                context = {'student': student, 'student_session': student_session, 'message': message, 'success': success}
                 return render(request, 'panel/editstudent_byreg_no.html', context)
 
             else:
-                context = {'student': student}
+                context = {'student': student, 'student_session': student_session}
                 return render(request, 'panel/editstudent_byreg_no.html', context)
         else:
             return HttpResponse(
@@ -6377,11 +6390,21 @@ def edit_student_session(request, regno):
             section = request.POST.get('section')
             return_url = request.POST.get('redurl')
             house = request.POST.get('house')
+            avatar = request.FILES.get('avatar')
 
             section = Section.objects.get(id=section)
             student_session.section = section
             student_session.roll_no = rollno
-            student_session.house = house
+            
+            if house:
+                student_session.house = house
+                
+            if avatar:
+                student_session.avatar = avatar
+                if not this_student.avatar:
+                    this_student.avatar = avatar
+                    this_student.save(update_fields=['avatar'])
+                
             student_session.save()
 
             print('Return URL: ')

@@ -123,6 +123,21 @@ class GradeLevel(models.Model):
         return self.name
 
 
+import os
+from uuid import uuid4
+
+def student_avatar_upload_path(instance, filename):
+    ext = filename.split('.')[-1]
+    # schools/<school_id>/students/avatars/<reg_no>_<random>.ext
+    filename = f"{instance.reg_no}_{uuid4().hex[:8]}.{ext}"
+    return os.path.join('schools', str(instance.school.id), 'students', 'avatars', filename)
+
+def student_session_avatar_upload_path(instance, filename):
+    ext = filename.split('.')[-1]
+    # schools/<school_id>/sessions/<session_id>/students/avatars/<reg_no>_<random>.ext
+    filename = f"{instance.student.reg_no}_{uuid4().hex[:8]}.{ext}"
+    return os.path.join('schools', str(instance.student.school.id), 'sessions', str(instance.session.id), 'students', 'avatars', filename)
+
 class SchoolGrade(models.Model):
     session = models.ForeignKey(EduSession, on_delete=models.CASCADE)
     school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE)
@@ -292,7 +307,7 @@ class Student(models.Model):
     status = models.BooleanField(default=True)
     publish_result = models.BooleanField(default=True)
     
-    avatar = models.FileField(upload_to='students/avatars/', blank=True, null=True)
+    avatar = models.FileField(upload_to=student_avatar_upload_path, blank=True, null=True)
 
     added = models.DateTimeField(default=datetime.now)
     modified = models.DateTimeField(auto_now_add=True)
@@ -321,7 +336,7 @@ class StudentSession(models.Model):
     roll_no = models.IntegerField()
     status = models.BooleanField(default=True)
     
-    avatar = models.FileField(upload_to='students/sessions/', blank=True, null=True)
+    avatar = models.FileField(upload_to=student_session_avatar_upload_path, blank=True, null=True)
     parent_can_view_result = models.BooleanField(default=True)
     parent_can_view_homework = models.BooleanField(default=True)
 

@@ -345,8 +345,8 @@
           <table class="table table-vcenter card-table">
             <thead>
               <tr>
+                <th>Image</th>
                 <th>Reg. No.</th>
-                <th>Pin Code</th>
                 <th>Name</th>
                 <th>Gender</th>
                 <th>Section</th>
@@ -360,11 +360,21 @@
               {% for student in students %}
               <tr>
                 <td>
-                  <a href="/panel/edit/student/{{ student.student.reg_no }}/" target="_blank">
+                  <a href="#" data-bs-toggle="modal" data-bs-target="#modal-{{ student.student.reg_no }}" style="text-decoration: none;">
+                    {% if student.avatar %}
+                    <div class="avatar avatar-md rounded" style="background-image: url({{ student.avatar.url }}); width: 40px; height: 40px; cursor: pointer;"></div>
+                    {% else %}
+                    <span class="avatar avatar-md rounded bg-muted-lt" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                      <i class="ti ti-user" style="font-size: 1.5rem;"></i>
+                    </span>
+                    {% endif %}
+                  </a>
+                </td>
+                <td>
+                  <a href="#" data-bs-toggle="modal" data-bs-target="#modal-{{ student.student.reg_no }}">
                     {{ student.student.reg_no }}
                   </a>
                 </td>
-                <td>{{ student.student.pin_code }}</td>
                 <td>{{ student.student.name }}</td>
                 <td>{% if student.student.gender %}Male{% else %}Female{% endif %}</td>
                 <td>{{ student.section.section }}</td>
@@ -407,6 +417,128 @@
         </div>
       </div>
     </div>
+
+    <!-- Informational Modals -->
+    {% for student in students %}
+    <div class="modal modal-blur fade" id="modal-{{ student.student.reg_no }}" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ti ti-user-circle me-2"></i>{{ student.student.name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        {% if student.avatar %}
+                        <img src="{{ student.avatar.url }}" alt="Student Avatar" class="avatar avatar-xl rounded" style="width: 120px; height: 120px; object-fit: cover; box-shadow: 0 0 0 2px #e9ecef;">
+                        {% else %}
+                        <span class="avatar avatar-xl rounded bg-muted-lt" style="width: 120px; height: 120px; font-size: 3rem; display: inline-flex; align-items: center; justify-content: center;">
+                            <i class="ti ti-user"></i>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Registration No</label>
+                            <div class="fw-bold">{{ student.student.reg_no }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Pin Code</label>
+                            <div class="fw-bold">{{ student.student.pin_code|default:"—" }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Gender</label>
+                            <div class="fw-bold">{% if student.student.gender %}Male{% else %}Female{% endif %}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Date of Birth</label>
+                            <div class="fw-bold">{{ student.student.dob|default:"—" }}</div>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label text-muted small">Class / Roll No</label>
+                          <div class="fw-bold">{{ student.grade }} / {{ student.roll_no }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">House</label>
+                            <div class="fw-bold">{{ student.student.house|default:"—" }}</div>
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-2">
+                            <h4 class="text-primary mb-2"><i class="ti ti-man me-1"></i>Father's Information</h4>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Father's Name</label>
+                            <div class="fw-bold">{{ student.student.fathers_name|default:"—" }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Phone Number</label>
+                            <div class="fw-bold">{{ student.student.fathers_phone|default:"—" }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Email Address</label>
+                            <div class="fw-bold">{{ student.student.fathers_email|default:"—" }}</div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <hr class="my-2">
+                            <h4 class="text-primary mb-2"><i class="ti ti-woman me-1"></i>Mother's Information</h4>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Mother's Name</label>
+                            <div class="fw-bold">{{ student.student.mothers_name|default:"—" }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Phone Number</label>
+                            <div class="fw-bold">{{ student.student.mothers_phone|default:"—" }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Email Address</label>
+                            <div class="fw-bold">{{ student.student.mothers_email|default:"—" }}</div>
+                        </div>
+
+                        <div class="col-12">
+                            <hr class="my-2">
+                            <h4 class="text-primary mb-2"><i class="ti ti-shield-lock me-1"></i>Guardian's Information</h4>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Guardian's Name</label>
+                            <div class="fw-bold">{{ student.student.guardian_name|default:"—" }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Phone Number</label>
+                            <div class="fw-bold">{{ student.student.guardian_phone|default:"—" }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Email Address</label>
+                            <div class="fw-bold">{{ student.student.guardian_email|default:"—" }}</div>
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-2">
+                            <h4 class="text-primary mb-2"><i class="ti ti-map-pin me-1"></i>Address Details</h4>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Temporary Address</label>
+                            <div class="fw-bold">{{ student.student.temporary_address|default:"—" }}</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Permanent Address</label>
+                            <div class="fw-bold">{{ student.student.permanent_address|default:"—" }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn me-auto" data-bs-dismiss="modal">Close</button>
+                    <a href="/panel/edit/student/session/{{ student.student.reg_no }}/?return_path={{ request.get_full_path|question_and }}" target="_blank" class="btn btn-outline-primary">
+                      <i class="ti ti-adjustments me-1"></i> Edit Session
+                    </a>
+                    <a href="/panel/edit/student/{{ student.student.reg_no }}/" target="_blank" class="btn btn-primary">
+                      <i class="ti ti-pencil me-1"></i> Edit Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 
     {% elif list_attendance %}
     <div class="card">
@@ -775,7 +907,14 @@
           <input type="hidden" name="redurl" value="{{ request.get_full_path }}" />
           <input type="hidden" name="gradelevel" value="{{ gradelevel }}" />
 
-          <div class="row g-3">
+          <fieldset class="form-fieldset">
+            <legend>
+              <div class="d-flex align-items-center">
+                <span class="bg-blue text-white avatar avatar-sm me-2"><i class="ti ti-info-circle"></i></span>
+                <span class="fs-4">Student Information</span>
+              </div>
+            </legend>
+            <div class="row g-3">
             <div class="col-md-6 mb-3">
               <label class="form-label required">Student Name</label>
               <input type="text" class="form-control" name="studentname" required />
@@ -804,55 +943,104 @@
               <input type="text" class="form-control" name="dateofbirth" placeholder="YYYY/MM/DD" />
             </div>
             <div class="col-md-6 mb-3">
+              <label class="form-label">House</label>
+              <select name="house" class="form-select">
+                <option value="">Select House...</option>
+                {% for house in houses %}
+                <option value="{{ house.id }}">{{ house.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
               <label class="form-label">Student Avatar</label>
-              <input type="file" class="form-control" name="avatar" accept="image/*" />
+              <input type="file" class="form-control" name="avatar" id="avatarInputAdd" accept="image/*" />
+              <div class="mb-2 mt-2">
+                <img id="avatarPreviewAdd" src="#" alt="Image Preview" style="max-height: 100px; border-radius: 4px; display: none;">
+              </div>
             </div>
-          </div>
+            </div>
+          </fieldset>
 
-          <hr class="my-3" />
-          <h5 class="mb-3">Parent/Guardian Details</h5>
-          <div class="row g-3">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Father's Name</label>
-              <input type="text" class="form-control" name="fathersname" />
+          <!-- Father's Information Section -->
+          <fieldset class="form-fieldset mt-4">
+            <legend>
+              <div class="d-flex align-items-center">
+                <span class="bg-azure text-white avatar avatar-sm me-2"><i class="ti ti-man"></i></span>
+                <span class="fs-4">Father's Information</span>
+              </div>
+            </legend>
+            <div class="row g-3">
+              <div class="col-12 mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-control" name="fathersname" />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="number" class="form-control" name="fathersphone" />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-control" name="fathersemail" />
+              </div>
             </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Father's Phone</label>
-              <input type="number" class="form-control" name="fathersphone" />
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Mother's Name</label>
-              <input type="text" class="form-control" name="mothersname" />
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Mother's Phone</label>
-              <input type="number" class="form-control" name="mothersphone" />
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Father's Email</label>
-              <input type="email" class="form-control" name="fathersemail" />
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Mother's Email</label>
-              <input type="email" class="form-control" name="mothersemail" />
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Guardian's Name</label>
-              <input type="text" class="form-control" name="guardianname" />
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Guardian's Phone</label>
-              <input type="number" class="form-control" name="guardianphone" />
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Guardian's Email</label>
-              <input type="email" class="form-control" name="guardianemail" />
-            </div>
-          </div>
+          </fieldset>
 
-          <hr class="my-3" />
-          <h5 class="mb-3">Address Details</h5>
-          <div class="row g-3">
+          <!-- Mother's Information Section -->
+          <fieldset class="form-fieldset mt-4">
+            <legend>
+              <div class="d-flex align-items-center">
+                <span class="bg-pink text-white avatar avatar-sm me-2"><i class="ti ti-woman"></i></span>
+                <span class="fs-4">Mother's Information</span>
+              </div>
+            </legend>
+            <div class="row g-3">
+              <div class="col-12 mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-control" name="mothersname" />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="number" class="form-control" name="mothersphone" />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-control" name="mothersemail" />
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Guardian's Information Section -->
+          <fieldset class="form-fieldset mt-4">
+            <legend>
+              <div class="d-flex align-items-center">
+                <span class="bg-purple text-white avatar avatar-sm me-2"><i class="ti ti-shield-lock"></i></span>
+                <span class="fs-4">Guardian's Information</span>
+              </div>
+            </legend>
+            <div class="row g-3">
+              <div class="col-12 mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-control" name="guardianname" />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Phone Number</label>
+                <input type="number" class="form-control" name="guardianphone" />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-control" name="guardianemail" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-fieldset mt-4">
+            <legend>
+              <div class="d-flex align-items-center">
+                <span class="bg-indigo text-white avatar avatar-sm me-2"><i class="ti ti-map-pin"></i></span>
+                <span class="fs-4">Address Details</span>
+              </div>
+            </legend>
+            <div class="row g-3">
             <div class="col-md-6 mb-3">
               <label class="form-label">Temporary Address</label>
               <input type="text" class="form-control" name="tempaddr" />
@@ -861,11 +1049,17 @@
               <label class="form-label">Permanent Address</label>
               <input type="text" class="form-control" name="peraddr" />
             </div>
-          </div>
+            </div>
+          </fieldset>
 
-          <hr class="my-3" />
-          <h5 class="mb-3">Parent View Permissions</h5>
-          <div class="row g-3">
+          <fieldset class="form-fieldset mt-4">
+            <legend>
+              <div class="d-flex align-items-center">
+                <span class="bg-teal text-white avatar avatar-sm me-2"><i class="ti ti-eye"></i></span>
+                <span class="fs-4">Parent View Permissions</span>
+              </div>
+            </legend>
+            <div class="row g-3">
             <div class="col-md-6 mb-3">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="parent_can_view_result"
@@ -885,6 +1079,7 @@
               </div>
             </div>
           </div>
+          </fieldset>
 
           <button type="submit" class="btn btn-teal text-white mt-3" style="background-color: #008877;">
             <i class="ti ti-plus me-1"></i> Add Student
@@ -1086,6 +1281,8 @@
 </div>
 {% endblock content %}
 
+
+
 {% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
@@ -1093,12 +1290,36 @@
     const layoutRow = document.getElementById('layout-row');
     const toggleText = document.querySelector('.toggle-text');
     const savedState = localStorage.getItem('sidebar-collapsed');
-    if (savedState === 'true') { layoutRow.classList.add('sidebar-collapsed'); toggleText.textContent = 'Expand'; }
-    toggleBtn.addEventListener('click', function () {
-      const isCollapsed = layoutRow.classList.toggle('sidebar-collapsed');
-      localStorage.setItem('sidebar-collapsed', isCollapsed);
-      toggleText.textContent = isCollapsed ? 'Expand' : 'Collapse View';
-    });
+    
+    if (layoutRow && toggleText) {
+      if (savedState === 'true') { layoutRow.classList.add('sidebar-collapsed'); toggleText.textContent = 'Expand'; }
+    }
+    
+    if (toggleBtn && layoutRow && toggleText) {
+      toggleBtn.addEventListener('click', function () {
+        const isCollapsed = layoutRow.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('sidebar-collapsed', isCollapsed);
+        toggleText.textContent = isCollapsed ? 'Expand' : 'Collapse View';
+      });
+    }
+
+    const avatarInput = document.getElementById('avatarInputAdd');
+    if (avatarInput) {
+      avatarInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        const preview = document.getElementById('avatarPreviewAdd');
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+          }
+          reader.readAsDataURL(file);
+        } else {
+          preview.style.display = 'none';
+        }
+      });
+    }
   });
 </script>
 {% endblock %}
