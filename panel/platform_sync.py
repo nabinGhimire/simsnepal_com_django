@@ -1,9 +1,74 @@
 import logging
+import time
+from django.db import transaction
 from django.db.models import Q
-from sms.models import Group, Teacher, StudentSession, TeacherSubjectAccess, Section, SchoolGrade
+from sms.models import Group, Teacher, StudentSession, TeacherSubjectAccess, Section, SchoolGrade, PlatformSetting
 from sms.hamro import create_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone, get_thread_users, remove_user_from_thread
 
 logger = logging.getLogger(__name__)
+
+def acquire_sync_lock():
+    """Acquires a database-level sync lock. Returns True if acquired, False otherwise."""
+    try:
+        with transaction.atomic():
+            # Get or create the lock setting
+            lock, created = PlatformSetting.objects.get_or_create(
+                key='SYNC_LOCK',
+                defaults={'value': '0'}
+            )
+            
+            # lock the row
+            lock = PlatformSetting.objects.select_for_update().get(key='SYNC_LOCK')
+            
+            try:
+                lock_val = float(lock.value)
+            except (ValueError, TypeError):
+                lock_val = 0.0
+                
+            current_time = time.time()
+            # If lock was set less than 5 minutes (300 seconds) ago, it is active
+            if lock_val > 0 and (current_time - lock_val) < 300:
+                return False
+                
+            lock.value = str(current_time)
+            lock.save()
+            return True
+    except Exception as e:
+        logger.error(f"Error acquiring sync lock: {e}")
+        return False
+
+def release_sync_lock():
+    """Releases the sync lock."""
+    try:
+        lock = PlatformSetting.objects.get(key='SYNC_LOCK')
+        lock.value = '0'
+        lock.save()
+    except Exception as e:
+        logger.error(f"Error releasing sync lock: {e}")
+
+def normalize_lookup_key(key):
+    """Normalize phone or email for robust lookup."""
+    if not key:
+        return ""
+    key = str(key).strip().lower()
+    if key.startswith('+'):
+        key = key[1:]
+    return key
+
+def get_platform_users_map(emails, phones):
+    """Perform batch lookup for given list of emails and phones, returning a lookup map with normalized keys."""
+    emails = list(filter(None, set(emails)))
+    phones = list(filter(None, set(phones)))
+    
+    if not emails and not phones:
+        return {}
+        
+    raw_map = lookup_hamro_users_batch(emails=emails, phones=phones)
+    normalized_map = {}
+    for key, val in raw_map.items():
+        if val:
+            normalized_map[normalize_lookup_key(key)] = val
+    return normalized_map
 
 def normalize_group_name(grade_name, section_name, session_year, section_count):
     """Format and normalize class/section group name to avoid duplicate prefixes."""
@@ -19,20 +84,11 @@ def normalize_group_name(grade_name, section_name, session_year, section_count):
     else:
         return f"{prefix}{grade_name} {session_year}"
 
-def get_platform_users_map(emails, phones):
-    """Perform batch lookup for given list of emails and phones, returning a lookup map."""
-    emails = list(filter(None, set(emails)))
-    phones = list(filter(None, set(phones)))
-    
-    if not emails and not phones:
-        return {}
-        
-    return lookup_hamro_users_batch(emails=emails, phones=phones)
-
 def sync_school_channel(school, session):
     """Ensure a school-wide channel exists and add all teachers and parents (batch mode)."""
     channel_name = school.name
-    channel_group = Group.objects.filter(name=channel_name, session=session, is_broadcast=True).first()
+    # Query by session and is_broadcast=True to uniquely identify the channel
+    channel_group = Group.objects.filter(session=session, is_broadcast=True).first()
     
     if not channel_group:
         ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}")
@@ -46,13 +102,27 @@ def sync_school_channel(school, session):
         else:
             logger.error(f"Could not create school channel on platform for {channel_name}")
             return None
-    elif not channel_group.external_id:
-        ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}")
-        if ext_id:
-            channel_group.external_id = ext_id
+    else:
+        # Check if name needs updating
+        if channel_group.name != channel_name:
+            channel_group.name = channel_name
             channel_group.save()
-        else:
-            return None
+            
+        # Check if external_id actually exists on platform
+        if channel_group.external_id:
+            current_users = get_thread_users(channel_group.external_id)
+            if current_users is None:
+                channel_group.external_id = None
+                channel_group.save()
+                
+        # Recreate if external_id is missing or was reset above
+        if not channel_group.external_id:
+            ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}")
+            if ext_id:
+                channel_group.external_id = ext_id
+                channel_group.save()
+            else:
+                return None
 
     # Gather all teachers in the school
     teacher_users = [
@@ -92,9 +162,16 @@ def sync_school_channel(school, session):
         teacher_obj = Teacher.objects.filter(teacher=t_user).first()
         ext_id = teacher_obj.external_id if teacher_obj else None
         
-        if not ext_id and t_user.email in users_map:
-            ext_id = users_map[t_user.email]
-            if teacher_obj:
+        if not ext_id:
+            if t_user.email:
+                norm_email = normalize_lookup_key(t_user.email)
+                if norm_email in users_map:
+                    ext_id = users_map[norm_email]
+            if not ext_id and t_user.username and t_user.username.isdigit():
+                norm_phone = normalize_lookup_key(format_phone(t_user.username))
+                if norm_phone in users_map:
+                    ext_id = users_map[norm_phone]
+            if ext_id and teacher_obj:
                 teacher_obj.external_id = ext_id
                 teacher_obj.save()
                 
@@ -103,11 +180,15 @@ def sync_school_channel(school, session):
 
     # Collect parent external IDs
     for email in parent_emails:
-        if email in users_map:
-            to_add_ids.append(users_map[email])
+        norm = normalize_lookup_key(email)
+        if norm in users_map:
+            to_add_ids.append(users_map[norm])
     for phone in parent_phones:
-        if phone in users_map:
-            to_add_ids.append(users_map[phone])
+        norm = normalize_lookup_key(phone)
+        if norm in users_map:
+            to_add_ids.append(users_map[norm])
+
+    to_add_ids = list(set(to_add_ids))
 
     # Batch add all to channel
     if to_add_ids:
@@ -124,7 +205,8 @@ def sync_school_channel(school, session):
 def sync_teachers_group(school, session):
     """Ensure a teachers-only discussion group exists and populate with all teachers (batch mode)."""
     group_name = f"{school.name} Teachers"
-    group_obj = Group.objects.filter(name=group_name, session=session, is_broadcast=False, grade=None, section=None).first()
+    # Query by session, grade=None, section=None, is_broadcast=False to uniquely identify teachers group
+    group_obj = Group.objects.filter(session=session, is_broadcast=False, grade=None, section=None).first()
     
     if not group_obj:
         ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}")
@@ -138,13 +220,27 @@ def sync_teachers_group(school, session):
         else:
             logger.error(f"Could not create teachers group on platform for {group_name}")
             return None
-    elif not group_obj.external_id:
-        ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}")
-        if ext_id:
-            group_obj.external_id = ext_id
+    else:
+        # Check if name needs updating
+        if group_obj.name != group_name:
+            group_obj.name = group_name
             group_obj.save()
-        else:
-            return None
+            
+        # Check if external_id actually exists on platform
+        if group_obj.external_id:
+            current_users = get_thread_users(group_obj.external_id)
+            if current_users is None:
+                group_obj.external_id = None
+                group_obj.save()
+                
+        # Recreate if external_id is missing or was reset above
+        if not group_obj.external_id:
+            ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}")
+            if ext_id:
+                group_obj.external_id = ext_id
+                group_obj.save()
+            else:
+                return None
 
     # Fetch all teachers
     teacher_users = [
@@ -163,14 +259,23 @@ def sync_teachers_group(school, session):
         teacher_obj = Teacher.objects.filter(teacher=t_user).first()
         ext_id = teacher_obj.external_id if teacher_obj else None
         
-        if not ext_id and t_user.email in users_map:
-            ext_id = users_map[t_user.email]
-            if teacher_obj:
+        if not ext_id:
+            if t_user.email:
+                norm_email = normalize_lookup_key(t_user.email)
+                if norm_email in users_map:
+                    ext_id = users_map[norm_email]
+            if not ext_id and t_user.username and t_user.username.isdigit():
+                norm_phone = normalize_lookup_key(format_phone(t_user.username))
+                if norm_phone in users_map:
+                    ext_id = users_map[norm_phone]
+            if ext_id and teacher_obj:
                 teacher_obj.external_id = ext_id
                 teacher_obj.save()
                 
         if ext_id:
             to_add_ids.append(ext_id)
+
+    to_add_ids = list(set(to_add_ids))
 
     if to_add_ids:
         add_users_to_thread_batch(group_obj.external_id, to_add_ids)
@@ -212,7 +317,13 @@ def sync_grade_groups(school, session):
 
 def sync_single_group(group_name, grade, section, session, school):
     """Sync a single group, adding section teachers and parents (batch mode)."""
-    group_obj = Group.objects.filter(name=group_name, session=session).first()
+    # Query by grade, section, session, is_broadcast=False to uniquely identify the section group
+    group_obj = Group.objects.filter(
+        grade=grade,
+        section=section,
+        session=session,
+        is_broadcast=False
+    ).first()
     
     if not group_obj:
         ext_id = create_thread('group', group_name, f"Class group for {group_name}")
@@ -226,14 +337,29 @@ def sync_single_group(group_name, grade, section, session, school):
                 external_id=ext_id
             )
         else:
+            logger.error(f"Could not create class group on platform for {group_name}")
             return None
-    elif not group_obj.external_id:
-        ext_id = create_thread('group', group_name, f"Class group for {group_name}")
-        if ext_id:
-            group_obj.external_id = ext_id
+    else:
+        # Check if name needs updating
+        if group_obj.name != group_name:
+            group_obj.name = group_name
             group_obj.save()
-        else:
-            return None
+            
+        # Check if external_id actually exists on platform
+        if group_obj.external_id:
+            current_users = get_thread_users(group_obj.external_id)
+            if current_users is None:
+                group_obj.external_id = None
+                group_obj.save()
+                
+        # Recreate if external_id is missing or was reset above
+        if not group_obj.external_id:
+            ext_id = create_thread('group', group_name, f"Class group for {group_name}")
+            if ext_id:
+                group_obj.external_id = ext_id
+                group_obj.save()
+            else:
+                return None
 
     # Get section teachers
     teaching_users = [
@@ -275,9 +401,16 @@ def sync_single_group(group_name, grade, section, session, school):
         teacher_obj = Teacher.objects.filter(teacher=t_user).first()
         ext_id = teacher_obj.external_id if teacher_obj else None
         
-        if not ext_id and t_user.email in users_map:
-            ext_id = users_map[t_user.email]
-            if teacher_obj:
+        if not ext_id:
+            if t_user.email:
+                norm_email = normalize_lookup_key(t_user.email)
+                if norm_email in users_map:
+                    ext_id = users_map[norm_email]
+            if not ext_id and t_user.username and t_user.username.isdigit():
+                norm_phone = normalize_lookup_key(format_phone(t_user.username))
+                if norm_phone in users_map:
+                    ext_id = users_map[norm_phone]
+            if ext_id and teacher_obj:
                 teacher_obj.external_id = ext_id
                 teacher_obj.save()
                 
@@ -286,13 +419,23 @@ def sync_single_group(group_name, grade, section, session, school):
 
     # Section parents
     for email in parent_emails:
-        if email in users_map:
-            to_add_ids.append(users_map[email])
+        norm = normalize_lookup_key(email)
+        if norm in users_map:
+            to_add_ids.append(users_map[norm])
     for phone in parent_phones:
-        if phone in users_map:
-            to_add_ids.append(users_map[phone])
+        norm = normalize_lookup_key(phone)
+        if norm in users_map:
+            to_add_ids.append(users_map[norm])
+
+    to_add_ids = list(set(to_add_ids))
 
     if to_add_ids:
         add_users_to_thread_batch(group_obj.external_id, to_add_ids)
         
+    # Remove stale users
+    current_users = get_thread_users(group_obj.external_id)
+    for u_id in current_users:
+        if u_id not in to_add_ids:
+            remove_user_from_thread(group_obj.external_id, u_id)
+            
     return group_obj

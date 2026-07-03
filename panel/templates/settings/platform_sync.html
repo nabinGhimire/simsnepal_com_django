@@ -1,0 +1,183 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %}Platform Sync Dashboard | SIMSNepal{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Platform</div>
+        <h2 class="page-title">Platform Sync Dashboard</h2>
+      </div>
+      <div class="col-auto ms-auto">
+        <div class="btn-list">
+          <a href="{% url 'panel:broadcast' %}" class="btn btn-teal text-white" style="background-color: #008877;">
+            <i class="ti ti-send me-1"></i> Send Broadcast
+          </a>
+          <a href="{% url 'panel:platform_setting' %}" class="btn btn-outline-secondary">
+            <i class="ti ti-settings me-1"></i> Integration Keys
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-body py-4">
+        <div class="row align-items-center g-3">
+          <div class="col-auto">
+            <span class="avatar avatar-lg rounded-circle bg-blue-lt">
+              <i class="ti ti-refresh fs-2"></i>
+            </span>
+          </div>
+          <div class="col">
+            <h3 class="mb-1">Sync Control Center</h3>
+            <p class="text-secondary small mb-0">Synchronize school-wide channels, teachers discussion groups, and class/section groups for the active educational session.</p>
+          </div>
+          <div class="col-md-auto ms-auto d-flex align-items-center gap-4 flex-wrap">
+            <div class="text-md-end me-2">
+              <div class="small text-secondary">Educational Session</div>
+              <div class="fw-bold fs-3">{{ current_session.year }}</div>
+            </div>
+            <div class="text-md-end me-2">
+              <div class="small text-secondary">API Integration</div>
+              <div>
+                {% if business_key %}
+                  <span class="badge bg-success-lt">Connected</span>
+                {% else %}
+                  <span class="badge bg-danger-lt">Disconnected</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="text-md-end me-3">
+              <div class="small text-secondary">Last Synced</div>
+              <div class="fw-bold">
+                {% if last_sync_time %}
+                  {{ last_sync_time|date:"Y-m-d H:i:s" }}
+                  {% if last_sync_nepali %}
+                    <div class="text-secondary small" style="font-weight: normal;">(BS: {{ last_sync_nepali }})</div>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted" style="font-weight: normal;">Never</span>
+                {% endif %}
+              </div>
+            </div>
+            
+            {% if business_key %}
+            <form method="POST" class="m-0">
+              {% csrf_token %}
+              <button type="submit" id="sync-button" class="btn btn-primary px-4 py-2">
+                <i class="ti ti-refresh me-1"></i> Sync Now
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if not business_key %}
+        <div class="alert alert-warning mb-0 mt-3" role="alert">
+          <i class="ti ti-alert-triangle me-1"></i> Please configure your Business and Platform Keys under <a href="{% url 'panel:platform_setting' %}">Integration Keys</a> first to enable sync.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h3 class="card-title">Synced Channels & Groups</h3>
+      </div>
+      <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+        <table class="table card-table table-vcenter datatable">
+          <thead>
+            <tr>
+              <th>Group/Channel Name</th>
+              <th>Type</th>
+              <th>Grade / Section</th>
+              <th>Hamro ID (External ID)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for group in synced_groups %}
+            <tr>
+              <td class="fw-bold" style="white-space: normal; word-break: break-word; min-width: 200px;">{{ group.name }}</td>
+              <td>
+                {% if group.is_broadcast %}
+                  <span class="badge bg-purple-lt">School Channel</span>
+                {% elif not group.grade and not group.section %}
+                  <span class="badge bg-blue-lt">Teachers Group</span>
+                {% else %}
+                  <span class="badge bg-green-lt">Class Group</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if group.grade %}
+                  {{ group.grade.grade_name }}
+                  {% if group.section %}
+                    - {{ group.section.section }}
+                  {% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>
+                <code>{{ group.external_id|default:"—" }}</code>
+              </td>
+              <td>
+                {% if group.external_id %}
+                  <span class="badge bg-success">Synced</span>
+                {% else %}
+                  <span class="badge bg-secondary">Not Synced</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-secondary py-4">
+                <i class="ti ti-info-circle me-1"></i> No channels or groups synced yet for this session.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var syncButton = document.getElementById('sync-button');
+    if (syncButton) {
+      syncButton.addEventListener('click', function(e) {
+        var form = this.closest('form');
+        if (form) {
+          e.preventDefault();
+          this.classList.add('disabled');
+          this.disabled = true;
+          this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Synchronizing...';
+          form.submit();
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

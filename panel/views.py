@@ -79,7 +79,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseForbidden
 from .forms import PlatformSettingForm
-from sms.models import SchoolBranch, BranchUser, Teacher, Group, StudentSession, Student, Section, GroupMembership, SchoolGrade, GradeLevel, EduSession, SchoolTerm
+from sms.models import SchoolBranch, BranchUser, Teacher, Group, StudentSession, Student, Section, GroupMembership, SchoolGrade, GradeLevel, EduSession, SchoolTerm, PlatformSetting
 from sms.hamro import ensure_channel, ensure_group, add_user_to_group, user_exists_in_hamro
 from django.contrib import messages
 
@@ -123,6 +123,7 @@ def platform_setting_view(request):
     else:
         # No form used; fields will be rendered manually
         pass
+
     context = {
         'branchuser': branch_user,
         'platform_key_obj': platform_key_obj,
@@ -131,13 +132,13 @@ def platform_setting_view(request):
     }
     return render(request, 'settings/platform_key.html', context)
 
-from panel.platform_sync import sync_school_channel, sync_grade_groups, sync_teachers_group
+from panel.platform_sync import sync_school_channel, sync_grade_groups, sync_teachers_group, acquire_sync_lock, release_sync_lock
 from sms.models import BroadcastMessage
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 @login_required
 def sync_platform_view(request):
-    """Trigger manual syncing of school channel, teachers group and class/section groups to Hamro platform."""
+    """Sync dashboard (GET) and trigger manual syncing of school channel, teachers group and class/section groups to Hamro platform (POST)."""
     try:
         branch_user = BranchUser.objects.select_related('school__owner').get(user=request.user)
     except BranchUser.DoesNotExist:
@@ -145,21 +146,81 @@ def sync_platform_view(request):
         
     is_admin = (branch_user.school.owner.user == request.user)
     if not is_admin:
-        return HttpResponseForbidden('Only school admin can sync platform settings')
+        return HttpResponseForbidden('Only school admin can access platform sync settings')
 
     school = branch_user.school
-    session = get_current_session()
-    
-    school_chan = sync_school_channel(school, session)
-    teachers_grp = sync_teachers_group(school, session)
-    grade_groups = sync_grade_groups(school, session)
-    
-    if school_chan or teachers_grp or grade_groups:
-        messages.success(request, "Successfully synced school channels and groups to Hamro platform.")
-    else:
-        messages.error(request, "Failed to sync platform channels/groups. Ensure your API keys are configured correctly.")
-        
-    return redirect('panel:broadcast')
+    current_session = get_current_session()
+    business_key_obj = PlatformSetting.objects.filter(key='BUSINESS_KEY').first()
+    business_key = business_key_obj.value if business_key_obj else ''
+
+    if request.method == 'POST':
+        if not business_key:
+            messages.error(request, "Failed to sync. Please configure your API integration keys first.")
+            return redirect('panel:sync_platform')
+
+        # Try to acquire the concurrency lock
+        if not acquire_sync_lock():
+            messages.error(request, "Another sync process is currently running. Please wait a moment.")
+            return redirect('panel:sync_platform')
+
+        try:
+            school_chan = sync_school_channel(school, current_session)
+            teachers_grp = sync_teachers_group(school, current_session)
+            grade_groups = sync_grade_groups(school, current_session)
+            
+            if school_chan or teachers_grp or grade_groups:
+                from django.utils import timezone
+                PlatformSetting.objects.update_or_create(
+                    key='LAST_SYNC_TIME',
+                    defaults={'value': timezone.now().isoformat()}
+                )
+                messages.success(request, "Successfully synced school channels and groups to Hamro platform.")
+            else:
+                messages.error(request, "Failed to sync platform channels/groups. Ensure your API keys are configured correctly.")
+        finally:
+            # Always release the lock!
+            release_sync_lock()
+            
+        return redirect('panel:sync_platform')
+
+    # GET request - render the dashboard
+    last_sync_obj = PlatformSetting.objects.filter(key='LAST_SYNC_TIME').first()
+    last_sync_time = None
+    last_sync_nepali = None
+    if last_sync_obj and last_sync_obj.value:
+        try:
+            from django.utils.dateparse import parse_datetime
+            last_sync_time = parse_datetime(last_sync_obj.value)
+            if last_sync_time:
+                from django.utils import timezone
+                # Localize to Asia/Kathmandu and make naive for nepali_datetime compatibility
+                local_dt = timezone.localtime(last_sync_time)
+                naive_dt = local_dt.replace(tzinfo=None)
+                
+                import nepali_datetime
+                nepali_dt = nepali_datetime.datetime.from_datetime_datetime(naive_dt)
+                last_sync_nepali = nepali_dt.strftime('%Y-%m-%d %H:%M:%S')
+        except Exception as e:
+            logger.error(f"Error converting to Nepali datetime: {e}")
+
+    from django.db.models import Q
+    synced_groups = Group.objects.filter(session=current_session).filter(
+        Q(is_broadcast=True) |
+        Q(grade__school=school) |
+        Q(section__school=school) |
+        Q(name__startswith=f"{school.name} Teachers")
+    ).distinct().order_by('-is_broadcast', 'grade__grade_weight', 'section__section', 'name')
+
+    context = {
+        'branchuser': branch_user,
+        'current_session': current_session,
+        'business_key': business_key,
+        'synced_groups': synced_groups,
+        'is_admin': is_admin,
+        'last_sync_time': last_sync_time,
+        'last_sync_nepali': last_sync_nepali,
+    }
+    return render(request, 'settings/platform_sync.html', context)
 
 @login_required
 def broadcast_view(request):
@@ -195,7 +256,7 @@ def broadcast_view(request):
                 target_threads.append((school_chan.external_id, school.name))
                 recipient_name = f"School Channel ({school.name})"
         elif recipient_type == 'teachers':
-            teachers_grp = Group.objects.filter(name=f"{school.name} Teachers {current_session.year}", session=current_session).first()
+            teachers_grp = Group.objects.filter(name=f"{school.name} Teachers", session=current_session).first()
             if teachers_grp and teachers_grp.external_id:
                 target_threads.append((teachers_grp.external_id, teachers_grp.name))
                 recipient_name = f"All Teachers Group"

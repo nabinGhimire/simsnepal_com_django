@@ -8,6 +8,15 @@ logger = logging.getLogger(__name__)
 
 import os
 
+def get_platform_setting(key, default=''):
+    try:
+        obj = PlatformSetting.objects.filter(key=key).first()
+        if obj and obj.value:
+            return obj.value
+    except Exception:
+        pass
+    return default
+
 def get_platform_key():
     """Return the platform key from env variable or DB fallback."""
     env_key = os.getenv('SIMS_HAMRO_PLATFORM_KEY')
@@ -23,7 +32,9 @@ def get_business_key():
         return None
 
 def get_base_url():
-    """Base URL for Hamro API – taken from env or DB fallback."""
+    """Base URL for Hamro API – taken from settings, env or DB fallback."""
+    if hasattr(settings, 'HAMRO_API_BASE_URL') and settings.HAMRO_API_BASE_URL:
+        return settings.HAMRO_API_BASE_URL.rstrip('/')
     env_url = os.getenv('HAMRO_API_BASE_URL')
     if env_url:
         return env_url.rstrip('/')
@@ -44,38 +55,79 @@ def get_headers():
 
 
 
+def get_current_session():
+    """Helper to get current session from threadlocal request or fallback."""
+    from sms.models import EduSession
+    from sms.middleware import get_current_request
+    request = get_current_request()
+    if request and hasattr(request, 'session') and request.session:
+        active_session_id = request.session.get('active_session_id')
+        if active_session_id:
+            try:
+                return EduSession.objects.get(id=active_session_id)
+            except EduSession.DoesNotExist:
+                pass
+    try:
+        return EduSession.objects.get(year=2083)
+    except EduSession.DoesNotExist:
+        return EduSession.objects.filter(status=True).order_by('-year').first()
+
 def ensure_channel(name):
     """Create or retrieve a broadcast channel for the school.
     Returns the external_id of the channel.
     """
-    channel = Group.objects.filter(name=name, is_broadcast=True).first()
-    if channel and channel.external_id:
-        return channel.external_id
-    url = f"{get_base_url()}/channels/"
-    payload = {'name': name}
-    try:
-        response = requests.post(url, json=payload, headers=get_headers())
-        response.raise_for_status()
-        data = response.json()
-        external_id = data.get('id')
-        Group.objects.create(
-            name=name,
-            is_broadcast=True,
-            external_id=external_id,
-            session=None,
-        )
-        return external_id
-    except Exception as e:
-        logger.error(f'Failed to ensure channel {name}: {e}')
+    session = get_current_session()
+    channel = Group.objects.filter(session=session, is_broadcast=True).first()
+    if channel:
+        if channel.name != name:
+            channel.name = name
+            channel.save()
+        if channel.external_id:
+            current_users = get_thread_users(channel.external_id)
+            if current_users is None:
+                channel.external_id = None
+                channel.save()
+            else:
+                return channel.external_id
+
+    external_id = create_thread('channel', name, f"School channel for {name}")
+    if external_id:
+        if channel:
+            channel.external_id = external_id
+            channel.save()
+            return external_id
+        else:
+            Group.objects.create(
+                name=name,
+                is_broadcast=True,
+                external_id=external_id,
+                session=session,
+            )
+            return external_id
+    else:
+        logger.error(f'Failed to ensure channel {name}')
         return None
 
 def ensure_group(name, session_id, grade=None, section=None):
     """Create or retrieve a group for a grade/section.
     Returns the Group instance (with external_id populated).
     """
-    group = Group.objects.filter(name=name, session_id=session_id).first()
-    if group and group.external_id:
-        return group
+    if grade is not None:
+        group = Group.objects.filter(grade=grade, section=section, session_id=session_id, is_broadcast=False).first()
+    else:
+        group = Group.objects.filter(name=name, session_id=session_id, is_broadcast=False).first()
+
+    if group:
+        if group.name != name:
+            group.name = name
+            group.save()
+        if group.external_id:
+            current_users = get_thread_users(group.external_id)
+            if current_users is None:
+                group.external_id = None
+                group.save()
+            else:
+                return group
         
     external_id = create_thread('group', name, f"Group for {name}")
     if external_id:
@@ -298,13 +350,18 @@ def add_users_to_thread_batch(thread_id, user_ids):
     return last_response
 
 def get_thread_users(thread_id):
-    """Fetch current user_ids in a thread from Hamro platform."""
+    """Fetch current user_ids in a thread from Hamro platform.
+    Returns list of user_ids on success, or None if the thread does not exist (404).
+    """
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
     try:
         response = requests.get(url, headers=get_headers())
         if response.status_code == 200:
             users_list = response.json()
             return [u.get('user_id') for u in users_list if u.get('user_id')]
+        elif response.status_code == 404:
+            logger.warning(f"Thread {thread_id} not found on platform (404).")
+            return None
         else:
             logger.error(f"Failed to fetch users for thread {thread_id}: {response.status_code}, response={response.text}")
     except Exception as e:
