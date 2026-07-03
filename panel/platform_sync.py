@@ -372,13 +372,13 @@ def sync_school_channel(school, session):
 
     # Collect valid external IDs
     to_add_ids = []
-    admin_ids = []  # IDs that should be admins
+    admin_ids = set()  # IDs that should be admins
     
     # Auto-add the school owner/admin to protect them from removal
     owner_platform_id = get_owner_platform_id(school)
     if owner_platform_id:
         to_add_ids.append(owner_platform_id)
-        admin_ids.append(owner_platform_id)
+        admin_ids.add(owner_platform_id)
     
     # Update teacher external IDs locally if looked up
     for t_user in teacher_users:
@@ -400,7 +400,7 @@ def sync_school_channel(school, session):
                 
         if ext_id:
             to_add_ids.append(ext_id)
-            admin_ids.append(ext_id)
+            admin_ids.add(ext_id)
 
     # Collect parent external IDs
     for email in parent_emails:
@@ -490,13 +490,13 @@ def sync_teachers_group(school, session):
         users_map = {}
 
     to_add_ids = []
-    teacher_ids = []
-    
+    admin_ids = set()
+
     # Auto-add the school owner/admin to protect them from removal
     owner_platform_id = get_owner_platform_id(school)
     if owner_platform_id:
         to_add_ids.append(owner_platform_id)
-        teacher_ids.append(owner_platform_id)
+        admin_ids.add(owner_platform_id)
     for t_user in teacher_users:
         teacher_obj = Teacher.objects.filter(teacher=t_user).first()
         ext_id = teacher_obj.external_id if teacher_obj else None
@@ -516,12 +516,12 @@ def sync_teachers_group(school, session):
                 
         if ext_id:
             to_add_ids.append(ext_id)
-            teacher_ids.append(ext_id)
+            admin_ids.add(ext_id)
 
     to_add_ids = list(set(to_add_ids))
 
     # Build admin ID set (owner + teachers)
-    admin_ids = set(teacher_ids)  # teacher_ids already includes owner and teacher external IDs
+    # admin_ids already contains owner and teacher IDs
     sync_group_membership_cached(group_obj, to_add_ids, admin_ids)
 
     return group_obj
@@ -646,18 +646,18 @@ def sync_single_group(group_name, grade, section, session, school):
     try:
         users_map = get_platform_users_map(all_emails, all_phones)
     except Exception as e:
-        logger.error(f"Platform user lookup failed/timed out for class group {group_name}: {e}")
+                    logger.error(f"Platform user lookup failed/timed out for class group {group_name}: {e}")
         users_map = {}
 
     # Collect members
     to_add_ids = []
-    admin_ids = []
+    admin_ids = set()
     
     # Auto-add the school owner/admin to protect them from removal
     owner_platform_id = get_owner_platform_id(school)
     if owner_platform_id:
         to_add_ids.append(owner_platform_id)
-        admin_ids.append(owner_platform_id)
+        admin_ids.add(owner_platform_id)
     
     # Section teachers
     for t_user in teaching_users:
@@ -679,7 +679,7 @@ def sync_single_group(group_name, grade, section, session, school):
                 
         if ext_id:
             to_add_ids.append(ext_id)
-            admin_ids.append(ext_id)
+            admin_ids.add(ext_id)
 
     # Section parents
     for email in parent_emails:
