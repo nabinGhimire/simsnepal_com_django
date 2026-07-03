@@ -372,14 +372,13 @@ def sync_school_channel(school, session):
 
     # Collect valid external IDs
     to_add_ids = []
-    teacher_ids = []
+    admin_ids = []  # IDs that should be admins
     
     # Auto-add the school owner/admin to protect them from removal
     owner_platform_id = get_owner_platform_id(school)
-    teacher_ids = []
     if owner_platform_id:
         to_add_ids.append(owner_platform_id)
-        teacher_ids.append(owner_platform_id)
+        admin_ids.append(owner_platform_id)
     
     # Update teacher external IDs locally if looked up
     for t_user in teacher_users:
@@ -401,7 +400,7 @@ def sync_school_channel(school, session):
                 
         if ext_id:
             to_add_ids.append(ext_id)
-            teacher_ids.append(ext_id)
+            admin_ids.append(ext_id)
 
     # Collect parent external IDs
     for email in parent_emails:
@@ -416,7 +415,7 @@ def sync_school_channel(school, session):
     to_add_ids = list(set(to_add_ids))
 
     # Sync using our optimized membership cache helper
-    sync_group_membership_cached(channel_group, to_add_ids, teacher_ids)
+    sync_group_membership_cached(channel_group, to_add_ids, admin_ids)
 
     return channel_group
 
