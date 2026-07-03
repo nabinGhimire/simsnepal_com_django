@@ -80,6 +80,8 @@ def ensure_channel(name):
     channel = Group.objects.filter(session=session, is_broadcast=True).first()
     if channel:
         if channel.name != name:
+            if channel.external_id:
+                update_thread(channel.external_id, name)
             channel.name = name
             channel.save()
         if channel.external_id:
@@ -119,6 +121,8 @@ def ensure_group(name, session_id, grade=None, section=None):
 
     if group:
         if group.name != name:
+            if group.external_id:
+                update_thread(group.external_id, name)
             group.name = name
             group.save()
         if group.external_id:
@@ -196,6 +200,24 @@ def create_thread(thread_type, name, description=""):
     except Exception as e:
         logger.error(f"Error creating thread {name}: {e}")
     return None
+
+def update_thread(thread_id, name, description=""):
+    """Update an existing thread's name/description on Hamro platform."""
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}"
+    payload = {
+        'name': name,
+        'description': description
+    }
+    try:
+        response = requests.put(url, json=payload, headers=get_headers())
+        if response.status_code == 200:
+            logger.info(f"Successfully updated thread {thread_id} name to '{name}' on platform.")
+            return True
+        else:
+            logger.error(f"Failed to update thread {thread_id}: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error updating thread {thread_id}: {e}")
+    return False
 
 def add_user_to_thread(thread_id, user_id):
     """Add a user to a thread in Hamro platform."""

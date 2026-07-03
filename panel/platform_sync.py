@@ -3,7 +3,7 @@ import time
 from django.db import transaction
 from django.db.models import Q
 from sms.models import Group, Teacher, StudentSession, TeacherSubjectAccess, Section, SchoolGrade, PlatformSetting
-from sms.hamro import create_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone, get_thread_users, remove_user_from_thread
+from sms.hamro import create_thread, update_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone, get_thread_users, remove_user_from_thread
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +105,8 @@ def sync_school_channel(school, session):
     else:
         # Check if name needs updating
         if channel_group.name != channel_name:
+            if channel_group.external_id:
+                update_thread(channel_group.external_id, channel_name)
             channel_group.name = channel_name
             channel_group.save()
             
@@ -223,6 +225,8 @@ def sync_teachers_group(school, session):
     else:
         # Check if name needs updating
         if group_obj.name != group_name:
+            if group_obj.external_id:
+                update_thread(group_obj.external_id, group_name)
             group_obj.name = group_name
             group_obj.save()
             
@@ -342,6 +346,8 @@ def sync_single_group(group_name, grade, section, session, school):
     else:
         # Check if name needs updating
         if group_obj.name != group_name:
+            if group_obj.external_id:
+                update_thread(group_obj.external_id, group_name)
             group_obj.name = group_name
             group_obj.save()
             
