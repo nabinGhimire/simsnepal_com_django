@@ -376,6 +376,7 @@ def sync_school_channel(school, session):
     
     # Auto-add the school owner/admin to protect them from removal
     owner_platform_id = get_owner_platform_id(school)
+    teacher_ids = []
     if owner_platform_id:
         to_add_ids.append(owner_platform_id)
         teacher_ids.append(owner_platform_id)
