@@ -490,11 +490,13 @@ def sync_teachers_group(school, session):
         users_map = {}
 
     to_add_ids = []
+    teacher_ids = []
     
     # Auto-add the school owner/admin to protect them from removal
     owner_platform_id = get_owner_platform_id(school)
     if owner_platform_id:
         to_add_ids.append(owner_platform_id)
+        teacher_ids.append(owner_platform_id)
     for t_user in teacher_users:
         teacher_obj = Teacher.objects.filter(teacher=t_user).first()
         ext_id = teacher_obj.external_id if teacher_obj else None
@@ -514,10 +516,12 @@ def sync_teachers_group(school, session):
                 
         if ext_id:
             to_add_ids.append(ext_id)
+            teacher_ids.append(ext_id)
 
     to_add_ids = list(set(to_add_ids))
 
-    admin_ids = {owner_platform_id} if owner_platform_id else set()
+    # Build admin ID set (owner + teachers)
+    admin_ids = set(teacher_ids)  # teacher_ids already includes owner and teacher external IDs
     sync_group_membership_cached(group_obj, to_add_ids, admin_ids)
 
     return group_obj
