@@ -302,7 +302,8 @@ def chunk_list(lst, chunk_size):
 
 def lookup_hamro_users_batch(emails=None, phones=None):
     """Lookup multiple users on Hamro platform by lists of emails and phones.
-    Returns a dictionary of {email_or_phone: user_id}.
+    Returns a dictionary of {email_or_phone: user_id} on success.
+    Raises requests.HTTPError or requests.RequestException on failure.
     """
     url = f"{get_base_url()}/api/v1/platform/users/lookup/batch"
     
@@ -330,22 +331,19 @@ def lookup_hamro_users_batch(emails=None, phones=None):
             'emails': e_chunk,
             'phones': p_chunk
         }
-        try:
-            response = requests.post(url, json=payload, headers=get_headers())
-            if response.status_code == 200:
-                data = response.json()
-                users_list = data.get('users', [])
-                for u in users_list:
-                    u_id = u.get('id')
-                    if u_id:
-                        if u.get('email'):
-                            results[u['email']] = u_id
-                        if u.get('phone'):
-                            results[str(u['phone'])] = u_id
-            else:
-                logger.error(f"Batch user lookup failed: status={response.status_code}, response={response.text}")
-        except Exception as e:
-            logger.error(f"Error in batch user lookup: {e}")
+        response = requests.post(url, json=payload, headers=get_headers())
+        if response.status_code == 200:
+            data = response.json()
+            users_list = data.get('users', [])
+            for u in users_list:
+                u_id = u.get('id')
+                if u_id:
+                    if u.get('email'):
+                        results[u['email']] = u_id
+                    if u.get('phone'):
+                        results[str(u['phone'])] = u_id
+        else:
+            raise requests.HTTPError(f"Batch user lookup failed: status={response.status_code}, response={response.text}")
     return results
 
 def add_users_to_thread_batch(thread_id, user_ids):
@@ -371,21 +369,45 @@ def add_users_to_thread_batch(thread_id, user_ids):
             
     return last_response
 
+def get_thread_participants(thread_id):
+    """Fetch current participant details in a thread from Hamro platform.
+    Returns list of dicts containing 'user_id' and 'admin' on success, or None if 404.
+    Raises requests.HTTPError or requests.RequestException on failure.
+    """
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
+    response = requests.get(url, headers=get_headers())
+    if response.status_code == 200:
+        users_list = response.json()
+        return [{'user_id': u.get('user_id'), 'admin': u.get('admin', False)} for u in users_list if u.get('user_id')]
+    elif response.status_code == 404:
+        logger.warning(f"Thread {thread_id} not found on platform (404).")
+        return None
+    else:
+        raise requests.HTTPError(f"Failed to fetch users for thread {thread_id}: status={response.status_code}, response={response.text}")
+
 def get_thread_users(thread_id):
     """Fetch current user_ids in a thread from Hamro platform.
     Returns list of user_ids on success, or None if the thread does not exist (404).
+    Raises requests.HTTPError or requests.RequestException on failure.
     """
-    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
+    participants = get_thread_participants(thread_id)
+    if participants is None:
+        return None
+    return [p['user_id'] for p in participants]
+
+def update_user_role_in_thread(thread_id, user_id, role):
+    """Update a user's role (admin or member) in a thread on Hamro platform."""
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/{user_id}/role"
+    payload = {
+        'role': role
+    }
     try:
-        response = requests.get(url, headers=get_headers())
+        response = requests.patch(url, json=payload, headers=get_headers())
         if response.status_code == 200:
-            users_list = response.json()
-            return [u.get('user_id') for u in users_list if u.get('user_id')]
-        elif response.status_code == 404:
-            logger.warning(f"Thread {thread_id} not found on platform (404).")
-            return None
+            logger.info(f"Successfully updated role of user {user_id} to '{role}' in thread {thread_id}.")
+            return True
         else:
-            logger.error(f"Failed to fetch users for thread {thread_id}: {response.status_code}, response={response.text}")
+            logger.error(f"Failed to update role of user {user_id} in thread {thread_id}: status={response.status_code}, response={response.text}")
     except Exception as e:
-        logger.error(f"Error fetching thread users: {e}")
-    return []
+        logger.error(f"Error updating user role in thread: {e}")
+    return False
