@@ -3,7 +3,7 @@ import time
 from django.db import transaction
 from django.db.models import Q
 from sms.models import Group, Teacher, StudentSession, TeacherSubjectAccess, Section, SchoolGrade, PlatformSetting, PlatformUserMapping, GroupMembershipCache
-from sms.hamro import create_thread, update_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone, get_thread_users, remove_user_from_thread, update_user_role_in_thread, get_thread_participants
+from sms.hamro import create_thread, update_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone, get_thread_users, remove_user_from_thread, update_user_role_in_thread, get_thread_participants, update_user_roles_batch
 
 logger = logging.getLogger(__name__)
 
@@ -254,22 +254,18 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, force_ref
         if removed_ids:
             GroupMembershipCache.objects.filter(group=group_obj, platform_user_id__in=removed_ids).delete()
 
-    # Update roles (promote/demote)
-    for u_id in to_promote:
+    # Update roles (promote/demote) in bulk
+    if to_promote or to_demote:
         try:
-            success = update_user_role_in_thread(group_id, u_id, 'admin')
+            logger.info(f"Batch updating roles for {len(to_promote)} admins and {len(to_demote)} members in group {group_obj.name}...")
+            success = update_user_roles_batch(group_id, admin_ids=to_promote, member_ids=to_demote)
             if success:
-                GroupMembershipCache.objects.filter(group=group_obj, platform_user_id=u_id).update(role='admin')
+                if to_promote:
+                    GroupMembershipCache.objects.filter(group=group_obj, platform_user_id__in=to_promote).update(role='admin')
+                if to_demote:
+                    GroupMembershipCache.objects.filter(group=group_obj, platform_user_id__in=to_demote).update(role='member')
         except Exception as e:
-            logger.error(f"Failed to promote user {u_id} in group {group_obj.name}: {e}")
-
-    for u_id in to_demote:
-        try:
-            success = update_user_role_in_thread(group_id, u_id, 'member')
-            if success:
-                GroupMembershipCache.objects.filter(group=group_obj, platform_user_id=u_id).update(role='member')
-        except Exception as e:
-            logger.error(f"Failed to demote user {u_id} in group {group_obj.name}: {e}")
+            logger.error(f"Failed to bulk update roles in group {group_obj.name}: {e}")
 
 def normalize_group_name(grade_name, section_name, session_year, section_count):
     """Format and normalize class/section group name to avoid duplicate prefixes."""

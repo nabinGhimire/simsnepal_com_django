@@ -428,3 +428,26 @@ def update_user_role_in_thread(thread_id, user_id, role):
     except Exception as e:
         logger.error(f"Error updating user role in thread: {e}")
     return False
+
+def update_user_roles_batch(thread_id, admin_ids=None, member_ids=None):
+    """Update roles of multiple users in bulk in a thread on Hamro platform."""
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/role/batch"
+    payload = {}
+    if admin_ids:
+        payload['admin'] = list(admin_ids)
+    if member_ids:
+        payload['member'] = list(member_ids)
+        
+    if not payload:
+        return True
+
+    try:
+        response = requests.post(url, json=payload, headers=get_headers())
+        if response.status_code in (200, 201, 204):
+            logger.info(f"Successfully batch updated roles in thread {thread_id}.")
+            return True
+        else:
+            logger.error(f"Failed to batch update roles in thread {thread_id}: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error batch updating roles in thread {thread_id}: {e}")
+    return False
