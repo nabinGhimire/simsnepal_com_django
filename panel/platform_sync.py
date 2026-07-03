@@ -651,13 +651,13 @@ def sync_single_group(group_name, grade, section, session, school):
 
     # Collect members
     to_add_ids = []
-    teacher_ids = []
+    admin_ids = []
     
     # Auto-add the school owner/admin to protect them from removal
     owner_platform_id = get_owner_platform_id(school)
     if owner_platform_id:
         to_add_ids.append(owner_platform_id)
-        teacher_ids.append(owner_platform_id)
+        admin_ids.append(owner_platform_id)
     
     # Section teachers
     for t_user in teaching_users:
@@ -679,7 +679,7 @@ def sync_single_group(group_name, grade, section, session, school):
                 
         if ext_id:
             to_add_ids.append(ext_id)
-            teacher_ids.append(ext_id)
+            admin_ids.append(ext_id)
 
     # Section parents
     for email in parent_emails:
@@ -694,6 +694,6 @@ def sync_single_group(group_name, grade, section, session, school):
     to_add_ids = list(set(to_add_ids))
 
     # Sync using our optimized membership cache helper
-    sync_group_membership_cached(group_obj, to_add_ids, teacher_ids)
+    sync_group_membership_cached(group_obj, to_add_ids, admin_ids)
 
     return group_obj
