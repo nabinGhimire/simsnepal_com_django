@@ -646,7 +646,7 @@ def sync_single_group(group_name, grade, section, session, school):
     try:
         users_map = get_platform_users_map(all_emails, all_phones)
     except Exception as e:
-                    logger.error(f"Platform user lookup failed/timed out for class group {group_name}: {e}")
+        logger.error(f"Platform user lookup failed/timed out for class group {group_name}: {e}")
         users_map = {}
 
     # Collect members
