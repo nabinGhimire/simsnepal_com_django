@@ -203,12 +203,17 @@ def sync_platform_view(request):
         except Exception as e:
             logger.error(f"Error converting to Nepali datetime: {e}")
 
+    from django.db.models import Count, Q
     synced_groups = Group.objects.filter(session=current_session).filter(
         Q(is_broadcast=True, name=school.name) |
         Q(grade__school=school) |
         Q(section__school=school) |
         Q(name=f"{school.name} Teachers")
-    ).distinct().order_by('-is_broadcast', 'grade__grade_weight', 'section__section', 'name')
+    ).distinct().order_by('-is_broadcast', 'grade__grade_weight', 'section__section', 'name').annotate(
+        participant_count=Count('cached_members'),
+        admin_count=Count('cached_members', filter=Q(cached_members__role='admin')),
+        member_count=Count('cached_members', filter=Q(cached_members__role='member'))
+    )
 
     context = {
         'branchuser': branch_user,
