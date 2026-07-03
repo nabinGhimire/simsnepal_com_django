@@ -47,7 +47,7 @@ def send_parent_message(request):
     from sms.hamro import ensure_group, add_user_to_group, send_message_to_thread
     group_name = f"Student_{reg_no}_Parents"
     current_session = get_current_session()
-    group = ensure_group(group_name, current_session.id)
+    group = ensure_group(group_name, current_session.id, school=student.school)
     if not group:
         messages.error(request, 'Failed to create or retrieve Hamro group.')
         return redirect(request.META.get('HTTP_REFERER', 'panel:index'))

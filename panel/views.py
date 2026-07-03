@@ -203,12 +203,11 @@ def sync_platform_view(request):
         except Exception as e:
             logger.error(f"Error converting to Nepali datetime: {e}")
 
-    from django.db.models import Q
     synced_groups = Group.objects.filter(session=current_session).filter(
-        Q(is_broadcast=True) |
+        Q(is_broadcast=True, name=school.name) |
         Q(grade__school=school) |
         Q(section__school=school) |
-        Q(name__startswith=f"{school.name} Teachers")
+        Q(name=f"{school.name} Teachers")
     ).distinct().order_by('-is_broadcast', 'grade__grade_weight', 'section__section', 'name')
 
     context = {
@@ -403,12 +402,12 @@ def create_groups_view(request, grade_id):
     school = branch_user.school
     grade = get_object_or_404(SchoolGrade, id=grade_id, school=school)
     # Ensure broadcast channel for the school
-    channel_id = ensure_channel(school.name)
+    channel_id = ensure_channel(school.name, school=school)
     # Get current session
     current_session = get_current_session()
     # Create overall grade group
     grade_group_name = f"{grade.grade_name} {current_session.year}"
-    grade_group = ensure_group(grade_group_name, current_session.id, grade=grade)
+    grade_group = ensure_group(grade_group_name, current_session.id, grade=grade, school=school)
     # Add teachers to channel and grade group
     teachers = Teacher.objects.filter(added_by=branch_user.user)
     for teacher in teachers:
@@ -421,7 +420,7 @@ def create_groups_view(request, grade_id):
     sections = Section.objects.filter(grade=grade, school=school)
     for sec in sections:
         sec_group_name = f"{grade.grade_name} {sec.section} {current_session.year}"
-        sec_group = ensure_group(sec_group_name, current_session.id, grade=grade, section=sec)
+        sec_group = ensure_group(sec_group_name, current_session.id, grade=grade, section=sec, school=school)
         # Add teachers to section group
         for teacher in teachers:
             if teacher.external_id:
@@ -11645,7 +11644,7 @@ def send_parent_message(request):
     from sms.hamro import ensure_group, add_user_to_group, send_message_to_thread
     group_name = f"Student_{reg_no}_Parents"
     current_session = get_current_session()
-    group = ensure_group(group_name, current_session.id)
+    group = ensure_group(group_name, current_session.id, school=student.school)
     if not group:
         if is_ajax: return JsonResponse({'success': False, 'error': 'Failed to create or retrieve Hamro group.'})
         messages.error(request, 'Failed to create or retrieve Hamro group.')

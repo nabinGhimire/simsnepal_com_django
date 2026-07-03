@@ -47,7 +47,7 @@ def sync_parent_to_hamro(sender, instance, **kwargs):
 
     group_name = f"Student_{instance.reg_no}_Parents"
     session = get_current_session()
-    group = ensure_group(group_name, session.id)
+    group = ensure_group(group_name, session.id, school=instance.school)
     if not group:
         logger.error(f"Failed to create/retrieve Hamro group {group_name}")
         return

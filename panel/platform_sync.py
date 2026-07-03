@@ -109,7 +109,7 @@ def sync_school_channel(school, session):
     """Ensure a school-wide channel exists and add all teachers and parents (batch mode)."""
     channel_name = school.name
     # Query by session and is_broadcast=True to uniquely identify the channel
-    channel_group = Group.objects.filter(session=session, is_broadcast=True).first()
+    channel_group = Group.objects.filter(session=session, is_broadcast=True, name=channel_name).first()
     
     if not channel_group:
         ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}")
@@ -274,7 +274,7 @@ def sync_teachers_group(school, session):
     """Ensure a teachers-only discussion group exists and populate with all teachers (batch mode)."""
     group_name = f"{school.name} Teachers"
     # Query by session, grade=None, section=None, is_broadcast=False to uniquely identify teachers group
-    group_obj = Group.objects.filter(session=session, is_broadcast=False, grade=None, section=None).first()
+    group_obj = Group.objects.filter(session=session, is_broadcast=False, grade=None, section=None, name=group_name).first()
     
     if not group_obj:
         ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}")
