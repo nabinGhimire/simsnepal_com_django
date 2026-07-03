@@ -2,7 +2,7 @@ import logging
 import time
 from django.db import transaction
 from django.db.models import Q
-from sms.models import Group, Teacher, StudentSession, TeacherSubjectAccess, Section, SchoolGrade, PlatformSetting
+from sms.models import Group, Teacher, StudentSession, TeacherSubjectAccess, Section, SchoolGrade, PlatformSetting, PlatformUserMapping, GroupMembershipCache
 from sms.hamro import create_thread, update_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone, get_thread_users, remove_user_from_thread, update_user_role_in_thread, get_thread_participants
 
 logger = logging.getLogger(__name__)
@@ -51,24 +51,90 @@ def normalize_lookup_key(key):
     if not key:
         return ""
     key = str(key).strip().lower()
+    if '@' not in key:
+        # Consistently format phone numbers first
+        key = format_phone(key)
     if key.startswith('+'):
         key = key[1:]
     return key
 
 def get_platform_users_map(emails, phones):
-    """Perform batch lookup for given list of emails and phones, returning a lookup map with normalized keys."""
-    emails = list(filter(None, set(emails)))
-    phones = list(filter(None, set(phones)))
-    
-    if not emails and not phones:
+    """Perform batch lookup for given list of emails and phones, returning a lookup map with normalized keys.
+    Utilizes PlatformUserMapping cache to minimize API calls and rate-limits unregistered lookups.
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+
+    # Normalize inputs
+    normalized_emails = [normalize_lookup_key(e) for e in emails if e]
+    normalized_phones = [normalize_lookup_key(p) for p in phones if p]
+
+    all_keys = list(set(normalized_emails + normalized_phones))
+    if not all_keys:
         return {}
-        
-    raw_map = lookup_hamro_users_batch(emails=emails, phones=phones)
-    normalized_map = {}
-    for key, val in raw_map.items():
-        if val:
-            normalized_map[normalize_lookup_key(key)] = val
-    return normalized_map
+
+    # Query existing cache
+    cache_qs = PlatformUserMapping.objects.filter(phone_or_email__in=all_keys)
+    cache_map = {c.phone_or_email: c for c in cache_qs}
+
+    lookup_emails = []
+    lookup_phones = []
+    results = {}
+
+    cutoff_time = timezone.now() - timedelta(hours=24)
+
+    # Distinguish between found, unfound-recent, and needs-lookup
+    for key in all_keys:
+        cached = cache_map.get(key)
+        if cached:
+            if cached.external_id:
+                # Cache hit - found previously
+                results[key] = cached.external_id
+            elif cached.last_checked >= cutoff_time:
+                # Cache hit - checked recently and not found (within 24h)
+                pass
+            else:
+                # Stale unregistered cache - needs check again
+                if '@' in key:
+                    lookup_emails.append(key)
+                else:
+                    lookup_phones.append(key)
+        else:
+            # Not in cache - needs lookup
+            if '@' in key:
+                lookup_emails.append(key)
+            else:
+                lookup_phones.append(key)
+
+    if lookup_emails or lookup_phones:
+        try:
+            logger.info(f"Performing batch Hamro API lookup for {len(lookup_emails)} emails and {len(lookup_phones)} phones...")
+            api_results = lookup_hamro_users_batch(emails=lookup_emails, phones=lookup_phones)
+            
+            # Map of normalized looked up key -> external_id
+            found_normalized = {}
+            for raw_k, ext_id in api_results.items():
+                if ext_id:
+                    norm_k = normalize_lookup_key(raw_k)
+                    found_normalized[norm_k] = ext_id
+                    results[norm_k] = ext_id
+
+            # Save/update cache records in DB
+            with transaction.atomic():
+                all_looked_up = set(lookup_emails + lookup_phones)
+                for key in all_looked_up:
+                    ext_id = found_normalized.get(key)
+                    PlatformUserMapping.objects.update_or_create(
+                        phone_or_email=key,
+                        defaults={
+                            'external_id': ext_id,
+                            'last_checked': timezone.now()
+                        }
+                    )
+        except Exception as e:
+            logger.error(f"Platform user lookup failed/timed out during cached lookup: {e}")
+
+    return results
 
 def get_owner_platform_id(school):
     """Retrieve the platform user ID for the school owner/admin."""
@@ -90,6 +156,120 @@ def get_owner_platform_id(school):
     except Exception as e:
         logger.error(f"Error fetching owner platform ID: {e}")
     return None
+
+def sync_group_membership_cached(group_obj, target_members, admin_ids, force_refresh=False):
+    """
+    Syncs the group membership with Hamro platform, utilizing a local GroupMembershipCache
+    to minimize API requests.
+    
+    target_members: set of platform user IDs that should be in the group.
+    admin_ids: set of platform user IDs that should have 'admin' role.
+    """
+    group_id = group_obj.external_id
+    if not group_id:
+        return
+        
+    # 1. Fetch cached members from database
+    cached_qs = GroupMembershipCache.objects.filter(group=group_obj)
+    cached_members = {
+        m.platform_user_id: m.role
+        for m in cached_qs
+    }
+    
+    # If cache is empty or force_refresh is True, we fetch the actual participants from the platform
+    # to populate/reset the cache.
+    if not cached_members or force_refresh:
+        try:
+            logger.info(f"Cache miss or force refresh for group {group_obj.name}. Fetching participants from platform...")
+            participants = get_thread_participants(group_id)
+            if participants is not None:
+                # Clear existing cache
+                GroupMembershipCache.objects.filter(group=group_obj).delete()
+                
+                # Bulk create new cache
+                bulk_objs = []
+                cached_members = {}
+                for p in participants:
+                    u_id = p['user_id']
+                    role = 'admin' if p['admin'] else 'member'
+                    bulk_objs.append(GroupMembershipCache(group=group_obj, platform_user_id=u_id, role=role))
+                    cached_members[u_id] = role
+                GroupMembershipCache.objects.bulk_create(bulk_objs)
+        except Exception as e:
+            logger.error(f"Failed to fetch participants from platform for group {group_obj.name} to populate cache: {e}")
+            # If we couldn't fetch from platform and we have no cache, we cannot sync reliably.
+            if not cached_members:
+                return
+
+    # 2. Determine changes
+    target_members = set(target_members)
+    admin_ids = set(admin_ids)
+    
+    current_member_ids = set(cached_members.keys())
+    
+    to_add = target_members - current_member_ids
+    to_remove = current_member_ids - target_members
+    
+    to_promote = []
+    to_demote = []
+    
+    for u_id in target_members & current_member_ids:
+        target_role = 'admin' if u_id in admin_ids else 'member'
+        current_role = cached_members[u_id]
+        if current_role != target_role:
+            if target_role == 'admin':
+                to_promote.append(u_id)
+            else:
+                to_demote.append(u_id)
+
+    # 3. Apply changes via APIs and update local cache
+    # Add users
+    if to_add:
+        try:
+            logger.info(f"Adding {len(to_add)} users to group {group_obj.name} on platform...")
+            add_users_to_thread_batch(group_id, list(to_add))
+            # Update cache
+            bulk_objs = []
+            for u_id in to_add:
+                role = 'admin' if u_id in admin_ids else 'member'
+                bulk_objs.append(GroupMembershipCache(group=group_obj, platform_user_id=u_id, role=role))
+                # New members default to 'member' on addition. If their target role is 'admin', we must explicitly promote them.
+                if role == 'admin':
+                    to_promote.append(u_id)
+            GroupMembershipCache.objects.bulk_create(bulk_objs)
+        except Exception as e:
+            logger.error(f"Failed to add users to group {group_obj.name}: {e}")
+
+    # Remove users
+    if to_remove:
+        logger.info(f"Removing {len(to_remove)} users from group {group_obj.name} on platform...")
+        removed_ids = []
+        for u_id in to_remove:
+            try:
+                success = remove_user_from_thread(group_id, u_id)
+                if success:
+                    removed_ids.append(u_id)
+            except Exception as e:
+                logger.error(f"Failed to remove user {u_id} from group {group_obj.name}: {e}")
+        if removed_ids:
+            GroupMembershipCache.objects.filter(group=group_obj, platform_user_id__in=removed_ids).delete()
+
+    # Update roles (promote/demote)
+    for u_id in to_promote:
+        try:
+            success = update_user_role_in_thread(group_id, u_id, 'admin')
+            if success:
+                GroupMembershipCache.objects.filter(group=group_obj, platform_user_id=u_id).update(role='admin')
+        except Exception as e:
+            logger.error(f"Failed to promote user {u_id} in group {group_obj.name}: {e}")
+
+    for u_id in to_demote:
+        try:
+            success = update_user_role_in_thread(group_id, u_id, 'member')
+            if success:
+                GroupMembershipCache.objects.filter(group=group_obj, platform_user_id=u_id).update(role='member')
+        except Exception as e:
+            logger.error(f"Failed to demote user {u_id} in group {group_obj.name}: {e}")
 
 def normalize_group_name(grade_name, section_name, session_year, section_count):
     """Format and normalize class/section group name to avoid duplicate prefixes."""
@@ -139,6 +319,7 @@ def sync_school_channel(school, session):
                 if current_users is None:
                     channel_group.external_id = None
                     channel_group.save()
+                    GroupMembershipCache.objects.filter(group=channel_group).delete()
                     current_users = []
             except Exception as e:
                 logger.error(f"Failed to fetch thread users for school channel: {e}")
@@ -151,6 +332,7 @@ def sync_school_channel(school, session):
                 if ext_id:
                     channel_group.external_id = ext_id
                     channel_group.save()
+                    GroupMembershipCache.objects.filter(group=channel_group).delete()
                 else:
                     return None
             except Exception as e:
@@ -186,13 +368,11 @@ def sync_school_channel(school, session):
     all_emails = list(set(emails_to_lookup + parent_emails))
     all_phones = list(set(phones_to_lookup + parent_phones))
     
-    lookup_failed = False
     try:
         users_map = get_platform_users_map(all_emails, all_phones)
     except Exception as e:
         logger.error(f"Platform user lookup failed/timed out: {e}")
         users_map = {}
-        lookup_failed = True
 
     # Collect valid external IDs
     to_add_ids = []
@@ -238,35 +418,8 @@ def sync_school_channel(school, session):
 
     to_add_ids = list(set(to_add_ids))
 
-    # Batch add all to channel
-    if to_add_ids:
-        add_users_to_thread_batch(channel_group.external_id, to_add_ids)
-        
-    # Remove stale users (only if lookup succeeded to prevent accidental deletion)
-    if not lookup_failed:
-        current_users = get_thread_users(channel_group.external_id)
-        for u_id in current_users:
-            if u_id not in to_add_ids:
-                remove_user_from_thread(channel_group.external_id, u_id)
-    else:
-        logger.warning("Skipping stale user removal for school channel because lookup failed/timed out.")
-            
-    # Reconcile user roles (promote teachers/owner to admin, demote parents to member)
-    try:
-        participants = get_thread_participants(channel_group.external_id)
-        if participants:
-            admin_ids = set(teacher_ids)
-            for p in participants:
-                u_id = p['user_id']
-                is_admin = p['admin']
-                if u_id in admin_ids:
-                    if not is_admin:
-                        update_user_role_in_thread(channel_group.external_id, u_id, 'admin')
-                else:
-                    if is_admin:
-                        update_user_role_in_thread(channel_group.external_id, u_id, 'member')
-    except Exception as e:
-        logger.error(f"Failed to reconcile roles for school channel: {e}")
+    # Sync using our optimized membership cache helper
+    sync_group_membership_cached(channel_group, to_add_ids, teacher_ids)
 
     return channel_group
 
@@ -304,6 +457,7 @@ def sync_teachers_group(school, session):
                 if current_users is None:
                     group_obj.external_id = None
                     group_obj.save()
+                    GroupMembershipCache.objects.filter(group=group_obj).delete()
                     current_users = []
             except Exception as e:
                 logger.error(f"Failed to fetch thread users for teachers group: {e}")
@@ -316,6 +470,7 @@ def sync_teachers_group(school, session):
                 if ext_id:
                     group_obj.external_id = ext_id
                     group_obj.save()
+                    GroupMembershipCache.objects.filter(group=group_obj).delete()
                 else:
                     return None
             except Exception as e:
@@ -332,13 +487,11 @@ def sync_teachers_group(school, session):
     
     emails_to_lookup = [t.email for t in teacher_users if t.email]
     phones_to_lookup = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
-    lookup_failed = False
     try:
         users_map = get_platform_users_map(emails_to_lookup, phones_to_lookup)
     except Exception as e:
         logger.error(f"Platform user lookup failed/timed out for teachers group: {e}")
         users_map = {}
-        lookup_failed = True
 
     to_add_ids = []
     
@@ -368,34 +521,8 @@ def sync_teachers_group(school, session):
 
     to_add_ids = list(set(to_add_ids))
 
-    if to_add_ids:
-        add_users_to_thread_batch(group_obj.external_id, to_add_ids)
-        
-    # Remove stale users (only if lookup succeeded to prevent accidental deletion)
-    if not lookup_failed:
-        current_users = get_thread_users(group_obj.external_id)
-        for u_id in current_users:
-            if u_id not in to_add_ids:
-                remove_user_from_thread(group_obj.external_id, u_id)
-    else:
-        logger.warning("Skipping stale user removal for teachers group because lookup failed/timed out.")
-            
-    # Reconcile user roles (promote owner to admin, teachers to member)
-    try:
-        participants = get_thread_participants(group_obj.external_id)
-        if participants:
-            admin_ids = {owner_platform_id} if owner_platform_id else set()
-            for p in participants:
-                u_id = p['user_id']
-                is_admin = p['admin']
-                if u_id in admin_ids:
-                    if not is_admin:
-                        update_user_role_in_thread(group_obj.external_id, u_id, 'admin')
-                else:
-                    if is_admin:
-                        update_user_role_in_thread(group_obj.external_id, u_id, 'member')
-    except Exception as e:
-        logger.error(f"Failed to reconcile roles for teachers group: {e}")
+    admin_ids = {owner_platform_id} if owner_platform_id else set()
+    sync_group_membership_cached(group_obj, to_add_ids, admin_ids)
 
     return group_obj
 
@@ -466,6 +593,7 @@ def sync_single_group(group_name, grade, section, session, school):
                 if current_users is None:
                     group_obj.external_id = None
                     group_obj.save()
+                    GroupMembershipCache.objects.filter(group=group_obj).delete()
                     current_users = []
             except Exception as e:
                 logger.error(f"Failed to fetch thread users for class group {group_name}: {e}")
@@ -478,6 +606,7 @@ def sync_single_group(group_name, grade, section, session, school):
                 if ext_id:
                     group_obj.external_id = ext_id
                     group_obj.save()
+                    GroupMembershipCache.objects.filter(group=group_obj).delete()
                 else:
                     return None
             except Exception as e:
@@ -514,13 +643,11 @@ def sync_single_group(group_name, grade, section, session, school):
     # Batch lookup
     all_emails = list(set(teacher_emails + parent_emails))
     all_phones = list(set(parent_phones + teacher_phones))
-    lookup_failed = False
     try:
         users_map = get_platform_users_map(all_emails, all_phones)
     except Exception as e:
         logger.error(f"Platform user lookup failed/timed out for class group {group_name}: {e}")
         users_map = {}
-        lookup_failed = True
 
     # Collect members
     to_add_ids = []
@@ -566,33 +693,7 @@ def sync_single_group(group_name, grade, section, session, school):
 
     to_add_ids = list(set(to_add_ids))
 
-    if to_add_ids:
-        add_users_to_thread_batch(group_obj.external_id, to_add_ids)
-        
-    # Remove stale users (only if lookup succeeded to prevent accidental deletion)
-    if not lookup_failed:
-        current_users = get_thread_users(group_obj.external_id)
-        for u_id in current_users:
-            if u_id not in to_add_ids:
-                remove_user_from_thread(group_obj.external_id, u_id)
-    else:
-        logger.warning(f"Skipping stale user removal for class group {group_name} because lookup failed/timed out.")
-            
-    # Reconcile user roles (promote teachers/owner to admin, demote parents to member)
-    try:
-        participants = get_thread_participants(group_obj.external_id)
-        if participants:
-            admin_ids = set(teacher_ids)
-            for p in participants:
-                u_id = p['user_id']
-                is_admin = p['admin']
-                if u_id in admin_ids:
-                    if not is_admin:
-                        update_user_role_in_thread(group_obj.external_id, u_id, 'admin')
-                else:
-                    if is_admin:
-                        update_user_role_in_thread(group_obj.external_id, u_id, 'member')
-    except Exception as e:
-        logger.error(f"Failed to reconcile roles for class group {group_name}: {e}")
+    # Sync using our optimized membership cache helper
+    sync_group_membership_cached(group_obj, to_add_ids, teacher_ids)
 
     return group_obj

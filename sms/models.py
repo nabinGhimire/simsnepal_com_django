@@ -592,3 +592,27 @@ class BroadcastMessage(models.Model):
     def __str__(self):
         return f"To {self.recipient_name} at {self.created_at}"
 
+
+class PlatformUserMapping(models.Model):
+    """Caches the Hamro platform user ID for a given phone or email to optimize lookups."""
+    phone_or_email = models.CharField(max_length=100, unique=True)
+    external_id = models.CharField(max_length=100, blank=True, null=True)
+    last_checked = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.phone_or_email} -> {self.external_id or 'Not Found'}"
+
+
+class GroupMembershipCache(models.Model):
+    """Caches group participants and their roles locally to determine sync differences."""
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='cached_members')
+    platform_user_id = models.CharField(max_length=100)
+    role = models.CharField(max_length=10, default='member') # 'admin' or 'member'
+
+    class Meta:
+        unique_together = (('group', 'platform_user_id'),)
+
+    def __str__(self):
+        return f"{self.group.name} - {self.platform_user_id} ({self.role})"
+
+
