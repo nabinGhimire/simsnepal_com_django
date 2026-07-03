@@ -5790,7 +5790,8 @@ def add_teacher(request):
                                 if existing_user:
                                     admin_branch = BranchUser.objects.filter(user=request.user, status=True).first()
                                     if admin_branch and BranchUser.objects.filter(user=existing_user, school=admin_branch.school).exists():
-                                        is_already_registered = True
+                                        if Teacher.objects.filter(teacher=existing_user).exists():
+                                            is_already_registered = True
 
                                 found_user = {
                                     "username": user_data.get('username', ''),
