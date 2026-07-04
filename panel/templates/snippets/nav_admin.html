@@ -47,59 +47,6 @@
           </li>
           {% endfor %}
 
-          <!-- ADD -->
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-              role="button" aria-expanded="false">
-              <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                  class="icon icon-1">
-                  <path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9 -9 9s-9 -1.8 -9 -9s1.8 -9 9 -9z" />
-                  <path d="M15 12h-6" />
-                  <path d="M12 9v6" />
-                </svg>
-              </span>
-              <span class="nav-link-title">ADD</span>
-            </a>
-            <div class="dropdown-menu">
-              <a class="dropdown-item" href="{% url 'panel:view_house' %}" target="_blank">House</a>
-              <a class="dropdown-item" href="{% url 'panel:fullmarks' %}" target="_blank">Full Mark / Pass Mark</a>
-              <a class="dropdown-item" href="{% url 'panel:subjectwisemarks' %}" target="_blank">Subjectwise Marks</a>
-              <a class="dropdown-item" href="{% url 'panel:add_teacher' %}" target="_blank">Teacher</a>
-
-              {% comment %}
-              {% if all_sessions %}
-              <div class="dropdown-divider"></div>
-              <div class="px-3 py-2">
-                <form method="POST" action="{% url 'panel:switch_session' %}" class="m-0">
-                  {% csrf_token %}
-                  <label class="form-label small text-muted mb-1">Switch Session</label>
-                  <select name="session_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="" disabled selected>Select Session...</option>
-                    {% for sess in all_sessions %}
-                    <option value="{{ sess.id }}" {% if sess.id==current_session.id %}selected{% endif %}>{{ sess.year
-                      }}</option>
-                    {% endfor %}
-                    <li class="nav-item">
-                      <a class="nav-link" href="{% url 'panel:platform_setting' %}">
-                        <span class="nav-link-icon d-md-none d-lg-inline-block">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                            <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/>
-                            <path d="M12 8v4l3 3"/>
-                          </svg>
-                        </span>
-                        <span class="nav-link-title">Platform Settings</span>
-                      </a>
-                    </li>
-                  </select>
-                </form>
-              </div>
-              {% endif %}
-              {% endcomment %}
-            </div>
-          </li>
-
           <!-- EXAM MANAGEMENT -->
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside"
@@ -119,9 +66,10 @@
               <span class="nav-link-title">EXAM</span>
             </a>
             <div class="dropdown-menu">
-
               <a class="dropdown-item" href="{% url 'panel:termmanagement' %}">Term Management</a>
               <a class="dropdown-item" href="{% url 'panel:resultmanagement' %}">Result Management</a>
+              <a class="dropdown-item" href="{% url 'panel:fullmarks' %}">Full Mark / Pass Mark</a>
+              <a class="dropdown-item" href="{% url 'panel:subjectwisemarks' %}">Subjectwise Marks</a>
             </div>
           </li>
 
@@ -143,13 +91,13 @@
             <div class="dropdown-menu">
               <div class="dropdown-menu-columns">
                 <div class="dropdown-menu-column">
-                  <a class="dropdown-item" href="/panel/print/entrancecard/" target="_blank">Entrance Card</a>
-                  <a class="dropdown-item" href="/panel/print/studentdetail/" target="_blank">Student Detail</a>
-                  <a class="dropdown-item" href="{% url 'panel:printmarksform' %}?data=marksform" target="_blank">Marks
+                  <a class="dropdown-item" href="/panel/print/entrancecard/">Entrance Card</a>
+                  <a class="dropdown-item" href="/panel/print/studentdetail/">Student Detail</a>
+                  <a class="dropdown-item" href="{% url 'panel:printmarksform' %}?data=marksform">Marks
                     Allocator</a>
-                  <a class="dropdown-item" href="{% url 'panel:printpincodeletter' %}" target="_blank">Pincode
+                  <a class="dropdown-item" href="{% url 'panel:printpincodeletter' %}">Pincode
                     Letter</a>
-                  <a class="dropdown-item" href="{% url 'panel:printledger' %}" target="_blank">Ledger</a>
+                  <a class="dropdown-item" href="{% url 'panel:printledger' %}">Ledger</a>
                 </div>
                 <div class="dropdown-menu-column">
                   <a class="dropdown-item" href="{% url 'panel:marksgradesheet' %}">Marks/Grade Sheet</a>
@@ -179,23 +127,32 @@
             <div class="dropdown-menu">
               <div class="dropdown-menu-columns">
                 <div class="dropdown-menu-column">
+                  <a class="dropdown-item" href="{% url 'panel:school_settings' %}">
+                    <i class="ti ti-info-circle me-2 text-secondary"></i> School Information
+                  </a>
                   <a class="dropdown-item" href="{% url 'panel:manage_grades' %}">
                     <i class="ti ti-school me-2 text-secondary"></i> Manage Levels & Grades
                   </a>
                   <a class="dropdown-item" href="{% url 'panel:manage_standard_subjects' %}">
                     <i class="ti ti-book me-2 text-secondary"></i> Standard Subjects
                   </a>
-                  <a class="dropdown-item" href="{% url 'panel:school_settings' %}">
-                    <i class="ti ti-info-circle me-2 text-secondary"></i> School Information
+                  <a class="dropdown-item" href="{% url 'panel:view_house' %}">
+                    <i class="ti ti-home me-2 text-secondary"></i> House
                   </a>
-                  <a class="dropdown-item" href="{% url 'panel:platform_setting' %}">
-                    <i class="ti ti-settings me-2 text-secondary"></i> Platform Settings
+                  <a class="dropdown-item" href="{% url 'panel:add_teacher' %}">
+                    <i class="ti ti-user me-2 text-secondary"></i> Teacher
+                  </a>
+                  <a class="dropdown-item" href="{% url 'panel:sync_platform' %}">
+                    <i class="ti ti-refresh me-2 text-secondary"></i> Platform Sync
                   </a>
                   <a class="dropdown-item" href="{% url 'panel:broadcast' %}">
                     <i class="ti ti-send me-2 text-secondary"></i> Send Broadcast
                   </a>
                   <a class="dropdown-item" href="{% url 'panel:broadcast_history' %}">
                     <i class="ti ti-history me-2 text-secondary"></i> Broadcast History
+                  </a>
+                  <a class="dropdown-item" href="{% url 'panel:platform_setting' %}">
+                    <i class="ti ti-settings me-2 text-secondary"></i> Platform Settings
                   </a>
                 </div>
               </div>
