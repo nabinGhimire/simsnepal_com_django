@@ -25,8 +25,46 @@
 {% block content %}
 <div class="container-xl">
   <div class="row row-cards">
-    <div class="col-md-6">
-      <div class="card">
+    <div class="col-12 col-md-4">
+      <div class="card border-0 shadow-sm" style="border-top: 3px solid #008877 !important;">
+        <div class="card-header">
+          <h3 class="card-title">{% if this_house %}Update{% else %}Add New{% endif %} House</h3>
+        </div>
+        <div class="card-body">
+          {% if message %}
+          <div class="alert alert-info alert-dismissible" role="alert">
+            <div class="d-flex">
+              <div><i class="ti ti-info-circle icon alert-icon"></i></div>
+              <div>{{ message }}</div>
+            </div>
+            <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+          </div>
+          {% endif %}
+          <form action="" method="POST" class="form-horizontal">
+            {% csrf_token %}
+            {% if this_house %}
+            <input type="hidden" name="update" value="True">
+            <input type="hidden" name="id" value="{{ this_house.id }}">
+            {% endif %}
+            <div class="mb-3 row">
+              <label class="col-3 col-form-label">House Name</label>
+              <div class="col">
+                <input type="text" class="form-control" name="name" id="name" value="{{ this_house.name|default:'' }}" placeholder="e.g. Red, Blue, Everest" required>
+              </div>
+            </div>
+            <div class="form-footer text-end">
+              <button type="submit" name="submit" class="btn btn-teal text-white" style="background-color: #008877;">
+                <i class="ti ti-{% if this_house %}check{% else %}plus{% endif %} me-2"></i>
+                {% if this_house %}Update House{% else %}Add House{% endif %}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-8">
+      <div class="card border-0 shadow-sm" style="border-top: 3px solid #008877 !important;">
         <div class="card-header">
           <h3 class="card-title">Existing Houses</h3>
         </div>
@@ -58,46 +96,7 @@
         </div>
       </div>
     </div>
-    
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">{% if this_house %}Update{% else %}Add New{% endif %} House</h3>
-        </div>
-        <div class="card-body">
-          {% if message %}
-          <div class="alert alert-info alert-dismissible" role="alert">
-            <div class="d-flex">
-              <div><i class="ti ti-info-circle icon alert-icon"></i></div>
-              <div>{{ message }}</div>
-            </div>
-            <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-          </div>
-          {% endif %}
-          <form action="" method="POST" class="form-horizontal">
-            {% csrf_token %}
-            {% if this_house %}
-            <input type="hidden" name="update" value="True">
-            <input type="hidden" name="id" value="{{ this_house.id }}">
-            {% endif %}
-            
-            <div class="mb-3 row">
-              <label class="col-3 col-form-label">House Name</label>
-              <div class="col">
-                <input type="text" class="form-control" name="name" id="name" value="{{ this_house.name|default:'' }}" placeholder="e.g. Red, Blue, Everest" required>
-              </div>
-            </div>
-            
-            <div class="form-footer text-end">
-              <button type="submit" name="submit" class="btn btn-success btn-pill px-4">
-                <i class="ti ti-{% if this_house %}check{% else %}plus{% endif %} me-2"></i>
-                {% if this_house %}Update House{% else %}Add House{% endif %}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+
   </div>
 </div>
 {% endblock %}
