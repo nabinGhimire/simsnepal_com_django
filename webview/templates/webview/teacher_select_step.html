@@ -22,7 +22,12 @@
       {% elif step == 'subject' %}Select Subject
       {% endif %}
     </h4>
-    <small class="opacity-75">{{ school.name }}</small>
+    <small class="opacity-75">
+      {{ school.name }}
+      {% if step == 'subject' and term_obj and grade_obj and section_obj %}
+        <br>Term: {{ term_obj.term_name }} | Grade: {{ grade_obj.grade_name }} - {{ section_obj.section }}
+      {% endif %}
+    </small>
   </div>
   <div class="container-xl px-3">
     {% if step == 'term' %}

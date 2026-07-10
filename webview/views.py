@@ -803,9 +803,15 @@ def teacher_marks(request):
         redirect_url = f"{reverse('teacher_marks_entry')}?token={token}&term={term_id}&grade={grade_id}&section={section_id}&subject={final_subject_id}"
         return redirect(redirect_url)
     else:
+        from sms.models import SchoolTerm, SchoolGrade, Section
+        term_obj = SchoolTerm.objects.filter(id=term_id).first()
+        grade_obj = SchoolGrade.objects.filter(id=grade_id).first()
+        section_obj = Section.objects.filter(id=section_id).first()
+        
         return render(request, "webview/teacher_select_step.html", {
             "step": "subject", "items": subjects_in_class, "term_id": term_id, 
-            "grade_id": grade_id, "section_id": section_id, "school": selected_school, "token": token
+            "grade_id": grade_id, "section_id": section_id, "school": selected_school, "token": token,
+            "term_obj": term_obj, "grade_obj": grade_obj, "section_obj": section_obj
         })
 
 
