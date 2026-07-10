@@ -7,4 +7,5 @@ urlpatterns = [
     path("parent/result/", views.parent_result, name="parent_result"),
     path("teacher/homework/", views.teacher_homework, name="teacher_homework"),
     path("teacher/marks/", views.teacher_marks, name="teacher_marks"),
+    path("teacher/marks/entry/", views.teacher_marks_entry, name="teacher_marks_entry"),
 ]

@@ -740,7 +740,11 @@ def teacher_marks(request):
         selected_school = available_schools[0]
         
     # 2. Term Selection
-    terms = SchoolTerm.objects.filter(school=selected_school, year=current_session, active=True)
+    terms = SchoolTerm.objects.filter(
+        Q(active=True) | Q(status__value__iexact='current for marks entry'),
+        school=selected_school, 
+        year=current_session
+    )
     if not term_id:
         return render(request, "webview/teacher_select_step.html", {
             "step": "term", "items": terms, "school": selected_school, "token": token
@@ -791,11 +795,114 @@ def teacher_marks(request):
     
     if len(subjects_in_class) == 1 or subject_id:
         final_subject_id = subject_id if subject_id else subjects_in_class[0].id
-        # Route directly to the admin marks entry
-        redirect_url = f"{reverse('subject_wise_marks_entry')}?term={term_id}&grade={grade_id}&section={section_id}&subject={final_subject_id}"
+        # Route directly to the mobile marks entry
+        redirect_url = f"{reverse('teacher_marks_entry')}?token={token}&term={term_id}&grade={grade_id}&section={section_id}&subject={final_subject_id}"
         return redirect(redirect_url)
     else:
         return render(request, "webview/teacher_select_step.html", {
             "step": "subject", "items": subjects_in_class, "term_id": term_id, 
             "grade_id": grade_id, "section_id": section_id, "school": selected_school, "token": token
         })
+
+
+@csrf_exempt
+def teacher_marks_entry(request):
+    user = validate_webview_token(request, "teacher")
+    token = request.GET.get('token') or request.POST.get('token')
+    if not user:
+        return render(request, "webview/error.html", {"error_title": "Unauthorized Access", "error_message": "Invalid token."})
+        
+    current_session = get_current_session()
+    if not current_session:
+        return render(request, "webview/error.html", {"error_title": "Configuration Error", "error_message": "No active academic session."})
+        
+    term_id = request.POST.get("term") or request.GET.get("term")
+    grade_id = request.POST.get("grade") or request.GET.get("grade")
+    section_id = request.POST.get("section") or request.GET.get("section")
+    subject_id = request.POST.get("subject") or request.GET.get("subject")
+    
+    if not (term_id and grade_id and section_id and subject_id):
+        return render(request, "webview/error.html", {"error_title": "Missing Parameters", "error_message": "Required parameters are missing."})
+        
+    from sms.models import SchoolGrade, Section, Subject, SchoolTerm, StudentSession, GradeFullMarks, MarkObtained
+    grade = SchoolGrade.objects.get(id=grade_id)
+    section = Section.objects.get(id=section_id)
+    subject = Subject.objects.get(id=subject_id)
+    term_exam = SchoolTerm.objects.get(id=term_id)
+    school = grade.school
+    
+    student_query = StudentSession.objects.filter(
+        session=current_session, grade=grade, section=section, status=True
+    ).select_related('student')
+    students = student_query.order_by('roll_no')
+    
+    try:
+        fullmark = GradeFullMarks.objects.get(
+            school=school, grade=grade, session=current_session,
+            term=term_exam, subject=subject,
+        )
+    except GradeFullMarks.DoesNotExist:
+        return render(request, "webview/error.html", {"error_title": "Configuration Error", "error_message": "Full marks configuration missing for this subject."})
+        
+    new_desc = {}
+    marks_dict = {
+        m.student_id: m for m in MarkObtained.objects.filter(
+            school=school, grade=grade, term=term_exam,
+            subject=subject, session=current_session
+        )
+    }
+    
+    for student_session in students:
+        student = student_session.student
+        reg_no = student.reg_no
+        new_desc[reg_no] = {
+            "name": student.name,
+            "roll_no": student_session.roll_no
+        }
+        
+        if request.method == "POST":
+            is_absent = request.POST.get(f"{reg_no}_absent") == "1"
+            th_mo = int(request.POST.get(f"{reg_no}_th") or 0)
+            pr_mo = int(request.POST.get(f"{reg_no}_pr") or 0)
+            if is_absent:
+                th_mo = 0
+                pr_mo = 0
+                
+            the_mo, created = MarkObtained.objects.update_or_create(
+                student=student,
+                school=school,
+                grade=grade,
+                term=term_exam,
+                subject=subject,
+                session=current_session,
+                defaults={'th_mo': th_mo, 'pr_mo': pr_mo, 'is_absent': is_absent}
+            )
+            new_desc[reg_no]["th_mo"] = th_mo
+            new_desc[reg_no]["pr_mo"] = pr_mo
+            new_desc[reg_no]["is_absent"] = is_absent
+        else:
+            mo = marks_dict.get(reg_no)
+            if not mo:
+                mo = MarkObtained.objects.create(
+                    student=student, session=current_session, school=school,
+                    grade=grade, term=term_exam, subject=subject,
+                    th_mo=0, pr_mo=0, is_absent=False
+                )
+            new_desc[reg_no]["th_mo"] = mo.th_mo
+            new_desc[reg_no]["pr_mo"] = mo.pr_mo
+            new_desc[reg_no]["is_absent"] = mo.is_absent
+            
+    context = {
+        "school": school,
+        "term_exam": term_exam,
+        "grade": grade,
+        "section": section,
+        "subject": subject,
+        "praMarks": fullmark.pr_fm > 0,
+        "fullmark": fullmark,
+        "new_desc": new_desc,
+        "token": token,
+        "success": request.method == "POST",
+    }
+    return render(request, "webview/teacher_marks_form.html", context)
+

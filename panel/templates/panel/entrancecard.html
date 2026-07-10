@@ -94,6 +94,10 @@
 	<link rel="stylesheet" href="{% static "/css/print2.css" %}" type="text/css" media="print">
 </head>
 <body>
+<div class="d-flex justify-content-between align-items-center mb-3 d-print-none" style="display: none !important; @media screen { display: flex !important; }">
+  <a href="/panel/print/studentdetail/" class="btn btn-link">Back to Student Details</a>
+  <a href="{% url 'printentrancecard' %}?export=pdf" class="btn btn-primary" download>Export to PDF</a>
+</div>
 {% if count > 1 %}
 {% for student in students %}
 <div class="cardcontainer">

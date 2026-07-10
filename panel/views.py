@@ -1,5 +1,5 @@
 # # from django.shortcuts import render
-# # from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect
 # # from django.contrib.auth.decorators import login_required
 # # from django.views.generic import View
 # # from .forms import SignUpForm
@@ -27,7 +27,9 @@
 # # # from .student_reg import my_students
 # # from django.db.models import Q
 
-# # from io import BytesIO
+from io import BytesIO
+from django.template.loader import get_template
+from xhtml2pdf import pisa
 # # from django.template.loader import get_template
 # # # from xhtml2pdf import pisa
 # # import logging
@@ -1272,8 +1274,8 @@ def student_detail(request, grade=False, section=False):
     school = branchuser.school
     current_session = get_current_session()
     
-    # If accessed without POST or GET parameters, show the selector BASE page
-    if request.method == "GET" and not grade:
+    # If accessed without POST or GET parameters (and not an export request), show the selector BASE page
+    if request.method == "GET" and not grade and not request.GET.get('export'):
         grades = SchoolGrade.objects.filter(school=school, active=True).order_by('grade_weight')
         sections = Section.objects.filter(grade__school=school, session=current_session).select_related('grade')
         
@@ -1299,9 +1301,10 @@ def student_detail(request, grade=False, section=False):
     students = OrderedDict()
 
     # Determine target grade and section, supporting 'all' selection
-    target_grade_id = grade or request.POST.get("grade")
-    target_section_id = section or request.POST.get("section")
-    info_type = request.POST.get("info_type", "current")
+    # Determine grade and section from GET (used by export) or POST (used by filter forms)
+    target_grade_id = request.GET.get('grade') or request.POST.get('grade')
+    target_section_id = request.GET.get('section') or request.POST.get('section')
+    info_type = request.POST.get('info_type', 'current')
 
     grade_print = section_print = False
     # If 'all' is selected for grade, treat as no specific grade filter
@@ -1337,7 +1340,7 @@ def student_detail(request, grade=False, section=False):
                 'reg_no': sis.student.reg_no,
                 'name': sis.student.name,
                 'grade': sis.grade.grade_name,
-                'section': sis.section,
+                'section': sis.section.section,
                 'pin_code': sis.student.pin_code,
                 'gender': sis.student.gender,
                 'roll_no': sis.roll_no,
@@ -1365,13 +1368,23 @@ def student_detail(request, grade=False, section=False):
         'section_print': section_print,
         'info_type': info_type
     }
-    # Export to Excel (CSV) if requested
-    if request.GET.get('export') == 'excel':
+
+    # Export handling
+    export_type = request.GET.get('export')
+    if export_type == 'excel':
+        # CSV export (dynamic filename)
         import csv
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="student_detail.csv"'
+        # Use Nepali education session year
+        year = current_session.year
+        if this_grade and this_section:
+            filename = f"{getattr(this_grade, 'grade_name', str(this_grade))} ({getattr(this_section, 'section', str(this_section))}) {year}.csv"
+        elif this_grade:
+            filename = f"{getattr(this_grade, 'grade_name', str(this_grade))} {year}.csv"
+        else:
+            filename = f"List of All Students {year}.csv"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         writer = csv.writer(response)
-        # Header row
         writer.writerow([
             'Reg No', 'Name', 'Grade', 'Section', 'House', 'Roll No',
             'DOB', 'Gender', 'Temp Address', 'Perm Address',
@@ -1381,23 +1394,77 @@ def student_detail(request, grade=False, section=False):
         ])
         for s in students.values():
             writer.writerow([
-                s.get('reg_no'),
-                s.get('name'),
-                s.get('grade'),
-                s.get('section'),
-                s.get('house'),
-                s.get('roll_no'),
+                s.get('reg_no'), s.get('name'), s.get('grade'), s.get('section'),
+                s.get('house'), s.get('roll_no'),
                 getattr(s.get('student_info'), 'dob', ''),
                 'M' if s.get('gender') else 'F',
-                s.get('temporary_address'),
-                s.get('permanent_address'),
+                s.get('temporary_address'), s.get('permanent_address'),
                 s.get('fathers_name'), s.get('fathers_phone'), s.get('fathers_email'),
                 s.get('mothers_name'), s.get('mothers_phone'), s.get('mothers_email'),
                 s.get('guardian_name'), s.get('guardian_phone'), s.get('guardian_email')
             ])
         return response
-    return render(request, "panel/student_detail_print.html", context)
+    elif export_type == 'xlsx':
+        # XLSX export using openpyxl
+        import io
+        import openpyxl
+        from openpyxl.styles import Font
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Student Details"
+        # Add school and grade information (only for XLSX)
+        ws.append(["School", school.name])
+        ws.append(["Location", getattr(school, 'location', '')])
+        if this_grade:
+            ws.append(["Grade", getattr(this_grade, 'grade_name', this_grade)])
+        if this_section:
+            ws.append(["Section", getattr(this_section, 'section', this_section)])
+        # Apply bold font to label and value cells for added info rows
+        for row in range(1, ws.max_row + 1):
+            ws.cell(row=row, column=1).font = Font(bold=True)
+            ws.cell(row=row, column=2).font = Font(bold=True)
+        # Blank row before header
+        ws.append([])
+        ws.append([])
+        # Header row
+        headers = [
+            'Reg No', 'Name', 'Grade', 'Section', 'House', 'Roll No',
+            'DOB', 'Gender', 'Temp Address', 'Perm Address',
+            "Father's Name", "Father's Phone", "Father's Email",
+            "Mother's Name", "Mother's Phone", "Mother's Email",
+            "Guardian's Name", "Guardian's Phone", "Guardian's Email"
+        ]
+        ws.append(headers)
 
+        # Data rows
+        for s in students.values():
+            ws.append([
+                s.get('reg_no'), s.get('name'), s.get('grade'), s.get('section'),
+                s.get('house'), s.get('roll_no'),
+                getattr(s.get('student_info'), 'dob', ''),
+                'M' if s.get('gender') else 'F',
+                s.get('temporary_address'), s.get('permanent_address'),
+                s.get('fathers_name'), s.get('fathers_phone'), s.get('fathers_email'),
+                s.get('mothers_name'), s.get('mothers_phone'), s.get('mothers_email'),
+                s.get('guardian_name'), s.get('guardian_phone'), s.get('guardian_email')
+            ])
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        if this_grade and this_section:
+            filename = f"{getattr(this_grade, 'grade_name', str(this_grade))} ({getattr(this_section, 'section', str(this_section))}) {current_session.year}.xlsx"
+        elif this_grade:
+            filename = f"{getattr(this_grade, 'grade_name', str(this_grade))} {current_session.year}.xlsx"
+        else:
+            filename = f"List of All Students {current_session.year}.xlsx"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    # Default rendering
+    return render(request, "panel/student_detail_print.html", context)
 @login_required
 def printmarksform(request):
     user = request.user
@@ -6201,6 +6268,8 @@ def add_student_by_reg(request):
 
 @login_required()
 def printentrancecard(request):
+    # Initialize grades to avoid UnboundLocalError in cases where it may not be set
+    grades = SchoolGrade.objects.none()
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
@@ -6237,9 +6306,13 @@ def printentrancecard(request):
     #     print(gs)
 
     current_session = get_current_session()
-    if request.method == 'POST':
-        term = request.POST.get('term')
-        whattype = request.POST.get('whattype')
+    # Pre-fetch grades and exam types for use in base view or when term not provided
+    exam_types = SchoolTerm.objects.filter(school=branchuser.school, year=current_session)
+    grades = SchoolGrade.objects.filter(school=branchuser.school, session=current_session)
+    # Accept POST submissions for printing and GET parameters for PDF export or direct access
+    if request.method == 'POST' or request.GET.get('term'):
+        term = request.GET.get('term') or request.POST.get('term')
+        whattype = request.GET.get('whattype') or request.POST.get('whattype')
 
         std_reg = OrderedDict()
         school_grade = SchoolGrade.objects.filter(school=school, active=True).order_by(
@@ -6265,48 +6338,141 @@ def printentrancecard(request):
                             std_reg[sis.student.reg_no]['avatar'] = None
 
         term_exam = SchoolTerm.objects.get(id=term)
-
         if whattype == 'detail':
             context = {'school': school, 'students': students, 'count': count, 'term_exam': term_exam,
-                       'year': current_session.year, 'logo': logo, 'width': width, 'blankcount': '12345678', 'std_reg': std_reg}
-
+                       'year': current_session.year, 'logo': logo, 'width': width,
+                       'blankcount': '12345678', 'std_reg': std_reg, 'whattype': whattype}
+            template_name = 'panel/entrancecard_dict.html'
             if school.id in exam_board:
-            	return render(request, 'panel/entrancecard_dict_exam_board.html', context)
-            else:
-            	return render(request, 'panel/entrancecard_dict.html', context)
+                template_name = 'panel/entrancecard_dict_exam_board.html'
+            # PDF export handling
+            if request.GET.get('export') == 'pdf' or request.POST.get('export') == 'pdf':
+                pdf = render_to_pdf(template_name, context)
+                if pdf:
+                    filename = f'EntranceCard_Detail_{school.name}_{datetime.now().strftime("%Y%m%d%H%M%S")}.pdf'
+                    response = HttpResponse(pdf, content_type='application/pdf')
+                    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                    return response
+            return render(request, template_name, context)
         elif whattype == 'blank':
             context = {'school': school, 'term_exam': term_exam, 'year': current_session.year,
-                       'logo': logo, 'width': width, 'blankcount': '12345678', 'std_reg': std_reg}
+                       'logo': logo, 'width': width, 'blankcount': '12345678',
+                       'std_reg': std_reg, 'whattype': whattype}
+            template_name = 'panel/entrancecardblank.html'
             if school.id in exam_board:
-            	return render(request, 'panel/entrancecardblank_exam_board.html', context)
-            else:
-            	return render(request, 'panel/entrancecardblank.html', context)
-
-        else:
+                template_name = 'panel/entrancecardblank_exam_board.html'
+            # PDF export handling
+            if request.GET.get('export') == 'pdf' or request.POST.get('export') == 'pdf':
+                pdf = render_to_pdf(template_name, context)
+                if pdf:
+                    filename = f'EntranceCard_Blank_{school.name}_{datetime.now().strftime("%Y%m%d%H%M%S")}.pdf'
+                    response = HttpResponse(pdf, content_type='application/pdf')
+                    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                    return response
+            return render(request, template_name, context)
+        elif whattype == 'image':
             context = {'school': school, 'students': students, 'count': count, 'term_exam': term_exam,
-                       'year': current_session.year, 'logo': logo, 'width': width, 'blankcount': '12345678', 'std_reg': std_reg}
-
-            if school.id in exam_board:
-            	return render(request, 'panel/entrancecard_dict_exam_board.html', context)
-            else:
-            	return render(request, 'panel/entrancecard_dict_with_image.html', context)
+                       'year': current_session.year, 'logo': logo, 'width': width,
+                       'blankcount': '12345678', 'std_reg': std_reg, 'whattype': whattype}
+            template_name = 'panel/entrancecard_dict_with_image.html'
+            # PDF export handling
+            if request.GET.get('export') == 'pdf' or request.POST.get('export') == 'pdf':
+                pdf = render_to_pdf(template_name, context)
+                if pdf:
+                    filename = f'EntranceCard_Image_{school.name}_{datetime.now().strftime("%Y%m%d%H%M%S")}.pdf'
+                    response = HttpResponse(pdf, content_type='application/pdf')
+                    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                    return response
+            return render(request, template_name, context)
+        else:
+            # No valid whattype, fall back to base template
+            context = {'grades': grades, 'school': school, 'exam_types': exam_types}
+            return render(request, 'panel/entrancecardbase.html', context)
 
     exam_types = SchoolTerm.objects.filter(school=branchuser.school, year=current_session)
     grades = SchoolGrade.objects.filter(school=branchuser.school, session=current_session)
-
     context = {'grades': grades, 'school': school, 'exam_types': exam_types}
-    return render(request, 'panel/entrancecardbase.html', context)
+    if request.GET.get('export') == 'pdf' or request.POST.get('export') == 'pdf':
+        pdf = render_to_pdf('panel/entrancecardbase.html', context)
+        if pdf:
+            filename = f'EntranceCard_{school.name}_{datetime.now().strftime("%Y%m%d%H%M%S")}.pdf'
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+    else:
+        return render(request, 'panel/entrancecardbase.html', context)
     #pdf = render_to_pdf('panel/entrancecardbase.html', context)
     #return HttpResponse(pdf, content_type='application/pdf')
     
 
+def link_callback(uri, rel):
+    """
+    Convert HTML static/media paths to absolute system paths so xhtml2pdf can access them.
+    Ignore external CSS and resources that xhtml2pdf cannot resolve.
+    """
+    import os
+    from django.conf import settings
+    from django.contrib.staticfiles import finders
+
+    # Ignore external URLs
+    if uri.startswith("http://") or uri.startswith("https://") or uri.startswith("//"):
+        return ""
+
+    # Handle static and media path conversions
+    if settings.MEDIA_URL and uri.startswith(settings.MEDIA_URL):
+        rel_path = uri[len(settings.MEDIA_URL):].lstrip('/')
+        path = os.path.join(settings.MEDIA_ROOT, rel_path)
+    elif settings.STATIC_URL and uri.startswith(settings.STATIC_URL):
+        rel_path = uri[len(settings.STATIC_URL):].lstrip('/')
+        path = os.path.join(settings.STATIC_ROOT, rel_path)
+        if not os.path.exists(path):
+            found = finders.find(rel_path)
+            if found:
+                if isinstance(found, (list, tuple)):
+                    path = found[0]
+                else:
+                    path = found
+    else:
+        # Check if it's a relative path starting with /
+        if uri.startswith('/'):
+            rel_path = uri.lstrip('/')
+            path = os.path.join(settings.STATIC_ROOT, rel_path)
+            if not os.path.exists(path):
+                found = finders.find(rel_path)
+                if found:
+                    if isinstance(found, (list, tuple)):
+                        path = found[0]
+                    else:
+                        path = found
+        else:
+            return uri
+
+    if not os.path.exists(path) or not os.path.isfile(path):
+        return ""
+    return path
+
+
 def render_to_pdf(template_src, context_dict={}):
     template = get_template(template_src)
     html  = template.render(context_dict)
+    
+    # Clean HTML code of modern/external components that crash or break xhtml2pdf
+    import re
+    # 1. Strip remote Bootstrap and FontAwesome CSS link tags (xhtml2pdf CSS parser fails on modern rules)
+    html = re.sub(r'<link[^>]*href=["\'][^"\']*(?:bootstrap|font-awesome|fontawesome|google-apis|fonts\.googleapis)[^"\']*["\'][^>]*>', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'<link[^>]*href=["\']//[^"\']*(?:bootstrap|font-awesome|fontawesome|google-apis|fonts\.googleapis)[^"\']*["\'][^>]*>', '', html, flags=re.IGNORECASE)
+    
+    # 2. Strip @import or @font-face rules within inline <style> tags that try to fetch external fonts
+    html = re.sub(r'@import\s+url\([^)]+\);?', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'@font-face\s*{[^}]+}', '', html, flags=re.IGNORECASE)
+    
+    # 3. Clean any calc() declarations that cause parser crash
+    html = re.sub(r'calc\([^)]+\)', '0', html, flags=re.IGNORECASE)
+
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+    pdf = pisa.pisaDocument(BytesIO(html.encode("utf-8")), result, link_callback=link_callback)
     if not pdf.err:
-        return HttpResponse(result.getvalue(), content_type='application/pdf')
+        return result.getvalue()
     return None
 
 @login_required

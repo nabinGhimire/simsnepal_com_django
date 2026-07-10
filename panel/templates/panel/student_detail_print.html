@@ -1,449 +1,162 @@
-<!doctype html>
-<html lang="en">
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %}Student Detail Print{% endblock %}
 
-<head>
-  <!-- Required meta tags -->
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-  <!-- Bootstrap CSS -->
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css"
-    integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
-  <title>Hello, world!</title>
-  <style>
-    @media print {
-      @page {
-        size: a4 landscape;
-        margin: 3mm;
-        padding: 0;
-      }
-
-      table.table-bordered {
-        border: 1px solid black;
-        margin-top: 20px;
-      }
-
-      table.table-bordered>thead>tr>th,
-      table.table-bordered>tbody>tr>th {
-        border: 1px solid black;
-      }
-
-      table.table-bordered>tbody>tr>td {
-        border: 1px solid black;
-      }
-
-      .table-bordered td,
-      .table-bordered th {
-        border: 1px solid #000;
-      }
-
-      .table th {
-        border-top: 1px solid #000;
-      }
-
-      /* .table thead tr td,.table tbody tr td{
-            border-width: 1px !important;
-            border-style: solid !important;
-            border-color: black !important;
-            font-size: 10px !important;
-            background-color: red;
-            padding:0px;
-            -webkit-print-color-adjust:exact ;
-        } */
+{% block content %}
+<div class="container">
 
 
-      body {
-        font-family: "Poppins";
-        font-size: 13px;
-      }
+  {% if grade_print %}
+    {% if section_print %}
+      <h3 class="report-title">STUDENT'S LIST OF GRADE {{ this_grade.grade_name }} ({{ this_section.section }})</h3>
+    {% else %}
+      <h3 class="report-title">STUDENT'S LIST OF GRADE {{ this_grade }}</h3>
+    {% endif %}
+  {% else %}
+    <h3 class="report-title">STUDENT'S LIST</h3>
+  {% endif %}
 
-      table.table-bordered {
-        border: 1px solid black;
-        margin-top: 20px;
-      }
-
-      table.table-bordered>thead>tr>th {
-        border: 1px solid black;
-      }
-
-      table.table-bordered>tbody>tr>td {
-        border: 1px solid black;
-      }
-
-      .main-header {
-        width: 130mm;
-      }
-
-      .info {
-        margin: 0px auto;
-        text-align: center;
-        margin-top: -3mm;
-      }
-
-      .motto {
-        margin-top: -1mm;
-      }
-
-      .telephone,
-      .school {
-        margin-top: -5mm;
-      }
-
-      .term,
-      .report-type {
-        margin-top: -3mm;
-      }
-
-      .motto {
-        margin-top: 3mm;
-        font-size: 4mm;
-        text-align: center;
-      }
-
-      .school {
-        text-transform: uppercase;
-        text-align: center;
-        font-size: 7mm;
-        font-weight: bolder;
-      }
-
-      .term {
-        text-transform: uppercase;
-        font-size: 6mm;
-        font-weight: bold;
-        /* text-decoration: underline; */
-      }
-
-      .term,
-      .report-type {
-        margin-top: -3mm;
-      }
-
-      .address {
-        margin-top: -2mm;
-      }
-
-      .report-type {
-        /* border: 0.3mm solid #0; */
-        /* max-width: 65mm; */
-        /* margin: 1mm 10mm; */
-        padding: 1.5mm 5mm 1mm 5mm;
-        text-align: center;
-        font-size: 5.5mm;
-        color: #fff;
-        font-weight: bolder;
-        background-color: #000 !important;
-      }
-
-      .table th,
-      .table td,
-      .table tr {
-        border: 1px solid black;
-      }
-
-      .table th,
-      .table td,
-      .table tr {
-        border: 1px solid black;
-      }
-
-      .table td {
-        margin-left: 30px;
-      }
-
-    }
-
-    body {
-      font-family: "Poppins";
-      font-size: 13px;
-    }
-
-    table.table-bordered {
-      border: 1px solid black;
-      margin-top: 20px;
-    }
-
-    table.table-bordered>thead>tr>th {
-      border: 1px solid black;
-    }
-
-    table.table-bordered>tbody>tr>td {
-      border: 1px solid black;
-    }
-
-    .main-header {
-      width: 130mm;
-    }
-
-    .info {
-      margin: 0px auto;
-      text-align: center;
-      margin-top: -3mm;
-    }
-
-    .motto {
-      margin-top: -1mm;
-    }
-
-    .telephone,
-    .school {
-      margin-top: -5mm;
-    }
-
-    .term,
-    .report-type {
-      margin-top: -3mm;
-    }
-
-    .motto {
-      margin-top: 3mm;
-      font-size: 4mm;
-      text-align: center;
-    }
-
-    .school {
-      text-transform: uppercase;
-      text-align: center;
-      font-size: 7mm;
-      font-weight: bolder;
-    }
-
-    .term {
-      text-transform: uppercase;
-      font-size: 6mm;
-      font-weight: bold;
-      /* text-decoration: underline; */
-    }
-
-    .term,
-    .report-type {
-      margin-top: -3mm;
-    }
-
-    .address {
-      margin-top: -2mm;
-    }
-
-    .report-type {
-      /* border: 0.3mm solid #0; */
-      /* max-width: 65mm; */
-      /* margin: 1mm 10mm; */
-      padding: 1.5mm 3mm 1mm 3mm;
-      text-align: center;
-      font-size: 5.5mm;
-      color: #fff;
-      font-weight: bolder;
-      background-color: #000 !important;
-    }
-
-    .table th,
-    .table td,
-    .table tr {
-      border: 1px solid black;
-    }
-
-    .table th,
-    .table td,
-    .table tr {
-      border: 1px solid black;
-    }
-
-    .table td {
-      margin-left: 30px;
-    }
-
-    .table th,
-    .table td,
-    .table tr {
-      border: 1px solid black;
-    }
-
-    .table td {
-      margin-left: 100px;
-    }
-
-    td {
-      /* text-align: center; */
-      margin-top: 5px;
-      padding-left: 10px;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="container">
-    <div class="row">
-      <section class="col-md-8 header mx-auto">
-        <div class="main-header" style="display: inline-block;">
-          <div class="info" style="">
-            <p class="motto">Education for all. </p>
-            <h1 class="school">{{ school.name }}</h1>
-            <h3 class="term">{{ school.location }}</h3>
-            <p class="telephone" style="margin: -10px 0 10px 0;"><i class="fas fa-phone-square"></i> +977 {{
-              school.phone }}, <i class="fas fa-envelope-square"></i> {{ school.email }}</p>
-            {% if grade_print %}
-            {% if section_print %}
-            <h3 class="report-type">STUDENT'S LIST OF GRADE {{this_grade.grade_name }} ({{this_section.section}})</h3>
-            {% else %}
-            <h3 class="report-type">STUDENT'S LIST OF GRADE {{ this_grade }}</h3>
-            {% endif %}
-            {% else %}
-            <h3 class="report-type">STUDENT'S LIST</h3>
-            {% endif %}
-          </div>
-        </div>
-      </section>
-    </div>
-    <div class="row">
-      <div class="col-md-12 m-t-50">
-        {% if info_type == 'wide' %}
-        <!-- Wide Layout: Every detail in a single row -->
-        <table class="table table-sm table-bordered" style="font-size: 10px;">
-          <thead class="bg-light">
-            <tr>
-              <th>S.N.</th>
-              <th>Student Name</th>
-              <th>Reg. No.</th>
-              <th>Grade</th>
-              <th>Section</th>
-              <th>Roll</th>
-              <th>House</th>
-              <th>DOB</th>
-              <th>Gender</th>
-              <th>Address (Temp)</th>
-              <th>Address (Perm)</th>
-              <th>Father Name</th>
-              <th>Father Phone</th>
-              <th>Father Email</th>
-              <th>Mother Name</th>
-              <th>Mother Phone</th>
-              <th>Mother Email</th>
-              <th>Guardian Name</th>
-              <th>Guardian Phone</th>
-              <th>Guardian Email</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for key, student in students.items %}
-            <tr>
-              <td>{{ forloop.counter }}</td>
-              <td><strong>{{ student.name }}</strong></td>
-              <td>{{ student.reg_no }}</td>
-              <td>{{ student.grade }}</td>
-              <td>{{ student.section }}</td>
-              <td>{{ student.roll_no }}</td>
-              <td><small>{{ student.house.name|default:"" }}</small></td>
-              <td>{{ student.student_info.dob }}</td>
-              <td>{% if student.gender %}M{% else %}F{% endif %}</td>
-              <td><small>T: {{student.temporary_address}}</small></td>
-              <td><small>P: {{student.permanent_address}}</small></td>
-              <td><small>{{ student.fathers_name }}</small></td>
-              <td><small>{{ student.fathers_phone }}</small></td>
-              <td><small>{{ student.fathers_email }}</small></td>
-              <td><small>{{ student.mothers_name }}</small></td>
-              <td><small>{{ student.mothers_phone }}</small></td>
-              <td><small>{{ student.mothers_email }}</small></td>
-              <td><small>{{ student.guardian_name }}</small></td>
-              <td><small>{{ student.guardian_phone }}</small></td>
-              <td><small>{{ student.guardian_email }}</small></td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <!-- Standard Layout: Multi-row per student card -->
-        <table class="table table-sm">
-          <thead>
-            <tr>
-              <th rowspan="2">S.N.</th>
-              <th rowspan="2">Student Name</th>
-              <th rowspan="2">Reg. No.</th>
-              {% if grade_print %}
-              {% if section_print %}
-              <th rowspan="2">Roll</th>
-              {% else %}
-              <th rowspan="2">Section/Roll</th>
-              {% endif %}
-              {% else %}
-              <th rowspan="2">Grade/Section/Roll</th>
-              {% endif %}
-              <th rowspan="2">DOB / Gender </th>
-              <td rowspan="1" colspan="2">Address</td>
-              <th rowspan="2"></th>
-              <th rowspan="2">Father</th>
-              <th rowspan="2">Mother</th>
-              <th rowspan="2">Guardian</th>
-            </tr>
-            <tr>
-              <th>Temporary</th>
-              <th>Permanent</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for key, student in students.items %}
-            <tr>
-              <td style="padding-left:5px;" rowspan="4">{{ forloop.counter }}</td>
-              <td style="padding-left:5px;" rowspan="4">{{ student.name }}</td>
-              <td style="padding-left:5px;" rowspan="4">{{ student.reg_no }}</td>
-              {% if grade_print %}
-              {% if section_print %}
-              <td style="padding-left:5px;" rowspan="4">{{ student.roll_no }}</td>
-              {% else %}
-              <td style="padding-left:5px;" rowspan="4">{{ student.section }}/{{ student.roll_no }}</td>
-              {% endif %}
-              {% else %}
-              <td style="padding-left:5px;" rowspan="4">{{ student.grade }}/{{ student.section }} / {{ student.roll_no
-                }}</td>
-              {% endif %}
-              <td style="padding-left:5px;" rowspan="4">{{ student.student_info.dob }} <br>{% if student.gender %}Male{%
-                else %}Female{% endif %}</td>
-              <td rowspan="4">{{student.temporary_address}}</td>
-              <td rowspan="4">{{student.permanent_address}}</td>
-            </tr>
-            <tr>
-              <th>Name</th>
-              <td style="padding-left:5px;">{{ student.fathers_name}} </td>
-              <td style="padding-left:5px;">{{ student.mothers_name}}</td>
-              <td style="padding-left:5px;">{{ student.guardian_name}}</td>
-            </tr>
-            <tr>
-              <th>Phone</th>
-              <td style="padding-left:5px;">{% if student.fathers_phone %}{{ student.fathers_phone}} {% endif %}</td>
-              <td style="padding-left:5px;">{% if student.mothers_phone %}{{ student.mothers_phone}} {% endif %}</td>
-              <td style="padding-left:5px;">{% if student.guardian_phone %}{{ student.guardian_phone}} {% endif %}</td>
-            </tr>
-            <tr>
-              <th>Email</th>
-              <td style="padding-left:5px;">{{ student.fathers_email}} </td>
-              <td style="padding-left:5px;">{{ student.mothers_email}}</td>
-              <td style="padding-left:5px;">{{ student.guardian_email}} </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+{% comment %}Back link and export buttons on same row{% endcomment %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <a href="/panel/print/studentdetail/" class="btn btn-link">Back to Student Details</a>
+  <form method="get" class="export-form mb-0">
+    {% for key, value in request.GET.items %}
+        {% if key != 'export' %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}" />
         {% endif %}
-      </div>
+    {% endfor %}
+    <button type="submit" name="export" value="excel" class="btn btn-outline-primary mr-2"><i class="fas fa-file-csv"></i> Export to CSV</button>
+    <button type="submit" name="export" value="xlsx" class="btn btn-outline-success"><i class="fas fa-file-excel"></i> Export to XLSX</button>
+  </form>
+</div>
+
+{% if info_type == 'wide' %}
+    <!-- Wide layout (detailed) -->
+    <div class="table-responsive">
+      <table class="table-custom">
+        <thead class="bg-light">
+          <tr>
+            <th>S.N.</th>
+            <th>Student Name</th>
+            <th>Reg. No.</th>
+            <th>Grade</th>
+            <th>Section</th>
+            <th>Roll</th>
+            <th>House</th>
+            <th>DOB</th>
+            <th>Gender</th>
+            <th>Address (Temp)</th>
+            <th>Address (Perm)</th>
+            <th>Father Name</th>
+            <th>Father Phone</th>
+            <th>Father Email</th>
+            <th>Mother Name</th>
+            <th>Mother Phone</th>
+            <th>Mother Email</th>
+            <th>Guardian Name</th>
+            <th>Guardian Phone</th>
+            <th>Guardian Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key, student in students.items %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><strong>{{ student.name }}</strong></td>
+            <td>{{ student.reg_no }}</td>
+            <td>{{ student.grade }}</td>
+            <td>{{ student.section }}</td>
+            <td>{{ student.roll_no }}</td>
+            <td><small>{{ student.house.name|default:"" }}</small></td>
+            <td>{{ student.student_info.dob }}</td>
+            <td>{% if student.gender %}M{% else %}F{% endif %}</td>
+            <td><small>{{ student.temporary_address|default:"" }}</small></td>
+            <td><small>{{ student.permanent_address|default:"" }}</small></td>
+            <td><small>{{ student.fathers_name|default:"" }}</small></td>
+            <td><small>{{ student.fathers_phone|default:"" }}</small></td>
+            <td><small>{{ student.fathers_email|default:"" }}</small></td>
+            <td><small>{{ student.mothers_name|default:"" }}</small></td>
+            <td><small>{{ student.mothers_phone|default:"" }}</small></td>
+            <td><small>{{ student.mothers_email|default:"" }}</small></td>
+            <td><small>{{ student.guardian_name|default:"" }}</small></td>
+            <td><small>{{ student.guardian_phone|default:"" }}</small></td>
+            <td><small>{{ student.guardian_email|default:"" }}</small></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-
-
-  </div>
-  </div>
-  </div>
-
-  <!-- Optional JavaScript -->
-  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-    crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-    integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-    crossorigin="anonymous"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-    integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-    crossorigin="anonymous"></script>
-</body>
-
-</html>
+{% else %}
+    <!-- Standard layout -->
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead class="bg-light">
+          <tr>
+            <th rowspan="2">S.N.</th>
+            <th rowspan="2">Student Name</th>
+            <th rowspan="2">Reg. No.</th>
+            {% if grade_print %}
+              {% if section_print %}
+                <th rowspan="2">Roll</th>
+              {% else %}
+                <th rowspan="2">Section</th>
+                <th rowspan="2">Roll</th>
+              {% endif %}
+            {% else %}
+                <th rowspan="2">Grade / Section / Roll</th>
+            {% endif %}
+            <th rowspan="2">DOB</th>
+            <th rowspan="2">Gender</th>
+            <td rowspan="1">Address</td>
+            <th rowspan="2"></th>
+            <th rowspan="3">Father</th>
+            <th rowspan="3">Mother</th>
+            <th rowspan="3">Guardian</th>
+          </tr>
+          <!-- <tr>
+            <th>Temporary</th>
+            <th>Permanent</th>
+          </tr> -->
+        </thead>
+        <tbody>
+          {% for key, student in students.items %}
+          <tr>
+            <td style="padding-left:5px;" rowspan="3">{{ forloop.counter }}</td>
+            <td style="padding-left:5px;" rowspan="3">{{ student.name }}</td>
+            <td style="padding-left:5px;" rowspan="3">{{ student.reg_no }}</td>
+            {% if grade_print %}
+              {% if section_print %}
+                <td style="padding-left:5px;" rowspan="3">{{ student.roll_no }}</td>
+              {% else %}
+                <td style="padding-left:5px;" rowspan="3">{{ student.section }}</td>
+                <td style="padding-left:5px;" rowspan="3">{{ student.roll_no }}</td>
+              {% endif %}
+            {% else %}
+                <td style="padding-left:5px;" rowspan="3">{{ student.grade }} / {{ student.section }} / {{ student.roll_no }}</td>
+            {% endif %}
+            <td style="padding-left:5px;" rowspan="3">{{ student.student_info.dob }}</td>
+            <td style="padding-left:5px;" rowspan="3">{% if student.gender %}Male{% else %}Female{% endif %}</td>
+            <td rowspan="3">{% if student.temporary_address %}<strong>Temp:</strong> {% endif%}{{student.temporary_address|default:""}}{% if student.permanent_address %}<br><strong>Perm:</strong> {% endif %}{{student.permanent_address|default:""}}</td>
+            <th>Name</th>
+            <td>{{ student.fathers_name }}</td>
+            <td>{{ student.mothers_name }}</td>
+            <td>{{ student.guardian_name }}</td>
+          </tr>
+          <tr>
+            <th>Phone</th>
+            <td style="padding-left:5px;">{{ student.fathers_phone|default:"" }}</td>
+            <td style="padding-left:5px;">{{ student.mothers_phone|default:"" }}</td>
+            <td style="padding-left:5px;">{{ student.guardian_phone|default:"" }}</td>
+          </tr>
+          <tr>
+            <th>Email</th>
+            <td style="padding-left:5px;">{{ student.fathers_email|default:"" }}</td>
+            <td style="padding-left:5px;">{{ student.mothers_email|default:"" }}</td>
+            <td style="padding-left:5px;">{{ student.guardian_email|default:"" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+{% endif %}
+{% endblock content %}

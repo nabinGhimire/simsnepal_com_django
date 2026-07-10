@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Enter Exam Marks - Teacher Portal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.36.0/tabler-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f7f6;
+      color: #2c3e50;
+      padding-bottom: 30px;
+    }
+    .header-bar {
+      background: linear-gradient(135deg, #008877, #00a890);
+      color: white;
+      padding: 20px 16px;
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,136,119,0.15);
+    }
+    .marks-card {
+      background: white;
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      margin-top: 14px;
+      padding: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h4 class="mb-0 fw-bold">{{ subject.subject }}</h4>
+        <small class="opacity-75">Grade {{ grade.grade_name }} - {{ section.section }}</small>
+      </div>
+      <div>
+        <span class="badge bg-white-lt">{{ term_exam.term_name }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="container-xl px-3 mt-3">
+    {% if success %}
+    <div class="alert alert-success mt-3" role="alert">
+      Marks updated successfully.
+    </div>
+    {% endif %}
+    
+    <div class="marks-card card">
+      <form action="/webview/teacher/marks/entry/?token={{ token }}" method="POST" id="marks-entry-form">
+        {% csrf_token %}
+        <input type="hidden" name="token" value="{{ token }}">
+        <input type="hidden" name="grade" value="{{ grade.id }}">
+        <input type="hidden" name="section" value="{{ section.id }}">
+        <input type="hidden" name="subject" value="{{ subject.id }}">
+        <input type="hidden" name="term" value="{{ term_exam.id }}">
+        
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table table-striped">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th class="text-center w-1">Absent</th>
+                <th class="text-center">Th. ({{ fullmark.th_fm }})</th>
+                {% if praMarks %}
+                <th class="text-center">Pr. ({{ fullmark.pr_fm }})</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for key, value in new_desc.items %}
+                <tr>
+                  <td>
+                    <div class="fw-bold">{{ value.name }}</div>
+                    <div class="text-muted small">Reg: {{ key }} | Roll: {{ value.roll_no }}</div>
+                  </td>
+                  <td class="text-center">
+                    <input type="checkbox" id="{{ key }}_absent" name="{{ key }}_absent" value="1" {% if value.is_absent %}checked{% endif %} class="form-check-input student-absent-chk" data-reg="{{ key }}">
+                  </td>
+                  <td class="text-center">
+                    <input type="number" id="{{ key}}_th" name="{{ key}}_th" min="0" max="{{ fullmark.th_fm }}" value="{% if not value.is_absent and value.th_mo >= 0 %}{{ value.th_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 70px;" inputmode="numeric">
+                  </td>
+                  {% if praMarks %}
+                  <td class="text-center">
+                    <input type="number" id="{{ key}}_pr" name="{{ key}}_pr" min="0" max="{{ fullmark.pr_fm }}" value="{% if not value.is_absent and value.pr_mo >= 0 %}{{ value.pr_mo }}{% endif %}" class="form-control form-control-sm mx-auto" style="width: 70px;" inputmode="numeric">
+                  </td>
+                  {% endif %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="mt-4 text-center">
+          <button type="submit" name="submit" class="btn btn-success px-4" style="background-color: #008877; border-color: #008877;">
+            <i class="ti ti-device-floppy me-2"></i> Save Marks
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkAbsent = function(chk) {
+            const reg = chk.getAttribute('data-reg');
+            const thInput = document.getElementById(reg + '_th');
+            const prInput = document.getElementById(reg + '_pr');
+            if (chk.checked) {
+                if (thInput) {
+                    thInput.setAttribute('data-old-val', thInput.value);
+                    thInput.value = '';
+                    thInput.disabled = true;
+                }
+                if (prInput) {
+                    prInput.setAttribute('data-old-val', prInput.value);
+                    prInput.value = '';
+                    prInput.disabled = true;
+                }
+            } else {
+                if (thInput) {
+                    thInput.disabled = false;
+                    if (thInput.hasAttribute('data-old-val')) {
+                        thInput.value = thInput.getAttribute('data-old-val');
+                    }
+                }
+                if (prInput) {
+                    prInput.disabled = false;
+                    if (prInput.hasAttribute('data-old-val')) {
+                        prInput.value = prInput.getAttribute('data-old-val');
+                    }
+                }
+            }
+        };
+
+        document.querySelectorAll('.student-absent-chk').forEach(function(chk) {
+            checkAbsent(chk);
+            chk.addEventListener('change', function() {
+                checkAbsent(chk);
+            });
+        });
+
+        const form = document.getElementById('marks-entry-form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                document.querySelectorAll('.student-absent-chk').forEach(function(chk) {
+                    const reg = chk.getAttribute('data-reg');
+                    const thInput = document.getElementById(reg + '_th');
+                    const prInput = document.getElementById(reg + '_pr');
+                    if (chk.checked) {
+                        if (thInput) thInput.disabled = false;
+                        if (prInput) prInput.disabled = false;
+                    }
+                });
+            });
+        }
+    });
+  </script>
+</body>
+</html>
