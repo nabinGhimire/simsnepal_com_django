@@ -684,6 +684,7 @@ def teacher_homework(request):
     return render(request, "webview/error.html", {"error_title": "No Content", "error_message": "Unable to load teacher homework. Please ensure you are assigned to a school and subjects."})
 
 def teacher_marks(request):
+    from django.db.models import Q
     user = validate_webview_token(request, "teacher")
     token = request.GET.get('token')
     if not user:
@@ -781,7 +782,6 @@ def teacher_marks(request):
         })
         
     # 4. Subject Routing
-    from django.db.models import Q
     if is_admin:
         subjects_in_class = list(Subject.objects.filter(
             session=current_session,
