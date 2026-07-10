@@ -752,11 +752,9 @@ def teacher_marks(request):
         
     # 3. Grade & Section Selection
     if is_admin:
-        access_subjects = Subject.objects.filter(
-            session=current_session,
-            branch=selected_school,
-            status=True,
-        ).select_related('grade', 'section')
+        from sms.models import Section, Subject
+        all_sections = Section.objects.filter(grade__school=selected_school, session=current_session).select_related('grade')
+        unique_classes = set((sec.grade, sec) for sec in all_sections if sec.grade)
     else:
         # Direct TeacherSubjectAccess for the selected school
         ts_access = TeacherSubjectAccess.objects.filter(
@@ -765,25 +763,17 @@ def teacher_marks(request):
             grade__school=selected_school,
             status=True,
         ).select_related('grade', 'section', 'subject')
-        access_subjects = [t.subject for t in ts_access]
-        # Fallback to BranchUser subjects if none found
-        if not access_subjects and branch_users.filter(school=selected_school).exists():
-            inferred = []
-            for bu in branch_users.filter(school=selected_school):
-                subject_qs = Subject.objects.filter(
-                    session=current_session,
-                    branch=bu.school,
-                    grade=bu.grade,
-                    section=bu.section,
-                    status=True,
-                ).select_related('grade', 'section')
-                inferred.extend(subject_qs)
-            access_subjects = inferred
-    if not access_subjects:
-        return render(request, "webview/error.html", {"error_title": "No Subjects Assigned", "error_message": "You have no subjects assigned for the selected school. Please contact the administrator."})
+        unique_classes = set((t.grade, t.section) for t in ts_access if t.grade and t.section)
         
-    unique_classes = set((sub.grade, sub.section) for sub in access_subjects)
-    
+        # Fallback to BranchUser subjects if none found
+        if not unique_classes and branch_users.filter(school=selected_school).exists():
+            for bu in branch_users.filter(school=selected_school):
+                if bu.grade and bu.section:
+                    unique_classes.add((bu.grade, bu.section))
+                    
+    if not unique_classes:
+        return render(request, "webview/error.html", {"error_title": "No Classes Assigned", "error_message": "You have no classes assigned for the selected school. Please contact the administrator."})
+        
     if not grade_id or not section_id:
         classes_data = [{'grade': g, 'section': s} for g, s in unique_classes]
         return render(request, "webview/teacher_select_step.html", {
@@ -791,8 +781,22 @@ def teacher_marks(request):
         })
         
     # 4. Subject Routing
-    subjects_in_class = [sub for sub in access_subjects if str(sub.grade_id) == str(grade_id) and str(sub.section_id) == str(section_id)]
-    
+    from django.db.models import Q
+    if is_admin:
+        subjects_in_class = list(Subject.objects.filter(
+            session=current_session,
+            grade_id=grade_id,
+            status=True
+        ).filter(Q(section_id=section_id) | Q(section__isnull=True)))
+    else:
+        subjects_in_class = [t.subject for t in ts_access if str(t.grade_id) == str(grade_id) and str(t.section_id) == str(section_id)]
+        if not subjects_in_class and branch_users.filter(school=selected_school).exists():
+            subjects_in_class = list(Subject.objects.filter(
+                session=current_session,
+                grade_id=grade_id,
+                status=True
+            ).filter(Q(section_id=section_id) | Q(section__isnull=True)))
+            
     if len(subjects_in_class) == 1 or subject_id:
         final_subject_id = subject_id if subject_id else subjects_in_class[0].id
         # Route directly to the mobile marks entry
