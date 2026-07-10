@@ -685,6 +685,7 @@ def teacher_homework(request):
 
 def teacher_marks(request):
     from django.db.models import Q
+    from sms.models import SchoolTerm, SchoolGrade, Section
     user = validate_webview_token(request, "teacher")
     token = request.GET.get('token')
     if not user:
@@ -803,7 +804,6 @@ def teacher_marks(request):
         redirect_url = f"{reverse('teacher_marks_entry')}?token={token}&term={term_id}&grade={grade_id}&section={section_id}&subject={final_subject_id}"
         return redirect(redirect_url)
     else:
-        from sms.models import SchoolTerm, SchoolGrade, Section
         term_obj = SchoolTerm.objects.filter(id=term_id).first()
         grade_obj = SchoolGrade.objects.filter(id=grade_id).first()
         section_obj = Section.objects.filter(id=section_id).first()
