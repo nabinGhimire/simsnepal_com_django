@@ -108,11 +108,12 @@ def platform_setting_view(request):
         business_key = request.POST.get('business_key')
         # Update or create PLATFORM_KEY setting
         if platform_key_obj:
-            if platform_name:
+            if platform_name is not None:
                 platform_key_obj.value = platform_name
                 platform_key_obj.save()
         else:
-            PlatformSetting.objects.create(key='PLATFORM_KEY', value=platform_name or 'Hamro')
+            if platform_name is not None:
+                PlatformSetting.objects.create(key='PLATFORM_KEY', value=platform_name)
         # Update or create BUSINESS_KEY setting (admin only)
         if is_admin and business_key is not None:
             if business_key_obj:
@@ -134,7 +135,7 @@ def platform_setting_view(request):
     }
     return render(request, 'settings/platform_key.html', context)
 
-from panel.platform_sync import sync_school_channel, sync_grade_groups, sync_teachers_group, acquire_sync_lock, release_sync_lock
+from panel.platform_sync import sync_school_channel, sync_grade_groups, sync_teachers_group, acquire_sync_lock, release_sync_lock, setup_platform_integration
 from sms.models import BroadcastMessage
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
@@ -156,6 +157,15 @@ def sync_platform_view(request):
     business_key = business_key_obj.value if business_key_obj else ''
 
     if request.method == 'POST':
+        # Automatically register business and generate delegated key if they don't exist
+        if not setup_platform_integration(school):
+            messages.error(request, "Failed to register Platform Integration. Check logs for details.")
+            return redirect('panel:sync_platform')
+        
+        # Reload the business key in case it was just created
+        business_key_obj = PlatformSetting.objects.filter(key='BUSINESS_KEY').first()
+        business_key = business_key_obj.value if business_key_obj else ''
+
         if not business_key:
             messages.error(request, "Failed to sync. Please configure your API integration keys first.")
             return redirect('panel:sync_platform')

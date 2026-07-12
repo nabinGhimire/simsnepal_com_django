@@ -40,7 +40,7 @@
         <div class="card-body">
           <div class="mb-3">
             <label class="form-label">Platform Name</label>
-            <input type="text" name="platform_name" id="platform_name_input" class="form-control" value="{{ platform_key_obj.value|default:'Hamro' }}" placeholder="Platform Name" {% if business_key %}disabled{% endif %}>
+            <input type="text" name="platform_name" id="platform_name_input" class="form-control" value="{{ platform_key_obj.value }}" placeholder="Platform Name" {% if business_key %}disabled{% endif %}>
           </div>
           {% if is_admin %}
           <div class="mb-3">

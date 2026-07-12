@@ -53,6 +53,57 @@ def get_headers():
         headers['X-Business-Key'] = business_key
     return headers
 
+def get_system_headers():
+    """Headers required for System API requests."""
+    api_key = getattr(settings, 'HAMRO_SYSTEM_API_KEY', None)
+    return {
+        'X-System-API-Key': api_key,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
+
+def sync_hamro_business(user_id, name, business_type, existing_id=None):
+    """Sync/Register a business on Hamro. Returns the business ID."""
+    url = f"{get_base_url()}/system/businesses/sync"
+    payload = {
+        'user_id': str(user_id),
+        'name': name,
+        'type': business_type,
+        'is_active': True
+    }
+    if existing_id:
+        payload['id'] = str(existing_id)
+        
+    try:
+        response = requests.post(url, json=payload, headers=get_system_headers(), timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            business = data.get('business', {})
+            return business.get('id')
+        else:
+            logger.error(f"Failed to sync business '{name}': {response.status_code} {response.text}")
+    except Exception as e:
+        logger.error(f"Error syncing business '{name}': {e}")
+    return None
+
+def create_delegated_api_key(company_id, platform_id, name, service_name):
+    """Create a delegated API key for a company. Returns the new API key string."""
+    url = f"{get_base_url()}/system/businesses/{company_id}/api-keys/delegated"
+    payload = {
+        'platform_business_id': str(platform_id),
+        'name': name,
+        'service_name': service_name
+    }
+    try:
+        response = requests.post(url, json=payload, headers=get_system_headers(), timeout=10)
+        if response.status_code == 201:
+            data = response.json()
+            return data.get('key')
+        else:
+            logger.error(f"Failed to create delegated key for company {company_id}: {response.status_code} {response.text}")
+    except Exception as e:
+        logger.error(f"Error creating delegated key: {e}")
+    return None
 
 
 def get_current_session():

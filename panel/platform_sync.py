@@ -157,6 +157,66 @@ def get_owner_platform_id(school):
         logger.error(f"Error fetching owner platform ID: {e}")
     return None
 
+def setup_platform_integration(school):
+    """
+    Automates the business registration and delegated key setup on Hamro.
+    Returns True if successfully set up (or already set up), False otherwise.
+    """
+    from sms.models import PlatformSetting
+    from sms.hamro import sync_hamro_business, create_delegated_api_key
+    
+    # If we already have a BUSINESS_KEY, don't overwrite it. Overwriting it would
+    # create a new key that cannot access previously created threads.
+    existing_key = PlatformSetting.objects.filter(key='BUSINESS_KEY').first()
+    if existing_key and existing_key.value:
+        return True
+
+    owner_id = get_owner_platform_id(school)
+    if not owner_id:
+        logger.error("Cannot set up platform integration: School owner is not registered on Hamro.")
+        return False
+        
+    # 1. Sync/Register Platform Business (if needed)
+    platform_id_obj = PlatformSetting.objects.filter(key='PLATFORM_BUSINESS_ID').first()
+    platform_id = platform_id_obj.value if platform_id_obj else None
+    if not platform_id:
+        platform_id = sync_hamro_business(owner_id, "SIMS Nepal Platform", "platform")
+        if platform_id:
+            PlatformSetting.objects.create(key='PLATFORM_BUSINESS_ID', value=platform_id)
+        else:
+            logger.error("Failed to register platform business.")
+            return False
+
+    # 2. Sync/Register Company Business
+    company_id_obj = PlatformSetting.objects.filter(key='COMPANY_BUSINESS_ID').first()
+    company_id = company_id_obj.value if company_id_obj else None
+    new_company_id = sync_hamro_business(owner_id, school.name, "company", existing_id=company_id)
+    if new_company_id:
+        if company_id_obj:
+            company_id_obj.value = new_company_id
+            company_id_obj.save()
+        else:
+            PlatformSetting.objects.create(key='COMPANY_BUSINESS_ID', value=new_company_id)
+        company_id = new_company_id
+    else:
+        logger.error("Failed to register company business.")
+        return False
+
+    # 3. Generate Delegated API Key for the Company
+    key_name = f"SIMS Nepal — {school.name}"
+    service_name = f"simsnepal_{school.id}"
+    new_key = create_delegated_api_key(company_id, platform_id, key_name, service_name)
+    if new_key:
+        if existing_key:
+            existing_key.value = new_key
+            existing_key.save()
+        else:
+            PlatformSetting.objects.create(key='BUSINESS_KEY', value=new_key)
+        return True
+    
+    logger.error("Failed to create delegated API key.")
+    return False
+
 def sync_group_membership_cached(group_obj, target_members, admin_ids, force_refresh=False):
     """
     Syncs the group membership with Hamro platform, utilizing a local GroupMembershipCache
