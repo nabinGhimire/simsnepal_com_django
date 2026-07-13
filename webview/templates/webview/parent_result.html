@@ -86,6 +86,7 @@
                 </h4>
               </div>
 
+              {% if term_data.term.status.value == 'Current(Result Published)' %}
               <div class="table-responsive">
                 <table class="table table-vcenter card-table table-striped table-bordered">
                   <thead>
@@ -126,6 +127,11 @@
                   </tbody>
                 </table>
               </div>
+              {% else %}
+              <div class="alert alert-info m-3 mb-4">
+                Results for this term are not yet published.
+              </div>
+              {% endif %}
             </div>
           {% endfor %}
         {% else %}
