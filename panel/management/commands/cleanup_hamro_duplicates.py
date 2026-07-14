@@ -20,7 +20,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             '--hamro-cleanup', action='store_true',
-            help='Also query Hamro API to find and delete orphaned/duplicate threads on the platform.'
+            help='Also query Hamro API to find and delete orphaned threads on the platform.'
         )
 
     def handle(self, *args, **options):
@@ -46,7 +46,7 @@ class Command(BaseCommand):
 
         self.stdout.write(f'Using session: {session.year}')
 
-        # Resolve schools
+        # Resolve schools for DB cleanup
         school_id = options.get('school_id')
         if school_id:
             schools = SchoolBranch.objects.filter(id=school_id)
@@ -61,8 +61,8 @@ class Command(BaseCommand):
             self.stdout.write(f'Processing school: {school.name} (ID: {school.id})')
             self.stdout.write(f'{"="*60}')
 
-            # Step 1: Clean DB-side duplicates
-            self.stdout.write('\n--- Step 1: Cleaning DB duplicates ---')
+            # Clean DB-side duplicates
+            self.stdout.write('\n--- Cleaning DB duplicates ---')
             actions = cleanup_duplicate_threads(school, session, dry_run=dry_run)
             
             if not actions:
@@ -79,19 +79,20 @@ class Command(BaseCommand):
                             f"kept={action.get('kept_id')} removed={action.get('removed_id')}"
                         ))
 
-            # Step 2: Clean Hamro-side orphans (optional)
-            if hamro_cleanup:
-                self.stdout.write('\n--- Step 2: Cleaning Hamro platform orphans ---')
-                hamro_actions = cleanup_hamro_orphans(school, session, dry_run=dry_run)
-                
-                if not hamro_actions:
-                    self.stdout.write('  No Hamro orphans found')
-                else:
-                    for action in hamro_actions:
-                        self.stdout.write(self.style.WARNING(
-                            f"  [{action['type']}] '{action['name']}': deleted {action['deleted_id']}"
-                            + (f" (kept {action.get('kept_id')})" if action.get('kept_id') else "")
-                        ))
+        # Hamro orphan cleanup runs ONCE globally (not per-school)
+        if hamro_cleanup:
+            self.stdout.write(f'\n{"="*60}')
+            self.stdout.write('Cleaning Hamro platform orphans (global)')
+            self.stdout.write(f'{"="*60}')
+            hamro_actions = cleanup_hamro_orphans(session, dry_run=dry_run)
+            
+            if not hamro_actions:
+                self.stdout.write('  No Hamro orphans found')
+            else:
+                for action in hamro_actions:
+                    self.stdout.write(self.style.WARNING(
+                        f"  [{action['type']}] '{action['name']}': deleted {action['deleted_id']}"
+                    ))
 
         if dry_run:
             self.stdout.write(self.style.WARNING('\nDry run complete. Run without --dry-run to apply.'))
