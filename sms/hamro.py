@@ -23,7 +23,7 @@ def _request_with_retry(method, url, max_retries=3, backoff=1.0, **kwargs):
                 return response  # 2xx, 3xx, 4xx — caller handles
             logger.warning(f"Server error {response.status_code} on {method} {url} (attempt {attempt + 1}/{max_retries})")
             last_exc = requests.HTTPError(f"Server error: {response.status_code}", response=response)
-        except (requests.ConnectionError, requests.Timeout, requests.ChunkedEncodingError) as e:
+        except (requests.ConnectionError, requests.Timeout, requests.exceptions.ChunkedEncodingError) as e:
             logger.warning(f"Transient error on {method} {url} (attempt {attempt + 1}/{max_retries}): {e}")
             last_exc = e
         if attempt < max_retries - 1:
@@ -281,6 +281,25 @@ def user_exists_in_hamro(email=None, phone=None):
     Returns the external_id if found, else None.
     """
     return lookup_hamro_user(email=email, phone=phone)
+
+def list_threads():
+    """List all threads owned by this platform on Hamro.
+    Returns a list of dicts with 'id', 'name', 'type' keys, or None on error.
+    """
+    url = f"{get_base_url()}/api/v1/platform/threads"
+    try:
+        response = _request_with_retry('get', url, headers=get_headers(), max_retries=2, timeout=15)
+        if response.status_code == 200:
+            data = response.json()
+            if isinstance(data, list):
+                return data
+            elif isinstance(data, dict):
+                return data.get('results', data.get('threads', data.get('data', [])))
+        else:
+            logger.error(f"Failed to list threads: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error listing threads: {e}")
+    return None
 
 def create_thread(thread_type, name, description=""):
     """Create a new thread (group or channel) in Hamro platform."""

@@ -3,7 +3,7 @@ import time
 from django.db import transaction
 from django.db.models import Q
 from sms.models import Group, Teacher, StudentSession, TeacherSubjectAccess, Section, SchoolGrade, PlatformSetting, PlatformUserMapping, GroupMembershipCache
-from sms.hamro import create_thread, update_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone, get_thread_users, remove_user_from_thread, remove_users_from_thread_batch, update_user_role_in_thread, get_thread_participants, update_user_roles_batch, thread_exists, delete_thread
+from sms.hamro import create_thread, update_thread, add_users_to_thread_batch, lookup_hamro_users_batch, format_phone, get_thread_users, remove_user_from_thread, remove_users_from_thread_batch, update_user_role_in_thread, get_thread_participants, update_user_roles_batch, thread_exists, delete_thread, list_threads
 
 logger = logging.getLogger(__name__)
 
@@ -905,4 +905,99 @@ def cleanup_duplicate_threads(school, session, dry_run=False):
                     pass
             seen_groups[key] = g
 
+    return actions
+
+
+def cleanup_hamro_orphans(school, session, dry_run=False):
+    """Find and delete orphaned threads on Hamro that have no matching DB record,
+    plus delete duplicate Hamro threads (same name) where we already have one in DB.
+    
+    Returns a list of dicts describing what was cleaned up.
+    """
+    actions = []
+    
+    # 1. Fetch all threads from Hamro platform
+    hamro_threads = list_threads()
+    if hamro_threads is None:
+        logger.error("Could not list threads from Hamro platform. Skipping orphan cleanup.")
+        return actions
+    
+    # 2. Build set of known external_ids in our DB for this school+session
+    known_ext_ids = set(
+        Group.objects.filter(school=school, session=session)
+        .exclude(external_id=None)
+        .exclude(external_id='')
+        .values_list('external_id', flat=True)
+    )
+    
+    # Also include external_ids from OTHER schools for this session —
+    # we never want to delete threads belonging to other schools
+    all_school_ext_ids = set(
+        Group.objects.filter(session=session)
+        .exclude(external_id=None)
+        .exclude(external_id='')
+        .values_list('external_id', flat=True)
+    )
+    
+    # 3. Find orphans and duplicates on Hamro
+    seen_names = {}  # name -> thread we're keeping
+    
+    for thread in hamro_threads:
+        ext_id = thread.get('id')
+        name = thread.get('name', '')
+        ttype = thread.get('type', '')
+        
+        if not ext_id:
+            continue
+        
+        # Skip if this thread is tracked in our DB (any school)
+        if ext_id in all_school_ext_ids:
+            # Track name for duplicate detection
+            if name not in seen_names:
+                seen_names[name] = thread
+            else:
+                # Duplicate name on Hamro — keep first one, delete rest
+                if not dry_run:
+                    try:
+                        delete_thread(ext_id)
+                        GroupMembershipCache.objects.filter(platform_user_id=ext_id).delete()
+                    except Exception as e:
+                        logger.warning(f"Could not delete duplicate Hamro thread {ext_id} ({name}): {e}")
+                actions.append({
+                    'type': 'hamro_duplicate',
+                    'name': name,
+                    'deleted_id': ext_id,
+                    'kept_id': seen_names[name].get('id'),
+                })
+            continue
+        
+        # Thread not in our DB at all — orphan
+        if name not in seen_names:
+            seen_names[name] = thread
+            
+            if not dry_run:
+                try:
+                    delete_thread(ext_id)
+                except Exception as e:
+                    logger.warning(f"Could not delete orphan Hamro thread {ext_id} ({name}): {e}")
+            actions.append({
+                'type': 'hamro_orphan',
+                'name': name,
+                'deleted_id': ext_id,
+                'thread_type': ttype,
+            })
+        else:
+            # Orphan with duplicate name — delete
+            if not dry_run:
+                try:
+                    delete_thread(ext_id)
+                except Exception as e:
+                    logger.warning(f"Could not delete orphan Hamro thread {ext_id} ({name}): {e}")
+            actions.append({
+                'type': 'hamro_orphan_duplicate',
+                'name': name,
+                'deleted_id': ext_id,
+                'kept_id': seen_names[name].get('id'),
+            })
+    
     return actions
