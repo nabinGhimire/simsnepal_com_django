@@ -111,14 +111,15 @@
               <th>Group/Channel Name</th>
               <th>Type</th>
               <th>Grade / Section</th>
-              <th>Hamro ID (External ID)</th>
+              <th>Hamro ID</th>
               <th>Status</th>
               <th>Participants</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {% for group in synced_groups %}
-            <tr>
+            <tr id="group-row-{{ group.id }}">
               <td class="fw-bold" style="white-space: normal; word-break: break-word; min-width: 200px;">{{ group.name }}</td>
               <td>
                 {% if group.is_broadcast %}
@@ -142,7 +143,7 @@
               <td>
                 <code>{{ group.external_id|default:"—" }}</code>
               </td>
-              <td>
+              <td id="status-{{ group.id }}">
                 {% if group.external_id %}
                   <span class="badge bg-success">Synced</span>
                 {% else %}
@@ -156,10 +157,15 @@
                   {{ group.participant_count|default:"0" }}
                 {% endif %}
               </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary resync-btn" data-group-id="{{ group.id }}" title="Resync this group">
+                  <i class="ti ti-refresh"></i>
+                </button>
+              </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="6" class="text-center text-secondary py-4">
+              <td colspan="7" class="text-center text-secondary py-4">
                 <i class="ti ti-info-circle me-1"></i> No channels or groups synced yet for this session.
               </td>
             </tr>
@@ -185,6 +191,52 @@
           form.submit();
         }
       });
+    }
+
+    // Per-group resync buttons
+    document.querySelectorAll('.resync-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var groupId = this.dataset.groupId;
+        var row = document.getElementById('group-row-' + groupId);
+        var statusCell = document.getElementById('status-' + groupId);
+        var originalHtml = this.innerHTML;
+
+        this.classList.add('disabled');
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        if (statusCell) statusCell.innerHTML = '<span class="badge bg-info-lt">Syncing...</span>';
+
+        fetch('/panel/settings/platform/sync/group/' + groupId + '/', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          btn.innerHTML = originalHtml;
+          btn.classList.remove('disabled');
+          if (data.ok) {
+            if (statusCell) statusCell.innerHTML = '<span class="badge bg-success">Synced</span> <span class="text-secondary small">' + data.elapsed + '</span>';
+          } else {
+            if (statusCell) statusCell.innerHTML = '<span class="badge bg-danger-lt">' + (data.error || 'Failed') + '</span>';
+          }
+        })
+        .catch(function(err) {
+          btn.innerHTML = originalHtml;
+          btn.classList.remove('disabled');
+          if (statusCell) statusCell.innerHTML = '<span class="badge bg-danger-lt">Error</span>';
+        });
+      });
+    });
+
+    function getCookie(name) {
+      var v = null;
+      document.cookie.split(';').forEach(function(c) {
+        c = c.trim();
+        if (c.startsWith(name + '=')) v = c.substring(name.length + 1);
+      });
+      return v;
     }
   });
 </script>

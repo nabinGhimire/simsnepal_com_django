@@ -73,6 +73,7 @@ urlpatterns = [
     path("settings/standard-subjects/", views.manage_standard_subjects, name="manage_standard_subjects"),
     path('settings/platform/', views.platform_setting_view, name='platform_setting'),
     path('settings/platform/sync/', views.sync_platform_view, name='sync_platform'),
+    path('settings/platform/sync/group/<int:group_id>/', views.sync_single_group_view, name='sync_single_group'),
     path('settings/platform/broadcast/', views.broadcast_view, name='broadcast'),
     path('settings/platform/broadcast/history/', views.broadcast_history_view, name='broadcast_history'),
     path('settings/school/', views.school_settings, name='school_settings'),

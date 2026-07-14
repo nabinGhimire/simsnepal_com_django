@@ -206,6 +206,10 @@ def sync_platform_view(request):
                 messages.success(request, f"Successfully synced in {total:.0f}s. School channel, teachers group, and {len(grade_groups or [])} grade groups synced.")
             else:
                 messages.error(request, "Failed to sync platform channels/groups. Ensure your API keys are configured correctly.")
+        except Exception as e:
+            import logging
+            logging.getLogger('panel.sync').exception(f"Sync failed for school {school.name}")
+            messages.error(request, f"Sync failed: {str(e)}")
         finally:
             # Always release the lock!
             release_sync_lock()
@@ -254,6 +258,164 @@ def sync_platform_view(request):
         'last_sync_nepali': last_sync_nepali,
     }
     return render(request, 'settings/platform_sync.html', context)
+
+@login_required
+def sync_single_group_view(request, group_id):
+    """Sync a single group's membership to Hamro. Lightweight — runs fast, no timeout risk."""
+    import json
+    import logging
+    import time as time_mod
+    from panel.platform_sync import sync_group_membership_cached, get_owner_platform_id, get_platform_users_map, normalize_lookup_key
+    from sms.hamro import format_phone, create_thread, thread_exists, update_thread
+
+    _sync_logger = logging.getLogger('panel.sync')
+
+    try:
+        branch_user = BranchUser.objects.select_related('school__owner').get(user=request.user)
+    except BranchUser.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Unauthorized'}, status=403)
+
+    is_admin = (branch_user.school.owner.user == request.user)
+    if not is_admin:
+        return JsonResponse({'ok': False, 'error': 'Only school admin can sync'}, status=403)
+
+    school = branch_user.school
+
+    try:
+        group_obj = Group.objects.select_related('grade', 'section', 'school').get(id=group_id, school=school)
+    except Group.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Group not found'}, status=404)
+
+    if not school.business_key:
+        return JsonResponse({'ok': False, 'error': 'No business key configured. Run full sync first.'}, status=400)
+
+    current_session = get_current_session()
+    t0 = time_mod.time()
+
+    try:
+        # Ensure thread exists on Hamro
+        if not group_obj.external_id:
+            thread_type = 'channel' if group_obj.is_broadcast else 'group'
+            ext_id = create_thread(thread_type, group_obj.name, f"{thread_type} for {group_obj.name}", school=school)
+            if not ext_id:
+                return JsonResponse({'ok': False, 'error': f'Failed to create thread on Hamro for {group_obj.name}'})
+            group_obj.external_id = ext_id
+            group_obj.save(update_fields=['external_id'])
+        else:
+            exists = thread_exists(group_obj.external_id, school=school)
+            if exists is False:
+                _sync_logger.warning(f"Thread {group_obj.external_id} for {group_obj.name} deleted on Hamro. Recreating.")
+                ext_id = create_thread('channel' if group_obj.is_broadcast else 'group', group_obj.name, f"group for {group_obj.name}", school=school)
+                if ext_id:
+                    group_obj.external_id = ext_id
+                    group_obj.save(update_fields=['external_id'])
+                    GroupMembershipCache.objects.filter(group=group_obj).delete()
+                else:
+                    return JsonResponse({'ok': False, 'error': f'Failed to recreate thread for {group_obj.name}'})
+            elif exists is None:
+                return JsonResponse({'ok': False, 'error': f'Cannot verify thread for {group_obj.name} (transient error). Try again.'})
+
+        # Gather members based on group type
+        to_add_ids = []
+        admin_ids = set()
+
+        owner_platform_id = get_owner_platform_id(school)
+        if owner_platform_id:
+            to_add_ids.append(owner_platform_id)
+            admin_ids.add(owner_platform_id)
+
+        if group_obj.is_broadcast:
+            # School channel: all teachers + all parents
+            teacher_users = [
+                t.teacher for t in Teacher.objects.filter(
+                    Q(added_by__branchuser__school=school) |
+                    Q(teacher__teachersubjectaccess__subject__branch=school)
+                ).select_related('teacher').distinct()
+            ]
+            emails = [t.email for t in teacher_users if t.email]
+            phones = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
+
+            student_sessions = StudentSession.objects.filter(
+                session=current_session, student__school=school, status=True
+            ).select_related('student')
+            for ss in student_sessions:
+                s = ss.student
+                if s.fathers_email: emails.append(s.fathers_email)
+                if s.fathers_phone: phones.append(format_phone(str(s.fathers_phone)))
+                if s.mothers_email: emails.append(s.mothers_email)
+                if s.mothers_phone: phones.append(format_phone(str(s.mothers_phone)))
+                if s.guardian_email: emails.append(s.guardian_email)
+                if s.guardian_phone: phones.append(format_phone(str(s.guardian_phone)))
+
+            users_map = get_platform_users_map(list(set(emails)), list(set(phones)), school=school)
+            for ext_id in users_map.values():
+                if ext_id:
+                    to_add_ids.append(ext_id)
+            # Teachers are admins in school channel
+            for t_user in teacher_users:
+                t_obj = Teacher.objects.filter(teacher=t_user).first()
+                if t_obj and t_obj.external_id:
+                    to_add_ids.append(t_obj.external_id)
+                    admin_ids.add(t_obj.external_id)
+
+        elif not group_obj.grade and not group_obj.section:
+            # Teachers group
+            teacher_users = [
+                t.teacher for t in Teacher.objects.filter(
+                    Q(added_by__branchuser__school=school) |
+                    Q(teacher__teachersubjectaccess__subject__branch=school)
+                ).select_related('teacher').distinct()
+            ]
+            emails = [t.email for t in teacher_users if t.email]
+            phones = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
+            users_map = get_platform_users_map(emails, phones, school=school)
+            for ext_id in users_map.values():
+                if ext_id:
+                    to_add_ids.append(ext_id)
+                    admin_ids.add(ext_id)
+
+        else:
+            # Class/section group: section teachers + parents
+            teaching_accesses = TeacherSubjectAccess.objects.filter(
+                session=current_session, grade=group_obj.grade, section=group_obj.section, status=True
+            ).select_related('teacher')
+            teaching_users = [a.teacher for a in teaching_accesses]
+            emails = [t.email for t in teaching_users if t.email]
+            phones = [format_phone(t.username) for t in teaching_users if t.username and t.username.isdigit()]
+
+            student_sessions = StudentSession.objects.filter(
+                session=current_session, grade=group_obj.grade, section=group_obj.section, status=True
+            ).select_related('student')
+            for ss in student_sessions:
+                s = ss.student
+                if s.fathers_email: emails.append(s.fathers_email)
+                if s.fathers_phone: phones.append(format_phone(str(s.fathers_phone)))
+                if s.mothers_email: emails.append(s.mothers_email)
+                if s.mothers_phone: phones.append(format_phone(str(s.mothers_phone)))
+                if s.guardian_email: emails.append(s.guardian_email)
+                if s.guardian_phone: phones.append(format_phone(str(s.guardian_phone)))
+
+            users_map = get_platform_users_map(list(set(emails)), list(set(phones)), school=school)
+            for ext_id in users_map.values():
+                if ext_id:
+                    to_add_ids.append(ext_id)
+            for t_user in teaching_users:
+                t_obj = Teacher.objects.filter(teacher=t_user).first()
+                if t_obj and t_obj.external_id:
+                    to_add_ids.append(t_obj.external_id)
+                    admin_ids.add(t_obj.external_id)
+
+        to_add_ids = list(set(to_add_ids))
+        sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school)
+
+        elapsed = time_mod.time() - t0
+        _sync_logger.info(f"Single group sync for {group_obj.name} completed in {elapsed:.1f}s")
+        return JsonResponse({'ok': True, 'group': group_obj.name, 'members': len(to_add_ids), 'elapsed': f'{elapsed:.1f}s'})
+
+    except Exception as e:
+        _sync_logger.exception(f"Single group sync failed for {group_obj.name}")
+        return JsonResponse({'ok': False, 'error': str(e)})
+
 
 @login_required
 def broadcast_view(request):
