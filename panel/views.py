@@ -176,9 +176,29 @@ def sync_platform_view(request):
             return redirect('panel:sync_platform')
 
         try:
+            import time
+            import logging
+            _sync_logger = logging.getLogger('panel.sync')
+            
+            _sync_logger.info(f"Starting sync for school {school.name} (session {current_session.year})")
+            t0 = time.time()
+            
+            _sync_logger.info("Step 1/3: Syncing school channel...")
             school_chan = sync_school_channel(school, current_session)
+            _sync_logger.info(f"Step 1/3 done in {time.time() - t0:.1f}s")
+            
+            t1 = time.time()
+            _sync_logger.info("Step 2/3: Syncing teachers group...")
             teachers_grp = sync_teachers_group(school, current_session)
+            _sync_logger.info(f"Step 2/3 done in {time.time() - t1:.1f}s")
+            
+            t2 = time.time()
+            _sync_logger.info("Step 3/3: Syncing grade groups...")
             grade_groups = sync_grade_groups(school, current_session)
+            _sync_logger.info(f"Step 3/3 done in {time.time() - t2:.1f}s")
+            
+            total = time.time() - t0
+            _sync_logger.info(f"Sync completed in {total:.1f}s")
             
             if school_chan or teachers_grp or grade_groups:
                 from django.utils import timezone
@@ -186,7 +206,7 @@ def sync_platform_view(request):
                     key='LAST_SYNC_TIME',
                     defaults={'value': timezone.now().isoformat()}
                 )
-                messages.success(request, "Successfully synced school channels and groups to Hamro platform.")
+                messages.success(request, f"Successfully synced in {total:.0f}s. School channel, teachers group, and {len(grade_groups or [])} grade groups synced.")
             else:
                 messages.error(request, "Failed to sync platform channels/groups. Ensure your API keys are configured correctly.")
         finally:

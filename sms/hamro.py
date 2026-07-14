@@ -1,12 +1,34 @@
 import requests
 import logging
+import time
 from django.conf import settings
-from .models import PlatformSetting, Group, UserRegistrationStatus
+from .models import PlatformSetting, Group, GroupMembershipCache, UserRegistrationStatus
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 import os
+
+def _request_with_retry(method, url, max_retries=3, backoff=1.0, **kwargs):
+    """Make an HTTP request with exponential backoff retry for transient errors.
+    Retries on connection errors, timeouts, and 5xx status codes.
+    Returns the response on success, raises on persistent failure.
+    """
+    kwargs.setdefault('timeout', 15)
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            response = getattr(requests, method)(url, **kwargs)
+            if response.status_code < 500:
+                return response  # 2xx, 3xx, 4xx — caller handles
+            logger.warning(f"Server error {response.status_code} on {method} {url} (attempt {attempt + 1}/{max_retries})")
+            last_exc = requests.HTTPError(f"Server error: {response.status_code}", response=response)
+        except (requests.ConnectionError, requests.Timeout, requests.ChunkedEncodingError) as e:
+            logger.warning(f"Transient error on {method} {url} (attempt {attempt + 1}/{max_retries}): {e}")
+            last_exc = e
+        if attempt < max_retries - 1:
+            time.sleep(backoff * (2 ** attempt))
+    raise last_exc
 
 def get_platform_setting(key, default=''):
     try:
@@ -145,11 +167,16 @@ def ensure_channel(name, school=None):
             channel.name = name
             channel.save()
         if channel.external_id:
-            current_users = get_thread_users(channel.external_id)
-            if current_users is None:
+            # Use thread_exists (safe) instead of get_thread_users (destructive).
+            # Only destroy the reference on confirmed 404, not on transient errors.
+            exists = thread_exists(channel.external_id)
+            if exists is False:
+                logger.warning(f"Channel {name} (thread {channel.external_id}) confirmed deleted on platform. Recreating.")
                 channel.external_id = None
                 channel.save()
+                GroupMembershipCache.objects.filter(group=channel).delete()
             else:
+                # exists is True or None (transient error) — trust the DB record
                 return channel.external_id
 
     external_id = create_thread('channel', name, f"School channel for {name}")
@@ -193,11 +220,16 @@ def ensure_group(name, session_id, grade=None, section=None, school=None):
             group.name = name
             group.save()
         if group.external_id:
-            current_users = get_thread_users(group.external_id)
-            if current_users is None:
+            # Use thread_exists (safe) instead of get_thread_users (destructive).
+            # Only destroy the reference on confirmed 404, not on transient errors.
+            exists = thread_exists(group.external_id)
+            if exists is False:
+                logger.warning(f"Group {name} (thread {group.external_id}) confirmed deleted on platform. Recreating.")
                 group.external_id = None
                 group.save()
+                GroupMembershipCache.objects.filter(group=group).delete()
             else:
+                # exists is True or None (transient error) — trust the DB record
                 return group
         
     external_id = create_thread('group', name, f"Group for {name}")
@@ -287,6 +319,38 @@ def update_thread(thread_id, name, description=""):
         logger.error(f"Error updating thread {thread_id}: {e}")
     return False
 
+def thread_exists(thread_id):
+    """Check if a thread exists on Hamro by making a lightweight GET request.
+    Returns True if the thread exists (200), False if not (404).
+    Returns None on transient errors (network, 5xx, etc.) — caller should NOT treat as deleted.
+    """
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}"
+    try:
+        response = _request_with_retry('get', url, headers=get_headers(), max_retries=2, timeout=10)
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 404:
+            return False
+        else:
+            logger.warning(f"Unexpected status checking thread {thread_id}: {response.status_code}")
+            return None
+    except Exception as e:
+        logger.warning(f"Transient error checking thread {thread_id}: {e}")
+        return None
+
+def delete_thread(thread_id):
+    """Delete a thread on Hamro platform."""
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}"
+    try:
+        response = _request_with_retry('delete', url, headers=get_headers(), timeout=10)
+        if response.status_code in (200, 204, 202):
+            return True
+        else:
+            logger.error(f"Failed to delete thread {thread_id}: status={response.status_code}, response={response.text}")
+    except Exception as e:
+        logger.error(f"Error deleting thread {thread_id}: {e}")
+    return False
+
 def add_user_to_thread(thread_id, user_id):
     """Add a user to a thread in Hamro platform."""
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
@@ -318,6 +382,44 @@ def remove_user_from_thread(thread_id, user_id):
     except Exception as e:
         logger.error(f"Error removing user from thread: {e}")
     return False
+
+def remove_users_from_thread_batch(thread_id, user_ids):
+    """Remove multiple users from a thread.
+    Tries the batch DELETE endpoint first; if unsupported (405), falls back
+    to individual remove_user_from_thread calls.
+    Returns the set of user_ids that were successfully removed.
+    """
+    user_ids = list(set(user_ids))
+    removed = set()
+
+    # Try batch endpoint first (POST with action=remove or DELETE)
+    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/batch"
+    for chunk in chunk_list(user_ids, 50):
+        if not chunk:
+            continue
+        payload = {'user_ids': chunk, 'action': 'remove'}
+        try:
+            response = _request_with_retry('post', url, json=payload, headers=get_headers(), timeout=30)
+            if response.status_code in (200, 204, 202):
+                removed.update(chunk)
+            elif response.status_code == 405:
+                # Batch endpoint doesn't support this action — break to fallback
+                logger.info(f"Batch remove not supported for thread {thread_id}, using individual removes")
+                break
+            else:
+                logger.error(f"Batch remove failed for thread {thread_id}: status={response.status_code}, response={response.text}")
+        except Exception as e:
+            logger.error(f"Error in batch remove from thread {thread_id}: {e}")
+            break
+
+    # Fallback: remove one by one for any not yet removed
+    remaining = [uid for uid in user_ids if uid not in removed]
+    if remaining:
+        for uid in remaining:
+            if remove_user_from_thread(thread_id, uid):
+                removed.add(uid)
+
+    return removed
 
 def send_message_to_thread(thread_id, body):
     """Send a message to a thread in Hamro platform."""
@@ -399,7 +501,7 @@ def lookup_hamro_users_batch(emails=None, phones=None):
             'emails': e_chunk,
             'phones': p_chunk
         }
-        response = requests.post(url, json=payload, headers=get_headers())
+        response = _request_with_retry('post', url, json=payload, headers=get_headers())
         if response.status_code == 200:
             data = response.json()
             users_list = data.get('users', [])
@@ -427,7 +529,7 @@ def add_users_to_thread_batch(thread_id, user_ids):
             'user_ids': chunk
         }
         try:
-            response = requests.post(url, json=payload, headers=get_headers())
+            response = _request_with_retry('post', url, json=payload, headers=get_headers())
             if response.status_code in (200, 201):
                 last_response = response.json()
             else:
@@ -443,7 +545,7 @@ def get_thread_participants(thread_id):
     Raises requests.HTTPError or requests.RequestException on failure.
     """
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
-    response = requests.get(url, headers=get_headers())
+    response = _request_with_retry('get', url, headers=get_headers())
     if response.status_code == 200:
         users_list = response.json()
         return [{'user_id': u.get('user_id'), 'admin': u.get('admin', False)} for u in users_list if u.get('user_id')]
@@ -493,7 +595,7 @@ def update_user_roles_batch(thread_id, admin_ids=None, member_ids=None):
         return True
 
     try:
-        response = requests.post(url, json=payload, headers=get_headers())
+        response = _request_with_retry('patch', url, json=payload, headers=get_headers())
         if response.status_code in (200, 201, 204):
             logger.info(f"Successfully batch updated roles in thread {thread_id}.")
             return True
