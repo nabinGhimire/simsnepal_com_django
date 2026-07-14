@@ -110,6 +110,7 @@ class SchoolBranch(models.Model):
     max_reg = models.BigIntegerField(blank=True, null=True)
     owner = models.ForeignKey(SuperBranchUser, on_delete=models.CASCADE)
     slogan = models.CharField(max_length=250, blank=True, null=True)
+    business_key = models.CharField(max_length=255, blank=True, null=True, help_text="Delegated Hamro API business key for this school")
 
     def __str__(self):
         name_location = str(self.name) + ',' + str(self.location)

@@ -97,14 +97,15 @@ def platform_setting_view(request):
     if not is_admin:
         return HttpResponseForbidden('Only school owner can edit settings')
 
+    school = branch_user.school
+
     # Load existing Platform and Business keys
     platform_key_obj = PlatformSetting.objects.filter(key='PLATFORM_KEY').first()
-    business_key_obj = PlatformSetting.objects.filter(key='BUSINESS_KEY').first()
 
     if request.method == 'POST':
         # Platform Name (value of PLATFORM_KEY)
         platform_name = request.POST.get('platform_name')
-        # Business Key (separate field)
+        # Business Key (per-school, stored on SchoolBranch)
         business_key = request.POST.get('business_key')
         # Update or create PLATFORM_KEY setting
         if platform_key_obj:
@@ -114,13 +115,10 @@ def platform_setting_view(request):
         else:
             if platform_name is not None:
                 PlatformSetting.objects.create(key='PLATFORM_KEY', value=platform_name)
-        # Update or create BUSINESS_KEY setting (admin only)
+        # Update per-school business key (admin only)
         if is_admin and business_key is not None:
-            if business_key_obj:
-                business_key_obj.value = business_key
-                business_key_obj.save()
-            else:
-                PlatformSetting.objects.create(key='BUSINESS_KEY', value=business_key)
+            school.business_key = business_key
+            school.save(update_fields=['business_key'])
         messages.success(request, 'Platform settings saved')
         return redirect('panel:platform_setting')
     else:
@@ -130,7 +128,7 @@ def platform_setting_view(request):
     context = {
         'branchuser': branch_user,
         'platform_key_obj': platform_key_obj,
-        'business_key': business_key_obj.value if business_key_obj else '',
+        'business_key': school.business_key or '',
         'is_admin': is_admin,
     }
     return render(request, 'settings/platform_key.html', context)
@@ -153,8 +151,7 @@ def sync_platform_view(request):
 
     school = branch_user.school
     current_session = get_current_session()
-    business_key_obj = PlatformSetting.objects.filter(key='BUSINESS_KEY').first()
-    business_key = business_key_obj.value if business_key_obj else ''
+    business_key = school.business_key or ''
 
     if request.method == 'POST':
         # Automatically register business and generate delegated key if they don't exist
@@ -163,8 +160,8 @@ def sync_platform_view(request):
             return redirect('panel:sync_platform')
         
         # Reload the business key in case it was just created
-        business_key_obj = PlatformSetting.objects.filter(key='BUSINESS_KEY').first()
-        business_key = business_key_obj.value if business_key_obj else ''
+        school.refresh_from_db()
+        business_key = school.business_key or ''
 
         if not business_key:
             messages.error(request, "Failed to sync. Please configure your API integration keys first.")
@@ -325,7 +322,7 @@ def broadcast_view(request):
         failed_count = 0
         
         for thread_id, thread_name in target_threads:
-            msg_id = send_message_to_thread(thread_id, message_body)
+            msg_id = send_message_to_thread(thread_id, message_body, school=school)
             if msg_id:
                 sent_count += 1
                 # Log sent message in DB
@@ -451,8 +448,8 @@ def create_groups_view(request, grade_id):
         if not teacher.external_id:
             # assume external_id fetched elsewhere
             continue
-        add_user_to_group(teacher.external_id, channel_id)
-        add_user_to_group(teacher.external_id, grade_group.external_id)
+        add_user_to_group(teacher.external_id, channel_id, school=school)
+        add_user_to_group(teacher.external_id, grade_group.external_id, school=school)
     # Process sections
     sections = Section.objects.filter(grade=grade, school=school)
     for sec in sections:
@@ -461,19 +458,18 @@ def create_groups_view(request, grade_id):
         # Add teachers to section group
         for teacher in teachers:
             if teacher.external_id:
-                add_user_to_group(teacher.external_id, sec_group.external_id)
+                add_user_to_group(teacher.external_id, sec_group.external_id, school=school)
         # Add parents of active students in this section
         student_sessions = StudentSession.objects.filter(session=current_session, grade=grade, section=sec, status=True)
         for ss in student_sessions:
             student = ss.student
-            # Resolve parent contact info (example: father's email/phone)
             parent_email = student.fathers_email or student.mothers_email
             parent_phone = student.fathers_phone or student.mothers_phone
-            parent_ext_id = user_exists_in_hamro(email=parent_email, phone=parent_phone)
+            parent_ext_id = user_exists_in_hamro(email=parent_email, phone=parent_phone, school=school)
             if parent_ext_id:
-                add_user_to_group(parent_ext_id, channel_id)
-                add_user_to_group(parent_ext_id, grade_group.external_id)
-                add_user_to_group(parent_ext_id, sec_group.external_id)
+                add_user_to_group(parent_ext_id, channel_id, school=school)
+                add_user_to_group(parent_ext_id, grade_group.external_id, school=school)
+                add_user_to_group(parent_ext_id, sec_group.external_id, school=school)
     messages.success(request, 'Groups created and members added')
     return redirect('panel:edgradeitems', gradelevel=grade.id)
 
@@ -812,10 +808,10 @@ def listgradeitems(request, gradelevel):
     for s in students:
         registered = False
         if getattr(s, "fathers_phone", None):
-            if user_exists_in_hamro(phone=s.fathers_phone):
+            if user_exists_in_hamro(phone=s.fathers_phone, school=branchuser.school):
                 registered = True
         if not registered and getattr(s, "mothers_phone", None):
-            if user_exists_in_hamro(phone=s.mothers_phone):
+            if user_exists_in_hamro(phone=s.mothers_phone, school=branchuser.school):
                 registered = True
         s.parent_registered = registered
         parent_exists[s.reg_no] = registered
@@ -2235,7 +2231,7 @@ def edgradeitems(request, gradelevel):
             if getattr(s, "guardian_email", None):
                 emails_to_check.add(s.guardian_email)
                 
-        batch_results = lookup_hamro_users_batch(emails=list(emails_to_check), phones=list(phones_to_check))
+        batch_results = lookup_hamro_users_batch(emails=list(emails_to_check), phones=list(phones_to_check), school=schoolbranch)
         
         for s_sess in students:
             s = s_sess.student
@@ -4671,10 +4667,10 @@ def search(request):
         s = s_sess.student
         registered = False
         if getattr(s, "fathers_phone", None):
-            if user_exists_in_hamro(phone=s.fathers_phone):
+            if user_exists_in_hamro(phone=s.fathers_phone, school=schoolbranch):
                 registered = True
         if not registered and getattr(s, "mothers_phone", None):
-            if user_exists_in_hamro(phone=s.mothers_phone):
+            if user_exists_in_hamro(phone=s.mothers_phone, school=schoolbranch):
                 registered = True
         parent_exists[s.reg_no] = registered
 
@@ -11829,8 +11825,8 @@ def send_parent_message(request):
     parent_ids = []
     from sms.hamro import lookup_hamro_user
     def lookup_external_id(kind, val):
-        if kind == 'email': return lookup_hamro_user(email=val)
-        else: return lookup_hamro_user(phone=val)
+        if kind == 'email': return lookup_hamro_user(email=val, school=student.school)
+        else: return lookup_hamro_user(phone=val, school=student.school)
         
     for kind, val in contacts:
         ext_id = lookup_external_id(kind, val)
@@ -11853,10 +11849,10 @@ def send_parent_message(request):
         
     # Add parents to group (deduplicate)
     for pid in set(parent_ids):
-        add_user_to_group(pid, group.external_id)
+        add_user_to_group(pid, group.external_id, school=student.school)
         
     # Send message to group's thread
-    hamro_msg_id = send_message_to_thread(group.external_id, message_body)
+    hamro_msg_id = send_message_to_thread(group.external_id, message_body, school=student.school)
     
     # Log the message
     from sms.models import ParentMessageLog

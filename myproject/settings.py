@@ -172,7 +172,7 @@ LOGOUT_REDIRECT_URL = '/'
 BUSINESS_SITE = os.getenv('BUSINESS_SITE', '')
 HAMRO_BUSINESS_API_KEY = os.getenv('X-Business-API-Key', 'hamro_sys_key_789').strip(' "\'')
 HAMRO_SYSTEM_API_KEY = os.getenv('HAMRO_SYSTEM_API_KEY', 'hamro_sys_key_789').strip(' "\'')
-HAMRO_API_BASE_URL = os.getenv('HAMRO_API_BASE_URL', 'https://serverin.hamro.com').strip(' "\'')
+HAMRO_API_BASE_URL = os.getenv('HAMRO_API_BASE_URL', 'https://messengerin.hamro.com').strip(' "\'')
 
 WEBVIEW_API_KEY = os.getenv('WEBVIEW_API_KEY', 'hamro-sims-secure-api-key-2026')
 

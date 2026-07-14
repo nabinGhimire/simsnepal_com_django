@@ -58,7 +58,7 @@ def normalize_lookup_key(key):
         key = key[1:]
     return key
 
-def get_platform_users_map(emails, phones):
+def get_platform_users_map(emails, phones, school=None):
     """Perform batch lookup for given list of emails and phones, returning a lookup map with normalized keys.
     Utilizes PlatformUserMapping cache to minimize API calls and rate-limits unregistered lookups.
     """
@@ -109,7 +109,7 @@ def get_platform_users_map(emails, phones):
     if lookup_emails or lookup_phones:
         try:
             logger.info(f"Performing batch Hamro API lookup for {len(lookup_emails)} emails and {len(lookup_phones)} phones...")
-            api_results = lookup_hamro_users_batch(emails=lookup_emails, phones=lookup_phones)
+            api_results = lookup_hamro_users_batch(emails=lookup_emails, phones=lookup_phones, school=school)
             
             # Map of normalized looked up key -> external_id
             found_normalized = {}
@@ -157,7 +157,7 @@ def get_owner_platform_id(school):
     if not emails and not phones:
         return None
     try:
-        raw_map = lookup_hamro_users_batch(emails=emails, phones=phones)
+        raw_map = lookup_hamro_users_batch(emails=emails, phones=phones, school=school)
         if raw_map:
             for val in raw_map.values():
                 if val:
@@ -174,10 +174,9 @@ def setup_platform_integration(school):
     from sms.models import PlatformSetting
     from sms.hamro import sync_hamro_business, create_delegated_api_key
     
-    # If we already have a BUSINESS_KEY, don't overwrite it. Overwriting it would
-    # create a new key that cannot access previously created threads.
-    existing_key = PlatformSetting.objects.filter(key='BUSINESS_KEY').first()
-    if existing_key and existing_key.value:
+    # If this school already has a business_key, don't overwrite it.
+    # Overwriting would create a new key that cannot access previously created threads.
+    if school.business_key:
         return True
 
     owner_id = get_owner_platform_id(school)
@@ -196,8 +195,9 @@ def setup_platform_integration(school):
             logger.error("Failed to register platform business.")
             return False
 
-    # 2. Sync/Register Company Business
-    company_id_obj = PlatformSetting.objects.filter(key='COMPANY_BUSINESS_ID').first()
+    # 2. Sync/Register Company Business (per-school)
+    company_setting_key = f'COMPANY_BUSINESS_ID_{school.id}'
+    company_id_obj = PlatformSetting.objects.filter(key=company_setting_key).first()
     company_id = company_id_obj.value if company_id_obj else None
     new_company_id = sync_hamro_business(owner_id, school.name, "company", existing_id=company_id)
     if new_company_id:
@@ -205,28 +205,26 @@ def setup_platform_integration(school):
             company_id_obj.value = new_company_id
             company_id_obj.save()
         else:
-            PlatformSetting.objects.create(key='COMPANY_BUSINESS_ID', value=new_company_id)
+            PlatformSetting.objects.create(key=company_setting_key, value=new_company_id)
         company_id = new_company_id
     else:
         logger.error("Failed to register company business.")
         return False
 
-    # 3. Generate Delegated API Key for the Company
+    # 3. Generate Delegated API Key for the Company (per-school)
     key_name = f"SIMS Nepal — {school.name}"
     service_name = f"simsnepal_{school.id}"
     new_key = create_delegated_api_key(company_id, platform_id, key_name, service_name)
     if new_key:
-        if existing_key:
-            existing_key.value = new_key
-            existing_key.save()
-        else:
-            PlatformSetting.objects.create(key='BUSINESS_KEY', value=new_key)
+        # Save the business key on the school itself (per-school)
+        school.business_key = new_key
+        school.save(update_fields=['business_key'])
         return True
     
     logger.error("Failed to create delegated API key.")
     return False
 
-def sync_group_membership_cached(group_obj, target_members, admin_ids, force_refresh=False):
+def sync_group_membership_cached(group_obj, target_members, admin_ids, force_refresh=False, school=None):
     """
     Syncs the group membership with Hamro platform, utilizing a local GroupMembershipCache
     to minimize API requests.
@@ -250,7 +248,7 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, force_ref
     if not cached_members or force_refresh:
         try:
             logger.info(f"Cache miss or force refresh for group {group_obj.name}. Fetching participants from platform...")
-            participants = get_thread_participants(group_id)
+            participants = get_thread_participants(group_id, school=school)
             if participants is not None:
                 # Clear existing cache
                 GroupMembershipCache.objects.filter(group=group_obj).delete()
@@ -296,14 +294,13 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, force_ref
     if to_add:
         try:
             logger.info(f"Adding {len(to_add)} users to group {group_obj.name} on platform...")
-            add_users_to_thread_batch(group_id, list(to_add))
-            # Update cache
+            add_users_to_thread_batch(group_id, list(to_add), school=school)
+            # Update cache — default new users to 'member'; promote after API confirms
             bulk_objs = []
             for u_id in to_add:
-                role = 'admin' if u_id in admin_ids else 'member'
-                bulk_objs.append(GroupMembershipCache(group=group_obj, platform_user_id=u_id, role=role))
+                bulk_objs.append(GroupMembershipCache(group=group_obj, platform_user_id=u_id, role='member'))
                 # New members default to 'member' on addition. If their target role is 'admin', we must explicitly promote them.
-                if role == 'admin':
+                if u_id in admin_ids:
                     to_promote.append(u_id)
             GroupMembershipCache.objects.bulk_create(bulk_objs)
         except Exception as e:
@@ -313,7 +310,7 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, force_ref
     if to_remove:
         logger.info(f"Removing {len(to_remove)} users from group {group_obj.name} on platform...")
         try:
-            removed_ids = remove_users_from_thread_batch(group_id, list(to_remove))
+            removed_ids = remove_users_from_thread_batch(group_id, list(to_remove), school=school)
             if removed_ids:
                 GroupMembershipCache.objects.filter(group=group_obj, platform_user_id__in=removed_ids).delete()
             # Log any that failed to remove
@@ -327,7 +324,7 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, force_ref
     if to_promote or to_demote:
         try:
             logger.info(f"Batch updating roles for {len(to_promote)} admins and {len(to_demote)} members in group {group_obj.name}...")
-            success = update_user_roles_batch(group_id, admin_ids=to_promote, member_ids=to_demote)
+            success = update_user_roles_batch(group_id, admin_ids=to_promote, member_ids=to_demote, school=school)
             if success:
                 if to_promote:
                     GroupMembershipCache.objects.filter(group=group_obj, platform_user_id__in=to_promote).update(role='admin')
@@ -357,7 +354,7 @@ def sync_school_channel(school, session):
     channel_group = Group.objects.filter(session=session, is_broadcast=True, name=channel_name).first()
     
     if not channel_group:
-        ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}")
+        ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}", school=school)
         if ext_id:
             channel_group = Group.objects.create(
                 name=channel_name,
@@ -373,7 +370,7 @@ def sync_school_channel(school, session):
         # Check if external_id actually exists on platform FIRST
         if channel_group.external_id:
             try:
-                exists = thread_exists(channel_group.external_id)
+                exists = thread_exists(channel_group.external_id, school=school)
                 if exists is False:
                     logger.warning(f"School channel thread {channel_group.external_id} confirmed deleted on platform. Recreating.")
                     channel_group.external_id = None
@@ -385,14 +382,14 @@ def sync_school_channel(school, session):
 
         # Now update name if needed (only if thread still exists)
         if channel_group.external_id and channel_group.name != channel_name:
-            update_thread(channel_group.external_id, channel_name)
+            update_thread(channel_group.external_id, channel_name, school=school)
             channel_group.name = channel_name
             channel_group.save()
 
         # Recreate only if external_id is confirmed missing
         if not channel_group.external_id:
             try:
-                ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}")
+                ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}", school=school)
                 if ext_id:
                     channel_group.external_id = ext_id
                     channel_group.save()
@@ -435,7 +432,7 @@ def sync_school_channel(school, session):
     all_phones = list(set(phones_to_lookup + parent_phones))
     
     try:
-        users_map = get_platform_users_map(all_emails, all_phones)
+        users_map = get_platform_users_map(all_emails, all_phones, school=school)
     except Exception as e:
         logger.error(f"Platform user lookup failed/timed out: {e}")
         users_map = {}
@@ -495,7 +492,7 @@ def sync_school_channel(school, session):
     to_add_ids = list(set(to_add_ids))
 
     # Sync using our optimized membership cache helper
-    sync_group_membership_cached(channel_group, to_add_ids, admin_ids)
+    sync_group_membership_cached(channel_group, to_add_ids, admin_ids, school=school)
 
     return channel_group
 
@@ -506,7 +503,7 @@ def sync_teachers_group(school, session):
     group_obj = Group.objects.filter(session=session, is_broadcast=False, grade=None, section=None, name=group_name).first()
     
     if not group_obj:
-        ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}")
+        ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}", school=school)
         if ext_id:
             group_obj = Group.objects.create(
                 name=group_name,
@@ -522,7 +519,7 @@ def sync_teachers_group(school, session):
         # Check if external_id actually exists on platform FIRST
         if group_obj.external_id:
             try:
-                exists = thread_exists(group_obj.external_id)
+                exists = thread_exists(group_obj.external_id, school=school)
                 if exists is False:
                     logger.warning(f"Teachers group thread {group_obj.external_id} confirmed deleted on platform. Recreating.")
                     group_obj.external_id = None
@@ -534,14 +531,14 @@ def sync_teachers_group(school, session):
 
         # Now update name if needed (only if thread still exists)
         if group_obj.external_id and group_obj.name != group_name:
-            update_thread(group_obj.external_id, group_name)
+            update_thread(group_obj.external_id, group_name, school=school)
             group_obj.name = group_name
             group_obj.save()
 
         # Recreate only if external_id is confirmed missing
         if not group_obj.external_id:
             try:
-                ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}")
+                ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}", school=school)
                 if ext_id:
                     group_obj.external_id = ext_id
                     group_obj.save()
@@ -563,7 +560,7 @@ def sync_teachers_group(school, session):
     emails_to_lookup = [t.email for t in teacher_users if t.email]
     phones_to_lookup = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
     try:
-        users_map = get_platform_users_map(emails_to_lookup, phones_to_lookup)
+        users_map = get_platform_users_map(emails_to_lookup, phones_to_lookup, school=school)
     except Exception as e:
         logger.error(f"Platform user lookup failed/timed out for teachers group: {e}")
         users_map = {}
@@ -611,7 +608,7 @@ def sync_teachers_group(school, session):
 
     # Build admin ID set (owner + teachers)
     # admin_ids already contains owner and teacher IDs
-    sync_group_membership_cached(group_obj, to_add_ids, admin_ids)
+    sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school)
 
     return group_obj
 
@@ -653,7 +650,7 @@ def sync_single_group(group_name, grade, section, session, school):
     ).first()
     
     if not group_obj:
-        ext_id = create_thread('group', group_name, f"Class group for {group_name}")
+        ext_id = create_thread('group', group_name, f"Class group for {group_name}", school=school)
         if ext_id:
             group_obj = Group.objects.create(
                 name=group_name,
@@ -672,7 +669,7 @@ def sync_single_group(group_name, grade, section, session, school):
         # Use thread_exists (safe) instead of get_thread_users (destructive).
         if group_obj.external_id:
             try:
-                exists = thread_exists(group_obj.external_id)
+                exists = thread_exists(group_obj.external_id, school=school)
                 if exists is False:
                     logger.warning(f"Class group thread {group_obj.external_id} confirmed deleted on platform. Recreating.")
                     group_obj.external_id = None
@@ -684,14 +681,14 @@ def sync_single_group(group_name, grade, section, session, school):
 
         # Now update name if needed (only if thread still exists)
         if group_obj.external_id and group_obj.name != group_name:
-            update_thread(group_obj.external_id, group_name)
+            update_thread(group_obj.external_id, group_name, school=school)
             group_obj.name = group_name
             group_obj.save()
 
         # Recreate only if external_id is confirmed missing
         if not group_obj.external_id:
             try:
-                ext_id = create_thread('group', group_name, f"Class group for {group_name}")
+                ext_id = create_thread('group', group_name, f"Class group for {group_name}", school=school)
                 if ext_id:
                     group_obj.external_id = ext_id
                     group_obj.save()
@@ -735,7 +732,7 @@ def sync_single_group(group_name, grade, section, session, school):
     all_emails = list(set(teacher_emails + parent_emails))
     all_phones = list(set(parent_phones + teacher_phones))
     try:
-        users_map = get_platform_users_map(all_emails, all_phones)
+        users_map = get_platform_users_map(all_emails, all_phones, school=school)
     except Exception as e:
         logger.error(f"Platform user lookup failed/timed out for class group {group_name}: {e}")
         users_map = {}
@@ -794,7 +791,7 @@ def sync_single_group(group_name, grade, section, session, school):
     to_add_ids = list(set(to_add_ids))
 
     # Sync using our optimized membership cache helper
-    sync_group_membership_cached(group_obj, to_add_ids, admin_ids)
+    sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school)
 
     return group_obj
 
@@ -826,7 +823,7 @@ def cleanup_duplicate_threads(school, session, dry_run=False):
                 # Delete the Hamro thread for the discard group (if it has one)
                 if discard.external_id:
                     try:
-                        delete_thread(discard.external_id)
+                        delete_thread(discard.external_id, school=school)
                     except Exception as e:
                         logger.warning(f"Could not delete duplicate thread {discard.external_id}: {e}")
                     GroupMembershipCache.objects.filter(group=discard).delete()
@@ -842,7 +839,7 @@ def cleanup_duplicate_threads(school, session, dry_run=False):
             # Validate existing external_id
             if g.external_id:
                 try:
-                    exists = thread_exists(g.external_id)
+                    exists = thread_exists(g.external_id, school=school)
                     if exists is False:
                         if not dry_run:
                             g.external_id = None
@@ -874,7 +871,7 @@ def cleanup_duplicate_threads(school, session, dry_run=False):
             if not dry_run:
                 if discard.external_id:
                     try:
-                        delete_thread(discard.external_id)
+                        delete_thread(discard.external_id, school=school)
                     except Exception as e:
                         logger.warning(f"Could not delete duplicate thread {discard.external_id}: {e}")
                     GroupMembershipCache.objects.filter(group=discard).delete()
@@ -889,7 +886,7 @@ def cleanup_duplicate_threads(school, session, dry_run=False):
         else:
             if g.external_id:
                 try:
-                    exists = thread_exists(g.external_id)
+                    exists = thread_exists(g.external_id, school=school)
                     if exists is False:
                         if not dry_run:
                             g.external_id = None

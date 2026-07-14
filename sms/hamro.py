@@ -46,26 +46,36 @@ def get_platform_key():
         return env_key
     return get_platform_setting('PLATFORM_KEY', default='')
 
-def get_business_key():
-    """Fetch the business key stored in PlatformSetting (key='BUSINESS_KEY')."""
-    try:
-        return PlatformSetting.objects.get(key='BUSINESS_KEY').value
-    except PlatformSetting.DoesNotExist:
-        return None
+def get_business_key(school=None):
+    """Fetch the per-school business key from SchoolBranch.business_key.
+    Returns None if the school has no key configured — admin must set it up first.
+    """
+    if school and hasattr(school, 'business_key') and school.business_key:
+        return school.business_key
+    return None
 
 def get_base_url():
-    """Base URL for Hamro API – taken from settings, env or DB fallback."""
+    """Base URL for Hamro Platform API – taken from settings, env or DB fallback."""
     if hasattr(settings, 'HAMRO_API_BASE_URL') and settings.HAMRO_API_BASE_URL:
         return settings.HAMRO_API_BASE_URL.rstrip('/')
     env_url = os.getenv('HAMRO_API_BASE_URL')
     if env_url:
         return env_url.rstrip('/')
-    return get_platform_setting('HAMRO_API_BASE_URL', default='https://api.chat-hamro.com/api/v1')
+    return get_platform_setting('HAMRO_API_BASE_URL', default='https://messengerin.hamro.com')
 
-def get_headers():
+def get_system_base_url():
+    """Base URL for Hamro System API (business sync, key creation).
+    System endpoints run on messengerin.hamro.com, separate from the platform API.
+    """
+    env_url = os.getenv('HAMRO_SYSTEM_BASE_URL')
+    if env_url:
+        return env_url.rstrip('/')
+    return 'https://messengerin.hamro.com'
+
+def get_headers(school=None):
     """Headers required for every Hamro request, pulling both keys."""
     platform_key = get_platform_key()
-    business_key = get_business_key()
+    business_key = get_business_key(school=school)
     headers = {
         'Content-Type': 'application/json',
     }
@@ -86,7 +96,7 @@ def get_system_headers():
 
 def sync_hamro_business(user_id, name, business_type, existing_id=None):
     """Sync/Register a business on Hamro. Returns the business ID."""
-    url = f"{get_base_url()}/system/businesses/sync"
+    url = f"{get_system_base_url()}/system/businesses/sync"
     payload = {
         'user_id': str(user_id),
         'name': name,
@@ -110,7 +120,7 @@ def sync_hamro_business(user_id, name, business_type, existing_id=None):
 
 def create_delegated_api_key(company_id, platform_id, name, service_name):
     """Create a delegated API key for a company. Returns the new API key string."""
-    url = f"{get_base_url()}/system/businesses/{company_id}/api-keys/delegated"
+    url = f"{get_system_base_url()}/system/businesses/{company_id}/api-keys/delegated"
     payload = {
         'platform_business_id': str(platform_id),
         'name': name,
@@ -163,13 +173,13 @@ def ensure_channel(name, school=None):
             channel.save()
         if channel.name != name:
             if channel.external_id:
-                update_thread(channel.external_id, name)
+                update_thread(channel.external_id, name, school=school)
             channel.name = name
             channel.save()
         if channel.external_id:
             # Use thread_exists (safe) instead of get_thread_users (destructive).
             # Only destroy the reference on confirmed 404, not on transient errors.
-            exists = thread_exists(channel.external_id)
+            exists = thread_exists(channel.external_id, school=school)
             if exists is False:
                 logger.warning(f"Channel {name} (thread {channel.external_id}) confirmed deleted on platform. Recreating.")
                 channel.external_id = None
@@ -179,7 +189,7 @@ def ensure_channel(name, school=None):
                 # exists is True or None (transient error) — trust the DB record
                 return channel.external_id
 
-    external_id = create_thread('channel', name, f"School channel for {name}")
+    external_id = create_thread('channel', name, f"School channel for {name}", school=school)
     if external_id:
         if channel:
             channel.external_id = external_id
@@ -216,13 +226,13 @@ def ensure_group(name, session_id, grade=None, section=None, school=None):
     if group:
         if group.name != name:
             if group.external_id:
-                update_thread(group.external_id, name)
+                update_thread(group.external_id, name, school=school)
             group.name = name
             group.save()
         if group.external_id:
             # Use thread_exists (safe) instead of get_thread_users (destructive).
             # Only destroy the reference on confirmed 404, not on transient errors.
-            exists = thread_exists(group.external_id)
+            exists = thread_exists(group.external_id, school=school)
             if exists is False:
                 logger.warning(f"Group {name} (thread {group.external_id}) confirmed deleted on platform. Recreating.")
                 group.external_id = None
@@ -232,7 +242,7 @@ def ensure_group(name, session_id, grade=None, section=None, school=None):
                 # exists is True or None (transient error) — trust the DB record
                 return group
         
-    external_id = create_thread('group', name, f"Group for {name}")
+    external_id = create_thread('group', name, f"Group for {name}", school=school)
     if external_id:
         if group:
             # Group exists but no external_id, update it
@@ -254,17 +264,17 @@ def ensure_group(name, session_id, grade=None, section=None, school=None):
         logger.error(f'Failed to ensure group {name}')
         return None
 
-def add_user_to_group(user_external_id, group_external_id):
+def add_user_to_group(user_external_id, group_external_id, school=None):
     """Add a user to a Hamro group.
     Returns True on success.
     """
-    return add_user_to_thread(group_external_id, user_external_id)
+    return add_user_to_thread(group_external_id, user_external_id, school=school)
 
-def remove_user_from_group(user_external_id, group_external_id):
+def remove_user_from_group(user_external_id, group_external_id, school=None):
     """Remove a user from a Hamro group.
     Returns True on success.
     """
-    return remove_user_from_thread(group_external_id, user_external_id)
+    return remove_user_from_thread(group_external_id, user_external_id, school=school)
 
 def format_phone(phone):
     if not phone:
@@ -276,19 +286,19 @@ def format_phone(phone):
         phone = '977' + phone
     return '+' + phone
 
-def user_exists_in_hamro(email=None, phone=None):
+def user_exists_in_hamro(email=None, phone=None, school=None):
     """Check if a user exists on Hamro by email or phone.
     Returns the external_id if found, else None.
     """
-    return lookup_hamro_user(email=email, phone=phone)
+    return lookup_hamro_user(email=email, phone=phone, school=school)
 
-def list_threads():
+def list_threads(school=None):
     """List all threads owned by this platform on Hamro.
     Returns a list of dicts with 'id', 'name', 'type' keys, or None on error.
     """
     url = f"{get_base_url()}/api/v1/platform/threads"
     try:
-        response = _request_with_retry('get', url, headers=get_headers(), max_retries=2, timeout=15)
+        response = _request_with_retry('get', url, headers=get_headers(school=school), max_retries=2, timeout=15)
         if response.status_code == 200:
             data = response.json()
             if isinstance(data, list):
@@ -301,7 +311,7 @@ def list_threads():
         logger.error(f"Error listing threads: {e}")
     return None
 
-def create_thread(thread_type, name, description=""):
+def create_thread(thread_type, name, description="", school=None):
     """Create a new thread (group or channel) in Hamro platform."""
     url = f"{get_base_url()}/api/v1/platform/threads"
     payload = {
@@ -310,7 +320,7 @@ def create_thread(thread_type, name, description=""):
         'description': description
     }
     try:
-        response = requests.post(url, json=payload, headers=get_headers())
+        response = requests.post(url, json=payload, headers=get_headers(school=school))
         if response.status_code in (200, 201):
             data = response.json()
             return data.get('id')
@@ -320,7 +330,7 @@ def create_thread(thread_type, name, description=""):
         logger.error(f"Error creating thread {name}: {e}")
     return None
 
-def update_thread(thread_id, name, description=""):
+def update_thread(thread_id, name, description="", school=None):
     """Update an existing thread's name/description on Hamro platform."""
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}"
     payload = {
@@ -328,7 +338,7 @@ def update_thread(thread_id, name, description=""):
         'description': description
     }
     try:
-        response = requests.put(url, json=payload, headers=get_headers())
+        response = requests.put(url, json=payload, headers=get_headers(school=school))
         if response.status_code == 200:
             logger.info(f"Successfully updated thread {thread_id} name to '{name}' on platform.")
             return True
@@ -338,14 +348,14 @@ def update_thread(thread_id, name, description=""):
         logger.error(f"Error updating thread {thread_id}: {e}")
     return False
 
-def thread_exists(thread_id):
+def thread_exists(thread_id, school=None):
     """Check if a thread exists on Hamro by making a lightweight GET request.
     Returns True if the thread exists (200), False if not (404).
     Returns None on transient errors (network, 5xx, etc.) — caller should NOT treat as deleted.
     """
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}"
     try:
-        response = _request_with_retry('get', url, headers=get_headers(), max_retries=2, timeout=10)
+        response = _request_with_retry('get', url, headers=get_headers(school=school), max_retries=2, timeout=10)
         if response.status_code == 200:
             return True
         elif response.status_code == 404:
@@ -357,11 +367,11 @@ def thread_exists(thread_id):
         logger.warning(f"Transient error checking thread {thread_id}: {e}")
         return None
 
-def delete_thread(thread_id):
+def delete_thread(thread_id, school=None):
     """Delete a thread on Hamro platform."""
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}"
     try:
-        response = _request_with_retry('delete', url, headers=get_headers(), timeout=10)
+        response = _request_with_retry('delete', url, headers=get_headers(school=school), timeout=10)
         if response.status_code in (200, 204, 202):
             return True
         else:
@@ -370,14 +380,14 @@ def delete_thread(thread_id):
         logger.error(f"Error deleting thread {thread_id}: {e}")
     return False
 
-def add_user_to_thread(thread_id, user_id):
+def add_user_to_thread(thread_id, user_id, school=None):
     """Add a user to a thread in Hamro platform."""
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
     payload = {
         'user_id': user_id
     }
     try:
-        response = requests.post(url, json=payload, headers=get_headers())
+        response = requests.post(url, json=payload, headers=get_headers(school=school))
         if response.status_code in (200, 201):
             return True
         else:
@@ -386,14 +396,14 @@ def add_user_to_thread(thread_id, user_id):
         logger.error(f"Error adding user to thread: {e}")
     return False
 
-def remove_user_from_thread(thread_id, user_id):
+def remove_user_from_thread(thread_id, user_id, school=None):
     """Remove a user from a thread in Hamro platform."""
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
     payload = {
         'user_id': user_id
     }
     try:
-        response = requests.delete(url, json=payload, headers=get_headers())
+        response = requests.delete(url, json=payload, headers=get_headers(school=school))
         if response.status_code in (200, 204, 202):
             return True
         else:
@@ -402,7 +412,7 @@ def remove_user_from_thread(thread_id, user_id):
         logger.error(f"Error removing user from thread: {e}")
     return False
 
-def remove_users_from_thread_batch(thread_id, user_ids):
+def remove_users_from_thread_batch(thread_id, user_ids, school=None):
     """Remove multiple users from a thread.
     Tries the batch DELETE endpoint first; if unsupported (405), falls back
     to individual remove_user_from_thread calls.
@@ -418,7 +428,7 @@ def remove_users_from_thread_batch(thread_id, user_ids):
             continue
         payload = {'user_ids': chunk, 'action': 'remove'}
         try:
-            response = _request_with_retry('post', url, json=payload, headers=get_headers(), timeout=30)
+            response = _request_with_retry('post', url, json=payload, headers=get_headers(school=school), timeout=30)
             if response.status_code in (200, 204, 202):
                 removed.update(chunk)
             elif response.status_code == 405:
@@ -435,12 +445,12 @@ def remove_users_from_thread_batch(thread_id, user_ids):
     remaining = [uid for uid in user_ids if uid not in removed]
     if remaining:
         for uid in remaining:
-            if remove_user_from_thread(thread_id, uid):
+            if remove_user_from_thread(thread_id, uid, school=school):
                 removed.add(uid)
 
     return removed
 
-def send_message_to_thread(thread_id, body):
+def send_message_to_thread(thread_id, body, school=None):
     """Send a message to a thread in Hamro platform."""
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/messages"
     payload = {
@@ -448,7 +458,7 @@ def send_message_to_thread(thread_id, body):
         'type': 'text'
     }
     try:
-        response = requests.post(url, json=payload, headers=get_headers())
+        response = requests.post(url, json=payload, headers=get_headers(school=school))
         if response.status_code in (200, 201):
             data = response.json()
             return data.get('id') or "success"
@@ -458,7 +468,7 @@ def send_message_to_thread(thread_id, body):
         logger.error(f"Error sending message to thread: {e}")
     return None
 
-def lookup_hamro_user(email=None, phone=None):
+def lookup_hamro_user(email=None, phone=None, school=None):
     """Lookup a user on Hamro platform by email or phone.
     Returns external user ID if found, else None.
     """
@@ -473,7 +483,7 @@ def lookup_hamro_user(email=None, phone=None):
     else:
         return None
     try:
-        response = requests.get(url, params=params, headers=get_headers())
+        response = requests.get(url, params=params, headers=get_headers(school=school))
         if response.status_code == 200:
             data = response.json()
             if data.get('exists') and data.get('user'):
@@ -489,7 +499,7 @@ def chunk_list(lst, chunk_size):
     for i in range(0, len(lst), chunk_size):
         yield lst[i:i + chunk_size]
 
-def lookup_hamro_users_batch(emails=None, phones=None):
+def lookup_hamro_users_batch(emails=None, phones=None, school=None):
     """Lookup multiple users on Hamro platform by lists of emails and phones.
     Returns a dictionary of {email_or_phone: user_id} on success.
     Raises requests.HTTPError or requests.RequestException on failure.
@@ -520,7 +530,7 @@ def lookup_hamro_users_batch(emails=None, phones=None):
             'emails': e_chunk,
             'phones': p_chunk
         }
-        response = _request_with_retry('post', url, json=payload, headers=get_headers())
+        response = _request_with_retry('post', url, json=payload, headers=get_headers(school=school))
         if response.status_code == 200:
             data = response.json()
             users_list = data.get('users', [])
@@ -535,7 +545,7 @@ def lookup_hamro_users_batch(emails=None, phones=None):
             raise requests.HTTPError(f"Batch user lookup failed: status={response.status_code}, response={response.text}")
     return results
 
-def add_users_to_thread_batch(thread_id, user_ids):
+def add_users_to_thread_batch(thread_id, user_ids, school=None):
     """Add multiple users to a thread in Hamro platform using batch endpoint."""
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/batch"
     user_ids = list(set(user_ids))
@@ -548,7 +558,7 @@ def add_users_to_thread_batch(thread_id, user_ids):
             'user_ids': chunk
         }
         try:
-            response = _request_with_retry('post', url, json=payload, headers=get_headers())
+            response = _request_with_retry('post', url, json=payload, headers=get_headers(school=school))
             if response.status_code in (200, 201):
                 last_response = response.json()
             else:
@@ -558,13 +568,13 @@ def add_users_to_thread_batch(thread_id, user_ids):
             
     return last_response
 
-def get_thread_participants(thread_id):
+def get_thread_participants(thread_id, school=None):
     """Fetch current participant details in a thread from Hamro platform.
     Returns list of dicts containing 'user_id' and 'admin' on success, or None if 404.
     Raises requests.HTTPError or requests.RequestException on failure.
     """
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
-    response = _request_with_retry('get', url, headers=get_headers())
+    response = _request_with_retry('get', url, headers=get_headers(school=school))
     if response.status_code == 200:
         users_list = response.json()
         return [{'user_id': u.get('user_id'), 'admin': u.get('admin', False)} for u in users_list if u.get('user_id')]
@@ -574,24 +584,24 @@ def get_thread_participants(thread_id):
     else:
         raise requests.HTTPError(f"Failed to fetch users for thread {thread_id}: status={response.status_code}, response={response.text}")
 
-def get_thread_users(thread_id):
+def get_thread_users(thread_id, school=None):
     """Fetch current user_ids in a thread from Hamro platform.
     Returns list of user_ids on success, or None if the thread does not exist (404).
     Raises requests.HTTPError or requests.RequestException on failure.
     """
-    participants = get_thread_participants(thread_id)
+    participants = get_thread_participants(thread_id, school=school)
     if participants is None:
         return None
     return [p['user_id'] for p in participants]
 
-def update_user_role_in_thread(thread_id, user_id, role):
+def update_user_role_in_thread(thread_id, user_id, role, school=None):
     """Update a user's role (admin or member) in a thread on Hamro platform."""
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/{user_id}/role"
     payload = {
         'role': role
     }
     try:
-        response = requests.patch(url, json=payload, headers=get_headers())
+        response = requests.patch(url, json=payload, headers=get_headers(school=school))
         if response.status_code == 200:
             logger.info(f"Successfully updated role of user {user_id} to '{role}' in thread {thread_id}.")
             return True
@@ -601,8 +611,11 @@ def update_user_role_in_thread(thread_id, user_id, role):
         logger.error(f"Error updating user role in thread: {e}")
     return False
 
-def update_user_roles_batch(thread_id, admin_ids=None, member_ids=None):
-    """Update roles of multiple users in bulk in a thread on Hamro platform."""
+def update_user_roles_batch(thread_id, admin_ids=None, member_ids=None, school=None):
+    """Update roles of multiple users in bulk in a thread on Hamro platform.
+    Tries batch endpoint first; if it fails, falls back to individual update_user_role_in_thread calls.
+    Returns True if all roles were updated successfully.
+    """
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/role/batch"
     payload = {}
     if admin_ids:
@@ -614,12 +627,23 @@ def update_user_roles_batch(thread_id, admin_ids=None, member_ids=None):
         return True
 
     try:
-        response = _request_with_retry('patch', url, json=payload, headers=get_headers())
+        response = _request_with_retry('patch', url, json=payload, headers=get_headers(school=school))
         if response.status_code in (200, 201, 204):
             logger.info(f"Successfully batch updated roles in thread {thread_id}.")
             return True
         else:
-            logger.error(f"Failed to batch update roles in thread {thread_id}: status={response.status_code}, response={response.text}")
+            logger.warning(f"Batch role update failed for thread {thread_id}: status={response.status_code}, response={response.text}. Falling back to individual updates.")
     except Exception as e:
-        logger.error(f"Error batch updating roles in thread {thread_id}: {e}")
-    return False
+        logger.warning(f"Batch role update error for thread {thread_id}: {e}. Falling back to individual updates.")
+
+    # Fallback: promote/demote individually
+    all_ok = True
+    if admin_ids:
+        for uid in admin_ids:
+            if not update_user_role_in_thread(thread_id, uid, 'admin', school=school):
+                all_ok = False
+    if member_ids:
+        for uid in member_ids:
+            if not update_user_role_in_thread(thread_id, uid, 'member', school=school):
+                all_ok = False
+    return all_ok

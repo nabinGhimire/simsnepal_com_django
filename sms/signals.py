@@ -13,6 +13,7 @@ def sync_parent_to_hamro(sender, instance, **kwargs):
     Creates/updates the group ``Student_<reg_no>_Parents`` and adds any
     registered Hamro users for the current contacts.
     """
+    school = instance.school
     contacts = []
     if getattr(instance, "fathers_phone", None):
         contacts.append(("phone", instance.fathers_phone))
@@ -28,7 +29,7 @@ def sync_parent_to_hamro(sender, instance, **kwargs):
         base = get_base_url()
         url = f"{base}/users?{kind}={val}"
         try:
-            resp = requests.get(url, headers=get_headers())
+            resp = requests.get(url, headers=get_headers(school=school))
             resp.raise_for_status()
             data = resp.json()
             if data and isinstance(data, list) and data:
@@ -47,10 +48,10 @@ def sync_parent_to_hamro(sender, instance, **kwargs):
 
     group_name = f"Student_{instance.reg_no}_Parents"
     session = get_current_session()
-    group = ensure_group(group_name, session.id, school=instance.school)
+    group = ensure_group(group_name, session.id, school=school)
     if not group:
         logger.error(f"Failed to create/retrieve Hamro group {group_name}")
         return
 
     for pid in set(parent_ids):
-        add_user_to_group(pid, group.external_id)
+        add_user_to_group(pid, group.external_id, school=school)
