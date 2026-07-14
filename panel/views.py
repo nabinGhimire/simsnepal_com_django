@@ -262,29 +262,27 @@ def sync_platform_view(request):
 @login_required
 def sync_single_group_view(request, group_id):
     """Sync a single group's membership to Hamro. Lightweight — runs fast, no timeout risk."""
-    import json
     import logging
     import time as time_mod
-    from panel.platform_sync import sync_group_membership_cached, get_owner_platform_id, get_platform_users_map, normalize_lookup_key
-    from sms.hamro import format_phone, create_thread, thread_exists, update_thread
+    from panel.platform_sync import sync_group_membership_cached, get_owner_platform_id, get_platform_users_map
+    from sms.hamro import format_phone, create_thread, thread_exists
 
     _sync_logger = logging.getLogger('panel.sync')
+    group_obj = None
 
     try:
-        branch_user = BranchUser.objects.select_related('school__owner').get(user=request.user)
+        branch_user = BranchUser.objects.select_related('school__owner__user').get(user=request.user)
+        is_admin = (branch_user.school.owner.user == request.user)
+        if not is_admin:
+            return JsonResponse({'ok': False, 'error': 'Only school admin can sync'}, status=403)
+        school = branch_user.school
+        group_obj = Group.objects.select_related('grade', 'section', 'school').get(id=group_id, school=school)
     except BranchUser.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Unauthorized'}, status=403)
-
-    is_admin = (branch_user.school.owner.user == request.user)
-    if not is_admin:
-        return JsonResponse({'ok': False, 'error': 'Only school admin can sync'}, status=403)
-
-    school = branch_user.school
-
-    try:
-        group_obj = Group.objects.select_related('grade', 'section', 'school').get(id=group_id, school=school)
     except Group.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Group not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
     if not school.business_key:
         return JsonResponse({'ok': False, 'error': 'No business key configured. Run full sync first.'}, status=400)
@@ -325,7 +323,6 @@ def sync_single_group_view(request, group_id):
             admin_ids.add(owner_platform_id)
 
         if group_obj.is_broadcast:
-            # School channel: all teachers + all parents
             teacher_users = [
                 t.teacher for t in Teacher.objects.filter(
                     Q(added_by__branchuser__school=school) |
@@ -348,10 +345,9 @@ def sync_single_group_view(request, group_id):
                 if s.guardian_phone: phones.append(format_phone(str(s.guardian_phone)))
 
             users_map = get_platform_users_map(list(set(emails)), list(set(phones)), school=school)
-            for ext_id in users_map.values():
-                if ext_id:
-                    to_add_ids.append(ext_id)
-            # Teachers are admins in school channel
+            for eid in users_map.values():
+                if eid:
+                    to_add_ids.append(eid)
             for t_user in teacher_users:
                 t_obj = Teacher.objects.filter(teacher=t_user).first()
                 if t_obj and t_obj.external_id:
@@ -359,7 +355,6 @@ def sync_single_group_view(request, group_id):
                     admin_ids.add(t_obj.external_id)
 
         elif not group_obj.grade and not group_obj.section:
-            # Teachers group
             teacher_users = [
                 t.teacher for t in Teacher.objects.filter(
                     Q(added_by__branchuser__school=school) |
@@ -369,13 +364,12 @@ def sync_single_group_view(request, group_id):
             emails = [t.email for t in teacher_users if t.email]
             phones = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
             users_map = get_platform_users_map(emails, phones, school=school)
-            for ext_id in users_map.values():
-                if ext_id:
-                    to_add_ids.append(ext_id)
-                    admin_ids.add(ext_id)
+            for eid in users_map.values():
+                if eid:
+                    to_add_ids.append(eid)
+                    admin_ids.add(eid)
 
         else:
-            # Class/section group: section teachers + parents
             teaching_accesses = TeacherSubjectAccess.objects.filter(
                 session=current_session, grade=group_obj.grade, section=group_obj.section, status=True
             ).select_related('teacher')
@@ -396,9 +390,9 @@ def sync_single_group_view(request, group_id):
                 if s.guardian_phone: phones.append(format_phone(str(s.guardian_phone)))
 
             users_map = get_platform_users_map(list(set(emails)), list(set(phones)), school=school)
-            for ext_id in users_map.values():
-                if ext_id:
-                    to_add_ids.append(ext_id)
+            for eid in users_map.values():
+                if eid:
+                    to_add_ids.append(eid)
             for t_user in teaching_users:
                 t_obj = Teacher.objects.filter(teacher=t_user).first()
                 if t_obj and t_obj.external_id:
@@ -413,7 +407,8 @@ def sync_single_group_view(request, group_id):
         return JsonResponse({'ok': True, 'group': group_obj.name, 'members': len(to_add_ids), 'elapsed': f'{elapsed:.1f}s'})
 
     except Exception as e:
-        _sync_logger.exception(f"Single group sync failed for {group_obj.name}")
+        group_name = group_obj.name if group_obj else f'group {group_id}'
+        _sync_logger.exception(f"Single group sync failed for {group_name}")
         return JsonResponse({'ok': False, 'error': str(e)})
 
 
