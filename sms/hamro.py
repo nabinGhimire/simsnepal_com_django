@@ -161,11 +161,11 @@ def ensure_channel(name, school=None):
     """
     session = get_current_session()
     
-    # Query without session filtering, but with school if available
+    # Query by name + school (ignore is_broadcast flag — may have been set incorrectly)
     if school:
-        channel = Group.objects.filter(is_broadcast=True, school=school).first()
+        channel = Group.objects.filter(name=name, school=school).first()
     else:
-        channel = Group.objects.filter(is_broadcast=True, name=name).first()
+        channel = Group.objects.filter(name=name).first()
         
     if channel:
         if channel.session != session:

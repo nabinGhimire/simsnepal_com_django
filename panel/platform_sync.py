@@ -350,8 +350,8 @@ def normalize_group_name(grade_name, section_name, session_year, section_count):
 def sync_school_channel(school, session):
     """Ensure a school-wide channel exists and add all teachers and parents (batch mode)."""
     channel_name = school.name
-    # Query by session and is_broadcast=True to uniquely identify the channel
-    channel_group = Group.objects.filter(session=session, is_broadcast=True, name=channel_name).first()
+    # Query by name, session, school — ignore is_broadcast flag (it may have been set incorrectly)
+    channel_group = Group.objects.filter(session=session, name=channel_name, school=school).first()
     
     if not channel_group:
         ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}", school=school)
@@ -499,8 +499,8 @@ def sync_school_channel(school, session):
 def sync_teachers_group(school, session):
     """Ensure a teachers-only discussion group exists and populate with all teachers (batch mode)."""
     group_name = f"{school.name} Teachers"
-    # Query by session, grade=None, section=None, is_broadcast=False to uniquely identify teachers group
-    group_obj = Group.objects.filter(session=session, is_broadcast=False, grade=None, section=None, name=group_name).first()
+    # Query by name, session, school — ignore is_broadcast flag (it may have been set incorrectly)
+    group_obj = Group.objects.filter(session=session, grade=None, section=None, name=group_name, school=school).first()
     
     if not group_obj:
         ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}", school=school)
