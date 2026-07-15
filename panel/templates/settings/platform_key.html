@@ -71,6 +71,57 @@
 </div>
 
 {% if business_key %}
+<div class="row g-4 mt-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Thread Type Configuration</h3>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          <strong>Channel vs Group:</strong>
+          <ul class="mb-0 mt-1">
+            <li><strong>Channel</strong> (broadcast): Only admin can send messages. Good for announcements.</li>
+            <li><strong>Group</strong> (discussion): All members can send messages. Good for discussions.</li>
+          </ul>
+          <p class="mt-2 mb-0">Changing type will update the thread on Hamro platform in-place. No members will be removed.</p>
+        </div>
+        <form method="POST" class="needs-validation" novalidate>
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" name="school_channel_as_channel" value="1" {% if school_channel_as_channel %}checked{% endif %}>
+              <span class="form-check-label">School-wide thread</span>
+            </label>
+            <small class="text-muted">When ON: Channel (only admin can post). When OFF: Group (all teachers & parents can post).</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" name="teachers_as_channel" value="1" {% if teachers_as_channel %}checked{% endif %}>
+              <span class="form-check-label">Teachers thread</span>
+            </label>
+            <small class="text-muted">When ON: Channel (only admin can post). When OFF: Group (all teachers can post).</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" name="class_groups_as_channel" value="1" {% if class_groups_as_channel %}checked{% endif %}>
+              <span class="form-check-label">Class/section threads</span>
+            </label>
+            <small class="text-muted">When ON: Channels (only admin can post). When OFF: Groups (teachers & parents can post).</small>
+          </div>
+          <div class="text-end">
+            <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
+              <i class="ti ti-save me-1"></i> Save Thread Types
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if business_key %}
 <script>
   var originalPlatformName = document.getElementById('platform_name_input').value;
   var busInput = document.getElementById('business_key_input');

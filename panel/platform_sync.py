@@ -348,25 +348,38 @@ def normalize_group_name(grade_name, section_name, session_year, section_count):
         return f"{prefix}{grade_name} {session_year}"
 
 def sync_school_channel(school, session):
-    """Ensure a school-wide channel exists and add all teachers and parents (batch mode)."""
+    """Ensure a school-wide channel/group exists and add all teachers and parents (batch mode).
+    Thread type (channel vs group) is controlled by school.school_channel_as_channel config.
+    """
     channel_name = school.name
+    desired_type = 'channel' if school.school_channel_as_channel else 'group'
+    is_channel = school.school_channel_as_channel
+
     # Query by name, session, school — ignore is_broadcast flag (it may have been set incorrectly)
     channel_group = Group.objects.filter(session=session, name=channel_name, school=school).first()
     
     if not channel_group:
-        ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}", school=school)
+        ext_id = create_thread(desired_type, channel_name, f"School {desired_type} for {channel_name}", school=school)
         if ext_id:
             channel_group = Group.objects.create(
                 name=channel_name,
                 session=session,
-                is_broadcast=True,
+                is_broadcast=is_channel,
                 external_id=ext_id,
                 school=school,
             )
         else:
-            logger.error(f"Could not create school channel on platform for {channel_name}")
+            logger.error(f"Could not create school {desired_type} on platform for {channel_name}")
             return None
     else:
+        # Check if thread type matches config — if not, update in-place via is_channel
+        current_is_broadcast = channel_group.is_broadcast
+        if current_is_broadcast != is_channel and channel_group.external_id:
+            logger.info(f"School channel type changed from is_broadcast={current_is_broadcast} to is_channel={is_channel}. Updating thread.")
+            update_thread(channel_group.external_id, channel_name, is_channel=is_channel, school=school)
+            channel_group.is_broadcast = is_channel
+            channel_group.save(update_fields=['is_broadcast'])
+
         # Check if external_id actually exists on platform FIRST
         if channel_group.external_id:
             try:
@@ -389,7 +402,7 @@ def sync_school_channel(school, session):
         # Recreate only if external_id is confirmed missing
         if not channel_group.external_id:
             try:
-                ext_id = create_thread('channel', channel_name, f"School channel for {channel_name}", school=school)
+                ext_id = create_thread(desired_type, channel_name, f"School {desired_type} for {channel_name}", school=school)
                 if ext_id:
                     channel_group.external_id = ext_id
                     channel_group.save()
@@ -497,25 +510,38 @@ def sync_school_channel(school, session):
     return channel_group
 
 def sync_teachers_group(school, session):
-    """Ensure a teachers-only discussion group exists and populate with all teachers (batch mode)."""
+    """Ensure a teachers-only group/channel exists and populate with all teachers (batch mode).
+    Thread type (channel vs group) is controlled by school.teachers_as_channel config.
+    """
     group_name = f"{school.name} Teachers"
+    desired_type = 'channel' if school.teachers_as_channel else 'group'
+    is_channel = school.teachers_as_channel
+
     # Query by name, session, school — ignore is_broadcast flag (it may have been set incorrectly)
     group_obj = Group.objects.filter(session=session, grade=None, section=None, name=group_name, school=school).first()
     
     if not group_obj:
-        ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}", school=school)
+        ext_id = create_thread(desired_type, group_name, f"Teachers {desired_type} for {school.name}", school=school)
         if ext_id:
             group_obj = Group.objects.create(
                 name=group_name,
                 session=session,
-                is_broadcast=False,
+                is_broadcast=is_channel,
                 external_id=ext_id,
                 school=school,
             )
         else:
-            logger.error(f"Could not create teachers group on platform for {group_name}")
+            logger.error(f"Could not create teachers {desired_type} on platform for {group_name}")
             return None
     else:
+        # Check if thread type matches config — if not, update in-place via is_channel
+        current_is_broadcast = group_obj.is_broadcast
+        if current_is_broadcast != is_channel and group_obj.external_id:
+            logger.info(f"Teachers group type changed from is_broadcast={current_is_broadcast} to is_channel={is_channel}. Updating thread.")
+            update_thread(group_obj.external_id, group_name, is_channel=is_channel, school=school)
+            group_obj.is_broadcast = is_channel
+            group_obj.save(update_fields=['is_broadcast'])
+
         # Check if external_id actually exists on platform FIRST
         if group_obj.external_id:
             try:
@@ -538,7 +564,7 @@ def sync_teachers_group(school, session):
         # Recreate only if external_id is confirmed missing
         if not group_obj.external_id:
             try:
-                ext_id = create_thread('group', group_name, f"Teachers discussion group for {school.name}", school=school)
+                ext_id = create_thread(desired_type, group_name, f"Teachers {desired_type} for {school.name}", school=school)
                 if ext_id:
                     group_obj.external_id = ext_id
                     group_obj.save()
@@ -640,33 +666,46 @@ def sync_grade_groups(school, session):
     return sync_results
 
 def sync_single_group(group_name, grade, section, session, school):
-    """Sync a single group, adding section teachers and parents (batch mode)."""
-    # Query by grade, section, session, is_broadcast=False to uniquely identify the section group
+    """Sync a single group, adding section teachers and parents (batch mode).
+    Thread type (channel vs group) is controlled by school.class_groups_as_channel config.
+    """
+    is_channel = school.class_groups_as_channel
+    desired_type = 'channel' if is_channel else 'group'
+
+    # Query by grade, section, session, school — ignore is_broadcast flag
     group_obj = Group.objects.filter(
         grade=grade,
         section=section,
         session=session,
-        is_broadcast=False
+        school=school,
+        name=group_name
     ).first()
     
     if not group_obj:
-        ext_id = create_thread('group', group_name, f"Class group for {group_name}", school=school)
+        ext_id = create_thread(desired_type, group_name, f"Class {desired_type} for {group_name}", school=school)
         if ext_id:
             group_obj = Group.objects.create(
                 name=group_name,
                 session=session,
                 grade=grade,
                 section=section,
-                is_broadcast=False,
+                is_broadcast=is_channel,
                 external_id=ext_id,
                 school=school,
             )
         else:
-            logger.error(f"Could not create class group on platform for {group_name}")
+            logger.error(f"Could not create class {desired_type} on platform for {group_name}")
             return None
     else:
+        # Check if thread type matches config — if not, update in-place via is_channel
+        current_is_broadcast = group_obj.is_broadcast
+        if current_is_broadcast != is_channel and group_obj.external_id:
+            logger.info(f"Class group {group_name} type changed from is_broadcast={current_is_broadcast} to is_channel={is_channel}. Updating thread.")
+            update_thread(group_obj.external_id, group_name, is_channel=is_channel, school=school)
+            group_obj.is_broadcast = is_channel
+            group_obj.save(update_fields=['is_broadcast'])
+
         # Check if external_id actually exists on platform FIRST
-        # Use thread_exists (safe) instead of get_thread_users (destructive).
         if group_obj.external_id:
             try:
                 exists = thread_exists(group_obj.external_id, school=school)
@@ -688,7 +727,7 @@ def sync_single_group(group_name, grade, section, session, school):
         # Recreate only if external_id is confirmed missing
         if not group_obj.external_id:
             try:
-                ext_id = create_thread('group', group_name, f"Class group for {group_name}", school=school)
+                ext_id = create_thread(desired_type, group_name, f"Class {desired_type} for {group_name}", school=school)
                 if ext_id:
                     group_obj.external_id = ext_id
                     group_obj.save()

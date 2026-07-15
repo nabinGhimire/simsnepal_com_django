@@ -112,6 +112,11 @@ class SchoolBranch(models.Model):
     slogan = models.CharField(max_length=250, blank=True, null=True)
     business_key = models.CharField(max_length=255, blank=True, null=True, help_text="Delegated Hamro API business key for this school")
 
+    # Hamro thread type config: False = group (two-way), True = channel (broadcast/one-way)
+    school_channel_as_channel = models.BooleanField(default=True, help_text="School-wide announcements as channel (broadcast)")
+    teachers_as_channel = models.BooleanField(default=False, help_text="Teachers group as channel (broadcast) instead of group (discussion)")
+    class_groups_as_channel = models.BooleanField(default=False, help_text="Class/section groups as channel (broadcast) instead of group (discussion)")
+
     def __str__(self):
         name_location = str(self.name) + ',' + str(self.location)
         return name_location

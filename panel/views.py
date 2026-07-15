@@ -103,24 +103,31 @@ def platform_setting_view(request):
     platform_key_obj = PlatformSetting.objects.filter(key='PLATFORM_KEY').first()
 
     if request.method == 'POST':
-        # Platform Name (value of PLATFORM_KEY)
-        platform_name = request.POST.get('platform_name')
-        # Business Key (per-school, stored on SchoolBranch)
-        business_key = request.POST.get('business_key')
-        # Update or create PLATFORM_KEY setting
-        if platform_key_obj:
-            if platform_name is not None:
-                platform_key_obj.value = platform_name
-                platform_key_obj.save()
+        # Check which form was submitted
+        if 'school_channel_as_channel' in request.POST or 'teachers_as_channel' in request.POST or 'class_groups_as_channel' in request.POST:
+            # Thread type config form
+            school.school_channel_as_channel = 'school_channel_as_channel' in request.POST
+            school.teachers_as_channel = 'teachers_as_channel' in request.POST
+            school.class_groups_as_channel = 'class_groups_as_channel' in request.POST
+            school.save(update_fields=['school_channel_as_channel', 'teachers_as_channel', 'class_groups_as_channel'])
+            messages.success(request, 'Thread type settings saved')
+            return redirect('panel:platform_setting')
         else:
-            if platform_name is not None:
-                PlatformSetting.objects.create(key='PLATFORM_KEY', value=platform_name)
-        # Update per-school business key (admin only)
-        if is_admin and business_key is not None:
-            school.business_key = business_key
-            school.save(update_fields=['business_key'])
-        messages.success(request, 'Platform settings saved')
-        return redirect('panel:platform_setting')
+            # Platform name / business key form
+            platform_name = request.POST.get('platform_name')
+            business_key = request.POST.get('business_key')
+            if platform_key_obj:
+                if platform_name is not None:
+                    platform_key_obj.value = platform_name
+                    platform_key_obj.save()
+            else:
+                if platform_name is not None:
+                    PlatformSetting.objects.create(key='PLATFORM_KEY', value=platform_name)
+            if is_admin and business_key is not None:
+                school.business_key = business_key
+                school.save(update_fields=['business_key'])
+            messages.success(request, 'Platform settings saved')
+            return redirect('panel:platform_setting')
     else:
         # No form used; fields will be rendered manually
         pass
@@ -130,6 +137,9 @@ def platform_setting_view(request):
         'platform_key_obj': platform_key_obj,
         'business_key': school.business_key or '',
         'is_admin': is_admin,
+        'school_channel_as_channel': school.school_channel_as_channel,
+        'teachers_as_channel': school.teachers_as_channel,
+        'class_groups_as_channel': school.class_groups_as_channel,
     }
     return render(request, 'settings/platform_key.html', context)
 

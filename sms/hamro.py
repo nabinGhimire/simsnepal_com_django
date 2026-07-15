@@ -330,13 +330,17 @@ def create_thread(thread_type, name, description="", school=None):
         logger.error(f"Error creating thread {name}: {e}")
     return None
 
-def update_thread(thread_id, name, description="", school=None):
-    """Update an existing thread's name/description on Hamro platform."""
+def update_thread(thread_id, name, description="", is_channel=None, school=None):
+    """Update an existing thread's name/description/is_channel on Hamro platform.
+    If is_channel is provided (bool), the thread type will be changed in-place.
+    """
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}"
     payload = {
         'name': name,
         'description': description
     }
+    if is_channel is not None:
+        payload['is_channel'] = is_channel
     try:
         response = requests.put(url, json=payload, headers=get_headers(school=school))
         if response.status_code == 200:
