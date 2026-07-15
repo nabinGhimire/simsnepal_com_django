@@ -30,7 +30,7 @@
 
 {% block content %}
 <div class="row g-4">
-  <div class="col-12">
+  <div class="col-lg-6">
     <form method="POST" class="needs-validation" novalidate>
       {% csrf_token %}
       <div class="card">
@@ -68,11 +68,9 @@
       </div>
     </form>
   </div>
-</div>
 
-{% if business_key %}
-<div class="row g-4 mt-3">
-  <div class="col-12">
+  {% if business_key %}
+  <div class="col-lg-6">
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Thread Type Configuration</h3>
@@ -84,32 +82,29 @@
             <li><strong>Channel</strong> (broadcast): Only admin can send messages. Good for announcements.</li>
             <li><strong>Group</strong> (discussion): All members can send messages. Good for discussions.</li>
           </ul>
-          <p class="mt-2 mb-0">Changing type will update the thread on Hamro platform in-place. No members will be removed.</p>
         </div>
         <form method="POST" class="needs-validation" novalidate>
           {% csrf_token %}
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-check form-switch">
-                <input type="checkbox" class="form-check-input" name="school_channel_as_channel" value="1" {% if school_channel_as_channel %}checked{% endif %}>
-                <span class="form-check-label">School-wide thread</span>
-              </label>
-              <small class="text-muted">ON = Channel (admin only posts). OFF = Group (all post).</small>
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-check form-switch">
-                <input type="checkbox" class="form-check-input" name="teachers_as_channel" value="1" {% if teachers_as_channel %}checked{% endif %}>
-                <span class="form-check-label">Teachers thread</span>
-              </label>
-              <small class="text-muted">ON = Channel (admin only posts). OFF = Group (all teachers post).</small>
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-check form-switch">
-                <input type="checkbox" class="form-check-input" name="class_groups_as_channel" value="1" {% if class_groups_as_channel %}checked{% endif %}>
-                <span class="form-check-label">Class/section threads</span>
-              </label>
-              <small class="text-muted">ON = Channels (admin only posts). OFF = Groups (all post).</small>
-            </div>
+          <div class="mb-3">
+            <label class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" name="school_channel_as_channel" value="1" {% if school_channel_as_channel %}checked{% endif %}>
+              <span class="form-check-label">School-wide thread</span>
+            </label>
+            <small class="text-muted">ON = Channel (admin only posts). OFF = Group (all post).</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" name="teachers_as_channel" value="1" {% if teachers_as_channel %}checked{% endif %}>
+              <span class="form-check-label">Teachers thread</span>
+            </label>
+            <small class="text-muted">ON = Channel (admin only posts). OFF = Group (all teachers post).</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-check form-switch">
+              <input type="checkbox" class="form-check-input" name="class_groups_as_channel" value="1" {% if class_groups_as_channel %}checked{% endif %}>
+              <span class="form-check-label">Class/section threads</span>
+            </label>
+            <small class="text-muted">ON = Channels (admin only posts). OFF = Groups (all post).</small>
           </div>
           <div class="text-end">
             <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
@@ -120,8 +115,8 @@
       </div>
     </div>
   </div>
+  {% endif %}
 </div>
-{% endif %}
 
 {% if business_key %}
 <script>
