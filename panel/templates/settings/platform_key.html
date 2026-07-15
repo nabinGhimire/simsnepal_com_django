@@ -88,26 +88,28 @@
         </div>
         <form method="POST" class="needs-validation" novalidate>
           {% csrf_token %}
-          <div class="mb-3">
-            <label class="form-check form-switch">
-              <input type="checkbox" class="form-check-input" name="school_channel_as_channel" value="1" {% if school_channel_as_channel %}checked{% endif %}>
-              <span class="form-check-label">School-wide thread</span>
-            </label>
-            <small class="text-muted">When ON: Channel (only admin can post). When OFF: Group (all teachers & parents can post).</small>
-          </div>
-          <div class="mb-3">
-            <label class="form-check form-switch">
-              <input type="checkbox" class="form-check-input" name="teachers_as_channel" value="1" {% if teachers_as_channel %}checked{% endif %}>
-              <span class="form-check-label">Teachers thread</span>
-            </label>
-            <small class="text-muted">When ON: Channel (only admin can post). When OFF: Group (all teachers can post).</small>
-          </div>
-          <div class="mb-3">
-            <label class="form-check form-switch">
-              <input type="checkbox" class="form-check-input" name="class_groups_as_channel" value="1" {% if class_groups_as_channel %}checked{% endif %}>
-              <span class="form-check-label">Class/section threads</span>
-            </label>
-            <small class="text-muted">When ON: Channels (only admin can post). When OFF: Groups (teachers & parents can post).</small>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-check form-switch">
+                <input type="checkbox" class="form-check-input" name="school_channel_as_channel" value="1" {% if school_channel_as_channel %}checked{% endif %}>
+                <span class="form-check-label">School-wide thread</span>
+              </label>
+              <small class="text-muted">ON = Channel (admin only posts). OFF = Group (all post).</small>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-check form-switch">
+                <input type="checkbox" class="form-check-input" name="teachers_as_channel" value="1" {% if teachers_as_channel %}checked{% endif %}>
+                <span class="form-check-label">Teachers thread</span>
+              </label>
+              <small class="text-muted">ON = Channel (admin only posts). OFF = Group (all teachers post).</small>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-check form-switch">
+                <input type="checkbox" class="form-check-input" name="class_groups_as_channel" value="1" {% if class_groups_as_channel %}checked{% endif %}>
+                <span class="form-check-label">Class/section threads</span>
+              </label>
+              <small class="text-muted">ON = Channels (admin only posts). OFF = Groups (all post).</small>
+            </div>
           </div>
           <div class="text-end">
             <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
