@@ -413,11 +413,11 @@ def sync_school_channel(school, session):
                 logger.error(f"Failed to create school channel on platform: {e}")
                 return None
 
-    # Gather all teachers in the school
+    # Gather all teachers in the school (via teaching assignments only)
     teacher_users = [
         t.teacher for t in Teacher.objects.filter(
-            Q(added_by__branchuser__school=school) | 
-            Q(teacher__teachersubjectaccess__subject__branch=school)
+            teacher__teachersubjectaccess__subject__branch=school,
+            teacher__teachersubjectaccess__status=True,
         ).select_related('teacher').distinct()
     ]
     
@@ -575,11 +575,11 @@ def sync_teachers_group(school, session):
                 logger.error(f"Failed to create teachers group on platform: {e}")
                 return None
 
-    # Fetch all teachers
+    # Fetch all teachers (via teaching assignments only)
     teacher_users = [
         t.teacher for t in Teacher.objects.filter(
-            Q(added_by__branchuser__school=school) | 
-            Q(teacher__teachersubjectaccess__subject__branch=school)
+            teacher__teachersubjectaccess__subject__branch=school,
+            teacher__teachersubjectaccess__status=True,
         ).select_related('teacher').distinct()
     ]
     
@@ -751,9 +751,10 @@ def sync_single_group(group_name, grade, section, session, school):
     teacher_emails = [t.email for t in teaching_users if t.email]
     teacher_phones = [format_phone(t.username) for t in teaching_users if t.username and t.username.isdigit()]
 
-    # Get section parents
+    # Get section parents (scoped to this school)
     student_sessions = StudentSession.objects.filter(
-        session=session, grade=grade, section=section, status=True
+        session=session, grade=grade, section=section, status=True,
+        student__school=school
     ).select_related('student')
     parent_emails = []
     parent_phones = []

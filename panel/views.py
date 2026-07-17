@@ -356,8 +356,8 @@ def sync_single_group_view(request, group_id):
         if group_obj.is_broadcast:
             teacher_users = [
                 t.teacher for t in Teacher.objects.filter(
-                    Q(added_by__branchuser__school=school) |
-                    Q(teacher__teachersubjectaccess__subject__branch=school)
+                    teacher__teachersubjectaccess__subject__branch=school,
+                    teacher__teachersubjectaccess__status=True,
                 ).select_related('teacher').distinct()
             ]
             emails = [t.email for t in teacher_users if t.email]
@@ -388,8 +388,8 @@ def sync_single_group_view(request, group_id):
         elif not group_obj.grade and not group_obj.section:
             teacher_users = [
                 t.teacher for t in Teacher.objects.filter(
-                    Q(added_by__branchuser__school=school) |
-                    Q(teacher__teachersubjectaccess__subject__branch=school)
+                    teacher__teachersubjectaccess__subject__branch=school,
+                    teacher__teachersubjectaccess__status=True,
                 ).select_related('teacher').distinct()
             ]
             emails = [t.email for t in teacher_users if t.email]
@@ -409,7 +409,8 @@ def sync_single_group_view(request, group_id):
             phones = [format_phone(t.username) for t in teaching_users if t.username and t.username.isdigit()]
 
             student_sessions = StudentSession.objects.filter(
-                session=current_session, grade=group_obj.grade, section=group_obj.section, status=True
+                session=current_session, grade=group_obj.grade, section=group_obj.section, status=True,
+                student__school=school
             ).select_related('student')
             for ss in student_sessions:
                 s = ss.student
