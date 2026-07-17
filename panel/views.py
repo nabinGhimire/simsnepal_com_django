@@ -10668,7 +10668,8 @@ def get_marks_grade_sheet_new_grading_system_exam_updated(**kwargs):
                     subject_key = f"{reg_no}_{subject.id}"
                     total_gpa_calculation[subject_key] = {
                         'th_fm': 0, 'th_mo': 0, 'th_pm': 0,
-                        'pr_fm': 0, 'pr_mo': 0, 'pr_pm': 0
+                        'pr_fm': 0, 'pr_mo': 0, 'pr_pm': 0,
+                        'absent_terms': 0, 'total_terms': 0,
                     }
 
                 # Process marks for each term
@@ -10687,50 +10688,65 @@ def get_marks_grade_sheet_new_grading_system_exam_updated(**kwargs):
                                 gfm = GradeFullMarks.objects.get(term=mo.term, subject=mo.subject)
                                 key_base = f"{reg_no}_{mo.subject.id}_{mo.term.id}"
                                 subject_key = f"{reg_no}_{mo.subject.id}"
+                                was_absent = mo.is_absent
+
+                                # Track absent/present terms per subject
+                                total_gpa_calculation[subject_key]['total_terms'] += 1
 
                                 # Theory Marks Calculation
                                 if getattr(gfm, 'th_fm', 0) > 0:
-                                    th_mo = (weight / 100) * getattr(mo, 'th_mo', 0)
-                                    th_fm = (weight / 100) * getattr(gfm, 'th_fm', 0)
-                                    th_pm = (weight / 100) * getattr(gfm, 'th_pm', 0)
+                                    if was_absent:
+                                        mo_dict.update({
+                                            f"{key_base}_th_grade": "Abs",
+                                            f"{key_base}_th_point": "-",
+                                            f"{key_base}_th_symbol": " ",
+                                            f"{key_base}_th_mo": 0
+                                        })
+                                        total_gpa_calculation[subject_key]['absent_terms'] += 1
+                                    else:
+                                        th_mo = (weight / 100) * getattr(mo, 'th_mo', 0)
+                                        th_fm = (weight / 100) * getattr(gfm, 'th_fm', 0)
+                                        th_pm = (weight / 100) * getattr(gfm, 'th_pm', 0)
 
-                                    # print("WEight:" , weight, "TH FM", th_fm, "TH PM", th_pm)
+                                        ga_gpa = GradeAndGpaNonGradeTheoryExam(th_fm, th_mo)
+                                        mo_dict.update({
+                                            f"{key_base}_th_grade": getattr(ga_gpa, 'th_grade', ' '),
+                                            f"{key_base}_th_point": getattr(ga_gpa, 'th_point', 0),
+                                            f"{key_base}_th_symbol": getattr(ga_gpa, 'th_symbol', ' '),
+                                            f"{key_base}_th_mo": round(th_mo, 2)
+                                        })
 
-                                    ga_gpa = GradeAndGpaNonGradeTheoryExam(th_fm, th_mo)
-                                    mo_dict.update({
-                                        f"{key_base}_th_grade": getattr(ga_gpa, 'th_grade', ' '),
-                                        f"{key_base}_th_point": getattr(ga_gpa, 'th_point', 0),
-                                        f"{key_base}_th_symbol": getattr(ga_gpa, 'th_symbol', ' '),
-                                        f"{key_base}_th_mo": round(th_mo, 2)
-                                    })
-
-                                    # Accumulate for final grade
-                                    total_gpa_calculation[subject_key]['th_fm'] += th_fm
-                                    total_gpa_calculation[subject_key]['th_mo'] += th_mo
-                                    total_gpa_calculation[subject_key]['th_pm'] += th_pm
-
-                                    if reg_no == 11110510:
-                                        print('TH total_gpa_calculation', total_gpa_calculation[subject_key]['th_fm'])
+                                        # Accumulate for final grade
+                                        total_gpa_calculation[subject_key]['th_fm'] += th_fm
+                                        total_gpa_calculation[subject_key]['th_mo'] += th_mo
+                                        total_gpa_calculation[subject_key]['th_pm'] += th_pm
 
                                 # Practical Marks Calculation
                                 if getattr(gfm, 'pr_fm', 0) > 0:
-                                    pr_mo = (weight / 100) * getattr(mo, 'pr_mo', 0)
-                                    pr_fm = (weight / 100) * getattr(gfm, 'pr_fm', 0)
-                                    pr_pm = (weight / 100) * getattr(gfm, 'pr_pm', 0)
+                                    if was_absent:
+                                        mo_dict.update({
+                                            f"{key_base}_pr_grade": "Abs",
+                                            f"{key_base}_pr_point": "-",
+                                            f"{key_base}_pr_symbol": " ",
+                                            f"{key_base}_pr_mo": 0
+                                        })
+                                        total_gpa_calculation[subject_key]['absent_terms'] += 1
+                                    else:
+                                        pr_mo = (weight / 100) * getattr(mo, 'pr_mo', 0)
+                                        pr_fm = (weight / 100) * getattr(gfm, 'pr_fm', 0)
+                                        pr_pm = (weight / 100) * getattr(gfm, 'pr_pm', 0)
 
-                                    # print("PR FM", pr_fm, "PR PM", pr_pm)
+                                        ga_gpa = GradeAndGpaNonGradePracticalExam(pr_fm, pr_mo)
+                                        mo_dict.update({
+                                            f"{key_base}_pr_grade": getattr(ga_gpa, 'pr_grade', ' '),
+                                            f"{key_base}_pr_point": getattr(ga_gpa, 'pr_point', 0),
+                                            f"{key_base}_pr_symbol": getattr(ga_gpa, 'pr_symbol', ' '),
+                                            f"{key_base}_pr_mo": round(pr_mo, 2)
+                                        })
 
-                                    ga_gpa = GradeAndGpaNonGradePracticalExam(pr_fm, pr_mo)
-                                    mo_dict.update({
-                                        f"{key_base}_pr_grade": getattr(ga_gpa, 'pr_grade', ' '),
-                                        f"{key_base}_pr_point": getattr(ga_gpa, 'pr_point', 0),
-                                        f"{key_base}_pr_symbol": getattr(ga_gpa, 'pr_symbol', ' '),
-                                        f"{key_base}_pr_mo": round(pr_mo, 2)
-                                    })
-
-                                    total_gpa_calculation[subject_key]['pr_fm'] += pr_fm
-                                    total_gpa_calculation[subject_key]['pr_mo'] += pr_mo
-                                    total_gpa_calculation[subject_key]['pr_pm'] += pr_pm
+                                        total_gpa_calculation[subject_key]['pr_fm'] += pr_fm
+                                        total_gpa_calculation[subject_key]['pr_mo'] += pr_mo
+                                        total_gpa_calculation[subject_key]['pr_pm'] += pr_pm
 
                                     if reg_no == 11110510:
                                         print('TGC', subject_key, total_gpa_calculation[subject_key]['pr_fm'])
@@ -10755,6 +10771,21 @@ def get_marks_grade_sheet_new_grading_system_exam_updated(**kwargs):
                         subject_key = f"{reg_no}_{subject.id}"
                         subject_data = total_gpa_calculation.get(subject_key, {})
                         
+                        # Check if student was absent in ALL terms for this subject
+                        total_terms = subject_data.get('total_terms', 0)
+                        absent_terms = subject_data.get('absent_terms', 0)
+                        all_absent = total_terms > 0 and total_terms == absent_terms
+
+                        if all_absent:
+                            mo_dict.update({
+                                f"{subject_key}_total_grade": "Abs",
+                                f"{subject_key}_total_symbol": " ",
+                                f"{subject_key}_total_grade_point": "-",
+                                f"{subject_key}_passed": True  # Don't count as failed
+                            })
+                            # Don't count absent subjects in passed/failed/GPA
+                            continue
+
                         # Extract aggregated marks
                         th_fm = subject_data.get('th_fm', 0)
                         th_mo = subject_data.get('th_mo', 0)
@@ -10773,10 +10804,6 @@ def get_marks_grade_sheet_new_grading_system_exam_updated(**kwargs):
 
 
                         # Check pass/fail for aggregated marks
-                        # passed_theory = th_fm == 0 or (th_mo >= th_pm)
-                        # passed_practical = pr_fm == 0 or (pr_mo >= pr_pm)
-                        # passed_subject = passed_theory and passed_practical
-
                         passed_theory = th_fm == 0 or (th_per >= 40)
                         passed_practical = pr_fm == 0 or (pr_per >= 40)
                         passed_subject = passed_theory and passed_practical
@@ -10789,25 +10816,6 @@ def get_marks_grade_sheet_new_grading_system_exam_updated(**kwargs):
 
                         # Only calculate grades if subject is passed
                         if passed_subject:
-                            # if reg_no == 11110510:
-                            # print('subjects passed', reg_no, (th_fm, th_mo))
-                            # t_gpa = GradeAndGpaNonGradeTheoryExam(th_fm, th_mo) if th_fm > 0 else None
-                            # p_gpa = GradeAndGpaNonGradePracticalExam(pr_fm, pr_mo) if pr_fm > 0 else None
-                            # print(reg_no, 'Theory',t_gpa.th_point, 'practical',p_gpa.pr_point)
-
-                            # if th_fm > 0 and pr_fm > 0 and t_gpa and p_gpa:
-                            #     total_grade_point = (t_gpa.th_point + p_gpa.pr_point) / 2
-                            #     total_grade, total_symbol, total_gp = get_grade_point_exam(total_grade_point)
-                            #     # total_grade = "ABC"
-                            # elif th_fm > 0 and t_gpa:
-                            #     total_grade_point = t_gpa.th_point
-                            #     total_grade = t_gpa.th_grade
-                            #     total_symbol = t_gpa.th_symbol
-                            # elif pr_fm > 0 and p_gpa:
-                            #     total_grade_point = p_gpa.pr_point
-                            #     total_grade = p_gpa.pr_grade
-                            #     total_symbol = p_gpa.pr_symbol
-
                             total_grade, total_symbol, total_grade_point = get_grade_point_exam((th_mo+pr_mo)*100/(th_fm+pr_fm))
 
                         # Store results - will show 0 for failed subjects
