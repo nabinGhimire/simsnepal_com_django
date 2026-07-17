@@ -85,6 +85,27 @@ from sms.models import SchoolBranch, BranchUser, Teacher, Group, StudentSession,
 from sms.hamro import ensure_channel, ensure_group, add_user_to_group, user_exists_in_hamro
 from django.contrib import messages
 
+
+def get_school_logo_url(school):
+    """Return the logo URL for a school. Uses uploaded logo from model, falls back to CDN defaults."""
+    if school.logo:
+        return f"https://simsnepal.com/media/{school.logo}"
+    # Fallback CDN logos by school ID
+    if school.id == 14:
+        return "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
+    elif school.id == 15:
+        return "https://cdn.hamro.com/simsnepal/logos/paramount.png"
+    return "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
+
+
+def get_school_slogan(school):
+    """Return the slogan for a school. Uses uploaded slogan from model, falls back to default."""
+    if school.slogan:
+        return school.slogan
+    if school.id == 14:
+        return "Soaring to Excellence"
+    return "Education for all."
+
 @login_required
 def platform_setting_view(request):
     """Platform integration settings – only school owner (admin) can edit."""
@@ -3449,23 +3470,8 @@ def printgradesheetnow2079(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    slogan = " &nbsp; "
-    #if school.id <= 13:
-    #    # Samata School
-    #    slogan = "Education for all."
-    #    logo = "https://cdn.hamro.com/simsnepal/logos/logo.jpg"
-    if school.id == 14:
-        # CSA Montessori
-        slogan = "Soaring to Excellence"
-        logo = "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
-    elif school.id == 15:
-        # Paramount Children Academy
-        slogan = " &nbsp; "
-        logo = "https://cdn.hamro.com/simsnepal/logos/paramount.png"
-    else:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/logo.jpg"
+    logo = get_school_logo_url(school)
+    slogan = get_school_slogan(school)
 
     if request.method == "POST":
         edusession = request.POST.get("edusession")
@@ -5426,22 +5432,8 @@ def schoolprivate2077(request, regno):
         }
         return render(request, "panel/resultform.html", context)
 
-    slogan = " &nbsp; "
-    if school.id <= 13:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/logo.jpg"
-    elif school.id == 14:
-        # CSA Montessori
-        slogan = "Soaring to Excellence"
-        logo = "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
-    elif school.id == 15:
-        # Paramount Children Academy
-        slogan = " &nbsp; "
-    elif school.id >= 16 and school.id <= 17:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/paramount.png"
+    logo = get_school_logo_url(school)
+    slogan = get_school_slogan(school)
 
     # if request.method == 'POST':
     #     edusession = request.POST.get('edusession')
@@ -6469,7 +6461,7 @@ def printentrancecard(request):
     
     width = 55
     if school.logo:
-        logo = school.logo.url
+        logo = f"https://simsnepal.com/media/{school.logo}"
     else:
         logo = ''
     branchuser = BranchUser.objects.get(user=user)
@@ -7106,23 +7098,8 @@ def printgradesheetnow2078(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    slogan = " &nbsp; "
-    if school.id <= 13:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
-    elif school.id == 14:
-        # CSA Montessori
-        slogan = "Soaring to Excellence"
-        logo = "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
-    elif school.id == 15:
-        # Paramount Children Academy
-        slogan = " &nbsp; "
-        logo = "https://cdn.hamro.com/simsnepal/logos/paramount.png"
-    elif school.id >= 16 and school.id <= 22:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
+    logo = get_school_logo_url(school)
+    slogan = get_school_slogan(school)
 
     if request.method == "POST":
         edusession = request.POST.get("edusession")
@@ -7315,21 +7292,8 @@ def new_public_result_2079(request):
             }
             return render(request, "panel/resultform.html", context)
 
-        if student.school.id <= 13:            
-            # Samata School
-            slogan = "Education for all."        
-            logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"    
-        elif student.school.id == 14:             
-            # CSA Montessori
-            slogan = "Soaring to Excellence"                                                                                            
-            logo = "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
-        elif student.school.id == 15:                                                                                                                    # Paramount Children Academy
-            slogan = " &nbsp; "                           
-            logo = "https://cdn.hamro.com/simsnepal/logos/paramount.png"
-        elif student.school.id >= 16 and student.school.id <= 22:
-            # Samata School
-            slogan = "Education for all."                                               
-            logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
+        logo = get_school_logo_url(student.school)
+        slogan = get_school_slogan(student.school)
 
         # sc
         mo_dict = dict()
@@ -7556,22 +7520,8 @@ def new_private_result_2079(request, regno):
         }
         return render(request, "panel/resultform.html", context)
 
-    if student.school.id <= 13:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
-    elif student.school.id == 14:
-        # CSA Montessori
-        slogan = "Soaring to Excellence"
-        logo = "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
-    elif student.school.id == 15:
-        # Paramount Children Academy
-        slogan = " &nbsp; "
-        logo = "https://cdn.hamro.com/simsnepal/logos/paramount.png"
-    elif student.school.id >= 16 and student.school.id <= 26:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
+    logo = get_school_logo_url(student.school)
+    slogan = get_school_slogan(student.school)
     # sc
     mo_dict = dict()
     grade_subjects = Subject.objects.filter(
@@ -7769,25 +7719,9 @@ def print_gradesheet(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    slogan = " &nbsp; "
-    logo = ""
+    logo = get_school_logo_url(school)
+    slogan = get_school_slogan(school)
     no_of_terms = 0
-    if school.id <= 13:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
-    elif school.id == 14:
-        # CSA Montessori
-        slogan = "Soaring to Excellence"
-        logo = "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
-    elif school.id == 15:
-        # Paramount Children Academy
-        slogan = " &nbsp; "
-        logo = "https://cdn.hamro.com/simsnepal/logos/paramount.png"
-    elif school.id >= 16 and school.id <= 26:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
 
     if request.method == "POST":
         edusession = request.POST.get("edusession")
@@ -8275,25 +8209,9 @@ def print_grade_ledger1(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    slogan = " &nbsp; "
-    logo = ""
+    logo = get_school_logo_url(school)
+    slogan = get_school_slogan(school)
     no_of_terms = 0
-    if school.id <= 13:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
-    elif school.id == 14:
-        # CSA Montessori
-        slogan = "Soaring to Excellence"
-        logo = "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
-    elif school.id == 15:
-        # Paramount Children Academy
-        slogan = " &nbsp; "
-        logo = "https://cdn.hamro.com/simsnepal/logos/paramount.png"
-    elif school.id >= 16 and school.id <= 26:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
 
     if request.method == "POST":
         edusession = request.POST.get("edusession")
@@ -8547,25 +8465,9 @@ def print_grade_ledger(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    slogan = " &nbsp; "
-    logo = ""
+    logo = get_school_logo_url(school)
+    slogan = get_school_slogan(school)
     no_of_terms = 0
-    if school.id <= 13:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
-    elif school.id == 14:
-        # CSA Montessori
-        slogan = "Soaring to Excellence"
-        logo = "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
-    elif school.id == 15:
-        # Paramount Children Academy
-        slogan = " &nbsp; "
-        logo = "https://cdn.hamro.com/simsnepal/logos/paramount.png"
-    elif school.id >= 16 and school.id <= 26:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
 
     if request.method == "POST":
         edusession = request.POST.get("edusession")
@@ -9051,22 +8953,8 @@ def new_private_result_2080(request, regno):
         }
         return render(request, "panel/resultform.html", context)
 
-    if student.school.id <= 13:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
-    elif student.school.id == 14:
-        # CSA Montessori
-        slogan = "Soaring to Excellence"
-        logo = "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
-    elif student.school.id == 15:
-        # Paramount Children Academy
-        slogan = " &nbsp; "
-        logo = "https://cdn.hamro.com/simsnepal/logos/paramount.png"
-    elif student.school.id >= 16 and student.school.id <= 26:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
+    logo = get_school_logo_url(student.school)
+    slogan = get_school_slogan(student.school)
     # sc
     mo_dict = dict()
     grade_subjects = Subject.objects.filter(session=this_session,
@@ -10985,27 +10873,10 @@ def print_grade_ledger_exam(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    slogan = " &nbsp; "
-    logo = ""
+    logo = get_school_logo_url(school)
+    slogan = get_school_slogan(school)
     no_of_terms = 0
     exam_board = [14, 15]  # Define exam_board for board logic
-
-    if school.id <= 13:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
-    elif school.id == 14:
-        # CSA Montessori
-        slogan = "Soaring to Excellence"
-        logo = "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
-    elif school.id == 15:
-        # Paramount Children Academy
-        slogan = " &nbsp; "
-        logo = "https://cdn.hamro.com/simsnepal/logos/paramount.png"
-    elif school.id >= 16 and school.id <= 26:
-        # Samata School
-        slogan = "Education for all."
-        logo = "https://cdn.hamro.com/simsnepal/logos/samata_logo_black.png"
 
     if request.method == "POST":
         edusession = request.POST.get("edusession")

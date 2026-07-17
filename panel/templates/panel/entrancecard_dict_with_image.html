@@ -1,0 +1,236 @@
+{% load static %}
+{% load panel_extras %}
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+
+	<style type="text/css">
+
+		body {
+		    text-align: center;
+		    font-family: poppins;
+		}
+		.cardcontainer {
+		    border: 1px solid #000;
+		    float: left;
+		    width: 363px;
+		    height: 260px;
+		    margin: 15px 10px 2px 20px;
+		    padding: 15px;
+		}
+		.cardcontainer .card-header {
+		    position: relative;
+		    display: block;
+		    text-align: left;
+		    font-size: 13px;
+		}
+		.cardcontainer .card-header > div {
+		    display: inline-block;
+		    vertical-align: middle;
+		}
+		.cardcontainer .card-header .headerDetails {
+		    margin-left: 5px;
+		}
+		.cardcontainer .card-header h1 {
+		    font-size: 20px;
+		    font-family: "Times New Roman", Georgia, Serif;
+		    margin: 0;
+		    padding: 0;
+		    font-weight: bold;
+		}
+		.cardcontainer .card-header .admitcard {
+		    font-size: 14px;
+		    margin: auto;
+		}
+		.cardcontainer .terminal {
+		    border: 1px solid #000;
+		    padding: 5px;
+		    font-weight: bold;
+		    background-color: #000 !important;
+		    color: #fff !important;
+		    text-align: center;
+		    font-size: 16px;
+		    margin-top: 5px;
+		    -webkit-print-color-adjust: exact;
+		    color-adjust: exact;
+
+		}
+		.cardcontainer .studentInfo {
+		    position: relative;
+		    display: block;
+		    width: 100%;
+		    margin: 0.3cm 0 0;
+		    text-align: left;
+		    font-size: 13px;
+		}
+		.cardcontainer .studentInfo table {
+		    width: 100%;
+		}
+		.cardcontainer .studentInfo .signature {
+		    margin-top: 30px;
+		    text-align: center;
+		    font-size: 12px;
+		}
+		.cardcontainer .studentInfo .signature .sign_block {
+		    border-top: 1px solid;
+		    padding-top: 5px;
+		}
+		.signature {
+		    margin-top: 28px;
+		}
+		.admitcard{
+			font-weight: bold;
+		}
+		.student-photo {
+		    width: 60px;
+		    height: 70px;
+		    object-fit: cover;
+		    border: 1px solid #ccc;
+		    float: right;
+		    margin-top: -5px;
+		}
+		.cardcontainer .card-header {
+		    overflow: hidden;
+		}
+		@media print {
+		    .terminal {
+		        border: 1px solid #000;
+		        padding: 5px;
+		        font-weight: bold;
+		        background-color: #000;
+		        color: #fff;
+		        text-align: center;
+		        font-size: 14px;
+		        margin-top: 5px;
+		        -webkit-print-color-adjust: exact;
+		        color-adjust: exact;
+		    }
+		   }
+		   
+
+	</style>
+	<link rel="stylesheet" href="{% static 'panel/css/ledgerprint.css' %}" type="text/css" media="print">
+</head>
+<body>
+<div class="d-flex justify-content-between align-items-center mb-3 d-print-none" style="display: none !important; @media screen { display: flex !important; margin: 15px 20px; }">
+  <a href="/panel/print/entrancecard/" class="btn btn-link" style="font-family: sans-serif; font-weight: bold; text-decoration: none; color: #008877;">Back to Entrance Card</a>
+  <form method="get" class="export-form mb-0" style="margin: 0; display: inline-block;">
+    {% for key, value in request.GET.items %}
+      {% if key != 'export' %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}" />
+      {% endif %}
+    {% endfor %}
+    <button type="submit" name="export" value="pdf" class="btn btn-outline-primary" style="font-family: sans-serif; padding: 6px 12px; background: none; border: 1px solid #008877; color: #008877; border-radius: 4px; cursor: pointer;">Export to PDF</button>
+  </form>
+</div>
+{% if count > 1 %}
+{% for data,student in std_reg.items %}
+<div class="cardcontainer">
+	<div class="card-header">
+		<div class="slogo">
+			<img src="{{ logo }}" style="width:50px;">
+		</div>
+		{% if student.avatar %}
+		<img src="{{ student.avatar }}" class="student-photo" alt="Photo">
+		{% endif %}
+		<div class="headerDetails">
+			<h1 class="schoolname">{{ school.name }} </h1>
+			{{ school.location }}
+			<div class="admitcard ">EXAM ENTRANCE CARD</div>
+		</div>
+	</div>
+    <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div> 
+	<div class="studentInfo">
+        <table class="studentDetails">
+            <tbody>
+				<tr>
+					<td>Student Name</td>
+                    <td></td>
+					 <th> {% if student.name|length >= 22 %}{{ student.name|slice:":20" }}..{% else %}{{ student.name }}{% endif %}</th>
+				</tr>
+				<tr>
+					<td>Symbol No</td>
+                    <td></td>
+					 <th> {{ student.reg_no }}</th>
+				</tr>
+				<tr>
+					<td>Class</td>
+                    <td></td>
+					 <th> {{ student.grade }}</th>
+				</tr>
+				<tr>
+					<td>Section/Roll</td>
+                    <td></td>
+					 <th> {{ student.section }}/{{ student.roll_no }}</th>
+				</tr>
+			</tbody>
+		</table>
+        <table class="signature">
+        	<tbody><tr>
+        		<td class="sign_block" width="33%">Verified By</td>
+        		<td width="33%"></td>
+        		<td class="sign_block" width="33%">Principal</td>
+        	</tr>
+        </tbody></table>
+      </div>
+
+</div>
+
+
+{% endfor %}
+{% else%}
+    {% for item in items %}
+
+    <div class="cardcontainer">
+        <div class="card-header">
+            <div class="slogo">
+                <img src="{{ logo }}" style="width:50px;">
+            </div>
+            <div class="headerDetails">
+                <h1>{{ school.name }} </h1>
+                {{ school.location }}
+                <div class="admitcard ">EXAM ENTRANCE CARD</div>
+            </div>
+        </div>
+        <div class="terminal">{{ term_exam.term_name|upper}} - {{ year }}</div> 
+        <div class="studentInfo">
+            <table class="studentDetails">
+                <tbody>
+                    <tr>
+                        <th>Student Name: </th>
+                         <td></td> 
+                    </tr>
+                    <tr>
+                        <th>Symbol No:</th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Class: </th>
+                         <td></td>
+                    </tr>
+                    <tr>
+                        <th>Section: </th>
+                         <td></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="signature">
+                <tbody><tr>
+                    <td class="sign_block" width="33%">Verified By</td>
+                    <td width="33%"></td>
+                    <td class="sign_block" width="33%">Principal</td>
+                </tr>
+            </tbody></table>
+          </div>
+    
+    </div>
+
+
+
+    {% endfor %}
+
+{% endif %}
+
+</body>
+</html>
