@@ -76,31 +76,58 @@ class Command(BaseCommand):
                 if resp.status_code == 200:
                     results = resp.json().get('data', [])
                     updated_count = 0
-                    for j, result in enumerate(results):
+                    for result in results:
                         if result.get('found'):
                             user_data = result.get('user', {})
                             avatar_url = user_data.get('avatar_url', '')
                             hamro_uuid = user_data.get('id', '')
                             mobile_number = user_data.get('mobile_number', '')
+                            contact = user_data.get('email') or user_data.get('mobile_number', '')
                             
-                            if avatar_url:
-                                contact_used = contacts_to_search[j] if j < len(contacts_to_search) else None
-                                user_obj = user_map.get(contact_used)
+                            if avatar_url and contact:
+                                user_obj = user_map.get(contact)
+                                if not user_obj:
+                                    for c, u in user_map.items():
+                                        if c.replace('-','').replace(' ','') == contact.replace('-','').replace(' ',''):
+                                            user_obj = u
+                                            break
                                 
                                 if user_obj:
                                     try:
                                         profile = user_obj.hamro_profile
-                                        profile.avatar_url = avatar_url
-                                        if hamro_uuid: profile.hamro_uuid = hamro_uuid
-                                        if mobile_number: profile.mobile_number = mobile_number
-                                        profile.save()
                                     except Exception:
-                                        HamroUserProfile.objects.create(
-                                            user=user_obj,
-                                            hamro_uuid=hamro_uuid or contact_used,
-                                            avatar_url=avatar_url,
-                                            mobile_number=mobile_number
-                                        )
+                                        profile = None
+                                    
+                                    if profile:
+                                        changed = False
+                                        if profile.avatar_url != avatar_url:
+                                            profile.avatar_url = avatar_url
+                                            changed = True
+                                        if hamro_uuid and profile.hamro_uuid != hamro_uuid:
+                                            # Check UUID not taken by another user
+                                            if not HamroUserProfile.objects.filter(hamro_uuid=hamro_uuid).exclude(id=profile.id).exists():
+                                                profile.hamro_uuid = hamro_uuid
+                                                changed = True
+                                        if mobile_number:
+                                            profile.mobile_number = mobile_number
+                                            changed = True
+                                        if changed:
+                                            profile.save()
+                                    else:
+                                        # Create new profile
+                                        defaults = {
+                                            'avatar_url': avatar_url,
+                                            'mobile_number': mobile_number,
+                                        }
+                                        if hamro_uuid:
+                                            defaults['hamro_uuid'] = hamro_uuid
+                                            HamroUserProfile.objects.get_or_create(
+                                                user=user_obj, defaults=defaults
+                                            )
+                                        else:
+                                            HamroUserProfile.objects.get_or_create(
+                                                user=user_obj, defaults=defaults
+                                            )
                                     updated_count += 1
                                     
                     self.stdout.write(self.style.SUCCESS(f'Successfully synced {updated_count} profiles in this batch.'))

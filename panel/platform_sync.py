@@ -432,6 +432,16 @@ def sync_school_channel(school, session):
         ).select_related('teacher').distinct()
     ]
     
+    # Also include teachers added by school users but without subject assignments
+    teacher_ids_with_access = set(u.id for u in teacher_users)
+    extra_teachers = Teacher.objects.filter(
+        added_by__branchuser__school=school
+    ).exclude(
+        teacher_id__in=teacher_ids_with_access
+    ).select_related('teacher').distinct()
+    for t in extra_teachers:
+        teacher_users.append(t.teacher)
+    
     emails_to_lookup = [t.email for t in teacher_users if t.email]
     phones_to_lookup = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
     
@@ -599,6 +609,16 @@ def sync_teachers_group(school, session):
             teacher__teachersubjectaccess__status=True,
         ).select_related('teacher').distinct()
     ]
+    
+    # Also include teachers added by school users but without subject assignments
+    teacher_ids_with_access = set(u.id for u in teacher_users)
+    extra_teachers = Teacher.objects.filter(
+        added_by__branchuser__school=school
+    ).exclude(
+        teacher_id__in=teacher_ids_with_access
+    ).select_related('teacher').distinct()
+    for t in extra_teachers:
+        teacher_users.append(t.teacher)
     
     emails_to_lookup = [t.email for t in teacher_users if t.email]
     phones_to_lookup = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
