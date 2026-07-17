@@ -355,8 +355,8 @@ def sync_school_channel(school, session):
     desired_type = 'channel' if school.school_channel_as_channel else 'group'
     is_channel = school.school_channel_as_channel
 
-    # Query by name, session, school — ignore is_broadcast flag (it may have been set incorrectly)
-    channel_group = Group.objects.filter(session=session, name=channel_name, school=school).first()
+    # Query by group_type — stable even if school was renamed
+    channel_group = Group.objects.filter(session=session, school=school, group_type='school').first()
     
     if not channel_group:
         ext_id = create_thread(desired_type, channel_name, f"School {desired_type} for {channel_name}", school=school)
@@ -365,6 +365,7 @@ def sync_school_channel(school, session):
                 name=channel_name,
                 session=session,
                 is_broadcast=is_channel,
+                group_type='school',
                 external_id=ext_id,
                 school=school,
             )
@@ -372,6 +373,11 @@ def sync_school_channel(school, session):
             logger.error(f"Could not create school {desired_type} on platform for {channel_name}")
             return None
     else:
+        # Update name if school was renamed
+        if channel_group.name != channel_name:
+            if channel_group.external_id:
+                update_thread(channel_group.external_id, channel_name, is_channel=is_channel, school=school)
+            channel_group.name = channel_name
         # Check if thread type matches config — if not, update in-place via is_channel
         current_is_broadcast = channel_group.is_broadcast
         if current_is_broadcast != is_channel and channel_group.external_id:
@@ -517,8 +523,8 @@ def sync_teachers_group(school, session):
     desired_type = 'channel' if school.teachers_as_channel else 'group'
     is_channel = school.teachers_as_channel
 
-    # Query by name, session, school — ignore is_broadcast flag (it may have been set incorrectly)
-    group_obj = Group.objects.filter(session=session, grade=None, section=None, name=group_name, school=school).first()
+    # Query by group_type — stable even if school was renamed
+    group_obj = Group.objects.filter(session=session, school=school, group_type='teachers').first()
     
     if not group_obj:
         ext_id = create_thread(desired_type, group_name, f"Teachers {desired_type} for {school.name}", school=school)
@@ -527,6 +533,7 @@ def sync_teachers_group(school, session):
                 name=group_name,
                 session=session,
                 is_broadcast=is_channel,
+                group_type='teachers',
                 external_id=ext_id,
                 school=school,
             )
@@ -534,6 +541,11 @@ def sync_teachers_group(school, session):
             logger.error(f"Could not create teachers {desired_type} on platform for {group_name}")
             return None
     else:
+        # Update name if school was renamed
+        if group_obj.name != group_name:
+            if group_obj.external_id:
+                update_thread(group_obj.external_id, group_name, is_channel=is_channel, school=school)
+            group_obj.name = group_name
         # Check if thread type matches config — if not, update in-place via is_channel
         current_is_broadcast = group_obj.is_broadcast
         if current_is_broadcast != is_channel and group_obj.external_id:
@@ -672,13 +684,13 @@ def sync_single_group(group_name, grade, section, session, school):
     is_channel = school.class_groups_as_channel
     desired_type = 'channel' if is_channel else 'group'
 
-    # Query by grade, section, session, school — ignore is_broadcast flag
+    # Query by grade, section, session, school — use group_type for stability
     group_obj = Group.objects.filter(
         grade=grade,
         section=section,
         session=session,
         school=school,
-        name=group_name
+        group_type='class'
     ).first()
     
     if not group_obj:
@@ -690,6 +702,7 @@ def sync_single_group(group_name, grade, section, session, school):
                 grade=grade,
                 section=section,
                 is_broadcast=is_channel,
+                group_type='class',
                 external_id=ext_id,
                 school=school,
             )
@@ -838,109 +851,92 @@ def sync_single_group(group_name, grade, section, session, school):
 def cleanup_duplicate_threads(school, session, dry_run=False):
     """Find and clean up duplicate Group records for the same school+session.
     
-    Duplicate groups are identified by matching (name, session, school, is_broadcast).
-    When duplicates exist, the one with the valid external_id (confirmed on platform)
-    is kept. Others are deleted from DB (and their Hamro threads deleted if possible).
+    Uses group_type + grade + section to identify true duplicates.
+    When duplicates exist, the one with the valid external_id is kept.
+    Also backfills group_type on old records that don't have it set.
     
     Returns a list of dicts describing what was cleaned up.
     """
     actions = []
     
-    # Find duplicates among broadcast channels (school channels)
-    broadcast_groups = Group.objects.filter(
-        school=school, session=session, is_broadcast=True
-    ).order_by('id')
-    
-    seen_broadcasts = {}
-    for g in broadcast_groups:
-        key = g.name
-        if key in seen_broadcasts:
-            # Duplicate found — decide which to keep
-            existing = seen_broadcasts[key]
-            keep, discard = (existing, g) if existing.external_id else (g, existing)
-            
+    # Backfill: set group_type on old records that still have default
+    old_groups = Group.objects.filter(school=school, session=session, group_type='class').exclude(grade__isnull=False)
+    for g in old_groups:
+        if g.grade_id is None and g.section_id is None:
+            if g.is_broadcast:
+                g.group_type = 'school'
+            else:
+                g.group_type = 'teachers'
             if not dry_run:
-                # Delete the Hamro thread for the discard group (if it has one)
-                if discard.external_id:
-                    try:
-                        delete_thread(discard.external_id, school=school)
-                    except Exception as e:
-                        logger.warning(f"Could not delete duplicate thread {discard.external_id}: {e}")
-                    GroupMembershipCache.objects.filter(group=discard).delete()
-                discard.delete()
-            
+                g.save(update_fields=['group_type'])
             actions.append({
-                'type': 'broadcast_channel',
-                'name': key,
-                'kept_id': keep.external_id,
-                'removed_id': discard.external_id,
-            })
-        else:
-            # Validate existing external_id
-            if g.external_id:
-                try:
-                    exists = thread_exists(g.external_id, school=school)
-                    if exists is False:
-                        if not dry_run:
-                            g.external_id = None
-                            g.save()
-                            GroupMembershipCache.objects.filter(group=g).delete()
-                        actions.append({
-                            'type': 'broadcast_channel',
-                            'name': key,
-                            'action': 'cleared_stale_external_id',
-                            'old_id': g.external_id,
-                        })
-                except Exception:
-                    pass  # transient error, skip validation
-            seen_broadcasts[key] = g
-
-    # Find duplicates among non-broadcast groups (teachers group, class groups)
-    non_broadcast_groups = Group.objects.filter(
-        school=school, session=session, is_broadcast=False
-    ).order_by('id')
-    
-    seen_groups = {}
-    for g in non_broadcast_groups:
-        # Key by (name, grade, section) to identify true duplicates
-        key = (g.name, g.grade_id, g.section_id)
-        if key in seen_groups:
-            existing = seen_groups[key]
-            keep, discard = (existing, g) if existing.external_id else (g, existing)
-            
-            if not dry_run:
-                if discard.external_id:
-                    try:
-                        delete_thread(discard.external_id, school=school)
-                    except Exception as e:
-                        logger.warning(f"Could not delete duplicate thread {discard.external_id}: {e}")
-                    GroupMembershipCache.objects.filter(group=discard).delete()
-                discard.delete()
-            
-            actions.append({
-                'type': 'group',
+                'type': 'backfill',
                 'name': g.name,
+                'group_type': g.group_type,
+            })
+    
+    # Find duplicates grouped by (group_type, grade, section)
+    from django.db.models import Count
+    groups_by_type = Group.objects.filter(
+        school=school, session=session
+    ).values('group_type', 'grade_id', 'section_id').annotate(cnt=Count('id')).filter(cnt__gt=1)
+    
+    for combo in groups_by_type:
+        dupes = Group.objects.filter(
+            school=school, session=session,
+            group_type=combo['group_type'],
+            grade_id=combo['grade_id'],
+            section_id=combo['section_id'],
+        ).order_by('id')
+        
+        keep = None
+        for g in dupes:
+            if keep is None:
+                keep = g
+                continue
+            # Keep the one with valid external_id
+            discard = g if keep.external_id else keep
+            if not keep.external_id and g.external_id:
+                keep = g
+                discard = g if keep == g else keep
+                # Re-evaluate: keep the one with external_id
+                discard = keep if g.external_id else g
+                keep = g if g.external_id else keep
+                discard = g if keep == g else g
+            
+            if not dry_run:
+                if discard.external_id:
+                    try:
+                        delete_thread(discard.external_id, school=school)
+                    except Exception as e:
+                        logger.warning(f"Could not delete duplicate thread {discard.external_id}: {e}")
+                    GroupMembershipCache.objects.filter(group=discard).delete()
+                discard.delete()
+            
+            actions.append({
+                'type': f'{combo["group_type"]}_duplicate',
+                'name': keep.name,
                 'kept_id': keep.external_id,
                 'removed_id': discard.external_id,
             })
-        else:
-            if g.external_id:
-                try:
-                    exists = thread_exists(g.external_id, school=school)
-                    if exists is False:
-                        if not dry_run:
-                            g.external_id = None
-                            g.save()
-                            GroupMembershipCache.objects.filter(group=g).delete()
-                        actions.append({
-                            'type': 'group',
-                            'name': g.name,
-                            'action': 'cleared_stale_external_id',
-                            'old_id': g.external_id,
-                        })
-                except Exception:
-                    pass
-            seen_groups[key] = g
+        
+        # Validate kept group's external_id
+        if keep and keep.external_id:
+            try:
+                exists = thread_exists(keep.external_id, school=school)
+                if exists is False:
+                    if not dry_run:
+                        keep.external_id = None
+                        keep.save()
+                        GroupMembershipCache.objects.filter(group=keep).delete()
+                    actions.append({
+                        'type': f'{combo["group_type"]}_stale',
+                        'name': keep.name,
+                        'action': 'cleared_stale_external_id',
+                        'old_id': keep.external_id,
+                    })
+            except Exception:
+                pass
 
     return actions
 
@@ -972,7 +968,7 @@ def cleanup_hamro_orphans(session, dry_run=False):
     # 3. Categorize Hamro threads
     tracked_threads = []    # in our DB
     orphan_threads = []     # NOT in our DB
-    seen_names = {}         # name -> first thread with that name
+    seen_names = {}         # name_lower -> first thread with that name (case-insensitive)
     
     for thread in hamro_threads:
         ext_id = thread.get('id')
@@ -984,9 +980,10 @@ def cleanup_hamro_orphans(session, dry_run=False):
         
         if ext_id in all_db_ext_ids:
             tracked_threads.append(thread)
-            # Track first occurrence of each name for duplicate detection
-            if name not in seen_names:
-                seen_names[name] = thread
+            # Track first occurrence of each name for duplicate detection (case-insensitive)
+            name_key = name.lower().strip()
+            if name_key not in seen_names:
+                seen_names[name_key] = thread
         else:
             orphan_threads.append(thread)
     

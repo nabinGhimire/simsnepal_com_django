@@ -493,16 +493,22 @@ class UserRegistrationStatus(models.Model):
 
 class Group(models.Model):
     """Represents a chat group/channel on Hamro platform."""
+    GROUP_TYPE_CHOICES = [
+        ('school', 'School Channel/Group'),
+        ('teachers', 'Teachers Channel/Group'),
+        ('class', 'Class/Section Group'),
+    ]
     name = models.CharField(max_length=200)
     session = models.ForeignKey('EduSession', on_delete=models.CASCADE)
     school = models.ForeignKey('SchoolBranch', on_delete=models.CASCADE, null=True, blank=True)
     grade = models.ForeignKey('SchoolGrade', on_delete=models.SET_NULL, null=True, blank=True)
     section = models.ForeignKey('Section', on_delete=models.SET_NULL, null=True, blank=True)
     is_broadcast = models.BooleanField(default=False)
+    group_type = models.CharField(max_length=20, choices=GROUP_TYPE_CHOICES, default='class')
     external_id = models.CharField(max_length=100, blank=True, null=True)  # Hamro group ID
 
     class Meta:
-        unique_together = (('name', 'session', 'school'),)
+        unique_together = (('group_type', 'session', 'school', 'grade', 'section'),)
 
     def __str__(self):
         return self.name

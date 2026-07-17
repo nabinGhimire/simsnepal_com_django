@@ -161,11 +161,11 @@ def ensure_channel(name, school=None):
     """
     session = get_current_session()
     
-    # Query by name + school (ignore is_broadcast flag — may have been set incorrectly)
+    # Query by group_type if school provided, else fallback to name
     if school:
-        channel = Group.objects.filter(name=name, school=school).first()
+        channel = Group.objects.filter(group_type='school', school=school, session=session).first()
     else:
-        channel = Group.objects.filter(name=name).first()
+        channel = Group.objects.filter(name__iexact=name).first()
         
     if channel:
         if channel.session != session:
@@ -219,9 +219,9 @@ def ensure_group(name, session_id, grade=None, section=None, school=None):
             school = grade.school
 
     if grade is not None:
-        group = Group.objects.filter(grade=grade, section=section, session_id=session_id, is_broadcast=False, school=school).first()
+        group = Group.objects.filter(grade=grade, section=section, session_id=session_id, group_type='class', school=school).first()
     else:
-        group = Group.objects.filter(name=name, session_id=session_id, is_broadcast=False, school=school).first()
+        group = Group.objects.filter(group_type='teachers', session_id=session_id, school=school).first()
 
     if group:
         if group.name != name:

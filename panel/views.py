@@ -267,13 +267,11 @@ def sync_platform_view(request):
         except Exception as e:
             logger.error(f"Error converting to Nepali datetime: {e}")
 
-    from django.db.models import Count, Q
-    synced_groups = Group.objects.filter(session=current_session).filter(
-        Q(is_broadcast=True, name=school.name) |
-        Q(grade__school=school) |
-        Q(section__school=school) |
-        Q(name=f"{school.name} Teachers")
-    ).distinct().order_by('-is_broadcast', 'grade__grade_weight', 'section__section', 'name').annotate(
+    from django.db.models import Count
+    synced_groups = Group.objects.filter(
+        session=current_session,
+        school=school,
+    ).order_by('group_type', 'grade__grade_weight', 'section__section', 'name').annotate(
         participant_count=Count('cached_members'),
         admin_count=Count('cached_members', filter=Q(cached_members__role='admin')),
         member_count=Count('cached_members', filter=Q(cached_members__role='member'))
@@ -473,12 +471,12 @@ def broadcast_view(request):
         recipient_name = ""
         
         if recipient_type == 'school':
-            school_chan = Group.objects.filter(name=school.name, session=current_session, is_broadcast=True).first()
+            school_chan = Group.objects.filter(group_type='school', session=current_session, school=school).first()
             if school_chan and school_chan.external_id:
                 target_threads.append((school_chan.external_id, school.name))
                 recipient_name = f"School Channel ({school.name})"
         elif recipient_type == 'teachers':
-            teachers_grp = Group.objects.filter(name=f"{school.name} Teachers", session=current_session).first()
+            teachers_grp = Group.objects.filter(group_type='teachers', session=current_session, school=school).first()
             if teachers_grp and teachers_grp.external_id:
                 target_threads.append((teachers_grp.external_id, teachers_grp.name))
                 recipient_name = f"All Teachers Group"
