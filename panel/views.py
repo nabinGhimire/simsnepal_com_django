@@ -6562,12 +6562,21 @@ def printentrancecard(request):
             template_name = 'panel/entrancecard_dict_with_image.html'
             # PDF export handling
             if request.GET.get('export') == 'pdf' or request.POST.get('export') == 'pdf':
-                pdf = render_to_pdf(template_name, context)
-                if pdf:
-                    filename = f'EntranceCard_Image_{school.name}_{datetime.now().strftime("%Y%m%d%H%M%S")}.pdf'
-                    response = HttpResponse(pdf, content_type='application/pdf')
-                    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-                    return response
+                try:
+                    pdf = render_to_pdf(template_name, context)
+                    if pdf:
+                        filename = f'EntranceCard_Image_{school.name}_{datetime.now().strftime("%Y%m%d%H%M%S")}.pdf'
+                        response = HttpResponse(pdf, content_type='application/pdf')
+                        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                        return response
+                    else:
+                        messages.error(request, "PDF generation failed. Please try the regular print view instead.")
+                        return redirect('panel:print_entrance_card')
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).error(f"Entrance card PDF error: {e}")
+                    messages.error(request, f"PDF export error: {e}")
+                    return redirect('panel:print_entrance_card')
             return render(request, template_name, context)
         else:
             # No valid whattype, fall back to base template
@@ -6654,10 +6663,27 @@ def render_to_pdf(template_src, context_dict={}):
     # 3. Clean any calc() declarations that cause parser crash
     html = re.sub(r'calc\([^)]+\)', '0', html, flags=re.IGNORECASE)
 
+    # 4. Strip modern CSS that xhtml2pdf doesn't support (grid, flexbox, gap, etc.)
+    html = re.sub(r'display\s*:\s*grid[^;]*;?', 'display: block;', html, flags=re.IGNORECASE)
+    html = re.sub(r'display\s*:\s*flex[^;]*;?', 'display: block;', html, flags=re.IGNORECASE)
+    html = re.sub(r'grid-template-columns[^;]*;?', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'grid-template-rows[^;]*;?', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'grid-gap[^;]*;?', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'(?<!\-)gap\s*:\s*[^;]*;?', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'flex\s*:\s*[^;]*;?', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'flex-shrink\s*:\s*[^;]*;?', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'flex-direction\s*:\s*[^;]*;?', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'align-items\s*:\s*[^;]*;?', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'justify-content\s*:\s*[^;]*;?', '', html, flags=re.IGNORECASE)
+
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html.encode("utf-8")), result, link_callback=link_callback)
-    if not pdf.err:
-        return result.getvalue()
+    try:
+        pdf = pisa.pisaDocument(BytesIO(html.encode("utf-8")), result, link_callback=link_callback)
+        if not pdf.err:
+            return result.getvalue()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"PDF render error: {e}")
     return None
 
 @login_required
