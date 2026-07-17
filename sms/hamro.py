@@ -550,10 +550,12 @@ def lookup_hamro_users_batch(emails=None, phones=None, school=None):
     return results
 
 def add_users_to_thread_batch(thread_id, user_ids, school=None):
-    """Add multiple users to a thread in Hamro platform using batch endpoint."""
+    """Add multiple users to a thread in Hamro platform using batch endpoint.
+    Returns the set of user_ids that were successfully added.
+    """
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/batch"
     user_ids = list(set(user_ids))
-    last_response = None
+    added = set()
     
     # Chunk the user_ids to avoid 413 errors
     for chunk in chunk_list(user_ids, 50):
@@ -564,13 +566,18 @@ def add_users_to_thread_batch(thread_id, user_ids, school=None):
         try:
             response = _request_with_retry('post', url, json=payload, headers=get_headers(school=school))
             if response.status_code in (200, 201):
-                last_response = response.json()
+                result = response.json()
+                # API may return a list of successfully added user_ids
+                if isinstance(result, list):
+                    added.update(result)
+                else:
+                    added.update(chunk)
             else:
                 logger.error(f"Failed to batch add users to thread {thread_id}: status={response.status_code}, response={response.text}")
         except Exception as e:
             logger.error(f"Error in batch adding users to thread: {e}")
             
-    return last_response
+    return added
 
 def get_thread_participants(thread_id, school=None):
     """Fetch current participant details in a thread from Hamro platform.

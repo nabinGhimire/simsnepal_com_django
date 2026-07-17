@@ -294,15 +294,20 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, force_ref
     if to_add:
         try:
             logger.info(f"Adding {len(to_add)} users to group {group_obj.name} on platform...")
-            add_users_to_thread_batch(group_id, list(to_add), school=school)
-            # Update cache — default new users to 'member'; promote after API confirms
-            bulk_objs = []
-            for u_id in to_add:
-                bulk_objs.append(GroupMembershipCache(group=group_obj, platform_user_id=u_id, role='member'))
-                # New members default to 'member' on addition. If their target role is 'admin', we must explicitly promote them.
-                if u_id in admin_ids:
-                    to_promote.append(u_id)
-            GroupMembershipCache.objects.bulk_create(bulk_objs)
+            added_ids = add_users_to_thread_batch(group_id, list(to_add), school=school)
+            # Update cache — only for users actually added
+            if added_ids:
+                bulk_objs = []
+                for u_id in added_ids:
+                    bulk_objs.append(GroupMembershipCache(group=group_obj, platform_user_id=u_id, role='member'))
+                    # New members default to 'member' on addition. If their target role is 'admin', they must be explicitly promoted.
+                    if u_id in admin_ids:
+                        to_promote.append(u_id)
+                GroupMembershipCache.objects.bulk_create(bulk_objs)
+            # Log any that failed to add
+            failed = to_add - added_ids
+            if failed:
+                logger.warning(f"Failed to add {len(failed)} users to group {group_obj.name}: {failed}")
         except Exception as e:
             logger.error(f"Failed to add users to group {group_obj.name}: {e}")
 
