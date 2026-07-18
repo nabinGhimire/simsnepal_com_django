@@ -9473,13 +9473,12 @@ def migration(request):
     return render(request, "panel/migration.html", context) 
 
 
-
 def get_marks_grade_sheet(**kwargs):
     this_session = kwargs.get('this_session', get_current_session())
-    no_of_terms=kwargs['no_of_terms']
-    term_list=kwargs['term_list']
-    term_calculation=kwargs['term_calculation'] 
-    pass_fail_filter=kwargs['pass_fail_filter']
+    no_of_terms = kwargs['no_of_terms']
+    term_list = kwargs['term_list']
+    term_calculation = kwargs['term_calculation']
+    pass_fail_filter = kwargs['pass_fail_filter']
     students = kwargs['students']
     grade_subjects = kwargs['grade_subjects']
     this_term = kwargs['this_term']
@@ -9498,11 +9497,8 @@ def get_marks_grade_sheet(**kwargs):
 
     total_gpa_calculation = dict()
     sub_total_fm_pm = dict()
-    # term_acronym = dict()
 
     for student in students:
-        if sn == 2:
-            break
         sn += 1
         fail = 0
         data[sn] = {}
@@ -9532,24 +9528,32 @@ def get_marks_grade_sheet(**kwargs):
 
                     pre_text = str(student.student.reg_no) + "_" + str(mo.subject.id) + "_" + str(mo.term.id)
 
-                    if gfm.th_fm > 0:
+                    # Determine pass marks from GradeFullMarks or fallback
+                    th_fm = gfm.th_fm
+                    pr_fm = gfm.pr_fm
+                    th_pm_marks = gfm.th_pm if gfm.th_pm > 0 else int(th_fm * 0.35) if th_fm > 0 else 0
+                    pr_pm_marks = gfm.pr_pm if gfm.pr_pm > 0 else int(pr_fm * 0.40) if pr_fm > 0 else 0
+
+                    # Check if student is absent
+                    is_absent = mo.is_absent
+
+                    # Calculate weighted marks
+                    cal_th_mo = cal_th_fm = cal_th_pm = cal_pr_mo = cal_pr_fm = cal_pr_pm = 0
+
+                    if th_fm > 0:
                         cal_th_mo = (value / 100) * mo.th_mo
-                        cal_th_fm = (value / 100) * gfm.th_fm
-                        cal_th_pm = (value / 100) * gfm.th_pm
+                        cal_th_fm = (value / 100) * th_fm
+                        cal_th_pm = (value / 100) * th_pm_marks
 
-                        print(mo.subject, "TH", value)
-                        print(cal_th_fm, cal_th_mo)
-                        print("====")
-
-                        ga_gpa = GradeAndGpaNonGradeTheory(cal_th_fm, cal_th_mo)
+                        if is_absent:
+                            ga_gpa = type('obj', (object,), {'th_grade': 'Abs', 'th_symbol': ' ', 'th_point': '-'})
+                        else:
+                            ga_gpa = GradeAndGpaNonGradeTheory(cal_th_fm, cal_th_mo, th_pm_marks)
 
                         mo_dict[pre_text + "_th_grade"] = ga_gpa.th_grade
                         mo_dict[pre_text + "_th_symbol"] = ga_gpa.th_symbol
                         mo_dict[pre_text + "_th_point"] = ga_gpa.th_point
-
-                        # mo_dict[pre_text + "_th_grade"] = cal_th_mo
-                        # mo_dict[pre_text + "_th_symbol"] = cal_th_mo
-                        # mo_dict[pre_text + "_th_point"] = cal_th_mo
+                        mo_dict[pre_text + "_th_mo"] = round(cal_th_mo, 2) if not is_absent else 0
 
                         pt_text = str(student.student.reg_no) + "_" + str(mo.subject.id)
 
@@ -9564,43 +9568,27 @@ def get_marks_grade_sheet(**kwargs):
                         if 'th_mo' not in total_gpa_calculation[pt_text]:
                             total_gpa_calculation[pt_text]['th_mo'] = cal_th_mo
                         else:
-                            total_gpa_calculation[pt_text]['th_fm'] += cal_th_mo
+                            total_gpa_calculation[pt_text]['th_mo'] += cal_th_mo
 
-                        # if str(mo.subject.id) not in data[sn]['total_calculation']:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)] = dict()
+                        if 'th_pm' not in total_gpa_calculation[pt_text]:
+                            total_gpa_calculation[pt_text]['th_pm'] = cal_th_pm
+                        else:
+                            total_gpa_calculation[pt_text]['th_pm'] += cal_th_pm
 
-                        # if 'th_fm' not in data[sn]['total_calculation'][str(mo.subject.id)]:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['th_fm'] = cal_th_fm
-                        # else:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['th_fm'] += cal_th_fm
-                        
-                        # if 'th_pm' not in data[sn]['total_calculation'][str(mo.subject.id)]:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['th_pm'] = cal_th_pm
-                        # else:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['th_pm'] += cal_th_pm
-
-                        # if 'th_mo' not in data[sn]['total_calculation'][str(mo.subject.id)]:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['th_mo'] = cal_th_mo
-                        # else:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['th_mo'] += cal_th_mo
-
-
-                    if gfm.pr_fm > 0:
+                    if pr_fm > 0:
                         cal_pr_mo = (value / 100) * mo.pr_mo
-                        cal_pr_fm = (value / 100) * gfm.pr_fm
-                        cal_pr_pm = (value / 100) * gfm.pr_pm
+                        cal_pr_fm = (value / 100) * pr_fm
+                        cal_pr_pm = (value / 100) * pr_pm_marks
 
-                        print(mo.subject, "PR", value)
-                        print(cal_pr_fm, cal_pr_mo, cal_pr_pm)
-                        print("====")
-
-                        ga_gpa = GradeAndGpaNonGradePractical(cal_th_fm, cal_th_mo)
+                        if is_absent:
+                            ga_gpa = type('obj', (object,), {'pr_grade': 'Abs', 'pr_symbol': ' ', 'pr_point': '-'})
+                        else:
+                            ga_gpa = GradeAndGpaNonGradePractical(cal_pr_fm, cal_pr_mo, pr_pm_marks)
 
                         mo_dict[pre_text + "_pr_grade"] = ga_gpa.pr_grade
                         mo_dict[pre_text + "_pr_symbol"] = ga_gpa.pr_symbol
                         mo_dict[pre_text + "_pr_point"] = ga_gpa.pr_point
-
-                        #mo_dict[pre_text + "_pr_point"] = cal_pr_mo
+                        mo_dict[pre_text + "_pr_mo"] = round(cal_pr_mo, 2) if not is_absent else 0
 
                         pp_text = str(student.student.reg_no) + "_" + str(mo.subject.id)
 
@@ -9617,63 +9605,91 @@ def get_marks_grade_sheet(**kwargs):
                         else:
                             total_gpa_calculation[pp_text]['pr_mo'] += cal_pr_mo
 
-                        # if str(mo.subject.id) not in data[sn]['total_calculation']:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)] = dict()
-                        
-                        # if '' not in data[sn]['total_calculation'][str(mo.subject.id)]:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['pr_fm'] = cal_pr_fm
+                        if 'pr_pm' not in total_gpa_calculation[pp_text]:
+                            total_gpa_calculation[pp_text]['pr_pm'] = cal_pr_pm
+                        else:
+                            total_gpa_calculation[pp_text]['pr_pm'] += cal_pr_pm
 
-                        # else:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['pr_fm'] += cal_pr_fm
-
-                        # if 'pr_pm' not in data[sn]['total_calculation'][str(mo.subject.id)]:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['pr_pm'] = cal_pr_pm
-                        # else:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['pr_pm'] += cal_pr_pm
-
-                        # if 'pr_mo' not in data[sn]['total_calculation'][str(mo.subject.id)]:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['pr_mo'] = cal_pr_mo
-                        # else:
-                        #     data[sn]['total_calculation'][str(mo.subject.id)]['pr_mo'] += cal_pr_mo
-                    print(total_gpa_calculation)
-
+        # Final per-subject grade calculation using accumulated marks
         total_gp = 0
+        passed_subjects = 0
+        failed_subjects = 0
+        absent_subjects = 0
+
         for subject in grade_subjects:
             so_text = str(str(student.student.reg_no) + "_" + str(subject.id))
-            if so_text in total_gpa_calculation:
-                th_fm = total_gpa_calculation[so_text]["th_fm"]
-                pr_fm = total_gpa_calculation[so_text]["pr_fm"]
-                th_mo = total_gpa_calculation[so_text]["th_mo"]
-                pr_mo = total_gpa_calculation[so_text]["pr_mo"]
+            subject_data = total_gpa_calculation.get(so_text, {})
 
-                print(subject, "FULL")
-                print(th_fm, th_mo, pr_fm, pr_mo)
+            th_fm = subject_data.get('th_fm', 0)
+            th_mo = subject_data.get('th_mo', 0)
+            th_pm = subject_data.get('th_pm', 0)
+            pr_fm = subject_data.get('pr_fm', 0)
+            pr_mo = subject_data.get('pr_mo', 0)
+            pr_pm = subject_data.get('pr_pm', 0)
+
+            # Check if subject was absent in all terms
+            is_subject_absent = (th_mo == 0 and th_fm > 0) or (pr_mo == 0 and pr_fm > 0)
+
+            if th_fm > 0:
+                th_pm = th_pm if th_pm > 0 else int(th_fm * 0.35)
+            if pr_fm > 0:
+                pr_pm = pr_pm if pr_pm > 0 else int(pr_fm * 0.40)
+
+            if is_subject_absent:
+                # Subject absent - show Abs, no GPA
+                t_gpa = type('obj', (object,), {'th_grade': 'Abs', 'th_symbol': ' ', 'th_point': '-'})
+                p_gpa = type('obj', (object,), {'pr_grade': 'Abs', 'pr_symbol': ' ', 'pr_point': '-'})
+                absent_subjects += 1
             else:
-                print(f"For {student.student.reg_no}, Data regarding {subject} is missing. ",
-                                    f"It can be either full marks or just marks.")
-                if str(subject.id)+"th_fm" in sub_total_fm_pm:
-                    th_fm =  sub_total_fm_pm[str(subject.id)+"th_fm"]
-                else:
-                    th_fm =  0                       
-                
-                if str(subject.id)+"pr_fm" in sub_total_fm_pm:
-                    pr_fm = sub_total_fm_pm[str(subject.id)+"pr_fm"]
-                else:
-                    pr_fm = 0
-                
-                th_mo = 0 
-                pr_mo = 0
+                t_gpa = GradeAndGpaNonGradeTheory(th_fm, th_mo, th_pm) if th_fm > 0 else type('obj', (object,), {'th_grade': ' ', 'th_symbol': ' ', 'th_point': 0})
+                p_gpa = GradeAndGpaNonGradePractical(pr_fm, pr_mo, pr_pm) if pr_fm > 0 else type('obj', (object,), {'pr_grade': ' ', 'pr_symbol': ' ', 'pr_point': 0})
 
-            t_gpa = GradeAndGpaNonGradeTheory(th_fm, th_mo)
             mo_dict[so_text + "_th_mo_grade"] = t_gpa.th_grade
             mo_dict[so_text + "_th_mo_grade_point"] = t_gpa.th_point
             mo_dict[so_text + "_th_mo_grade_point_symbol"] = t_gpa.th_symbol
 
-            p_gpa = GradeAndGpaNonGradePractical(pr_fm, pr_mo)
             mo_dict[so_text + "_pr_mo_grade"] = p_gpa.pr_grade
             mo_dict[so_text + "_pr_mo_grade_point"] = p_gpa.pr_point
             mo_dict[so_text + "_pr_mo_grade_point_symbol"] = p_gpa.pr_symbol
-   
+
+            # Combined pass/fail check: both TH and PR must pass
+            if not is_subject_absent:
+                th_passed = th_fm == 0 or th_mo >= th_pm
+                pr_passed = pr_fm == 0 or pr_mo >= pr_pm
+                subject_passed = th_passed and pr_passed
+
+                if subject_passed:
+                    total_gp += (t_gpa.th_point if th_fm > 0 else 0) + (p_gpa.pr_point if pr_fm > 0 else 0)
+                    passed_subjects += 1
+                else:
+                    failed_subjects += 1
+
+        # Calculate GPA (only from passed subjects)
+        gpa = round(total_gp / passed_subjects, 2) if passed_subjects > 0 else '-'
+        mo_dict[str(student.student.reg_no) + "_gpa"] = gpa
+
+        # Remarks
+        if absent_subjects > 0:
+            mo_dict[str(student.student.reg_no) + "_remarks"] = "Absent in " + str(absent_subjects) + " subject(s)"
+        elif failed_subjects > 0:
+            mo_dict[str(student.student.reg_no) + "_remarks"] = "Failed in " + str(failed_subjects) + " subject(s)"
+        else:
+            mo_dict[str(student.student.reg_no) + "_remarks"] = "Passed"
+
+        data[sn] = {
+            "session_detail": student,
+            "student_detail": student.student,
+            "reg_no": student.student.reg_no,
+            "name": student.student.name,
+            "grade": student.grade,
+            "section": student.section,
+            "no_of_school_days": data[sn].get("no_of_school_days"),
+            "no_of_present_days": data[sn].get("no_of_present_days"),
+        }
+
+    # Prepare spacing for template
+    sub_count = len(grade_subjects)
+    the_space = "a" * (12 - sub_count)
 
     context = {
         "term_list": term_list,
@@ -9693,8 +9709,9 @@ def get_marks_grade_sheet(**kwargs):
         "logo": logo,
         "mo_dict": json.dumps(mo_dict),
         "no_of_subjects": subjects.count(),
-        "th_pr_count": subjects.count()*2,
+        "th_pr_count": subjects.count() * 2,
         "term_acronym": term_acronym,
+        "the_space": the_space,
     }
 
     return context

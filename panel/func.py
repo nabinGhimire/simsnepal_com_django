@@ -2730,10 +2730,8 @@ class GradeAndGpaNonGraded:
             
 
 class GradeAndGpaNonGradeTheory:
-    def __init__(self, fm_th, mo_th):
+    def __init__(self, fm_th, mo_th, pm_marks=None):
         self.fm_th = fm_th
-        # self.pm_th = pm_th
-        # self.pm_pr = pm_pr
         self.mo_th = mo_th
 
         self.total_fm = 0
@@ -2758,24 +2756,25 @@ class GradeAndGpaNonGradeTheory:
             self.pr_grade = ' '
             self.pr_point = 0
 
-            if (mo_th/fm_th)*100 < 35:
+            # Use provided pass marks or fallback to 35%
+            pass_percent = pm_marks * 100 / fm_th if pm_marks and fm_th > 0 else 35
+            if th_percent < pass_percent:
                 self.fail += 1
                     
-        if(self.fm_th <= 0):
+        if self.fm_th <= 0:
             self.percent = 0
         else:
-            self.percent = (self.mo_th / self.fm_th)*100
+            self.percent = (self.mo_th / self.fm_th) * 100
             
         self.total_grade, self.total_symbol, self.total_point = get_grade_point(self.percent)
 
-        if self.fail >0:
-            self.final_fail +=1
+        if self.fail > 0:
+            self.final_fail += 1
+
 
 class GradeAndGpaNonGradePractical:
-    def __init__(self, fm_pr, mo_pr):
+    def __init__(self, fm_pr, mo_pr, pm_marks=None):
         self.fm_pr = fm_pr
-        # self.pm_th = pm_th
-        # self.pm_pr = pm_pr
         self.mo_pr = mo_pr
 
         self.total_fm = 0
@@ -2794,35 +2793,26 @@ class GradeAndGpaNonGradePractical:
         self.final_fail = 0
         self.total_symbol = ' '
 
-        
         if fm_pr > 0:
-            # Only Practical Marks
-            self.total_fm = fm_pr
-            self.total_mo = mo_pr
-
             pr_percent = get_percentage(mo_pr, fm_pr)
             self.pr_grade, self.pr_symbol, self.pr_point = get_grade_point(pr_percent)
             self.th_grade = ' '
             self.th_point = 0
 
-            if (mo_pr/fm_pr)*100 < 40:
+            # Use provided pass marks or fallback to 40%
+            pass_percent = pm_marks * 100 / fm_pr if pm_marks and fm_pr > 0 else 40
+            if pr_percent < pass_percent:
                 self.fail += 1
 
-
-                    
-        if(self.fm_pr <= 0):
+        if self.fm_pr <= 0:
             self.percent = 0
         else:
-            self.percent = (self.mo_pr / self.fm_pr)*100
+            self.percent = (self.mo_pr / self.fm_pr) * 100
             
         self.total_grade, self.total_symbol, self.total_point = get_grade_point(self.percent)
 
-        # if priority:
-        #     if self.total_point < 1.6:
-        #         self.final_fail += 1
-        #         #self.total_grade += "FAIL"
-        if self.fail >0:
-            self.final_fail +=1
+        if self.fail > 0:
+            self.final_fail += 1
 
 
 class GradeAndGpaNew:
