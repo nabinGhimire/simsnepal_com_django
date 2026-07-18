@@ -72,26 +72,26 @@
       <div class="col-12">
         <table id="ledgerTable">
           <thead>
-            <tr>
-              <th rowspan="2">S.N</th>
-              <th rowspan="2">Reg No</th>
-              <th rowspan="2">Roll</th>
-              <th rowspan="2">Name</th>
-              {% if ledgermode in "23" %}
-                <th rowspan="2">Term</th>
-              {% endif %}
-              {% for fm in subject_fm_list %}
-                <th colspan="{% if fm.pr_fm > 0 %}2{% else %}1{% endif %}">{{ fm.name }}</th>
-              {% endfor %}
-            </tr>
-            <tr>
-              {% for fm in subject_fm_list %}
-                <th>TH<br><small style="font-weight:normal;">FM: {{ fm.th_fm }}</small></th>
-                {% if fm.pr_fm > 0 %}
-                <th>PR<br><small style="font-weight:normal;">FM: {{ fm.pr_fm }}</small></th>
+<tr>
+                <th rowspan="2">S.N</th>
+                <th rowspan="2">Reg No</th>
+                <th rowspan="2">Roll</th>
+                <th rowspan="2">Name</th>
+                {% if ledgermode in "23" %}
+                  <th rowspan="2">Term</th>
                 {% endif %}
-              {% endfor %}
-            </tr>
+                {% for fm in subject_fm_list %}
+                  <th colspan="{% if fm.pr_fm > 0 %}2{% else %}1{% endif %}">{{ fm.name }}</th>
+                {% endfor %}
+              </tr>
+              <tr>
+                {% for fm in subject_fm_list %}
+                  <th>{{ terminology.theory_short|default:"TH" }}<br><small style="font-weight:normal;">FM: {{ fm.th_fm }}</small></th>
+                  {% if fm.pr_fm > 0 %}
+                  <th>{{ terminology.practical_short|default:"PR" }}<br><small style="font-weight:normal;">FM: {{ fm.pr_fm }}</small></th>
+                  {% endif %}
+                {% endfor %}
+              </tr>
           </thead>
           <tbody>
             {% for student in student_data %}
@@ -141,14 +141,14 @@
           <tr>
             <th>#</th>
             <th>Subject</th>
-            <th>TH Full Marks</th>
-            <th>TH Pass Mark</th>
-            <th>TH Pass % needed</th>
-            <th>PR Full Marks</th>
-            <th>PR Pass Mark</th>
-            <th>PR Pass % needed</th>
+            <th>{{ terminology.theory_short|default:"TH" }} Full Marks</th>
+            <th>{{ terminology.theory_short|default:"TH" }} Pass Mark</th>
+            <th>{{ terminology.theory_short|default:"TH" }} Pass % needed</th>
+            <th>{{ terminology.practical_short|default:"PR" }} Full Marks</th>
+            <th>{{ terminology.practical_short|default:"PR" }} Pass Mark</th>
+            <th>{{ terminology.practical_short|default:"PR" }} Pass % needed</th>
             <th>Total FM</th>
-            <th>Has Practical?</th>
+            <th>Has {{ terminology.practical_short|default:"PR" }}?</th>
           </tr>
         </thead>
         <tbody>

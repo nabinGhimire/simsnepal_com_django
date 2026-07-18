@@ -48,8 +48,21 @@ from xhtml2pdf import pisa
 # from sso.models import HamroUserProfile
 # # from session.models import get_current_session
 # from .func import *
-
-# Standard library
+from .func import (
+    _parse_weighted_term_config,
+    build_weighted_mo_dict_for_students,
+    get_percentage,
+    get_grade_point,
+    get_grade_point_exam,
+    GradeAndGpa,
+    GradeAndGpaNew,
+    GradeAndGpaNonGradeTheory,
+    GradeAndGpaNonGradePractical,
+    GradeAndGpaNonGradeTheoryExam,
+    GradeAndGpaNonGradePracticalExam,
+    remarks,
+    calculate_rank,
+)
 import json
 import logging
 import secrets
