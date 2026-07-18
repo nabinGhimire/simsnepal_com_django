@@ -1890,6 +1890,37 @@ def addfullmarks(request, grade, term):
     return render(request, "panel/addfullmarks.html", context)
 
 
+@login_required
+def terminology_management(request):
+    """Manage school-specific terminology (TH/PR labels, etc.)"""
+    user = request.user
+    branchuser, error = get_branch_info(user)
+    if error:
+        return HttpResponse(f'{error} Click <a href="/">Here</a> to go the homepage.')
+
+    school = branchuser.school
+    current_session = get_current_session()
+
+    # Get or create terminology for this school
+    terminology, created = SchoolTerminology.objects.get_or_create(school=school)
+
+    if request.method == "POST":
+        terminology.theory_short = request.POST.get('theory_short', 'TH').strip() or 'TH'
+        terminology.theory_long = request.POST.get('theory_long', 'Theory').strip() or 'Theory'
+        terminology.practical_short = request.POST.get('practical_short', 'PR').strip() or 'PR'
+        terminology.practical_long = request.POST.get('practical_long', 'Practical').strip() or 'Practical'
+        terminology.save()
+        messages.success(request, "Terminology updated successfully.")
+        return redirect('panel:terminology_management')
+
+    context = {
+        "school": school,
+        "terminology": terminology,
+        "current_session": current_session,
+    }
+    return render(request, "panel/terminology_management.html", context)
+
+
 def addfullmarksedit(request, grade, term):
     the_grade = grade
     the_term = term
@@ -7916,6 +7947,12 @@ def print_gradesheet(request):
             spacing = max(0, 12 - grade_subjects.count())
             the_space = range(spacing)
 
+            # Get school terminology
+            try:
+                terminology = SchoolTerminology.objects.get(school=school)
+            except SchoolTerminology.DoesNotExist:
+                terminology = None
+
             base_context = {
                 "term_list": term_list,
                 "no_of_terms": no_of_terms,
@@ -7934,6 +7971,7 @@ def print_gradesheet(request):
                 "mo_dict": json.dumps(mo_dict),
                 "term_acronym": term_acronym,
                 "the_space": the_space,
+                "terminology": terminology,
             }
 
             if int(result_type) == 1:
@@ -9490,6 +9528,12 @@ def get_marks_grade_sheet(**kwargs):
     logo = kwargs['logo']
     term_acronym = kwargs['term_acronym']
 
+    # Get school terminology
+    try:
+        terminology = SchoolTerminology.objects.get(school=school)
+    except SchoolTerminology.DoesNotExist:
+        terminology = None
+
     sn = 0
     data = {}
 
@@ -9712,6 +9756,7 @@ def get_marks_grade_sheet(**kwargs):
         "th_pr_count": subjects.count() * 2,
         "term_acronym": term_acronym,
         "the_space": the_space,
+        "terminology": terminology,
     }
 
     return context
@@ -10883,6 +10928,12 @@ def get_marks_grade_sheet_new_grading_system_exam_updated(**kwargs):
         the_space = "a" * (12 - sub_count)
 
         # Prepare final context for template rendering
+        # Get school terminology
+        try:
+            terminology = SchoolTerminology.objects.get(school=school)
+        except SchoolTerminology.DoesNotExist:
+            terminology = None
+
         context = {
             "term_list": term_list,
             "no_of_terms": no_of_terms,
@@ -10903,7 +10954,8 @@ def get_marks_grade_sheet_new_grading_system_exam_updated(**kwargs):
             "no_of_subjects": len(subjects),
             "th_pr_count": len(subjects) * 2,
             "term_acronym": term_acronym,
-            "the_space": the_space
+            "the_space": the_space,
+            "terminology": terminology,
         }
 
         return context
@@ -11248,6 +11300,7 @@ def print_grade_ledger_exam(request):
                 "th_pr_count": subjects.count() * 2,
                 "board": board,
                 "term_acronym": term_acronym,
+                "terminology": terminology,
             }
 
         if this_term.final_term:

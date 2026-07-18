@@ -12,6 +12,7 @@ urlpatterns = [
     path("hwsubject/", views.hwsubject, name="flip_subject_priority"),
     path("lock-screen/", views.lockscreen, name="lockscreen"),
     path("fullmarks/", views.fullmarks, name="fullmarks"),
+    path("terminology/", views.terminology_management, name="terminology_management"),
     path("subjectwise/", views.subjectwisemarksformbase, name="subjectwisemarks"),
     # path("subjectmanagement/", views.subjectmanagement, name="subjectmanagement"),
     path("terms/", views.termmanagement, name="termmanagement"),

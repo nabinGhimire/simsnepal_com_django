@@ -1,0 +1,154 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+{% block title %}Terminology Management | SIMSNepal{% endblock %}
+
+{% block navbar %}
+  {% if branchuser.admin_status %}
+    {% include 'snippets/nav_admin.html' %}
+  {% else %}
+    {% include 'snippets/nav_teacher.html' %}
+  {% endif %}
+{% endblock navbar %}
+
+{% block page_header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <div class="page-pretitle">Exam</div>
+        <h2 class="page-title">Terminology Management</h2>
+      </div>
+      <div class="col-auto ms-auto">
+        <div class="btn-list">
+          <a href="{% url 'panel:fullmarks' %}" class="btn btn-outline-secondary">
+            <i class="ti ti-arrow-left me-1"></i> Back to Full Marks
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock page_header %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h3 class="card-title">School Terminology Settings</h3>
+      </div>
+      <div class="card-body">
+        <p class="text-secondary mb-4">
+          Customize the labels used for Theory and Practical/Internal Evaluation throughout the grade sheets and reports.
+          Changes apply school-wide. Defaults are "TH"/"Theory" and "PR"/"Practical".
+        </p>
+
+        <form method="POST" class="row g-3">
+          {% csrf_token %}
+          
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Theory</label>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label">Short Label <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="theory_short" value="{{ terminology.theory_short }}" maxlength="10" required>
+                <div class="form-text">Used in column headers (e.g., "TH")</div>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Long Label <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="theory_long" value="{{ terminology.theory_long }}" maxlength="50" required>
+                <div class="form-text">Used in legends/footers (e.g., "Theory")</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Practical / Internal Evaluation</label>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label">Short Label <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="practical_short" value="{{ terminology.practical_short }}" maxlength="10" required>
+                <div class="form-text">Used in column headers (e.g., "PR" or "IN")</div>
+              </div>
+              <div class="col-6">
+                <label class="form-label">Long Label <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="practical_long" value="{{ terminology.practical_long }}" maxlength="50" required>
+                <div class="form-text">Used in legends/footers (e.g., "Practical" or "Internal Evaluation")</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 mt-3">
+            <button type="submit" class="btn btn-primary">
+              <i class="ti ti-device-floppy me-1"></i> Save Terminology
+            </button>
+            <a href="{% url 'panel:fullmarks' %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h3 class="card-title">Preview</h3>
+      </div>
+      <div class="card-body">
+        <table class="table table-bordered table-sm" style="max-width: 600px;">
+          <thead>
+            <tr class="table-light">
+              <th>Context</th>
+              <th>Theory</th>
+              <th>Practical/Internal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Column Header (Short)</strong></td>
+              <td>{{ terminology.theory_short }}</td>
+              <td>{{ terminology.practical_short }}</td>
+            </tr>
+            <tr>
+              <td><strong>Legend/Footer (Long)</strong></td>
+              <td>{{ terminology.theory_long }}</td>
+              <td>{{ terminology.practical_long }}</td>
+            </tr>
+            <tr>
+              <td><strong>Acronyms Section</strong></td>
+              <td>{{ terminology.theory_short }} = {{ terminology.theory_long }}</td>
+              <td>{{ terminology.practical_short }} = {{ terminology.practical_long }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+  // Live preview update
+  document.querySelectorAll('input[name="theory_short"], input[name="theory_long"], input[name="practical_short"], input[name="practical_long"]').forEach(function(input) {
+    input.addEventListener('input', function() {
+      updatePreview();
+    });
+  });
+
+  function updatePreview() {
+    const theoryShort = document.querySelector('input[name="theory_short"]').value || 'TH';
+    const theoryLong = document.querySelector('input[name="theory_long"]').value || 'Theory';
+    const practicalShort = document.querySelector('input[name="practical_short"]').value || 'PR';
+    const practicalLong = document.querySelector('input[name="practical_long"]').value || 'Practical';
+
+    document.querySelectorAll('.preview-theory-short').forEach(el => el.textContent = theoryShort);
+    document.querySelectorAll('.preview-theory-long').forEach(el => el.textContent = theoryLong);
+    document.querySelectorAll('.preview-practical-short').forEach(el => el.textContent = practicalShort);
+    document.querySelectorAll('.preview-practical-long').forEach(el => el.textContent = practicalLong);
+  }
+</script>
+{% endblock extra_js %}

@@ -421,6 +421,23 @@ class SchoolResultType(models.Model):
     result_type = models.IntegerField()
 
 
+class SchoolTerminology(models.Model):
+    """Custom terminology for Theory (TH) and Practical (PR) per school."""
+    school = models.OneToOneField(SchoolBranch, on_delete=models.CASCADE, related_name='terminology')
+    theory_short = models.CharField(max_length=10, default='TH')
+    theory_long = models.CharField(max_length=50, default='Theory')
+    practical_short = models.CharField(max_length=10, default='PR')
+    practical_long = models.CharField(max_length=50, default='Practical')
+    updated_on = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Terminology for {self.school.name}"
+
+    class Meta:
+        verbose_name = "School Terminology"
+        verbose_name_plural = "School Terminologies"
+
+
 class LiveResult(models.Model):
     school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE)
     term = models.IntegerField()
