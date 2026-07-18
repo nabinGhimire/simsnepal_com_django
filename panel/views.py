@@ -2733,6 +2733,13 @@ def print_ledger_preview(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
+
+    # Get school terminology
+    try:
+        terminology = SchoolTerminology.objects.get(school=school)
+    except SchoolTerminology.DoesNotExist:
+        terminology = None
+
     if request.method == "POST":
         edusession = request.POST.get("edusession")
         term = request.POST.get("term")
@@ -2917,6 +2924,7 @@ def print_ledger_preview(request):
             "student_data": student_data_list, "grade": this_grade, "section": this_section,
             "subjects": subjects, "ledgermode": ledgermode, "ledgertype": "2", # Always marks for preview
             "subject_fm_list": subject_fm_list,
+            "terminology": terminology,
         }
         return render(request, "panel/printledgerpreview.html", context)
     else:
