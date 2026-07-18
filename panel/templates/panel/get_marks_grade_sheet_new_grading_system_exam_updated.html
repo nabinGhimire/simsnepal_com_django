@@ -134,8 +134,8 @@
         </tr>
         <tr>
             {% for x in no_of_terms_range %}
-                <th>TH</th>
-                <th>PR</th>
+                <th>{{ terminology.theory_short|default:"TH" }}</th>
+                <th>{{ terminology.practical_short|default:"PR" }}</th>
               {% endfor %}
             <th class="first subjects">GRADE</th>
             <th class="first subjects">GP</th>
@@ -264,12 +264,12 @@
                                                 <th style="font-size:80%">MEANING</th>
                                             </tr>
                                             <tr>
-                                                <td>TH</td>
-                                                <td style="font-size:80%">Theory</td>
+                                                <td>{{ terminology.theory_short|default:"TH" }}</td>
+                                                <td style="font-size:80%">{{ terminology.theory_long|default:"Theory" }}</td>
                                             </tr>
                                             <tr>
-                                                <td>IN</td>
-                                                <td style="font-size:80%">Internal Evalution</td>
+                                                <td>{{ terminology.practical_short|default:"PR" }}</td>
+                                                <td style="font-size:80%">{{ terminology.practical_long|default:"Practical" }}</td>
                                             </tr>
 
                                             <tr>

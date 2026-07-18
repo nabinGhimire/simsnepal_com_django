@@ -147,7 +147,7 @@
                                     <tr class="tr-end">
                                         <td class="subjects" rowspan="2">{{ forloop.counter }}</td>
                                         <td class="subject" style="text-align: left" rowspan="2">{{ sub }}</td>
-                                        <td class="subject" style="text-align: left">TH</td>
+                                        <td class="subject" style="text-align: left">{{ terminology.theory_short|default:"TH" }}</td>
                                         {% for term in term_list %}
                                           <td class="subject" style="text-align: center;">
                                             <span id="{{ student.reg_no }}_{{ sub.id }}_{{ term }}_th_grade"></span>
@@ -167,7 +167,7 @@
                                     </tr>
                                     <tr class="tr-end">
                                         <!-- <td class="subject" style="text-align: left">NEPALI (IN)</td> -->
-                                        <td class="subject" style="text-align: left">IN</td>
+                                        <td class="subject" style="text-align: left">{{ terminology.practical_short|default:"IN" }}</td>
                                         {% for term in term_list %}
                                           <td class="subject" style="text-align: center;">
                                             <span id="{{ student.reg_no }}_{{ sub.id }}_{{ term }}_pr_grade"></span>
@@ -275,12 +275,12 @@
                                                 <th style="font-size:80%">MEANING</th>
                                             </tr>
                                             <tr>
-                                                <td>TH</td>
-                                                <td style="font-size:80%">Theory</td>
+                                                <td>{{ terminology.theory_short|default:"TH" }}</td>
+                                                <td style="font-size:80%">{{ terminology.theory_long|default:"Theory" }}</td>
                                             </tr>
                                             <tr>
-                                                <td>IN</td>
-                                                <td style="font-size:80%">Internal Evalution</td>
+                                                <td>{{ terminology.practical_short|default:"IN" }}</td>
+                                                <td style="font-size:80%">{{ terminology.practical_long|default:"Internal Evaluation" }}</td>
                                             </tr>
 
                                             <tr>
