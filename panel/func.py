@@ -2617,17 +2617,17 @@ def get_grade_point(percent):
     elif 90 <= percent <= 100:
         return ["A","+", 4.0]
     elif 80 <= percent < 90:
-        return ["A"," ", 3.6]
+        return ["A","+", 3.6]
     elif 70 <= percent < 80:
         return ["B","+", 3.2]
     elif 60 <= percent < 70:
-        return ["B"," ", 2.8]
+        return ["B","+", 2.8]
     elif 50 <= percent < 60:
         return ["C","+", 2.4]
     elif 40 <= percent < 50:
-        return ["C"," ", 2.0]
+        return ["C","+", 2.0]
     elif 35 <= percent < 40:
-        return ["D"," ", 1.6]
+        return ["D","+", 1.6]
     elif 0 <= percent < 35:
         return ["NG"," ", 0]
 

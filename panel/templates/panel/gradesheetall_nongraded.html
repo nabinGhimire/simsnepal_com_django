@@ -146,7 +146,7 @@
                                 {% for sub in subjects %}
                                     <tr class="tr-end">
                                         <td class="subjects" rowspan="2">{{ forloop.counter }}</td>
-                                        <td class="subject" style="text-align: left" rowspan="2">{{ sub }}</td>
+                                        <td class="subject" style="text-align: left" rowspan="2">{{ sub.subject }}</td>
                                         <td class="subject" style="text-align: left">{{ terminology.theory_short|default:"TH" }}</td>
                                         {% for term in term_list %}
                                           <td class="subject" style="text-align: center;">

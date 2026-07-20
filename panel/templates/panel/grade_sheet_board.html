@@ -597,7 +597,7 @@ background-color: #ddd!important;
                             {# {{ sub }}#}
                             <tr>
                                 <td class="subjects">{{ forloop.counter }}</td>
-                                <td class="subject" style="text-align: left">{{ sub }}</td>
+                                <td class="subject" style="text-align: left">{{ sub.subject }}</td>
                                 {% for term in term_list %}
                                 <td class="subject" style="text-align: center;"><span
                                         id="{{ student.reg_no }}_{{ sub.id }}_{{ term }}_th_grade"></span><sup

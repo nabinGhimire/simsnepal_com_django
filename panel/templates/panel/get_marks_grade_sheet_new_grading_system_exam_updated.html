@@ -144,7 +144,7 @@
         {% for sub in subjects %}
         <tr class="tr-end">
             <td class="subjects">{{ forloop.counter }}</td>
-            <td class="subject" style="text-align: left">{{ sub }}</td>
+            <td class="subject" style="text-align: left">{{ sub.subject }}</td>
             
             <!-- Term exam grades (TH/PR combined in one cell) -->
             {% for term in term_list %}

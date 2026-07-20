@@ -121,7 +121,7 @@
           {% for sub in grade_subjects %}
             <tr>
             <td>{{ forloop.counter }}</td>
-            <td>{{ sub }}</td>
+            <td>{{ sub.subject }}</td>
                 {% for term in term_list %}
                     <td><span id="{{ student.student.reg_no }}_{{ sub.id }}_{{ term }}_th_grade"></span></td>
                     <td><span id="{{ student.student.reg_no }}_{{ sub.id }}_{{ term }}_pr_grade"></span></td>
