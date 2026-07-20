@@ -9724,7 +9724,14 @@ def get_marks_grade_sheet(**kwargs):
                 subject_passed = th_passed and pr_passed
 
                 if subject_passed:
-                    total_gp += (t_gpa.th_point if th_fm > 0 else 0) + (p_gpa.pr_point if pr_fm > 0 else 0)
+                    # Each subject contributes ONE grade point (average of TH and PR if both exist)
+                    subject_points = []
+                    if th_fm > 0:
+                        subject_points.append(t_gpa.th_point)
+                    if pr_fm > 0:
+                        subject_points.append(p_gpa.pr_point)
+                    if subject_points:
+                        total_gp += sum(subject_points) / len(subject_points)
                     passed_subjects += 1
                 else:
                     failed_subjects += 1
