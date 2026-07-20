@@ -3067,6 +3067,25 @@ def get_grade_point_exam(percent):
         return ["NG", " ", 0]  # Explicit 0 points for failures
 
 
+def get_grade_point_from_point(point):
+    if point >= 4.0:
+        return ["A", "+"]
+    elif point >= 3.6:
+        return ["A", " "]
+    elif point >= 3.2:
+        return ["B", "+"]
+    elif point >= 2.8:
+        return ["B", " "]
+    elif point >= 2.4:
+        return ["C", "+"]
+    elif point >= 2.0:
+        return ["C", " "]
+    elif point >= 1.6:
+        return ["D", " "]
+    else:
+        return ["NG", " "]
+
+
 def _parse_weighted_term_config(weight_config, target_term_id, include_current=False):
     """
     Normalize weighted-term config to:
