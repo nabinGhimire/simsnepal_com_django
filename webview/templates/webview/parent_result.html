@@ -86,7 +86,7 @@
                 </h4>
               </div>
 
-              {% if term_data.term.status.value == 'Current(Result Published)' %}
+              {% if term_data.term.status_id == 3 %}
               <div class="table-responsive">
                 <table class="table table-vcenter card-table table-striped table-bordered">
                   <thead>
@@ -129,7 +129,7 @@
               </div>
               {% else %}
               <div class="alert alert-info m-3 mb-4">
-                Results for this term are not yet published.
+                Results for this term are not yet published in HamroApp.
               </div>
               {% endif %}
             </div>
