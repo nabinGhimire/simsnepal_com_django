@@ -311,6 +311,7 @@ def parent_result(request):
             "error_message": f"No student profiles are linked to phone number '{phone}'."
         })
         
+    token = request.GET.get("token") or request.POST.get("token")
     student_results = []
     for student in students:
         ss_qs = StudentSession.objects.filter(
@@ -324,28 +325,30 @@ def parent_result(request):
             
         ss = ss_qs.first()
         
-        marks = MarkObtained.objects.filter(
+        # Get distinct terms for this student (from marks entered)
+        term_ids = MarkObtained.objects.filter(
             student=student,
             session=current_session,
             school=student.school,
             grade=ss.grade
-        ).select_related('term', 'subject')
+        ).values_list('term_id', flat=True).distinct()
         
-        terms_data = {}
-        for mark in marks:
-            term_name = mark.term.term_name
-            if term_name not in terms_data:
-                terms_data[term_name] = {
-                    'term': mark.term,
-                    'marks': []
-                }
-            terms_data[term_name]['marks'].append(mark)
-            
+        terms = SchoolTerm.objects.filter(id__in=term_ids).select_related('status')
+        
+        terms_list = []
+        for term in terms:
+            terms_list.append({
+                'term': term,
+                'is_published': term.status_id == 3,
+                'detail_url': f"/webview/parent/result/detail/?token={token}&student={student.reg_no}&term={term.id}"
+            })
+        
         student_results.append({
             'student': student,
             'grade': ss.grade,
             'section': ss.section,
-            'terms': terms_data.values()
+            'roll_no': ss.roll_no,
+            'terms': terms_list,
         })
         
     context = {
@@ -353,6 +356,235 @@ def parent_result(request):
         'parent_phone': phone,
     }
     return render(request, "webview/parent_result.html", context)
+
+
+def parent_result_detail(request):
+    from panel.func import get_percentage, get_grade_point
+    from sms.models import GradeFullMarks, Attendance, Rank, SchoolTerminology
+
+    phone = validate_webview_token(request, "parent")
+    if not phone:
+        return render(request, "webview/error.html", {
+            "error_title": "Unauthorized Access",
+            "error_message": "Invalid or expired token. Please reopen the page from the app."
+        })
+
+    current_session = get_current_session()
+    if not current_session:
+        return render(request, "webview/error.html", {
+            "error_title": "Configuration Error",
+            "error_message": "No active academic session configured."
+        })
+
+    student_reg = request.GET.get("student")
+    term_id = request.GET.get("term")
+
+    if not student_reg or not term_id:
+        return render(request, "webview/error.html", {
+            "error_title": "Missing Parameters",
+            "error_message": "Student and term parameters are required."
+        })
+
+    try:
+        phone_int = int(phone)
+    except ValueError:
+        return render(request, "webview/error.html", {
+            "error_title": "Invalid Phone",
+            "error_message": "Verified phone format is invalid."
+        })
+
+    # Verify student belongs to this parent
+    try:
+        student = Student.objects.select_related('school').get(
+            reg_no=student_reg,
+            status=True
+        )
+    except Student.DoesNotExist:
+        return render(request, "webview/error.html", {
+            "error_title": "Student Not Found",
+            "error_message": "The requested student was not found."
+        })
+
+    if not (student.fathers_phone == phone_int or
+            student.mothers_phone == phone_int or
+            student.guardian_phone == phone_int):
+        return render(request, "webview/error.html", {
+            "error_title": "Unauthorized",
+            "error_message": "You are not authorized to view this student's results."
+        })
+
+    # Verify term exists and result is published
+    try:
+        term = SchoolTerm.objects.select_related('status').get(id=term_id)
+    except SchoolTerm.DoesNotExist:
+        return render(request, "webview/error.html", {
+            "error_title": "Term Not Found",
+            "error_message": "The requested term was not found."
+        })
+
+    if term.status_id != 3:
+        return render(request, "webview/error.html", {
+            "error_title": "Results Not Published",
+            "error_message": "Results for this term are not yet published."
+        })
+
+    # Get student session info
+    ss = StudentSession.objects.filter(
+        student=student, session=current_session, status=True
+    ).select_related('grade', 'section').first()
+
+    if not ss:
+        return render(request, "webview/error.html", {
+            "error_title": "Enrollment Not Found",
+            "error_message": "Student is not enrolled in the current session."
+        })
+
+    # Get marks obtained
+    marks = MarkObtained.objects.filter(
+        student=student,
+        session=current_session,
+        school=student.school,
+        grade=ss.grade,
+        term=term
+    ).select_related('subject')
+
+    # Get full marks configuration
+    full_marks_qs = GradeFullMarks.objects.filter(
+        session=current_session,
+        school=student.school,
+        grade=ss.grade,
+        term=term
+    )
+    full_marks_map = {fm.subject_id: fm for fm in full_marks_qs}
+
+    # Build result rows with GP calculation
+    result_rows = []
+    grand_total_mo = 0
+    grand_total_fm = 0
+    total_gp_points = 0
+    subject_count = 0
+    has_ng = False
+
+    for mark in marks:
+        fm = full_marks_map.get(mark.subject_id)
+        th_fm = fm.th_fm if fm else 0
+        pr_fm = fm.pr_fm if fm else 0
+        th_pm = fm.th_pm if fm else 0
+        pr_pm = fm.pr_pm if fm else 0
+        total_fm = th_fm + pr_fm
+
+        if mark.is_absent:
+            row = {
+                'subject': mark.subject.subject,
+                'th_fm': th_fm, 'pr_fm': pr_fm,
+                'th_mo': '-', 'pr_mo': '-',
+                'total_mo': 0, 'total_fm': total_fm,
+                'th_grade': '-', 'pr_grade': '-',
+                'final_grade': 'Abs', 'final_gp': 0,
+                'is_absent': True, 'failed': True,
+            }
+            has_ng = True
+        else:
+            total_mo = mark.th_mo + mark.pr_mo
+
+            # Calculate GP per subject using existing logic
+            th_grade_letter, th_symbol, th_point = '', '', 0
+            pr_grade_letter, pr_symbol, pr_point = '', '', 0
+            th_failed = False
+            pr_failed = False
+
+            if th_fm > 0:
+                th_percent = get_percentage(mark.th_mo, th_fm)
+                th_grade_letter, th_symbol, th_point = get_grade_point(th_percent)
+                if th_pm > 0 and mark.th_mo < th_pm:
+                    th_failed = True
+
+            if pr_fm > 0:
+                pr_percent = get_percentage(mark.pr_mo, pr_fm)
+                pr_grade_letter, pr_symbol, pr_point = get_grade_point(pr_percent)
+                if pr_pm > 0 and mark.pr_mo < pr_pm:
+                    pr_failed = True
+
+            subject_failed = th_failed or pr_failed
+
+            # Final grade from total percentage
+            if total_fm > 0:
+                total_percent = get_percentage(total_mo, total_fm)
+                final_grade_letter, final_symbol, final_point = get_grade_point(total_percent)
+            else:
+                final_grade_letter, final_symbol, final_point = 'NG', ' ', 0
+
+            if subject_failed:
+                final_grade_display = 'NG'
+                final_point = 0
+                has_ng = True
+            else:
+                final_grade_display = f"{final_grade_letter}{final_symbol}".strip()
+
+            row = {
+                'subject': mark.subject.subject,
+                'th_fm': th_fm, 'pr_fm': pr_fm,
+                'th_mo': mark.th_mo, 'pr_mo': mark.pr_mo,
+                'total_mo': total_mo, 'total_fm': total_fm,
+                'th_grade': f"{th_grade_letter}{th_symbol}".strip() if th_fm > 0 else '-',
+                'pr_grade': f"{pr_grade_letter}{pr_symbol}".strip() if pr_fm > 0 else '-',
+                'final_grade': final_grade_display,
+                'final_gp': final_point,
+                'is_absent': False,
+                'failed': subject_failed,
+            }
+
+            grand_total_mo += total_mo
+            grand_total_fm += total_fm
+            total_gp_points += final_point
+            subject_count += 1
+
+        result_rows.append(row)
+
+    # Calculate GPA
+    gpa = round(total_gp_points / subject_count, 2) if subject_count > 0 else 0
+
+    # Get GPA grade using existing gpFromGPA logic
+    from panel.func import gpFromGPA
+    gpa_grade = gpFromGPA(gpa) if subject_count > 0 else 'N/A'
+
+    # Get attendance if available
+    attendance = None
+    try:
+        attendance = Attendance.objects.get(
+            reg_no=student, grade=ss.grade,
+            session=current_session, term=term
+        )
+    except (Attendance.DoesNotExist, Attendance.MultipleObjectsReturned):
+        pass
+
+    # Get school terminology
+    terminology = None
+    try:
+        terminology = SchoolTerminology.objects.get(school=student.school)
+    except SchoolTerminology.DoesNotExist:
+        pass
+
+    context = {
+        'student': student,
+        'grade': ss.grade,
+        'section': ss.section,
+        'roll_no': ss.roll_no,
+        'term': term,
+        'session': current_session,
+        'result_rows': result_rows,
+        'grand_total_mo': grand_total_mo,
+        'grand_total_fm': grand_total_fm,
+        'gpa': gpa,
+        'gpa_grade': gpa_grade,
+        'has_ng': has_ng,
+        'attendance': attendance,
+        'th_label': terminology.theory_long if terminology else 'Theory',
+        'pr_label': terminology.practical_long if terminology else 'Practical',
+        'th_short': terminology.theory_short if terminology else 'TH',
+        'pr_short': terminology.practical_short if terminology else 'PR',
+    }
+    return render(request, "webview/parent_result_detail.html", context)
 
 
 @csrf_exempt

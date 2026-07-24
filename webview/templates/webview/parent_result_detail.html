@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{ student.name }} - {{ term.term_name }} Result</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.36.0/tabler-icons.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f7f6;
+      color: #2c3e50;
+      margin: 0;
+      padding-bottom: 30px;
+    }
+
+    /* Header */
+    .header-bar {
+      background: linear-gradient(135deg, #008877, #00a890);
+      color: white;
+      padding: 16px;
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,136,119,0.15);
+    }
+    .header-bar .back-link {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .header-bar .back-link:hover {
+      color: white;
+    }
+
+    /* Student Info Card */
+    .info-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      margin: 16px;
+      overflow: hidden;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .info-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid #f0f5f4;
+    }
+    .info-item:nth-child(odd) {
+      border-right: 1px solid #f0f5f4;
+    }
+    .info-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #999;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .info-value {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    /* Results Table */
+    .result-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      margin: 16px;
+      overflow: hidden;
+    }
+    .result-card-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid #eef3f2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .result-card-header h4 {
+      margin: 0;
+      font-weight: 700;
+      color: #008877;
+      font-size: 1rem;
+    }
+
+    /* Mobile-friendly table */
+    .result-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      min-width: 480px;
+    }
+    .result-table thead th {
+      background-color: #f8faf9;
+      padding: 10px 8px;
+      text-align: center;
+      font-weight: 700;
+      color: #555;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border-bottom: 2px solid #e8eeec;
+      white-space: nowrap;
+    }
+    .result-table thead th:first-child {
+      text-align: left;
+      padding-left: 16px;
+    }
+    .result-table tbody td {
+      padding: 10px 8px;
+      text-align: center;
+      border-bottom: 1px solid #f0f5f4;
+      color: #333;
+    }
+    .result-table tbody td:first-child {
+      text-align: left;
+      padding-left: 16px;
+      font-weight: 600;
+      color: #2c3e50;
+      min-width: 120px;
+    }
+    .result-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .result-table tbody tr.absent-row td {
+      color: #ccc;
+    }
+    .result-table tbody tr.failed-row td:last-child,
+    .result-table tbody tr.failed-row .grade-cell {
+      color: #e74c3c;
+    }
+
+    /* Grade badge */
+    .grade-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+    .grade-pass {
+      background-color: #e6f7f4;
+      color: #008877;
+    }
+    .grade-fail {
+      background-color: #fdecea;
+      color: #e74c3c;
+    }
+    .grade-absent {
+      background-color: #f5f5f5;
+      color: #bbb;
+    }
+
+    /* Summary footer in table */
+    .result-table tfoot td {
+      padding: 12px 8px;
+      font-weight: 700;
+      background-color: #f8faf9;
+      border-top: 2px solid #e8eeec;
+      text-align: center;
+      color: #2c3e50;
+    }
+    .result-table tfoot td:first-child {
+      text-align: left;
+      padding-left: 16px;
+    }
+
+    /* GPA Summary Card */
+    .gpa-card {
+      background: linear-gradient(135deg, #008877, #00a890);
+      border-radius: 14px;
+      margin: 16px;
+      padding: 20px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,136,119,0.15);
+    }
+    .gpa-item {
+      flex: 1;
+    }
+    .gpa-item + .gpa-item {
+      border-left: 1px solid rgba(255,255,255,0.2);
+    }
+    .gpa-number {
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .gpa-label {
+      font-size: 0.72rem;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    /* Attendance Card */
+    .attendance-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      margin: 16px;
+      overflow: hidden;
+    }
+    .attendance-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      text-align: center;
+    }
+    .attendance-item {
+      padding: 14px 8px;
+    }
+    .attendance-item + .attendance-item {
+      border-left: 1px solid #f0f5f4;
+    }
+    .attendance-number {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #2c3e50;
+    }
+    .attendance-label {
+      font-size: 0.7rem;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-top: 2px;
+    }
+
+    /* Disclaimer */
+    .disclaimer-footer {
+      text-align: center;
+      padding: 20px 16px;
+      margin: 8px 16px 0;
+      color: #999;
+      font-size: 0.76rem;
+      line-height: 1.6;
+      border-top: 1px solid #e8eeec;
+    }
+    .disclaimer-footer i {
+      color: #ccc;
+      font-size: 1rem;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    /* Scroll hint for table */
+    .scroll-hint {
+      display: none;
+      text-align: center;
+      padding: 6px;
+      font-size: 0.72rem;
+      color: #bbb;
+    }
+    @media (max-width: 520px) {
+      .scroll-hint { display: block; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <a href="javascript:history.back()" class="back-link">
+      <i class="ti ti-arrow-left"></i> Back to Results
+    </a>
+    <h4 class="mb-0 fw-bold">{{ student.name }}</h4>
+    <small class="opacity-75">{{ term.term_name }}</small>
+  </div>
+
+  <!-- Student Info -->
+  <div class="info-card">
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Student Name</div>
+        <div class="info-value">{{ student.name }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">School</div>
+        <div class="info-value">{{ student.school.name }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Grade</div>
+        <div class="info-value">{{ grade }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Section</div>
+        <div class="info-value">{{ section }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Roll No</div>
+        <div class="info-value">{{ roll_no }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Session</div>
+        <div class="info-value">{{ session }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GPA Summary -->
+  <div class="gpa-card">
+    <div class="gpa-item">
+      <div class="gpa-number">{{ gpa }}</div>
+      <div class="gpa-label">GPA</div>
+    </div>
+    <div class="gpa-item">
+      <div class="gpa-number">{{ gpa_grade }}</div>
+      <div class="gpa-label">Grade</div>
+    </div>
+    <div class="gpa-item">
+      <div class="gpa-number">{{ grand_total_mo }} / {{ grand_total_fm }}</div>
+      <div class="gpa-label">Total Marks</div>
+    </div>
+  </div>
+
+  <!-- Result Table -->
+  <div class="result-card">
+    <div class="result-card-header">
+      <h4><i class="ti ti-report-analytics me-1"></i> {{ term.term_name }}</h4>
+    </div>
+    <div class="scroll-hint">
+      <i class="ti ti-arrows-horizontal"></i> Swipe to see full table
+    </div>
+    <div class="result-table-wrap">
+      <table class="result-table">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>{{ th_short }} FM</th>
+            <th>{{ th_short }}</th>
+            <th>{{ pr_short }} FM</th>
+            <th>{{ pr_short }}</th>
+            <th>Total</th>
+            <th>Grade</th>
+            <th>GP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in result_rows %}
+          <tr class="{% if row.is_absent %}absent-row{% elif row.failed %}failed-row{% endif %}">
+            <td>{{ row.subject }}</td>
+            <td>{{ row.th_fm }}</td>
+            <td>{{ row.th_mo }}</td>
+            <td>{{ row.pr_fm }}</td>
+            <td>{{ row.pr_mo }}</td>
+            <td>
+              {% if row.is_absent %}
+                <span class="text-muted">-</span>
+              {% else %}
+                {{ row.total_mo }}
+              {% endif %}
+            </td>
+            <td class="grade-cell">
+              {% if row.is_absent %}
+                <span class="grade-badge grade-absent">Abs</span>
+              {% elif row.failed %}
+                <span class="grade-badge grade-fail">{{ row.final_grade }}</span>
+              {% else %}
+                <span class="grade-badge grade-pass">{{ row.final_grade }}</span>
+              {% endif %}
+            </td>
+            <td>{{ row.final_gp }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>{{ grand_total_mo }} / {{ grand_total_fm }}</td>
+            <td>{{ gpa_grade }}</td>
+            <td>{{ gpa }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Attendance -->
+  {% if attendance %}
+  <div class="attendance-card">
+    <div class="result-card-header">
+      <h4><i class="ti ti-calendar-stats me-1"></i> Attendance</h4>
+    </div>
+    <div class="attendance-grid">
+      <div class="attendance-item">
+        <div class="attendance-number">{{ attendance.no_of_school_days }}</div>
+        <div class="attendance-label">School Days</div>
+      </div>
+      <div class="attendance-item">
+        <div class="attendance-number" style="color: #008877;">{{ attendance.no_of_present_days }}</div>
+        <div class="attendance-label">Present</div>
+      </div>
+      <div class="attendance-item">
+        <div class="attendance-number" style="color: #e74c3c;">{{ attendance.no_of_absent_days }}</div>
+        <div class="attendance-label">Absent</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Disclaimer -->
+  <div class="disclaimer-footer">
+    <i class="ti ti-info-circle"></i>
+    This is a minified version of the result. For the full detailed result, please contact the school administration or visit the school.
+  </div>
+
+</body>
+</html>
