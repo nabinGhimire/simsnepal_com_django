@@ -102,7 +102,9 @@ from django.contrib import messages
 def get_school_logo_url(school):
     """Return the logo URL for a school. Uses uploaded logo from model, falls back to CDN defaults."""
     if school.logo:
-        return f"https://simsnepal.com/media/{school.logo}"
+        # Add cache-busting timestamp to avoid CDN/browser caching issues
+        import time
+        return f"https://simsnepal.com/media/{school.logo}?v={int(time.time())}"
     # Fallback CDN logos by school ID
     if school.id == 14:
         return "https://cdn.hamro.com/simsnepal/logos/csa.jpg"
@@ -5439,6 +5441,7 @@ def marksgradesheet(request):
             "slogan": True,
             "term": this_term,
             "additional_td": additional_td,
+            "logo": get_school_logo_url(schoolbranch),
         }
         return render(request, "panel/gradesheetall.html", context)
 

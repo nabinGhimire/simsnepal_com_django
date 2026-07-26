@@ -4,6 +4,8 @@ into every template. This ensures the Tabler navbar with grade menus renders
 on all pages — including print pages that previously had no nav.
 """
 from sms.models import BranchUser, GradeLevel, SchoolGrade, EduSession
+import time
+
 this_year = 2083
 
 def nav_context(request):
@@ -37,6 +39,11 @@ def nav_context(request):
 
     all_sessions = EduSession.objects.all().order_by('-year')
 
+    # Add cache-busting logo URL
+    logo_url = None
+    if school.logo:
+        logo_url = f"https://simsnepal.com/media/{school.logo}?v={int(time.time())}"
+
     return {
         'grade_level': grade_level,
         'grades': grades,
@@ -44,6 +51,7 @@ def nav_context(request):
         'nav_grades': grades,
         'branchuser': branchuser,
         'school': school,
+        'school_logo_url': logo_url,
         'current_session': current_session,
         'all_sessions': all_sessions,
     }
