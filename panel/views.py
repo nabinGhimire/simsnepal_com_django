@@ -3691,8 +3691,10 @@ def printledgernow2078(request):
                 data[sn]["subjects"] = sd["subjects"]
                 data[sn]["remarks"] = sd["remarks"]
 
-                # print(detailResult, subjectcount)
+# print(detailResult, subjectcount)
                 # print('Detail Result')
+
+# print('Detail Result')
 
         context = {
             "school": school,
@@ -3703,6 +3705,7 @@ def printledgernow2078(request):
             "section": this_section,
             "subjects": this_grade_subjects,
             "subjectcount": subjectcount,
+            "std_list": data,
         }
         if printtype == 2:
             return render(request, "panel/printledgernow_summarized.html", context)
@@ -3717,8 +3720,6 @@ def printgradesheetnow2079(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    logo = get_school_logo_url(school)
-    slogan = get_school_slogan(school)
 
     if request.method == "POST":
         edusession = request.POST.get("edusession")
@@ -5680,9 +5681,6 @@ def schoolprivate2077(request, regno):
         }
         return render(request, "panel/resultform.html", context)
 
-    logo = get_school_logo_url(school)
-    slogan = get_school_slogan(school)
-
     # if request.method == 'POST':
     #     edusession = request.POST.get('edusession')
     #     term = request.POST.get('term')
@@ -5777,8 +5775,6 @@ def schoolprivate2077(request, regno):
         "subjects": this_grade_subjects,
         "subjectcount": subjectcount,
         "std_list": data,
-        "slogan": slogan,
-        "logo": logo,
     }
     if printtype == 2:
         return render(request, "panel/gradesheetall_077.html", context)
@@ -7372,8 +7368,6 @@ def printgradesheetnow2078(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    logo = get_school_logo_url(school)
-    slogan = get_school_slogan(school)
 
     if request.method == "POST":
         edusession = request.POST.get("edusession")
@@ -7566,10 +7560,7 @@ def new_public_result_2079(request):
             }
             return render(request, "panel/resultform.html", context)
 
-        logo = get_school_logo_url(student.school)
-        slogan = get_school_slogan(student.school)
-
-        # sc
+# sc
         mo_dict = dict()
         grade_subjects = Subject.objects.filter(
             grade=std_session.grade, branch=student.school, status=True
@@ -7788,14 +7779,12 @@ def new_private_result_2079(request, regno):
             )
             context = {"message": message}
             return render(request, "panel/resultform.html", context)
-    else:
-        context = {
-            "message": "Sorry student with the registration number could not be found."
-        }
-        return render(request, "panel/resultform.html", context)
+        else:
+            context = {
+                "message": "Sorry student with the registration number could not be found."
+            }
+            return render(request, "panel/resultform.html", context)
 
-    logo = get_school_logo_url(student.school)
-    slogan = get_school_slogan(student.school)
     # sc
     mo_dict = dict()
     grade_subjects = Subject.objects.filter(
@@ -7836,8 +7825,6 @@ def new_private_result_2079(request, regno):
             "grade_subjects": grade_subjects,
             "mo_dict": json.dumps(mo_dict),
             "the_space": the_space,
-            "slogan": slogan,
-            "logo": logo,
         }
         return render(request, "panel/result79_updated.html", context)
 
@@ -7993,8 +7980,6 @@ def print_gradesheet(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    logo = get_school_logo_url(school)
-    slogan = get_school_slogan(school)
     no_of_terms = 0
 
     if request.method == "POST":
@@ -8490,8 +8475,6 @@ def print_grade_ledger1(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    logo = get_school_logo_url(school)
-    slogan = get_school_slogan(school)
     no_of_terms = 0
 
     if request.method == "POST":
@@ -8746,8 +8729,6 @@ def print_grade_ledger(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    logo = get_school_logo_url(school)
-    slogan = get_school_slogan(school)
     no_of_terms = 0
 
     if request.method == "POST":
@@ -9234,8 +9215,6 @@ def new_private_result_2080(request, regno):
         }
         return render(request, "panel/resultform.html", context)
 
-    logo = get_school_logo_url(student.school)
-    slogan = get_school_slogan(student.school)
     # sc
     mo_dict = dict()
     grade_subjects = Subject.objects.filter(session=this_session,
@@ -11200,8 +11179,6 @@ def print_grade_ledger_exam(request):
     user = request.user
     branchuser = BranchUser.objects.get(user=user)
     school = SchoolBranch.objects.get(id=branchuser.school.id)
-    logo = get_school_logo_url(school)
-    slogan = get_school_slogan(school)
     no_of_terms = 0
     exam_board = [14, 15]  # Define exam_board for board logic
 
