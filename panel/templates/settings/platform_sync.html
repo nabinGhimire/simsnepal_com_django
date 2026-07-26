@@ -78,9 +78,9 @@
             </div>
             
             {% if business_key %}
-            <form method="POST" class="m-0">
+            <form method="POST" class="m-0" id="sync-form">
               {% csrf_token %}
-              <button type="submit" id="sync-button" class="btn btn-primary px-4 py-2">
+              <button type="button" id="sync-button" class="btn btn-primary px-4 py-2">
                 <i class="ti ti-refresh me-1"></i> Sync Now
               </button>
             </form>
@@ -122,12 +122,26 @@
             <tr id="group-row-{{ group.id }}">
               <td class="fw-bold" style="white-space: normal; word-break: break-word; min-width: 200px;">{{ group.name }}</td>
               <td>
-                {% if group.is_broadcast %}
-                  <span class="badge bg-purple-lt">School Channel</span>
-                {% elif not group.grade and not group.section %}
-                  <span class="badge bg-blue-lt">Teachers Group</span>
+                {% if group.group_type == 'school' %}
+                  {% if group.is_broadcast %}
+                    <span class="badge bg-purple-lt">School Channel</span>
+                  {% else %}
+                    <span class="badge bg-purple">School Group</span>
+                  {% endif %}
+                {% elif group.group_type == 'teachers' %}
+                  {% if group.is_broadcast %}
+                    <span class="badge bg-blue-lt">Teachers Channel</span>
+                  {% else %}
+                    <span class="badge bg-blue">Teachers Group</span>
+                  {% endif %}
+                {% elif group.group_type == 'class' %}
+                  {% if group.is_broadcast %}
+                    <span class="badge bg-green-lt">Class Channel</span>
+                  {% else %}
+                    <span class="badge bg-green">Class Group</span>
+                  {% endif %}
                 {% else %}
-                  <span class="badge bg-green-lt">Class Group</span>
+                  <span class="badge bg-secondary">Unknown</span>
                 {% endif %}
               </td>
               <td>
@@ -180,17 +194,160 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     var syncButton = document.getElementById('sync-button');
-    if (syncButton) {
+    var syncForm = document.getElementById('sync-form');
+    var progressModal = null;
+
+    function createProgressModal() {
+      var modalHtml = `
+        <div class="modal fade" id="syncProgressModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="ti ti-refresh me-2"></i> Syncing Platform Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div id="sync-progress-container">
+                  <div class="text-center py-4">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                      <span class="visually-hidden">Initializing...</span>
+                    </div>
+                    <p class="text-secondary" id="sync-status-message">Initializing sync process...</p>
+                  </div>
+                  <div class="progress mb-3" style="height: 8px;">
+                    <div id="sync-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                  </div>
+                  <div id="sync-steps-container"></div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="sync-close-btn" style="display: none;">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      progressModal = new bootstrap.Modal(document.getElementById('syncProgressModal'), {backdrop: 'static', keyboard: false});
+    }
+
+    function updateProgress(step, totalSteps, message, details) {
+      var progress = Math.round((step / totalSteps) * 100);
+      document.getElementById('sync-progress-bar').style.width = progress + '%';
+      document.getElementById('sync-progress-bar').setAttribute('aria-valuenow', progress);
+      document.getElementById('sync-status-message').textContent = message;
+      
+      var stepsContainer = document.getElementById('sync-steps-container');
+      if (details && details.length > 0) {
+        var html = '<div class="small"><strong>Steps:</strong><ul class="mb-0 mt-2" style="padding-left: 1.2rem;">';
+        details.forEach(function(d) {
+          var icon = d.status === 'done' ? 'ti ti-check text-success' : 
+                     d.status === 'current' ? 'ti ti-loader-2 animate-spin text-primary' : 
+                     'ti ti-circle text-muted';
+          html += '<li><i class="' + icon + ' me-2"></i>' + d.label + '</li>';
+        });
+        html += '</ul></div>';
+        stepsContainer.innerHTML = html;
+      }
+    }
+
+    function showCompletion(success, message, elapsed) {
+      var msgEl = document.getElementById('sync-status-message');
+      var barEl = document.getElementById('sync-progress-bar');
+      var closeBtn = document.getElementById('sync-close-btn');
+      
+      if (success) {
+        msgEl.innerHTML = '<i class="ti ti-check-circle text-success me-2"></i>' + message + ' <span class="text-secondary">(' + elapsed + ')</span>';
+        barEl.classList.remove('progress-bar-striped', 'progress-bar-animated');
+        barEl.classList.add('bg-success');
+        barEl.style.width = '100%';
+      } else {
+        msgEl.innerHTML = '<i class="ti ti-alert-circle text-danger me-2"></i>' + message;
+        barEl.classList.remove('progress-bar-striped', 'progress-bar-animated');
+        barEl.classList.add('bg-danger');
+      }
+      closeBtn.style.display = 'inline-block';
+      closeBtn.onclick = function() {
+        progressModal.hide();
+        if (success) location.reload();
+      };
+    }
+
+    if (syncButton && syncForm) {
       syncButton.addEventListener('click', function(e) {
-        var form = this.closest('form');
-        if (form) {
-          e.preventDefault();
-          this.classList.add('disabled');
-          this.disabled = true;
-          this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Synchronizing...';
-          form.submit();
-        }
+        e.preventDefault();
+        if (!progressModal) createProgressModal();
+        progressModal.show();
+        
+        this.classList.add('disabled');
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Synchronizing...';
+
+        var csrfToken = getCookie('csrftoken');
+        
+        // Start the async sync
+        fetch('/panel/settings/platform/sync/async/', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.task_id) {
+            pollSyncProgress(data.task_id);
+          } else if (data.error) {
+            showCompletion(false, 'Failed to start sync: ' + data.error);
+          }
+        })
+        .catch(function(err) {
+          showCompletion(false, 'Network error: ' + err.message);
+        });
       });
+    }
+
+    function pollSyncProgress() {
+      var totalSteps = 3; // School Channel, Teachers Group, Grade Groups
+      var stepLabels = [
+        'Syncing School Channel/Group',
+        'Syncing Teachers Group/Channel',
+        'Syncing Class/Section Groups'
+      ];
+
+      function poll() {
+        fetch('/panel/settings/platform/sync/progress/', {
+          credentials: 'same-origin',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.status === 'running') {
+            var step = (data.step || 1) - 1; // Convert 1-indexed to 0-indexed
+            var message = stepLabels[step] || 'Processing...';
+            var details = [];
+            for (var i = 0; i < totalSteps; i++) {
+              details.push({
+                label: stepLabels[i],
+                status: i < step ? 'done' : (i === step ? 'current' : 'pending')
+              });
+            }
+            updateProgress(step + 1, totalSteps, message, details);
+            setTimeout(poll, 2000);
+          } else if (data.status === 'completed') {
+            showCompletion(true, data.message || 'Sync completed successfully!', data.elapsed || '');
+          } else if (data.status === 'failed' || data.status === 'error') {
+            showCompletion(false, 'Sync failed: ' + (data.message || data.error || 'Unknown error'));
+          } else {
+            setTimeout(poll, 2000);
+          }
+        })
+        .catch(function(err) {
+          showCompletion(false, 'Polling error: ' + err.message);
+        });
+      }
+      poll();
     }
 
     // Per-group resync buttons

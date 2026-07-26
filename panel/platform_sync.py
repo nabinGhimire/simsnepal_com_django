@@ -525,8 +525,8 @@ def sync_school_channel(school, session):
 
     to_add_ids = list(set(to_add_ids))
 
-    # Sync using our optimized membership cache helper
-    sync_group_membership_cached(channel_group, to_add_ids, admin_ids, school=school)
+    # Sync using our optimized membership cache helper with force_refresh to sync from platform
+    sync_group_membership_cached(channel_group, to_add_ids, admin_ids, force_refresh=True, school=school)
 
     return channel_group
 
@@ -671,7 +671,7 @@ def sync_teachers_group(school, session):
 
     # Build admin ID set (owner + teachers)
     # admin_ids already contains owner and teacher IDs
-    sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school)
+    sync_group_membership_cached(group_obj, to_add_ids, admin_ids, force_refresh=True, school=school)
 
     return group_obj
 
@@ -786,6 +786,16 @@ def sync_single_group(group_name, grade, section, session, school):
         ).select_related('teacher')
     ]
     
+    # Also include teachers added by school users for this grade/section but without subject assignments
+    teaching_user_ids = set(u.id for u in teaching_users)
+    extra_teachers = Teacher.objects.filter(
+        added_by__branchuser__school=school
+    ).exclude(
+        teacher_id__in=teaching_user_ids
+    ).select_related('teacher').distinct()
+    for t in extra_teachers:
+        teaching_users.append(t.teacher)
+    
     teacher_emails = [t.email for t in teaching_users if t.email]
     teacher_phones = [format_phone(t.username) for t in teaching_users if t.username and t.username.isdigit()]
 
@@ -869,7 +879,7 @@ def sync_single_group(group_name, grade, section, session, school):
     to_add_ids = list(set(to_add_ids))
 
     # Sync using our optimized membership cache helper
-    sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school)
+    sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school, force_refresh=True)
 
     return group_obj
 
