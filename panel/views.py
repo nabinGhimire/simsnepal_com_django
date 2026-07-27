@@ -1199,15 +1199,38 @@ def listgradeitems(request, gradelevel):
     students = Student.objects.filter(school=branchuser.school, grade=gradelevel.id)
 
     # Determine parent registration status for each student and build a lookup dict
-    from sms.hamro import user_exists_in_hamro
+    from sms.hamro import user_exists_in_hamro, lookup_hamro_users_batch
     parent_exists = {}
+    
+    # Collect all phone numbers first
+    father_phones = {}
+    mother_phones = {}
+    for s in students:
+        if getattr(s, "fathers_phone", None):
+            father_phones[s.reg_no] = s.fathers_phone
+        if getattr(s, "mothers_phone", None):
+            mother_phones[s.reg_no] = s.mothers_phone
+    
+    # Batch lookup if we have any phones
+    phone_to_exists = {}
+    if father_phones or mother_phones:
+        all_phones = list(father_phones.values()) + list(mother_phones.values())
+        try:
+            # Batch lookup - returns dict of phone -> external_id
+            results = lookup_hamro_users_batch(phones=all_phones, school=branchuser.school)
+            # Convert to set of phones that exist
+            phone_to_exists = {phone: bool(ext_id) for phone, ext_id in results.items()}
+        except Exception:
+            # If batch lookup fails (e.g., no platform key), treat all as not registered
+            phone_to_exists = {}
+    
     for s in students:
         registered = False
-        if getattr(s, "fathers_phone", None):
-            if user_exists_in_hamro(phone=s.fathers_phone, school=branchuser.school):
+        if s.reg_no in father_phones:
+            if phone_to_exists.get(father_phones[s.reg_no]):
                 registered = True
-        if not registered and getattr(s, "mothers_phone", None):
-            if user_exists_in_hamro(phone=s.mothers_phone, school=branchuser.school):
+        if not registered and s.reg_no in mother_phones:
+            if phone_to_exists.get(mother_phones[s.reg_no]):
                 registered = True
         s.parent_registered = registered
         parent_exists[s.reg_no] = registered
@@ -5082,16 +5105,35 @@ def search(request):
         student = paginator.page(paginator.num_pages)
 
     # Build parent_exists dictionary
-    from sms.hamro import user_exists_in_hamro
+    from sms.hamro import lookup_hamro_users_batch
     parent_exists = {}
+    
+    father_phones = {}
+    mother_phones = {}
+    for s_sess in student:
+        s = s_sess.student
+        if getattr(s, "fathers_phone", None):
+            father_phones[s.reg_no] = s.fathers_phone
+        if getattr(s, "mothers_phone", None):
+            mother_phones[s.reg_no] = s.mothers_phone
+    
+    phone_to_exists = {}
+    if father_phones or mother_phones:
+        all_phones = list(father_phones.values()) + list(mother_phones.values())
+        try:
+            results = lookup_hamro_users_batch(phones=all_phones, school=schoolbranch)
+            phone_to_exists = {phone: bool(ext_id) for phone, ext_id in results.items()}
+        except Exception:
+            phone_to_exists = {}
+    
     for s_sess in student:
         s = s_sess.student
         registered = False
-        if getattr(s, "fathers_phone", None):
-            if user_exists_in_hamro(phone=s.fathers_phone, school=schoolbranch):
+        if s.reg_no in father_phones:
+            if phone_to_exists.get(father_phones[s.reg_no]):
                 registered = True
-        if not registered and getattr(s, "mothers_phone", None):
-            if user_exists_in_hamro(phone=s.mothers_phone, school=schoolbranch):
+        if not registered and s.reg_no in mother_phones:
+            if phone_to_exists.get(mother_phones[s.reg_no]):
                 registered = True
         parent_exists[s.reg_no] = registered
 
