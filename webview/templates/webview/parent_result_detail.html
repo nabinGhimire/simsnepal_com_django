@@ -349,7 +349,8 @@
             <th>{{ pr_short }} FM</th>
             <th>{{ pr_short }}</th>
             <th>Total</th>
-            <th>Status</th>
+            <th>Grade</th>
+            <th>GP</th>
           </tr>
         </thead>
         <tbody>
@@ -369,13 +370,14 @@
             </td>
             <td>
               {% if row.is_absent %}
-                <span class="badge bg-warning-lt">Absent</span>
+                <span class="grade-badge grade-absent">Abs</span>
               {% elif row.failed %}
-                <span class="badge bg-danger-lt">Fail</span>
+                <span class="grade-badge grade-fail">{{ row.final_grade }}</span>
               {% else %}
-                <span class="badge bg-success-lt">Pass</span>
+                <span class="grade-badge grade-pass">{{ row.final_grade }}</span>
               {% endif %}
             </td>
+            <td>{{ row.final_gp }}</td>
           </tr>
           {% endfor %}
         </tbody>
