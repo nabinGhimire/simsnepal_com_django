@@ -532,6 +532,7 @@ def parent_result_detail(request):
                 'final_gp': final_point,
                 'is_absent': False,
                 'failed': subject_failed,
+                'percent': round(total_percent, 2) if total_fm > 0 else 0,
             }
 
             grand_total_mo += total_mo
@@ -544,9 +545,11 @@ def parent_result_detail(request):
     # Calculate GPA
     gpa = round(total_gp_points / subject_count, 2) if subject_count > 0 else 0
 
-    # Get GPA grade using existing gpFromGPA logic
-    from panel.func import gpFromGPA
-    gpa_grade = gpFromGPA(gpa) if subject_count > 0 else 'N/A'
+    # Count NG subjects for display
+    ng_count = sum(1 for r in result_rows if r.get('failed') or r.get('is_absent'))
+
+    # Calculate overall percent
+    overall_percent = round(get_percentage(grand_total_mo, grand_total_fm), 2) if grand_total_fm > 0 else 0
 
     # Get attendance if available
     attendance = None
@@ -557,6 +560,27 @@ def parent_result_detail(request):
         )
     except (Attendance.DoesNotExist, Attendance.MultipleObjectsReturned):
         pass
+
+    # Get school terminology
+    terminology = None
+    try:
+        terminology = SchoolTerminology.objects.get(school=student.school)
+    except SchoolTerminology.DoesNotExist:
+        pass
+
+    # Rank display: show rank for passed, "NG in X" for failed
+    if has_ng:
+        rank_display = f"NG in {ng_count}"
+    else:
+        # Try to get rank from Rank model
+        try:
+            rank_obj = Rank.objects.get(
+                student=student, session=current_session,
+                grade=ss.grade, term=term
+            )
+            rank_display = f"Rank {rank_obj.rank}"
+        except Rank.DoesNotExist:
+            rank_display = "—"
 
     # Get school terminology
     terminology = None
@@ -578,6 +602,9 @@ def parent_result_detail(request):
         'gpa': gpa,
         'gpa_grade': gpa_grade,
         'has_ng': has_ng,
+        'ng_count': ng_count,
+        'overall_percent': overall_percent,
+        'rank_display': rank_display,
         'attendance': attendance,
         'th_label': terminology.theory_long if terminology else 'Theory',
         'pr_label': terminology.practical_long if terminology else 'Practical',

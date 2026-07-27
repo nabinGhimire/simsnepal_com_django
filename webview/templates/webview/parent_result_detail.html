@@ -318,16 +318,16 @@
   <!-- GPA Summary -->
   <div class="gpa-card">
     <div class="gpa-item">
-      <div class="gpa-number">{{ gpa }}</div>
-      <div class="gpa-label">GPA</div>
-    </div>
-    <div class="gpa-item">
-      <div class="gpa-number">{{ gpa_grade }}</div>
-      <div class="gpa-label">Grade</div>
-    </div>
-    <div class="gpa-item">
       <div class="gpa-number">{{ grand_total_mo }} / {{ grand_total_fm }}</div>
       <div class="gpa-label">Total Marks</div>
+    </div>
+    <div class="gpa-item">
+      <div class="gpa-number">{% if has_ng %}NG in {{ ng_count }} subject{% if ng_count > 1 %}s{% endif %}{% else %}Passed{% endif %}</div>
+      <div class="gpa-label">Status</div>
+    </div>
+    <div class="gpa-item">
+      <div class="gpa-number">{{ rank_display }}</div>
+      <div class="gpa-label">Rank</div>
     </div>
   </div>
 
@@ -349,8 +349,7 @@
             <th>{{ pr_short }} FM</th>
             <th>{{ pr_short }}</th>
             <th>Total</th>
-            <th>Grade</th>
-            <th>GP</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -365,34 +364,21 @@
               {% if row.is_absent %}
                 <span class="text-muted">-</span>
               {% else %}
-                {{ row.total_mo }}
+                {{ row.total_mo }} / {{ row.total_fm }}
               {% endif %}
             </td>
-            <td class="grade-cell">
+            <td>
               {% if row.is_absent %}
-                <span class="grade-badge grade-absent">Abs</span>
+                <span class="badge bg-warning-lt">Absent</span>
               {% elif row.failed %}
-                <span class="grade-badge grade-fail">{{ row.final_grade }}</span>
+                <span class="badge bg-danger-lt">Fail</span>
               {% else %}
-                <span class="grade-badge grade-pass">{{ row.final_grade }}</span>
+                <span class="badge bg-success-lt">Pass</span>
               {% endif %}
             </td>
-            <td>{{ row.final_gp }}</td>
           </tr>
           {% endfor %}
         </tbody>
-        <tfoot>
-          <tr>
-            <td>Total</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td>{{ grand_total_mo }} / {{ grand_total_fm }}</td>
-            <td>{{ gpa_grade }}</td>
-            <td>{{ gpa }}</td>
-          </tr>
-        </tfoot>
       </table>
     </div>
   </div>
