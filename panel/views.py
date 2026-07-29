@@ -8113,6 +8113,10 @@ def print_gradesheet(request):
 
         term_acronym = dict()
 
+        # Get school slogan and logo
+        slogan = get_school_slogan(school)
+        logo = get_school_logo_url(school)
+
         sn = 0
         data = {}
         mo_dict = dict()
