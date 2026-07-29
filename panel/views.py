@@ -7988,7 +7988,7 @@ def new_private_result_2079(request, regno):
     if fail > 0:
         mo_dict[str(student.reg_no) + "_remarks"] = "Labour Hard"
     else:
-        mo_dict[str(student.reg_no) + "_remarks"] = remarks(mo_gpa)
+        mo_dict[str(student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=this_term.final_term)
                 
     student_session = StudentSession.objects.get(student=int(regno), status=True)
     the_space = ""
@@ -8405,6 +8405,19 @@ def print_gradesheet(request):
             term = request.POST.get("term")
             this_term = SchoolTerm.objects.get(id=term)
 
+            # Build subject performance for remarks
+            subject_performance = []
+            for subject in grade_subjects:
+                sub_key = f"{student.student.reg_no}_{subject.id}"
+                if sub_key + "_total_grade" in mo_dict:
+                    sub_grade = mo_dict[sub_key + "_total_grade"]
+                    sub_point = mo_dict[sub_key + "_total_grade_point"]
+                    subject_performance.append({
+                        'subject': subject.subject,
+                        'grade': sub_grade,
+                        'grade_point': sub_point
+                    })
+
             if this_term.final_term:
                 if  fail > 0:
                     if fail >= 2:
@@ -8437,7 +8450,10 @@ def print_gradesheet(request):
                         data[sn]["fail_count"] = fail 
             else:
                 if fail > 0:
-                    mo_dict[str(student.student.reg_no) + "_remarks"] = "Labour Hard"
+                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(
+                        mo_gpa, failed_subjects=fail, absent_subjects=0,
+                        is_final_term=this_term.final_term,
+                        subject_performance=subject_performance)
                     mo_dict[str(student.student.reg_no) + "_fail_status"] = True
                     if pass_fail_filter == 0 or pass_fail_filter == 2:
                         data[sn]["show_data"] = True
@@ -8445,9 +8461,11 @@ def print_gradesheet(request):
                     else:
                         data[sn]["show_data"] = False 
                         data[sn]["fail_count"] = fail
-                    #mo_dict[str(student.student.reg_no) + "_remarks"] = "Upgraded With Condition"
                 else:
-                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa)
+                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(
+                        mo_gpa, failed_subjects=0, absent_subjects=0,
+                        is_final_term=this_term.final_term,
+                        subject_performance=subject_performance)
                     mo_dict[str(student.student.reg_no) + "_fail_status"] = False
                     if pass_fail_filter == 0 or pass_fail_filter == 1:
                         data[sn]["show_data"] = True
@@ -8455,7 +8473,6 @@ def print_gradesheet(request):
                     else:
                         data[sn]["show_data"] = False
                         data[sn]["fail_count"] = fail
-                    #mo_dict[str(student.student.reg_no) + "_remarks"] = "Congratulations! Upgraded to Grade EIGHT"
                 # data[sn]["mo_dict"] = mo_dict
 
                 # data[sn]["mo_dict"] = mo_dict
@@ -8704,7 +8721,7 @@ def print_grade_ledger1(request):
                 if fail > 0:
                     mo_dict[str(student.student.reg_no) + "_remarks"] = "Labour Hard"
                 else: 
-                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa)
+                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=this_term.final_term)
                     std_list[student.student.reg_no] = total_mo
             # data[sn]["mo_dict"] = mo_dict
 
@@ -9010,9 +9027,9 @@ def print_grade_ledger(request):
                 if  fail > 0:
                     data[sn]["fail"] = True
                     if fail >= 2:
-                        mo_dict[str(student.student.reg_no) + "_remarks"] = "Re-examination required for further consideration" #"Failed, Complicated to upgrade."
+                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=True)
                     else:
-                        mo_dict[str(student.student.reg_no) + "_remarks"] = "Can be promoted upon meeting conditions" #"Can not upgrade, Contact for re exam."
+                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=True)
                     #mo_dict[str(student.student.reg_no) + "_remarks"] = "Upgraded With Condition"
                     if data_filter == 1:
                         data[sn]["hide"] = True
@@ -9025,7 +9042,7 @@ def print_grade_ledger(request):
                         data[sn]["hide"] = True
                     elif data_filter == 1:
                         data[sn]["hide"] = "False 3"    
-                    mo_dict[str(student.student.reg_no) + "_remarks"] = "Congratulations, You have been promoted" #"Congratulations, You have been upgraded."
+                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=True)
                     std_list[student.student.reg_no] = total_mo
             else:
                 if fail > 0:
@@ -9034,15 +9051,14 @@ def print_grade_ledger(request):
                         data[sn]["hide"] = True
                     elif data_filter == 2:
                         data[sn]["hide"] = False
-                    mo_dict[str(student.student.reg_no) + "_remarks"] = "Labour Hard"
-                    #mo_dict[str(student.student.reg_no) + "_remarks"] = "Upgraded With Condition"
+                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=False)
                 else:
                     data[sn]["fail"] = False
                     if data_filter == 2:
                         data[sn]["hide"] = True
                     elif data_filter == 1:
                         data[sn]["hide"] = "False 3"       
-                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa)
+                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=False)
                     std_list[student.student.reg_no] = total_mo
                     #mo_dict[str(student.student.reg_no) + "_remarks"] = "Congratulations! Upgraded to Grade EIGHT"
                 # data[sn]["mo_dict"] = mo_dict
@@ -9387,7 +9403,7 @@ def new_private_result_2080(request, regno):
     if fail > 0:
         mo_dict[str(student.reg_no) + "_remarks"] = "Labour Hard"
     else:
-        mo_dict[str(student.reg_no) + "_remarks"] = remarks(mo_gpa)
+        mo_dict[str(student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=this_term.final_term)
                 
     student_session = StudentSession.objects.get(student=int(regno), status=True)
     the_space = ""
@@ -9958,13 +9974,27 @@ def get_marks_grade_sheet(**kwargs):
         gpa = round(total_gp / passed_subjects, 2) if passed_subjects > 0 else '-'
         mo_dict[str(student.student.reg_no) + "_gpa"] = gpa
 
-        # Remarks
-        if absent_subjects > 0:
-            mo_dict[str(student.student.reg_no) + "_remarks"] = "Absent in " + str(absent_subjects) + " subject(s)"
-        elif failed_subjects > 0:
-            mo_dict[str(student.student.reg_no) + "_remarks"] = "Failed in " + str(failed_subjects) + " subject(s)"
+        # Remarks - Use legacy format for final term
+        if this_term.final_term:
+            if failed_subjects == 0:
+                remark = "Congratulations! Promoted to the next class."
+            elif failed_subjects <= 2:
+                remark = "Insufficient to promote. Provision for re-exam."
+            else:
+                remark = "Failed! Insufficient to promote."
+            
+            # Add absent details if any
+            if absent_subjects > 0:
+                remark += f" Absent in {absent_subjects} subject(s)."
         else:
-            mo_dict[str(student.student.reg_no) + "_remarks"] = "Passed"
+            if absent_subjects > 0:
+                remark = "Absent in " + str(absent_subjects) + " subject(s)"
+            elif failed_subjects > 0:
+                remark = "Failed in " + str(failed_subjects) + " subject(s)"
+            else:
+                remark = "Passed"
+
+        mo_dict[str(student.student.reg_no) + "_remarks"] = remark
 
         data[sn] = {
             "session_detail": student,
@@ -11152,10 +11182,12 @@ def get_marks_grade_sheet_new_grading_system_exam_updated(**kwargs):
                 # # Calculate final GPA and remarks
                 if failed_subjects > 0:  # Set GPA to 0 if any subject is failed
                     gpa = 0
-                    remark = this_term.final_term and "Re-examination required for further consideration" or "Labour Hard"
+                    remark = this_term.final_term and "Re-examination required for further consideration" or remarks(
+                        gpa, failed_subjects=failed_subjects, absent_subjects=0, is_final_term=this_term.final_term)
                 else:
                     gpa = round(total_grade_points / passed_subjects, 2) if passed_subjects > 0 else 0
-                    remark = this_term.final_term and "Congratulations, You have been promoted" or remarks(gpa)
+                    remark = this_term.final_term and "Congratulations, You have been promoted" or remarks(
+                        gpa, failed_subjects=failed_subjects, absent_subjects=0, is_final_term=this_term.final_term)
 
                 mo_dict.update({
                     f"{reg_no}_gpa": gpa,
@@ -11465,10 +11497,10 @@ def print_grade_ledger_exam(request):
                         data[sn]["fail"] = True
                         if fail >= 2:
                             mo_dict[
-                                str(student.student.reg_no) + "_remarks"] = "Re-examination required for further consideration"
+                                str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=True)
                         else:
                             mo_dict[
-                                str(student.student.reg_no) + "_remarks"] = "Can be promoted upon meeting conditions"
+                                str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=True)
                         if data_filter == 1:
                             data[sn]["hide"] = True
                         elif data_filter == 2:
@@ -11479,7 +11511,7 @@ def print_grade_ledger_exam(request):
                             data[sn]["hide"] = True
                         elif data_filter == 1:
                             data[sn]["hide"] = False
-                        mo_dict[str(student.student.reg_no) + "_remarks"] = "Congratulations, You have been promoted"
+                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=True)
                         std_list[student.student.reg_no] = total_mo
                 else:
                     if fail > 0:
@@ -11488,14 +11520,14 @@ def print_grade_ledger_exam(request):
                             data[sn]["hide"] = True
                         elif data_filter == 2:
                             data[sn]["hide"] = False
-                        mo_dict[str(student.student.reg_no) + "_remarks"] = "Labour Hard"
+                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=False)
                     else:
                         data[sn]["fail"] = False
                         if data_filter == 2:
                             data[sn]["hide"] = True
                         elif data_filter == 1:
                             data[sn]["hide"] = False
-                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa)
+                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=False)
                         std_list[student.student.reg_no] = total_mo
 
             sorted_d = sorted(std_list.items(), key=lambda x: x[1], reverse=True)
@@ -11748,10 +11780,12 @@ def get_marks_grade_sheet_new_grading_system_exam_updated1(**kwargs):
 
                 if failed_subjects > 0:
                     gpa = 0
-                    remark = this_term.final_term and "Re-examination required for further consideration" or "Labour Hard"
+                    remark = this_term.final_term and "Re-examination required for further consideration" or remarks(
+                        gpa, failed_subjects=failed_subjects, absent_subjects=0, is_final_term=this_term.final_term)
                 else:
                     gpa = round(total_grade_points / passed_subjects, 2) if passed_subjects > 0 else 0
-                    remark = this_term.final_term and "Congratulations, You have been promoted" or remarks(gpa)
+                    remark = this_term.final_term and "Congratulations, You have been promoted" or remarks(
+                        gpa, failed_subjects=failed_subjects, absent_subjects=0, is_final_term=this_term.final_term)
 
                 mo_dict.update({
                     f"{reg_no}_gpa": gpa,

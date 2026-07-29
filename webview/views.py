@@ -542,11 +542,15 @@ def parent_result_detail(request):
 
         result_rows.append(row)
 
-    # Calculate GPA
-    gpa = round(total_gp_points / subject_count, 2) if subject_count > 0 else 0
+    # Calculate GPA - if any subject failed (NG), GPA should be 0
+    if has_ng:
+        gpa = 0
+    else:
+        gpa = round(total_gp_points / subject_count, 2) if subject_count > 0 else 0
 
     # Count NG subjects for display
     ng_count = sum(1 for r in result_rows if r.get('failed') or r.get('is_absent'))
+    absent_count = sum(1 for r in result_rows if r.get('is_absent'))
 
     # Calculate overall percent
     overall_percent = round(get_percentage(grand_total_mo, grand_total_fm), 2) if grand_total_fm > 0 else 0
@@ -568,9 +572,12 @@ def parent_result_detail(request):
     except SchoolTerminology.DoesNotExist:
         pass
 
-    # Rank display: show rank for passed, "NG in X" for failed
+    # Rank display: show rank for passed students, "Not Graded" with absent details for failed
     if has_ng:
-        rank_display = f"NG in {ng_count}"
+        if absent_count > 0:
+            rank_display = f"Not Graded (Absent in {absent_count} subject{'s' if absent_count > 1 else ''})"
+        else:
+            rank_display = f"Not Graded (Failed in {ng_count} subject{'s' if ng_count > 1 else ''})"
     else:
         # Try to get rank from Rank model
         try:
@@ -581,13 +588,6 @@ def parent_result_detail(request):
             rank_display = f"Rank {rank_obj.rank}"
         except Rank.DoesNotExist:
             rank_display = "—"
-
-    # Get school terminology
-    terminology = None
-    try:
-        terminology = SchoolTerminology.objects.get(school=student.school)
-    except SchoolTerminology.DoesNotExist:
-        pass
 
     context = {
         'student': student,

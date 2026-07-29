@@ -1,5 +1,4 @@
 from sms.models import *
-from .views import *
 #
 #
 # def detailResult(school, term, grade, student, printtype=0):
@@ -2287,37 +2286,88 @@ def gpFromGPA(gpa):
         return "NG"
 
 
-def remarks(percent):
-    if percent > 4:
-        return ("SOMETHING WRONG", 4.0)
-    if percent == 4:
-        return ("Excellent")
-    elif 3.6 <= percent < 4:
-        return ("Very Nice")
-        # return(result)
-    elif 3.2 <= percent < 3.6:
-        return ("Nice")
-        # return(result)
-    elif 2.8 <= percent < 3.2:
-        return ("Good")
-        # return(result)
-    elif 2.4 <= percent < 2.8:
-        return ("Study More")
-        # return(result)
-    elif 2.0 <= percent < 2.40:
-        return ("Pay Attention")
-        # return(result)
-    elif 1.6 <= percent < 2.0:
-        return ("Labour Hard")
-    elif 1.2 <= percent < 1.6:
-        return ("Labour Hard")
-        # return(result)
-    elif percent >= 0.1 and percent < 1.2:
-        return ("Labour Harder")
-        # return(result)
-    elif percent == 0:
-        return ("Try Next Time")
-        # return(result)
+def remarks(gpa, failed_subjects=0, absent_subjects=0, is_final_term=False, subject_performance=None):
+    """
+    Returns smart, contextual remarks.
+    For final terms (is_final_term=True): Uses legacy format (samataFinalRemarks) with absent details.
+    For mid-terms (is_final_term=False): Provides detailed feedback based on GPA and subject performance.
+    """
+    # Final term logic (legacy format)
+    if is_final_term:
+        if failed_subjects == 0:
+            base_remark = "Congratulations! Promoted to the next class."
+        elif failed_subjects <= 2:
+            base_remark = "Insufficient to promote. Provision for re-exam."
+        else:
+            base_remark = "Failed! Insufficient to promote."
+        
+        if absent_subjects > 0:
+            base_remark += f" Absent in {absent_subjects} subject(s)."
+        
+        return base_remark
+    
+    # Mid-term logic: Smart, detailed feedback
+    if gpa == '-' or gpa == 0:
+        return "Needs significant improvement. Please focus on all subjects."
+    
+    # GPA-based overall assessment
+    if gpa >= 3.6:
+        overall = "Excellent"
+    elif gpa >= 3.2:
+        overall = "Very Good"
+    elif gpa >= 2.8:
+        overall = "Good"
+    elif gpa >= 2.4:
+        overall = "Satisfactory"
+    elif gpa >= 2.0:
+        overall = "Average"
+    elif gpa >= 1.6:
+        overall = "Below Average"
+    else:
+        overall = "Needs Improvement"
+    
+    # Build specific subject feedback
+    feedback_parts = [f"Overall: {overall} (GPA: {gpa:.2f})."]
+    
+    if subject_performance:
+        # Find weak and strong subjects
+        weak_subjects = []
+        strong_subjects = []
+        
+        for subj_name, subj_gpa in subject_performance.items():
+            if subj_gpa == 'Abs' or subj_gpa == '-':
+                weak_subjects.append(f"{subj_name} (absent)")
+            elif subj_gpa == 0 or (isinstance(subj_gpa, (int, float)) and subj_gpa < 1.6):
+                weak_subjects.append(subj_name)
+            elif isinstance(subj_gpa, (int, float)) and subj_gpa >= 3.2:
+                strong_subjects.append(subj_name)
+        
+        if weak_subjects:
+            feedback_parts.append(f"Focus needed on: {', '.join(weak_subjects)}.")
+        
+        if strong_subjects and len(strong_subjects) >= 2:
+            feedback_parts.append(f"Strong in: {', '.join(strong_subjects[:3])}.")
+    
+    # Add attendance note if absent
+    if absent_subjects > 0:
+        feedback_parts.append(f"Absent in {absent_subjects} subject(s) - regular attendance recommended.")
+    
+    # Add motivational closing
+    if gpa >= 3.6:
+        feedback_parts.append("Keep up the excellent work!")
+    elif gpa >= 2.8:
+        feedback_parts.append("Good progress - maintain consistency.")
+    elif gpa >= 2.0:
+        feedback_parts.append("Room for improvement - targeted study will help.")
+    else:
+        feedback_parts.append("Extra effort needed - seek teacher guidance.")
+    
+    return " ".join(feedback_parts)
+
+
+def get_midterm_remarks(gpa, subject_performance=None, absent_subjects=0):
+    """Wrapper for mid-term remarks with explicit parameters."""
+    return remarks(gpa, failed_subjects=0, absent_subjects=absent_subjects, is_final_term=False, subject_performance=subject_performance)
 
 
 def calculate_rank(school, session, grade, term, section=None, regno=None, rank_by="total"):
@@ -2569,12 +2619,23 @@ class GradeAndGpa:
         else:
             self.percent = (self.total_mo / self.total_fm)*100
             
-        self.total_grade, self.total_symbol, self.total_point = get_grade_point(self.percent)
+        # Check if either TH or PR is NG (below passing marks)
+        # Theory pass is 35% (grade point 1.6), Practical pass is 40% (grade point 1.6)
+        th_is_ng = fm_th > 0 and self.th_point < 1.6
+        pr_is_ng = fm_pr > 0 and self.pr_point < 1.6
+        
+        if th_is_ng or pr_is_ng:
+            # If either TH or PR is NG, overall is NG with 0 grade point
+            self.total_grade = "NG"
+            self.total_symbol = ""
+            self.total_point = 0
+            self.fail += 1
+        else:
+            self.total_grade, self.total_symbol, self.total_point = get_grade_point(self.percent)
 
         if priority:
             if self.total_point < 1.6:
                 self.final_fail += 1
-                #self.total_grade += "FAIL"
             
 
 # def get_grade_point(self, percent):
@@ -2894,8 +2955,20 @@ class GradeAndGpaNew:
         else:
             self.percent = 0
 
-        # Default grade assignment before result_type handling
-        self.total_grade, self.total_symbol, self.total_point = get_grade_point(self.percent)
+        # Check if either TH or PR is NG (below passing marks)
+        # Theory pass is 35% (grade point 1.6), Practical pass is 40% (grade point 1.6)
+        th_is_ng = fm_th > 0 and self.th_point < 1.6
+        pr_is_ng = fm_pr > 0 and self.pr_point < 1.6
+        
+        if th_is_ng or pr_is_ng:
+            # If either TH or PR is NG, overall is NG with 0 grade point
+            self.total_grade = "NG"
+            self.total_symbol = ""
+            self.total_point = 0
+            self.fail += 1
+        else:
+            # Default grade assignment before result_type handling
+            self.total_grade, self.total_symbol, self.total_point = get_grade_point(self.percent)
 
         # Final fail (priority subjects below threshold)
         if priority and self.total_point < 1.6:
@@ -2991,7 +3064,7 @@ class GradeAndGpaNonGradeTheoryExam:
             self.th_grade, self.th_symbol, self.th_point = get_grade_point_exam(th_percent)
             
             # Explicitly set grade point to 0 for failed subjects
-            if th_percent < 40:
+            if th_percent < 35:
                 self.fail = 1
                 self.th_point = 0  # Force 0 grade points for failures
                 
@@ -3023,7 +3096,7 @@ class GradeAndGpaNonGradePracticalExam:
             self.pr_grade, self.pr_symbol, self.pr_point = get_grade_point(pr_percent)
             
             # Explicitly set grade point to 0 for failed subjects
-            if pr_percent < 40:
+            if pr_percent < 35:
                 self.fail = 1
                 self.pr_point = 0  # Force 0 grade points for failures
                 
