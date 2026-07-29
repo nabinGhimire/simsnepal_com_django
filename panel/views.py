@@ -9977,25 +9977,13 @@ def get_marks_grade_sheet(**kwargs):
         gpa = round(total_gp / passed_subjects, 2) if passed_subjects > 0 else '-'
         mo_dict[str(student.student.reg_no) + "_gpa"] = gpa
 
-        # Remarks - Use legacy format for final term
-        if this_term.final_term:
-            if failed_subjects == 0:
-                remark = "Congratulations! Promoted to the next class."
-            elif failed_subjects <= 2:
-                remark = "Insufficient to promote. Provision for re-exam."
-            else:
-                remark = "Failed! Insufficient to promote."
-            
-            # Add absent details if any
-            if absent_subjects > 0:
-                remark += f" Absent in {absent_subjects} subject(s)."
+        # Remarks - Use smart remarks function
+        if gpa == '-':
+            gpa_for_remarks = 0
         else:
-            if absent_subjects > 0:
-                remark = "Absent in " + str(absent_subjects) + " subject(s)"
-            elif failed_subjects > 0:
-                remark = "Failed in " + str(failed_subjects) + " subject(s)"
-            else:
-                remark = "Passed"
+            gpa_for_remarks = gpa
+        
+        remark = remarks(gpa_for_remarks, failed_subjects=failed_subjects, absent_subjects=absent_subjects, is_final_term=this_term.final_term)
 
         mo_dict[str(student.student.reg_no) + "_remarks"] = remark
 
