@@ -8410,17 +8410,16 @@ def print_gradesheet(request):
             this_term = SchoolTerm.objects.get(id=term)
 
             # Build subject performance for remarks
-            subject_performance = []
+            subject_performance = {}
             for subject in grade_subjects:
                 sub_key = f"{student.student.reg_no}_{subject.id}"
                 if sub_key + "_total_grade" in mo_dict:
                     sub_grade = mo_dict[sub_key + "_total_grade"]
                     sub_point = mo_dict[sub_key + "_total_grade_point"]
-                    subject_performance.append({
-                        'subject': subject.subject,
+                    subject_performance[subject.subject] = {
                         'grade': sub_grade,
                         'grade_point': sub_point
-                    })
+                    }
 
             if this_term.final_term:
                 if  fail > 0:
