@@ -9031,9 +9031,9 @@ def print_grade_ledger(request):
                 if  fail > 0:
                     data[sn]["fail"] = True
                     if fail >= 2:
-                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=True)
+                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=this_term.final_term)
                     else:
-                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=True)
+                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=this_term.final_term)
                     #mo_dict[str(student.student.reg_no) + "_remarks"] = "Upgraded With Condition"
                     if data_filter == 1:
                         data[sn]["hide"] = True
@@ -9046,7 +9046,7 @@ def print_grade_ledger(request):
                         data[sn]["hide"] = True
                     elif data_filter == 1:
                         data[sn]["hide"] = "False 3"    
-                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=True)
+                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=this_term.final_term)
                     std_list[student.student.reg_no] = total_mo
             else:
                 if fail > 0:
@@ -9055,14 +9055,14 @@ def print_grade_ledger(request):
                         data[sn]["hide"] = True
                     elif data_filter == 2:
                         data[sn]["hide"] = False
-                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=False)
+                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=this_term.final_term)
                 else:
                     data[sn]["fail"] = False
                     if data_filter == 2:
                         data[sn]["hide"] = True
                     elif data_filter == 1:
                         data[sn]["hide"] = "False 3"       
-                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=False)
+                    mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=this_term.final_term)
                     std_list[student.student.reg_no] = total_mo
                     #mo_dict[str(student.student.reg_no) + "_remarks"] = "Congratulations! Upgraded to Grade EIGHT"
                 # data[sn]["mo_dict"] = mo_dict
@@ -11501,10 +11501,10 @@ def print_grade_ledger_exam(request):
                         data[sn]["fail"] = True
                         if fail >= 2:
                             mo_dict[
-                                str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=True)
+                                str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=this_term.final_term)
                         else:
                             mo_dict[
-                                str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=True)
+                                str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=this_term.final_term)
                         if data_filter == 1:
                             data[sn]["hide"] = True
                         elif data_filter == 2:
@@ -11515,7 +11515,7 @@ def print_grade_ledger_exam(request):
                             data[sn]["hide"] = True
                         elif data_filter == 1:
                             data[sn]["hide"] = False
-                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=True)
+                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=this_term.final_term)
                         std_list[student.student.reg_no] = total_mo
                 else:
                     if fail > 0:
@@ -11524,14 +11524,14 @@ def print_grade_ledger_exam(request):
                             data[sn]["hide"] = True
                         elif data_filter == 2:
                             data[sn]["hide"] = False
-                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=False)
+                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=fail, absent_subjects=0, is_final_term=this_term.final_term)
                     else:
                         data[sn]["fail"] = False
                         if data_filter == 2:
                             data[sn]["hide"] = True
                         elif data_filter == 1:
                             data[sn]["hide"] = False
-                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=False)
+                        mo_dict[str(student.student.reg_no) + "_remarks"] = remarks(mo_gpa, failed_subjects=0, absent_subjects=0, is_final_term=this_term.final_term)
                         std_list[student.student.reg_no] = total_mo
 
             sorted_d = sorted(std_list.items(), key=lambda x: x[1], reverse=True)
