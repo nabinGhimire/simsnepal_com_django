@@ -11,3 +11,9 @@ billing/
 media/
 test_*
 test*
+fix*
+.graphify_detect.json
+.graphify_python
+commit_msg.txt
+find_issue.py
+find_issue2.py

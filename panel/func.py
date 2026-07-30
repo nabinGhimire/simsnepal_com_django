@@ -2821,6 +2821,9 @@ class GradeAndGpaNonGradeTheory:
             pass_percent = pm_marks * 100 / fm_th if pm_marks and fm_th > 0 else 35
             if th_percent < pass_percent:
                 self.fail += 1
+                self.th_grade = "-"
+                self.th_symbol = " "
+                self.th_point = 0
                     
         if self.fm_th <= 0:
             self.percent = 0
@@ -2864,6 +2867,9 @@ class GradeAndGpaNonGradePractical:
             pass_percent = pm_marks * 100 / fm_pr if pm_marks and fm_pr > 0 else 40
             if pr_percent < pass_percent:
                 self.fail += 1
+                self.pr_grade = "-"
+                self.pr_symbol = " "
+                self.pr_point = 0
 
         if self.fm_pr <= 0:
             self.percent = 0
@@ -3049,67 +3055,35 @@ class ExamUpdateSubjectResult:
 
 
 class GradeAndGpaNonGradeTheoryExam:
-    def __init__(self, fm_th, mo_th):
-        self.fm_th = fm_th
-        self.mo_th = mo_th
-        self.th_symbol = ' '
-        self.th_grade = ' '
-        self.th_point = 0
-        self.fail = 0
-        self.final_fail = 0
-        self.total_symbol = ' '
-
-        if fm_th > 0:
-            th_percent = get_percentage(mo_th, fm_th)
-            self.th_grade, self.th_symbol, self.th_point = get_grade_point_exam(th_percent)
-            
-            # Explicitly set grade point to 0 for failed subjects
-            if th_percent < 35:
-                self.fail = 1
-                self.th_point = 0  # Force 0 grade points for failures
-                
-        self.percent = (mo_th / fm_th * 100) if fm_th > 0 else 0
-        
-        # Final grade calculation with enforced 0 points for failures
-        if self.fail:
-            self.total_grade = "NG"
-            self.total_symbol = " "
-            self.total_point = 0
-            self.final_fail = 1
-        else:
-            self.total_grade, self.total_symbol, self.total_point = get_grade_point_exam(self.percent)
+    def __init__(self, fm_th, mo_th, pm_marks=None):
+        self.delegate = GradeAndGpaNonGradeTheory(fm_th, mo_th, pm_marks)
+        self.fm_th = self.delegate.fm_th
+        self.mo_th = self.delegate.mo_th
+        self.th_symbol = self.delegate.th_symbol
+        self.th_grade = self.delegate.th_grade
+        self.th_point = self.delegate.th_point
+        self.fail = self.delegate.fail
+        self.final_fail = self.delegate.final_fail
+        self.percent = self.delegate.percent
+        self.total_grade = self.delegate.total_grade
+        self.total_symbol = self.delegate.total_symbol
+        self.total_point = self.delegate.total_point
 
 
 class GradeAndGpaNonGradePracticalExam:
-    def __init__(self, fm_pr, mo_pr):
-        self.fm_pr = fm_pr
-        self.mo_pr = mo_pr
-        self.pr_symbol = ' '
-        self.pr_grade = ' '
-        self.pr_point = 0
-        self.fail = 0
-        self.final_fail = 0
-        self.total_symbol = ' '
-
-        if fm_pr > 0:
-            pr_percent = get_percentage(mo_pr, fm_pr)
-            self.pr_grade, self.pr_symbol, self.pr_point = get_grade_point(pr_percent)
-            
-            # Explicitly set grade point to 0 for failed subjects
-            if pr_percent < 35:
-                self.fail = 1
-                self.pr_point = 0  # Force 0 grade points for failures
-                
-        self.percent = (mo_pr / fm_pr * 100) if fm_pr > 0 else 0
-        
-        # Final grade calculation with enforced 0 points for failures
-        if self.fail:
-            self.total_grade = "NG"
-            self.total_symbol = " "
-            self.total_point = 0
-            self.final_fail = 1
-        else:
-            self.total_grade, self.total_symbol, self.total_point = get_grade_point(self.percent)
+    def __init__(self, fm_pr, mo_pr, pm_marks=None):
+        self.delegate = GradeAndGpaNonGradePractical(fm_pr, mo_pr, pm_marks)
+        self.fm_pr = self.delegate.fm_pr
+        self.mo_pr = self.delegate.mo_pr
+        self.pr_symbol = self.delegate.pr_symbol
+        self.pr_grade = self.delegate.pr_grade
+        self.pr_point = self.delegate.pr_point
+        self.fail = self.delegate.fail
+        self.final_fail = self.delegate.final_fail
+        self.percent = self.delegate.percent
+        self.total_grade = self.delegate.total_grade
+        self.total_symbol = self.delegate.total_symbol
+        self.total_point = self.delegate.total_point
 
 
 def _as_float(val):
