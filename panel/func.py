@@ -2821,7 +2821,7 @@ class GradeAndGpaNonGradeTheory:
             pass_percent = pm_marks * 100 / fm_th if pm_marks and fm_th > 0 else 35
             if th_percent < pass_percent:
                 self.fail += 1
-                self.th_grade = "-"
+                self.th_grade = "NG"
                 self.th_symbol = " "
                 self.th_point = 0
                     
@@ -2834,6 +2834,9 @@ class GradeAndGpaNonGradeTheory:
 
         if self.fail > 0:
             self.final_fail += 1
+            self.total_grade = "NG"
+            self.total_symbol = " "
+            self.total_point = 0
 
 
 class GradeAndGpaNonGradePractical:
@@ -2867,7 +2870,7 @@ class GradeAndGpaNonGradePractical:
             pass_percent = pm_marks * 100 / fm_pr if pm_marks and fm_pr > 0 else 40
             if pr_percent < pass_percent:
                 self.fail += 1
-                self.pr_grade = "-"
+                self.pr_grade = "NG"
                 self.pr_symbol = " "
                 self.pr_point = 0
 
@@ -2880,6 +2883,9 @@ class GradeAndGpaNonGradePractical:
 
         if self.fail > 0:
             self.final_fail += 1
+            self.total_grade = "NG"
+            self.total_symbol = " "
+            self.total_point = 0
 
 
 class GradeAndGpaNew:
