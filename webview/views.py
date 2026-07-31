@@ -582,7 +582,7 @@ def parent_result_detail(request):
         # Try to get rank from Rank model
         try:
             rank_obj = Rank.objects.get(
-                student=student, session=current_session,
+                reg_no=student, session=current_session,
                 grade=ss.grade, term=term
             )
             rank_display = f"Rank {rank_obj.rank}"
