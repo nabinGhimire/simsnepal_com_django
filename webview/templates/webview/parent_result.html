@@ -128,9 +128,15 @@
           <small class="fw-bold" style="color: #008877;">{{ entry.student.school.name }}</small><br>
           <small class="text-secondary">Grade {{ entry.grade }} &bull; Section {{ entry.section }} &bull; Roll No: {{ entry.roll_no }}</small>
         </div>
-        <span class="avatar avatar-md brand-teal text-white rounded-circle">
-          {{ entry.student.name|slice:":2" }}
-        </span>
+        <div class="avatar avatar-md rounded-circle" style="background-color: #008877;">
+          {% with avatar=entry.student.get_avatar current_session=current_session %}
+            {% if avatar and avatar.url %}
+              <img src="{{ avatar.url }}" alt="{{ entry.student.name }}" class="rounded-circle" style="width: 48px; height: 48px; object-fit: cover;">
+            {% else %}
+              <span class="text-white fw-bold" style="font-size: 1.1rem;">{{ entry.student.name|slice:":2" }}</span>
+            {% endif %}
+          {% endwith %}
+        </div>
       </div>
 
       <div class="card-body p-0">

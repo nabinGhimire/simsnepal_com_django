@@ -271,6 +271,7 @@ def parent_homework(request):
         'selected_date': str(selected_date),
         'parent_phone': phone,
         'token': request.GET.get("token", ""),
+        'current_session': current_session,
     }
     return render(request, "webview/parent_homework.html", context)
 
@@ -354,6 +355,7 @@ def parent_result(request):
     context = {
         'student_results': student_results,
         'parent_phone': phone,
+        'current_session': current_session,
     }
     return render(request, "webview/parent_result.html", context)
 
@@ -615,6 +617,7 @@ def parent_result_detail(request):
         'pr_label': terminology.practical_long if terminology else 'Practical',
         'th_short': terminology.theory_short if terminology else 'TH',
         'pr_short': terminology.practical_short if terminology else 'PR',
+        'current_session': current_session,
     }
     return render(request, "webview/parent_result_detail.html", context)
 
