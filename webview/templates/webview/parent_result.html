@@ -131,9 +131,9 @@
         <div class="avatar avatar-md rounded-circle" style="background-color: #008877;">
           {% with avatar=entry.student.get_avatar current_session=current_session %}
             {% if avatar and avatar.url %}
-              <img src="{{ avatar.url }}" alt="{{ entry.student.name }}" class="rounded-circle" style="width: 48px; height: 48px; object-fit: cover;">
+              <img src="{{ avatar.url }}" alt="{{ entry.student.name }}" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">
             {% else %}
-              <span class="text-white fw-bold" style="font-size: 1.1rem;">{{ entry.student.name|slice:":2" }}</span>
+              <span class="text-white fw-bold" style="font-size: 1.5rem;">{{ entry.student.name|slice:":2" }}</span>
             {% endif %}
           {% endwith %}
         </div>
