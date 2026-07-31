@@ -3196,9 +3196,82 @@ def print_ledger_now(request):
             branch=school, grade=this_grade, session=this_session, status=True
         ).order_by("id")
 
+        subjects = Subject.objects.filter(
+            branch=school, grade=this_grade, session=this_session, status=True
+        ).order_by("id")
+
+        # Students query - needed for all modes including Non-Graded
+        if this_section == False:
+            students = StudentSession.objects.filter(grade=this_grade, session=this_session, status=True)
+            calculated_rank = calculate_rank(school.id, this_session, grade, term, rank_by=rank_by)
+        else:
+            students = StudentSession.objects.filter(grade=this_grade, section=this_section, session=this_session, status=True)
+            calculated_rank = calculate_rank(school.id, this_session, grade, term, this_section, rank_by=rank_by)
+
         source_terms = []
         normalized_wconfig = {}
         from panel.func import _parse_weighted_term_config, _as_float, detailResult2078, grading, split_gpa_grade, GradeAndGpa, GradeAndGpaNew
+        
+        # Non-Graded Mode (Ledger Mode 4) - same calculation as result_type=1 in gradesheet
+        if ledgermode == "4":
+            term_calculation = ResultManagement.objects.get(school_term=this_term)
+            no_of_terms = 0
+            term_list = []
+            term_acronym = {}
+            for key, value in json.loads(term_calculation.term_calculation).items():
+                if value > 0:
+                    no_of_terms += 1
+                    this_term_obj = SchoolTerm.objects.get(id=key)
+                    term_acronym[this_term_obj.name_in_short or this_term_obj.term_name] = this_term_obj.term_name
+                    term_list.append(key)
+            
+            slogan = get_school_slogan(school)
+            logo = get_school_logo_url(school)
+            
+            context = build_grade_ledger_nongraded(
+                no_of_terms=no_of_terms,
+                term_list=term_list,
+                term_calculation=term_calculation,
+                pass_fail_filter=data_filter,
+                students=students,
+                grade_subjects=subjects,
+                this_term=this_term,
+                this_grade=this_grade,
+                school=school,
+                subjects=subjects,
+                this_section=this_section,
+                slogan=slogan,
+                logo=logo,
+                term_acronym=term_acronym,
+                this_session=this_session
+            )
+            # Add rank data and ledgermode to context
+            context["calculated_rank"] = json.dumps(calculated_rank)
+            context["ledgermode"] = ledgermode
+            
+            # Apply ordering for non-graded ledger
+            order_by = int(request.POST.get("order", "1"))
+            data = context["data"]
+            if order_by == 1:
+                sorted_items = sorted(data.items(), key=lambda x: x[1].get("reg_no", ""))
+            elif order_by == 2:
+                sorted_items = sorted(data.items(), key=lambda x: x[1].get("roll_no", 0) or 0)
+            elif order_by == 3:
+                rank_dict = json.loads(context["calculated_rank"])
+                sorted_items = sorted(data.items(), key=lambda x: rank_dict.get(x[1].get("reg_no", ""), 9999))
+            else:
+                sorted_items = list(data.items())
+            
+            new_data = {}
+            for idx, (old_sn, std_data) in enumerate(sorted_items, 1):
+                new_data[idx] = std_data
+            context["data"] = new_data
+            context["std_list"] = new_data
+            
+            if this_term.final_term:
+                return render(request, "panel/grade_ledger_all_final.html", context)
+            else:
+                return render(request, "panel/grade_ledger_all.html", context)
         
         if ledgermode in ["2", "3"] and weighted_config_obj:
             # Use include_current=True because consolidated raw should show all terms with weights > 0
@@ -3221,12 +3294,6 @@ def print_ledger_now(request):
         subjectcount = ""
         for subject in subjects:
             subjectcount += "1"
-        if this_section == False:
-            students = StudentSession.objects.filter(grade=this_grade, session=this_session, status=True)
-            calculated_rank = calculate_rank(school.id, this_session, grade, term, rank_by=rank_by)
-        else:
-            students = StudentSession.objects.filter(grade=this_grade, section=this_section, session=this_session, status=True)
-            calculated_rank = calculate_rank(school.id, this_session, grade, term, this_section, rank_by=rank_by)
 
         # FM/PM cache for pass/fail detection and FM reference table
         gfm_qs = GradeFullMarks.objects.filter(school=school, session=this_session, grade=this_grade, term=this_term)
@@ -11804,13 +11871,22 @@ def build_grade_ledger_nongraded(**kwargs):
                     # Check if student was absent in ALL terms for this subject
                     total_terms = subject_data.get('total_terms', 0)
                     absent_terms = subject_data.get('absent_terms', 0)
-                    all_absent = total_terms > 0 and total_terms == absent_terms
+                    # Only mark as all_absent if there are terms AND all are absent
+                    # Also check if there are actual marks accumulated (th_mo > 0 or pr_mo > 0)
+                    has_marks = subject_data.get('th_mo', 0) > 0 or subject_data.get('pr_mo', 0) > 0
+                    all_absent = total_terms > 0 and total_terms == absent_terms and not has_marks
 
                     if all_absent:
                         mo_dict.update({
                             f"{subject_key}_total_grade": "Abs.",
                             f"{subject_key}_total_symbol": " ",
                             f"{subject_key}_total_grade_point": 0,
+                            f"{subject_key}_total_th_grade": "Abs.",
+                            f"{subject_key}_total_th_symbol": " ",
+                            f"{subject_key}_total_th_point": 0,
+                            f"{subject_key}_total_pr_grade": "Abs.",
+                            f"{subject_key}_total_pr_symbol": " ",
+                            f"{subject_key}_total_pr_point": 0,
                             f"{subject_key}_passed": True  # Don't count as failed
                         })
                         absent_subjects += 1
@@ -11855,6 +11931,14 @@ def build_grade_ledger_nongraded(**kwargs):
                         f"{subject_key}_total_grade": total_grade,
                         f"{subject_key}_total_symbol": total_symbol,
                         f"{subject_key}_total_grade_point": round(total_grade_point, 2),
+                        f"{subject_key}_total_th_grade": th_result.th_grade if th_result else ("-" if th_fm > 0 else ""),
+                        f"{subject_key}_total_th_symbol": th_result.th_symbol if th_result else "",
+                        f"{subject_key}_total_th_point": round(th_result.th_point, 2) if th_result else 0,
+                        f"{subject_key}_total_pr_grade": pr_result.pr_grade if pr_result else ("-" if pr_fm > 0 else ""),
+                        f"{subject_key}_total_pr_symbol": pr_result.pr_symbol if pr_result else "",
+                        f"{subject_key}_total_pr_point": round(pr_result.pr_point, 2) if pr_result else 0,
+                        f"{subject_key}_total_th_fm": th_fm,
+                        f"{subject_key}_total_pr_fm": pr_fm,
                         f"{subject_key}_passed": passed_subject
                     })
 
@@ -11877,10 +11961,27 @@ def build_grade_ledger_nongraded(**kwargs):
                 gpa = round(total_grade_points / passed_subjects, 2) if passed_subjects > 0 else '0.0'
                 remark = this_term.final_term and "Congratulations, You have been promoted" or remarks(gpa)
 
+            # Calculate student-level totals
+            total_mo = 0
+            total_fm = 0
+            for subject in grade_subjects:
+                subject_key = f"{reg_no}_{subject.id}"
+                th_mo_val = total_gpa_calculation.get(subject_key, {}).get('th_mo', 0)
+                th_fm_val = total_gpa_calculation.get(subject_key, {}).get('th_fm', 0)
+                pr_mo_val = total_gpa_calculation.get(subject_key, {}).get('pr_mo', 0)
+                pr_fm_val = total_gpa_calculation.get(subject_key, {}).get('pr_fm', 0)
+                total_mo += th_mo_val + pr_mo_val
+                total_fm += th_fm_val + pr_fm_val
+
+            percentage = round((total_mo * 100 / total_fm), 2) if total_fm > 0 else 0
+
             mo_dict.update({
                 f"{reg_no}_gpa": gpa,
                 f"{reg_no}_passed_all": failed_subjects == 0 and absent_subjects == 0,
-                f"{reg_no}_remarks": remark
+                f"{reg_no}_remarks": remark,
+                f"{reg_no}_total_mo": total_mo,
+                f"{reg_no}_total_fm": total_fm,
+                f"{reg_no}_percentage": percentage
             })
 
             data[sn] = student_data
@@ -11917,6 +12018,22 @@ def build_grade_ledger_nongraded(**kwargs):
         "the_space": the_space,
         "terminology": terminology,
     }
+
+    # Apply pass/fail filter
+    if pass_fail_filter == 1:  # Pass only
+        filtered_data = {}
+        for sn_key, sd in data.items():
+            reg = sd.get('reg_no', '')
+            if mo_dict.get(f"{reg}_passed_all", False):
+                filtered_data[sn_key] = sd
+        data = filtered_data
+    elif pass_fail_filter == 2:  # Fail only
+        filtered_data = {}
+        for sn_key, sd in data.items():
+            reg = sd.get('reg_no', '')
+            if not mo_dict.get(f"{reg}_passed_all", False):
+                filtered_data[sn_key] = sd
+        data = filtered_data
 
     return context
 
