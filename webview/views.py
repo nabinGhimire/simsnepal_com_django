@@ -572,6 +572,11 @@ def parent_result_detail(request):
     except SchoolTerminology.DoesNotExist:
         pass
 
+    # Calculate GPA grade
+    from panel.func import get_grade_point_from_point
+    gpa_grade, gpa_symbol = get_grade_point_from_point(gpa) if gpa > 0 else ('NG', ' ')
+    gpa_grade_display = f"{gpa_grade}{gpa_symbol}".strip()
+
     # Rank display: show rank for passed students, "Not Graded" with absent details for failed
     if has_ng:
         if absent_count > 0:
@@ -600,7 +605,7 @@ def parent_result_detail(request):
         'grand_total_mo': grand_total_mo,
         'grand_total_fm': grand_total_fm,
         'gpa': gpa,
-        'gpa_grade': gpa_grade,
+        'gpa_grade': gpa_grade_display,
         'has_ng': has_ng,
         'ng_count': ng_count,
         'overall_percent': overall_percent,
