@@ -322,12 +322,12 @@
       <div class="gpa-label">Total Marks</div>
     </div>
     <div class="gpa-item">
-      <div class="gpa-number">{% if has_ng %}NG in {{ ng_count }} subject{% if ng_count > 1 %}s{% endif %}{% else %}Passed{% endif %}</div>
-      <div class="gpa-label">Status</div>
+      <div class="gpa-number">{{ gpa }} ({{ gpa_grade }})</div>
+      <div class="gpa-label">GPA</div>
     </div>
     <div class="gpa-item">
-      <div class="gpa-number">{{ rank_display }}</div>
-      <div class="gpa-label">Rank</div>
+      <div class="gpa-number">{{ overall_percent }}%</div>
+      <div class="gpa-label">Percentage</div>
     </div>
   </div>
 
@@ -386,27 +386,25 @@
   </div>
 
   <!-- Attendance -->
-  {% if attendance %}
   <div class="attendance-card">
     <div class="result-card-header">
       <h4><i class="ti ti-calendar-stats me-1"></i> Attendance</h4>
     </div>
     <div class="attendance-grid">
       <div class="attendance-item">
-        <div class="attendance-number">{{ attendance.no_of_school_days }}</div>
+        <div class="attendance-number">{{ attendance.no_of_school_days|default:"N/A" }}</div>
         <div class="attendance-label">School Days</div>
       </div>
       <div class="attendance-item">
-        <div class="attendance-number" style="color: #008877;">{{ attendance.no_of_present_days }}</div>
+        <div class="attendance-number" style="color: #008877;">{{ attendance.no_of_present_days|default:"N/A" }}</div>
         <div class="attendance-label">Present</div>
       </div>
       <div class="attendance-item">
-        <div class="attendance-number" style="color: #e74c3c;">{{ attendance.no_of_absent_days }}</div>
+        <div class="attendance-number" style="color: #e74c3c;">{{ attendance.no_of_absent_days|default:"N/A" }}</div>
         <div class="attendance-label">Absent</div>
       </div>
     </div>
   </div>
-  {% endif %}
 
   <!-- Disclaimer -->
   <div class="disclaimer-footer">
