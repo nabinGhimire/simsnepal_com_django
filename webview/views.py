@@ -583,7 +583,7 @@ def parent_result_detail(request):
         try:
             rank_obj = Rank.objects.get(
                 reg_no=student, session=current_session,
-                grade=ss.grade, term=term
+                grade=ss.grade, term=term.id
             )
             rank_display = f"Rank {rank_obj.rank}"
         except Rank.DoesNotExist:
