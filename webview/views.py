@@ -459,6 +459,13 @@ def parent_result_detail(request):
     )
     full_marks_map = {fm.subject_id: fm for fm in full_marks_qs}
 
+    # Get school terminology early
+    terminology = None
+    try:
+        terminology = SchoolTerminology.objects.get(school=student.school)
+    except SchoolTerminology.DoesNotExist:
+        pass
+
     # Build result rows with Non-Graded calculation (same as panel)
     result_rows = []
     grand_total_mo = 0
@@ -670,13 +677,6 @@ def parent_result_detail(request):
             session=current_session, term=term
         )
     except (Attendance.DoesNotExist, Attendance.MultipleObjectsReturned):
-        pass
-
-    # Get school terminology
-    terminology = None
-    try:
-        terminology = SchoolTerminology.objects.get(school=student.school)
-    except SchoolTerminology.DoesNotExist:
         pass
 
     # Calculate GPA grade
