@@ -362,7 +362,7 @@ def parent_result(request):
 
 def parent_result_detail(request):
     from panel.func import get_percentage, get_grade_point
-    from sms.models import GradeFullMarks, Attendance, Rank, SchoolTerminology
+    from sms.models import GradeFullMarks, Attendance, Rank, SchoolTerminology, SchoolResultType
 
     phone = validate_webview_token(request, "parent")
     if not phone:
@@ -574,6 +574,20 @@ def parent_result_detail(request):
     except SchoolTerminology.DoesNotExist:
         pass
 
+    # Check result type configuration for this school and session
+    result_type = 0  # Default to Legacy System (0)
+    try:
+        school_result_type = SchoolResultType.objects.get(
+            school=student.school,
+            session=current_session
+        )
+        result_type = school_result_type.result_type
+    except SchoolResultType.DoesNotExist:
+        # If not configured, use default (0 = Legacy/Graded)
+        result_type = 0
+
+    print(f"Result type for {student.school.name} in session {current_session}: {result_type}")
+
     # Calculate GPA grade
     from panel.func import get_grade_point_from_point
     gpa_grade, gpa_symbol = get_grade_point_from_point(gpa) if gpa > 0 else ('NG', ' ')
@@ -618,8 +632,17 @@ def parent_result_detail(request):
         'th_short': terminology.theory_short if terminology else 'TH',
         'pr_short': terminology.practical_short if terminology else 'PR',
         'current_session': current_session,
+        'result_type': result_type,  # Pass result_type to template
     }
-    return render(request, "webview/parent_result_detail.html", context)
+    
+    # Render different templates based on result_type
+    # result_type: 0 = Legacy System (old/graded), 1 = Non-Graded System, 2 = Graded System (new)
+    if result_type == 1:
+        # Non-Graded Mode - use simplified template without attendance
+        return render(request, "webview/parent_result_detail_ng.html", context)
+    else:
+        # Legacy or Graded System
+        return render(request, "webview/parent_result_detail.html", context)
 
 
 @csrf_exempt
