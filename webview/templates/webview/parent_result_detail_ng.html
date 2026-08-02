@@ -19,7 +19,7 @@
 
     /* GPA Summary Card - Non-Graded */
     .gpa-card-ng {
-      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      background: linear-gradient(135deg, #008877, #00a890);
       border-radius: 14px;
       margin: 16px;
       padding: 20px;
@@ -28,7 +28,7 @@
       align-items: center;
       justify-content: space-around;
       text-align: center;
-      box-shadow: 0 4px 15px rgba(108,92,231,0.15);
+      box-shadow: 0 4px 15px rgba(0,136,119,0.15);
     }
     .gpa-item-ng {
       flex: 1;
@@ -40,6 +40,14 @@
       font-size: 1.8rem;
       font-weight: 800;
       line-height: 1.1;
+    }
+    @media (max-width: 480px) {
+      .gpa-number-ng {
+        font-size: 1.4rem;
+      }
+      .gpa-card-ng {
+        padding: 16px 12px;
+      }
     }
     .gpa-label-ng {
       font-size: 0.72rem;
