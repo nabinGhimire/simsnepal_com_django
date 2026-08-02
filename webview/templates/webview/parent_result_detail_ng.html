@@ -316,11 +316,11 @@
       <div class="gpa-label-ng">Total Marks</div>
     </div>
     <div class="gpa-item-ng">
-      <div class="gpa-number-ng">{{ gpa }}</div>
+      <div class="gpa-number-ng">{{ gpa_display }}</div>
       <div class="gpa-label-ng">GPA</div>
     </div>
     <div class="gpa-item-ng">
-      <div class="gpa-number-ng">{{ overall_percent }}%</div>
+      <div class="gpa-number-ng">{% if has_ng %}-{% else %}{{ overall_percent }}%{% endif %}</div>
       <div class="gpa-label-ng">Percentage</div>
     </div>
   </div>
