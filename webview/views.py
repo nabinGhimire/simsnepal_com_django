@@ -362,7 +362,7 @@ def parent_result(request):
 
 def parent_result_detail(request):
     from panel.func import get_percentage, get_grade_point
-    from sms.models import GradeFullMarks, Attendance, Rank, SchoolTerminology, SchoolResultType
+    from sms.models import GradeFullMarks, Attendance, Rank, SchoolTerminology, SchoolResultType, LiveResult
 
     phone = validate_webview_token(request, "parent")
     if not phone:
@@ -459,7 +459,31 @@ def parent_result_detail(request):
     )
     full_marks_map = {fm.subject_id: fm for fm in full_marks_qs}
 
-    # Build result rows with GP calculation
+    # Determine result type based on school configuration
+    # Default to 0 (Legacy System) if not configured
+    result_type = 0
+    calc_type = "legacy"
+    
+    # Check if school has a result type configuration for this session
+    try:
+        school_result_type = SchoolResultType.objects.get(
+            school=student.school,
+            session=current_session
+        )
+        result_type = school_result_type.result_type
+        print(f"School config found for {student.school.name}: result_type={result_type}")
+    except SchoolResultType.DoesNotExist:
+        print(f"No School config for {student.school.name}, using default result_type=0")
+
+    # Get LiveResult configuration for calculation type
+    try:
+        live_result = LiveResult.objects.get(school=student.school)
+        calc_type = live_result.calculation_type
+        print(f"LiveResult config: calc_type={calc_type}")
+    except LiveResult.DoesNotExist:
+        print(f"No LiveResult config for {student.school.name}, using default calc_type=legacy")
+
+    # Build result rows with appropriate calculation logic based on configuration
     result_rows = []
     grand_total_mo = 0
     grand_total_fm = 0
@@ -471,8 +495,8 @@ def parent_result_detail(request):
         fm = full_marks_map.get(mark.subject_id)
         th_fm = fm.th_fm if fm else 0
         pr_fm = fm.pr_fm if fm else 0
-        th_pm = fm.th_pm if fm else 0
-        pr_pm = fm.pr_pm if fm else 0
+        th_pm = fm.th_fm if fm else 0
+        pr_pm = fm.pr_fm if fm else 0
         total_fm = th_fm + pr_fm
 
         if mark.is_absent:
@@ -484,44 +508,54 @@ def parent_result_detail(request):
                 'th_grade': '-', 'pr_grade': '-',
                 'final_grade': 'Abs', 'final_gp': 0,
                 'is_absent': True, 'failed': True,
+                'percent': 0
             }
             has_ng = True
         else:
             total_mo = mark.th_mo + mark.pr_mo
-
-            # Calculate GP per subject using existing logic
-            th_grade_letter, th_symbol, th_point = '', '', 0
-            pr_grade_letter, pr_symbol, pr_point = '', '', 0
-            th_failed = False
-            pr_failed = False
-
-            if th_fm > 0:
-                th_percent = get_percentage(mark.th_mo, th_fm)
+            total_percent = get_percentage(total_mo, total_fm) if total_fm > 0 else 0
+            
+            # Apply appropriate calculation logic based on configuration
+            if result_type == 1:
+                # Non-Graded System (result_type=1) - display as percentage-based
+                th_percent = get_percentage(mark.th_mo, th_fm) if th_fm > 0 else 0
+                pr_percent = get_percentage(mark.pr_mo, pr_fm) if pr_fm > 0 else 0
+                
                 th_grade_letter, th_symbol, th_point = get_grade_point(th_percent)
-                if th_pm > 0 and mark.th_mo < th_pm:
-                    th_failed = True
-
-            if pr_fm > 0:
-                pr_percent = get_percentage(mark.pr_mo, pr_fm)
                 pr_grade_letter, pr_symbol, pr_point = get_grade_point(pr_percent)
-                if pr_pm > 0 and mark.pr_mo < pr_pm:
-                    pr_failed = True
-
-            subject_failed = th_failed or pr_failed
-
-            # Final grade from total percentage
-            if total_fm > 0:
-                total_percent = get_percentage(total_mo, total_fm)
-                final_grade_letter, final_symbol, final_point = get_grade_point(total_percent)
+                
+                th_failed = (th_fm > 0 and th_pm > 0 and mark.th_mo < th_pm)
+                pr_failed = (pr_fm > 0 and pr_pm > 0 and mark.pr_mo < pr_pm)
+                
+                if th_failed or pr_failed:
+                    final_grade_display = 'NG'
+                    final_point = 0
+                    has_ng = True
+                else:
+                    # For non-graded, display percentage as grade
+                    final_grade_display = f"{th_percent:.1f}%"
+                    final_point = round((th_point + pr_point) / 2 if (th_point > 0 or pr_point > 0) else 0, 1)
+                
             else:
-                final_grade_letter, final_symbol, final_point = 'NG', ' ', 0
-
-            if subject_failed:
-                final_grade_display = 'NG'
-                final_point = 0
-                has_ng = True
-            else:
-                final_grade_display = f"{final_grade_letter}{final_symbol}".strip()
+                # Legacy System (result_type=0) - display as letter grades
+                th_percent = get_percentage(mark.th_mo, th_fm) if th_fm > 0 else 0
+                pr_percent = get_percentage(mark.pr_mo, pr_fm) if pr_fm > 0 else 0
+                
+                th_grade_letter, th_symbol, th_point = get_grade_point(th_percent)
+                pr_grade_letter, pr_symbol, pr_point = get_grade_point(pr_percent)
+                
+                th_failed = (th_fm > 0 and th_pm > 0 and mark.th_mo < th_pm)
+                pr_failed = (pr_fm > 0 and pr_pm > 0 and mark.pr_mo < pr_pm)
+                
+                subject_failed = th_failed or pr_failed
+                
+                if subject_failed:
+                    final_grade_display = 'NG'
+                    final_point = 0
+                    has_ng = True
+                else:
+                    final_grade_display = f"{th_grade_letter}{th_symbol}{pr_grade_letter}{pr_symbol}".strip()
+                    final_point = th_point + pr_point
 
             row = {
                 'subject': mark.subject.subject,
@@ -533,8 +567,8 @@ def parent_result_detail(request):
                 'final_grade': final_grade_display,
                 'final_gp': final_point,
                 'is_absent': False,
-                'failed': subject_failed,
-                'percent': round(total_percent, 2) if total_fm > 0 else 0,
+                'failed': th_failed or pr_failed,
+                'percent': round(total_percent, 2) if total_fm > 0 else 0
             }
 
             grand_total_mo += total_mo
@@ -544,20 +578,20 @@ def parent_result_detail(request):
 
         result_rows.append(row)
 
-    # Calculate GPA - if any subject failed (NG), GPA should be 0
+    # Calculate GPA
     if has_ng:
         gpa = 0
     else:
         gpa = round(total_gp_points / subject_count, 2) if subject_count > 0 else 0
 
-    # Count NG subjects for display
+    # Count NG subjects
     ng_count = sum(1 for r in result_rows if r.get('failed') or r.get('is_absent'))
     absent_count = sum(1 for r in result_rows if r.get('is_absent'))
 
     # Calculate overall percent
     overall_percent = round(get_percentage(grand_total_mo, grand_total_fm), 2) if grand_total_fm > 0 else 0
 
-    # Get attendance if available
+    # Get attendance
     attendance = None
     try:
         attendance = Attendance.objects.get(
@@ -574,33 +608,18 @@ def parent_result_detail(request):
     except SchoolTerminology.DoesNotExist:
         pass
 
-    # Check result type configuration for this school and session
-    result_type = 0  # Default to Legacy System (0)
-    try:
-        school_result_type = SchoolResultType.objects.get(
-            school=student.school,
-            session=current_session
-        )
-        result_type = school_result_type.result_type
-    except SchoolResultType.DoesNotExist:
-        # If not configured, use default (0 = Legacy/Graded)
-        result_type = 0
-
-    print(f"Result type for {student.school.name} in session {current_session}: {result_type}")
-
     # Calculate GPA grade
     from panel.func import get_grade_point_from_point
     gpa_grade, gpa_symbol = get_grade_point_from_point(gpa) if gpa > 0 else ('NG', ' ')
     gpa_grade_display = f"{gpa_grade}{gpa_symbol}".strip()
 
-    # Rank display: show rank for passed students, "Not Graded" with absent details for failed
+    # Rank display
     if has_ng:
         if absent_count > 0:
             rank_display = f"Not Graded (Absent in {absent_count} subject{'s' if absent_count > 1 else ''})"
         else:
             rank_display = f"Not Graded (Failed in {ng_count} subject{'s' if ng_count > 1 else ''})"
     else:
-        # Try to get rank from Rank model
         try:
             rank_obj = Rank.objects.get(
                 reg_no=student, session=current_session,
@@ -632,16 +651,16 @@ def parent_result_detail(request):
         'th_short': terminology.theory_short if terminology else 'TH',
         'pr_short': terminology.practical_short if terminology else 'PR',
         'current_session': current_session,
-        'result_type': result_type,  # Pass result_type to template
+        'result_type': result_type,
+        'calc_type': calc_type,
     }
-    
-    # Render different templates based on result_type
-    # result_type: 0 = Legacy System (old/graded), 1 = Non-Graded System, 2 = Graded System (new)
+
+    # Render appropriate template based on result_type
+    # result_type: 1 = Non-Graded (shows percentage-based results)
+    # result_type: 0 = Legacy/Graded (shows traditional letter grades)
     if result_type == 1:
-        # Non-Graded Mode - use simplified template without attendance
         return render(request, "webview/parent_result_detail_ng.html", context)
     else:
-        # Legacy or Graded System
         return render(request, "webview/parent_result_detail.html", context)
 
 
