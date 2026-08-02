@@ -619,6 +619,10 @@ def parent_result_detail(request):
                 grand_total_mo += total_mo
                 grand_total_fm += total_fm
 
+    # Add serial numbers
+    for idx, row in enumerate(result_rows):
+        row['sn'] = idx + 1
+
     # Calculate GPA - if any subject failed or absent, GPA should be 0.0
     if has_ng:
         gpa = '0.0'

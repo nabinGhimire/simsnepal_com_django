@@ -192,8 +192,8 @@
       <table class="result-table">
         <thead>
           <tr>
-            <th>Subject</th>
-            <th>{{ th_short }} / {{ pr_short }}</th>
+            <th>S.N</th>
+            <th style="text-align: left;">Subject</th>
             <th>{{ th_short }} FM</th>
             <th>{{ th_short }}</th>
             <th>{{ pr_short }} FM</th>
@@ -206,14 +206,14 @@
         <tbody>
           {% for row in result_rows %}
           <tr class="{% if row.is_absent %}absent-row{% elif row.failed %}failed-row{% endif %}">
-            <td>
-              {% if row.component == 'TH' %}
-                {{ row.subject }}
+            <td style="text-align: center;">{{ row.sn }}</td>
+            <td style="text-align: left;">
+              {% if row.component == 'PR' %}
+                <span style="color: #666; margin-left: 1rem;">{{ row.subject }} ({{ row.component }})</span>
               {% else %}
-                <span style="margin-left: 1rem; color: #666;">{{ row.subject }} ({{ row.component }})</span>
+                <strong>{{ row.subject }}</strong>
               {% endif %}
             </td>
-            <td>{{ row.component }}</td>
             <td>{{ row.th_fm }}</td>
             <td>{{ row.th_mo }}</td>
             <td>{{ row.pr_fm }}</td>
