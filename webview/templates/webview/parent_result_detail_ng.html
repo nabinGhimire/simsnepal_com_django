@@ -49,13 +49,49 @@
       margin-top: 4px;
     }
 
+    /* Student Info Card */
+    .info-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin: 16px;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .info-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .info-item:nth-child(odd) {
+      border-right: 1px solid #e5e7eb;
+    }
+    .info-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #9ca3af;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .info-value {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #1f2937;
+    }
+
     /* Attendance Card */
     .attendance-card {
       background: white;
-      border-radius: 14px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       margin: 16px;
       overflow: hidden;
+      border: 1px solid #e5e7eb;
     }
     .attendance-grid {
       display: grid;
@@ -66,19 +102,63 @@
       padding: 14px 8px;
     }
     .attendance-item + .attendance-item {
-      border-left: 1px solid #f0f5f4;
+      border-left: 1px solid #e5e7eb;
     }
     .attendance-number {
       font-size: 1.4rem;
       font-weight: 800;
-      color: #2c3e50;
+      color: #1f2937;
     }
     .attendance-label {
       font-size: 0.7rem;
-      color: #999;
+      color: #9ca3af;
       text-transform: uppercase;
       letter-spacing: 0.3px;
       margin-top: 2px;
+    }
+
+    /* Result Card */
+    .result-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin: 16px;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+    }
+    .result-card-header {
+      padding: 14px 16px;
+      border-bottom: 2px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .result-card-header h4 {
+      margin: 0;
+      font-weight: 700;
+      color: #6366f1;
+      font-size: 1rem;
+    }
+
+    /* Grade badge */
+    .grade-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+    .grade-pass {
+      background-color: #d1fae5;
+      color: #059669;
+    }
+    .grade-fail {
+      background-color: #fee2e2;
+      color: #dc2626;
+    }
+    .grade-absent {
+      background-color: #f3f4f6;
+      color: #9ca3af;
     }
 
     /* Disclaimer */
@@ -86,13 +166,13 @@
       text-align: center;
       padding: 20px 16px;
       margin: 8px 16px 0;
-      color: #999;
+      color: #9ca3af;
       font-size: 0.76rem;
       line-height: 1.6;
-      border-top: 1px solid #e8eeec;
+      border-top: 1px solid #e5e7eb;
     }
     .disclaimer-footer i {
-      color: #ccc;
+      color: #d1d5db;
       font-size: 1rem;
       display: block;
       margin-bottom: 6px;
@@ -104,10 +184,31 @@
       text-align: center;
       padding: 6px;
       font-size: 0.72rem;
-      color: #bbb;
+      color: #9ca3af;
     }
     @media (max-width: 520px) {
       .scroll-hint { display: block; }
+    }
+
+    /* Table borders - Dark borders */
+    .result-table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    .result-table th,
+    .result-table td {
+      border: 1px solid #9ca3af;
+      padding: 8px;
+    }
+    .result-table th {
+      background-color: #f3f4f6;
+      font-weight: 600;
+    }
+    .tr-end td {
+      border-bottom: 2px solid #6b7280;
+    }
+    .tr-end:last-child td {
+      border-bottom: 2px solid #6b7280;
     }
   </style>
 </head>
@@ -164,7 +265,7 @@
     </div>
   </div>
 
-  <!-- GPA Summary Card - Non-Graded -->
+  <!-- GPA Summary -->
   <div class="gpa-card-ng">
     <div class="gpa-item-ng">
       <div class="gpa-number-ng">{{ grand_total_mo }} / {{ grand_total_fm }}</div>
@@ -189,7 +290,7 @@
       <i class="ti ti-arrows-horizontal"></i> Swipe to see full table
     </div>
     <div class="result-table-wrap">
-<table class="result-table">
+      <table class="result-table">
         <thead>
           <tr>
             <th rowspan="3">S.N</th>
@@ -263,10 +364,6 @@
       </table>
     </div>
   </div>
-  </div>
-      </table>
-    </div>
-  </div>
 
   <!-- Attendance -->
   {% if attendance %}
@@ -280,11 +377,11 @@
         <div class="attendance-label">School Days</div>
       </div>
       <div class="attendance-item">
-        <div class="attendance-number" style="color: #008877;">{{ attendance.no_of_present_days }}</div>
+        <div class="attendance-number" style="color: #059669;">{{ attendance.no_of_present_days }}</div>
         <div class="attendance-label">Present</div>
       </div>
       <div class="attendance-item">
-        <div class="attendance-number" style="color: #e74c3c;">{{ attendance.no_of_absent_days }}</div>
+        <div class="attendance-number" style="color: #dc2626;">{{ attendance.no_of_absent_days }}</div>
         <div class="attendance-label">Absent</div>
       </div>
     </div>
