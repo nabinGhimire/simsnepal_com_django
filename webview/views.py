@@ -478,17 +478,37 @@ def parent_result_detail(request):
         total_fm = th_fm + pr_fm
 
         if mark.is_absent:
-            row = {
+            # Theory row for absent
+            th_row = {
                 'subject': mark.subject.subject,
-                'th_fm': th_fm, 'pr_fm': pr_fm,
+                'component': 'TH',
+                'th_fm': th_fm, 'pr_fm': 0,
                 'th_mo': '-', 'pr_mo': '-',
-                'total_mo': 0, 'total_fm': total_fm,
+                'total_mo': 0, 'total_fm': th_fm,
                 'th_grade': '-', 'pr_grade': '-',
                 'final_grade': 'Abs', 'final_gp': 0,
                 'is_absent': True, 'failed': True,
+                'percent': 0,
             }
+            result_rows.append(th_row)
+            
+            # Practical row for absent (if practical exists)
+            if pr_fm > 0:
+                pr_row = {
+                    'subject': mark.subject.subject,
+                    'component': 'PR',
+                    'th_fm': 0, 'pr_fm': pr_fm,
+                    'th_mo': '-', 'pr_mo': '-',
+                    'total_mo': 0, 'total_fm': pr_fm,
+                    'th_grade': '-', 'pr_grade': '-',
+                    'final_grade': 'Abs', 'final_gp': 0,
+                    'is_absent': True, 'failed': True,
+                    'percent': 0,
+                }
+                result_rows.append(pr_row)
+            
             has_ng = True
-            absent_subjects += 1
+            absent_subjects += 1  # Count at subject level (once per subject)
         else:
             total_mo = mark.th_mo + mark.pr_mo
 
@@ -524,39 +544,80 @@ def parent_result_detail(request):
             subject_failed = th_failed or pr_failed
             is_absent = False
 
-            if subject_failed:
+            # Theory row
+            if th_failed:
                 final_grade_display = 'NG'
                 final_gp = 0
+            elif th_fm > 0:
+                th_percent = get_percentage(mark.th_mo, th_fm)
+                th_grade_letter, th_symbol_final, th_point_final = get_grade_point(th_percent)
+                final_grade_display = f"{th_grade_letter}{th_symbol_final}".strip()
+                final_gp = th_point_final
+            else:
+                final_grade_display = '-'
+                final_gp = 0
+
+            th_row = {
+                'subject': mark.subject.subject,
+                'component': 'TH',
+                'th_fm': th_fm, 'pr_fm': 0,
+                'th_mo': mark.th_mo, 'pr_mo': 0,
+                'total_mo': mark.th_mo, 'total_fm': th_fm,
+                'th_grade': f"{th_grade}{th_symbol}".strip() if th_fm > 0 else '-',
+                'pr_grade': '-',
+                'final_grade': final_grade_display,
+                'final_gp': final_gp if not th_failed else 0,
+                'is_absent': False,
+                'failed': th_failed,
+                'percent': round(get_percentage(mark.th_mo, th_fm), 2) if th_fm > 0 else 0,
+            }
+            result_rows.append(th_row)
+
+            if th_failed:
                 has_ng = True
                 failed_subjects += 1
             else:
-                # For passed subjects, show total percentage grade
-                total_percent = get_percentage(total_mo, total_fm) if total_fm > 0 else 0
-                final_grade_letter, final_symbol, final_point = get_grade_point(total_percent)
-                final_grade_display = f"{final_grade_letter}{final_symbol}".strip()
-                final_gp = final_point
+                total_gp_points += th_point if th_fm > 0 else 0
+                if th_fm > 0:
+                    subject_count += 1
 
-            row = {
-                'subject': mark.subject.subject,
-                'th_fm': th_fm, 'pr_fm': pr_fm,
-                'th_mo': mark.th_mo, 'pr_mo': mark.pr_mo,
-                'total_mo': total_mo, 'total_fm': total_fm,
-                'th_grade': f"{th_grade}{th_symbol}".strip() if th_fm > 0 else '-',
-                'pr_grade': f"{pr_grade}{pr_symbol}".strip() if pr_fm > 0 else '-',
-                'final_grade': final_grade_display,
-                'final_gp': final_gp,
-                'is_absent': is_absent,
-                'failed': subject_failed,
-                'percent': round(get_percentage(total_mo, total_fm), 2) if total_fm > 0 else 0,
-            }
+            # Practical row (if practical exists)
+            if pr_fm > 0:
+                if pr_failed:
+                    final_grade_display = 'NG'
+                    final_gp = 0
+                else:
+                    pr_percent = get_percentage(mark.pr_mo, pr_fm)
+                    pr_grade_letter, pr_symbol_final, pr_point_final = get_grade_point(pr_percent)
+                    final_grade_display = f"{pr_grade_letter}{pr_symbol_final}".strip()
+                    final_gp = pr_point_final
 
-            grand_total_mo += total_mo
-            grand_total_fm += total_fm
-            if not subject_failed:
-                total_gp_points += final_gp
-                subject_count += 1
+                pr_row = {
+                    'subject': mark.subject.subject,
+                    'component': 'PR',
+                    'th_fm': 0, 'pr_fm': pr_fm,
+                    'th_mo': 0, 'pr_mo': mark.pr_mo,
+                    'total_mo': mark.pr_mo, 'total_fm': pr_fm,
+                    'th_grade': '-',
+                    'pr_grade': f"{pr_grade}{pr_symbol}".strip() if pr_fm > 0 else '-',
+                    'final_grade': final_grade_display,
+                    'final_gp': final_gp if not pr_failed else 0,
+                    'is_absent': False,
+                    'failed': pr_failed,
+                    'percent': round(get_percentage(mark.pr_mo, pr_fm), 2) if pr_fm > 0 else 0,
+                }
+                result_rows.append(pr_row)
 
-        result_rows.append(row)
+                if pr_failed:
+                    has_ng = True
+                    failed_subjects += 1
+                else:
+                    total_gp_points += pr_point
+                    subject_count += 1
+
+            if not subject_failed and (th_fm > 0 or pr_fm > 0):
+                grand_total_mo += total_mo
+                grand_total_fm += total_fm
 
     # Calculate GPA - if any subject failed or absent, GPA should be 0.0
     if has_ng:
