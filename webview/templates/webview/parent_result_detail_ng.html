@@ -189,36 +189,55 @@
       <i class="ti ti-arrows-horizontal"></i> Swipe to see full table
     </div>
     <div class="result-table-wrap">
-      <table class="result-table">
+<table class="result-table">
         <thead>
           <tr>
-            <th rowspan="2">S.N</th>
-            <th rowspan="2" style="text-align: left;">SUBJECTS</th>
-            <th colspan="2">OBTAINED GRADE</th>
-            <th colspan="2">AGGREGATE</th>
+            <th rowspan="3">S.N</th>
+            <th rowspan="3" colspan="2" style="text-align: left;">SUBJECTS</th>
+            <th colspan="4">OBTAINED GRADE</th>
+            <th rowspan="2" colspan="2">AGGREGATE</th>
           </tr>
           <tr>
+            <!-- Empty row for multi-term spacing -->
+          </tr>
+          <tr>
+            <th>FM</th>
+            <th>MO</th>
             <th>GRADE</th>
             <th>GP</th>
-            <th>GRADE</th>
-            <th>GP</th>
+            <th class="first subjects">GRADE</th>
+            <th class="first subjects">GP</th>
           </tr>
         </thead>
         <tbody>
           {% for row in result_rows %}
-          <tr class="{% if row.is_absent %}absent-row{% elif row.failed %}failed-row{% endif %}">
+          <tr class="{% if row.is_absent %}absent-row{% elif row.failed %}failed-row{% endif %} tr-end">
             {% if row.is_first_row %}
             <td rowspan="{{ row.rowspan }}" style="text-align: center;">{{ row.sn }}</td>
             <td rowspan="{{ row.rowspan }}" style="text-align: left; font-weight: 600;">{{ row.subject }}</td>
             {% endif %}
-            <td>
+            <td style="text-align: left;">
               {% if row.component == 'TH' %}
-                {{ row.th_short|default:"TH" }}
+                TH
               {% else %}
-                {{ row.pr_short|default:"IN" }}
+                IN
               {% endif %}
             </td>
-            <td>
+            <td style="text-align: center;">
+              {% if row.component == 'TH' %}
+                {{ row.th_fm }}
+              {% else %}
+                {{ row.pr_fm }}
+              {% endif %}
+            </td>
+            <td style="text-align: center;">
+              {% if row.component == 'TH' %}
+                {{ row.th_mo }}
+              {% else %}
+                {{ row.pr_mo }}
+              {% endif %}
+            </td>
+            <td style="text-align: center;">
               {% if row.is_absent %}
                 <span class="grade-badge grade-absent">Abs</span>
               {% elif row.failed %}
@@ -227,8 +246,8 @@
                 <span class="grade-badge grade-pass">{{ row.final_grade }}</span>
               {% endif %}
             </td>
-            <td>{{ row.final_gp }}</td>
-            <td>
+            <td style="text-align: center;">{{ row.final_gp }}</td>
+            <td style="text-align: center;">
               {% if row.is_absent %}
                 <span class="grade-badge grade-absent">Abs</span>
               {% elif row.failed %}
@@ -237,12 +256,13 @@
                 <span class="grade-badge grade-pass">{{ row.final_grade }}</span>
               {% endif %}
             </td>
-            <td>{{ row.final_gp }}</td>
+            <td style="text-align: center;">{{ row.final_gp }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+  </div>
   </div>
       </table>
     </div>
