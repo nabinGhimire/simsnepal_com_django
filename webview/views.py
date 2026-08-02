@@ -459,13 +459,15 @@ def parent_result_detail(request):
     )
     full_marks_map = {fm.subject_id: fm for fm in full_marks_qs}
 
-    # Build result rows with GP calculation
+    # Build result rows with Non-Graded calculation (same as panel)
     result_rows = []
     grand_total_mo = 0
     grand_total_fm = 0
     total_gp_points = 0
     subject_count = 0
     has_ng = False
+    failed_subjects = 0
+    absent_subjects = 0
 
     for mark in marks:
         fm = full_marks_map.get(mark.subject_id)
@@ -486,73 +488,85 @@ def parent_result_detail(request):
                 'is_absent': True, 'failed': True,
             }
             has_ng = True
+            absent_subjects += 1
         else:
             total_mo = mark.th_mo + mark.pr_mo
 
-            # Calculate GP per subject using existing logic
-            th_grade_letter, th_symbol, th_point = '', '', 0
-            pr_grade_letter, pr_symbol, pr_point = '', '', 0
+            # Non-Graded calculation: use GradeAndGpaNonGradeTheory/Practical (same as panel)
+            from panel.func import GradeAndGpaNonGradeTheory, GradeAndGpaNonGradePractical
+
+            # Theory calculation
+            th_grade = th_symbol = th_point = ''
             th_failed = False
-            pr_failed = False
-
             if th_fm > 0:
-                th_percent = get_percentage(mark.th_mo, th_fm)
-                th_grade_letter, th_symbol, th_point = get_grade_point(th_percent)
-                if th_pm > 0 and mark.th_mo < th_pm:
-                    th_failed = True
+                th_obj = GradeAndGpaNonGradeTheory(th_fm, mark.th_mo, th_pm)
+                th_grade = th_obj.th_grade
+                th_symbol = th_obj.th_symbol
+                th_point = th_obj.th_point
+                th_failed = th_obj.fail > 0
+            else:
+                th_grade = th_symbol = '-'
+                th_point = 0
 
+            # Practical calculation
+            pr_grade = pr_symbol = pr_point = ''
+            pr_failed = False
             if pr_fm > 0:
-                pr_percent = get_percentage(mark.pr_mo, pr_fm)
-                pr_grade_letter, pr_symbol, pr_point = get_grade_point(pr_percent)
-                if pr_pm > 0 and mark.pr_mo < pr_pm:
-                    pr_failed = True
+                pr_obj = GradeAndGpaNonGradePractical(pr_fm, mark.pr_mo, pr_pm)
+                pr_grade = pr_obj.pr_grade
+                pr_symbol = pr_obj.pr_symbol
+                pr_point = pr_obj.pr_point
+                pr_failed = pr_obj.fail > 0
+            else:
+                pr_grade = pr_symbol = '-'
+                pr_point = 0
 
             subject_failed = th_failed or pr_failed
-
-            # Final grade from total percentage
-            if total_fm > 0:
-                total_percent = get_percentage(total_mo, total_fm)
-                final_grade_letter, final_symbol, final_point = get_grade_point(total_percent)
-            else:
-                final_grade_letter, final_symbol, final_point = 'NG', ' ', 0
+            is_absent = False
 
             if subject_failed:
                 final_grade_display = 'NG'
-                final_point = 0
+                final_gp = 0
                 has_ng = True
+                failed_subjects += 1
             else:
+                # For passed subjects, show total percentage grade
+                total_percent = get_percentage(total_mo, total_fm) if total_fm > 0 else 0
+                final_grade_letter, final_symbol, final_point = get_grade_point(total_percent)
                 final_grade_display = f"{final_grade_letter}{final_symbol}".strip()
+                final_gp = final_point
 
             row = {
                 'subject': mark.subject.subject,
                 'th_fm': th_fm, 'pr_fm': pr_fm,
                 'th_mo': mark.th_mo, 'pr_mo': mark.pr_mo,
                 'total_mo': total_mo, 'total_fm': total_fm,
-                'th_grade': f"{th_grade_letter}{th_symbol}".strip() if th_fm > 0 else '-',
-                'pr_grade': f"{pr_grade_letter}{pr_symbol}".strip() if pr_fm > 0 else '-',
+                'th_grade': f"{th_grade}{th_symbol}".strip() if th_fm > 0 else '-',
+                'pr_grade': f"{pr_grade}{pr_symbol}".strip() if pr_fm > 0 else '-',
                 'final_grade': final_grade_display,
-                'final_gp': final_point,
-                'is_absent': False,
+                'final_gp': final_gp,
+                'is_absent': is_absent,
                 'failed': subject_failed,
-                'percent': round(total_percent, 2) if total_fm > 0 else 0,
+                'percent': round(get_percentage(total_mo, total_fm), 2) if total_fm > 0 else 0,
             }
 
             grand_total_mo += total_mo
             grand_total_fm += total_fm
-            total_gp_points += final_point
-            subject_count += 1
+            if not subject_failed:
+                total_gp_points += final_gp
+                subject_count += 1
 
         result_rows.append(row)
 
-    # Calculate GPA - if any subject failed (NG), GPA should be 0
+    # Calculate GPA - if any subject failed or absent, GPA should be 0.0
     if has_ng:
-        gpa = 0
+        gpa = '0.0'
     else:
-        gpa = round(total_gp_points / subject_count, 2) if subject_count > 0 else 0
+        gpa = round(total_gp_points / subject_count, 2) if subject_count > 0 else '0.0'
 
     # Count NG subjects for display
-    ng_count = sum(1 for r in result_rows if r.get('failed') or r.get('is_absent'))
-    absent_count = sum(1 for r in result_rows if r.get('is_absent'))
+    ng_count = failed_subjects
+    absent_count = absent_subjects
 
     # Calculate overall percent
     overall_percent = round(get_percentage(grand_total_mo, grand_total_fm), 2) if grand_total_fm > 0 else 0
@@ -576,7 +590,8 @@ def parent_result_detail(request):
 
     # Calculate GPA grade
     from panel.func import get_grade_point_from_point
-    gpa_grade, gpa_symbol = get_grade_point_from_point(gpa) if gpa > 0 else ('NG', ' ')
+    gpa_float = float(gpa) if isinstance(gpa, str) else gpa
+    gpa_grade, gpa_symbol = get_grade_point_from_point(gpa_float) if gpa_float > 0 else ('NG', ' ')
     gpa_grade_display = f"{gpa_grade}{gpa_symbol}".strip()
 
     context = {
