@@ -482,6 +482,8 @@ def parent_result_detail(request):
             th_row = {
                 'subject': mark.subject.subject,
                 'component': 'TH',
+                'th_short': terminology.theory_short if terminology else 'TH',
+                'pr_short': terminology.practical_short if terminology else 'IN',
                 'th_fm': th_fm, 'pr_fm': 0,
                 'th_mo': '-', 'pr_mo': '-',
                 'total_mo': 0, 'total_fm': th_fm,
@@ -497,6 +499,8 @@ def parent_result_detail(request):
                 pr_row = {
                     'subject': mark.subject.subject,
                     'component': 'PR',
+                    'th_short': terminology.theory_short if terminology else 'TH',
+                    'pr_short': terminology.practical_short if terminology else 'IN',
                     'th_fm': 0, 'pr_fm': pr_fm,
                     'th_mo': '-', 'pr_mo': '-',
                     'total_mo': 0, 'total_fm': pr_fm,
@@ -560,6 +564,8 @@ def parent_result_detail(request):
             th_row = {
                 'subject': mark.subject.subject,
                 'component': 'TH',
+                'th_short': terminology.theory_short if terminology else 'TH',
+                'pr_short': terminology.practical_short if terminology else 'IN',
                 'th_fm': th_fm, 'pr_fm': 0,
                 'th_mo': mark.th_mo, 'pr_mo': 0,
                 'total_mo': mark.th_mo, 'total_fm': th_fm,
@@ -595,6 +601,8 @@ def parent_result_detail(request):
                 pr_row = {
                     'subject': mark.subject.subject,
                     'component': 'PR',
+                    'th_short': terminology.theory_short if terminology else 'TH',
+                    'pr_short': terminology.practical_short if terminology else 'IN',
                     'th_fm': 0, 'pr_fm': pr_fm,
                     'th_mo': 0, 'pr_mo': mark.pr_mo,
                     'total_mo': mark.pr_mo, 'total_fm': pr_fm,

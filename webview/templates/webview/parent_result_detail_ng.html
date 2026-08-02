@@ -193,18 +193,15 @@
         <thead>
           <tr>
             <th rowspan="2">S.N</th>
-            <th rowspan="2" style="text-align: left;">Subject</th>
-            <th colspan="2">{{ th_short }}</th>
-            <th colspan="2">{{ pr_short }}</th>
-            <th rowspan="2">Total</th>
-            <th rowspan="2">Grade</th>
-            <th rowspan="2">GP</th>
+            <th rowspan="2" style="text-align: left;">SUBJECTS</th>
+            <th colspan="2">OBTAINED GRADE</th>
+            <th colspan="2">AGGREGATE</th>
           </tr>
           <tr>
-            <th>FM</th>
-            <th>MO</th>
-            <th>FM</th>
-            <th>MO</th>
+            <th>GRADE</th>
+            <th>GP</th>
+            <th>GRADE</th>
+            <th>GP</th>
           </tr>
         </thead>
         <tbody>
@@ -214,24 +211,23 @@
             <td rowspan="{{ row.rowspan }}" style="text-align: center;">{{ row.sn }}</td>
             <td rowspan="{{ row.rowspan }}" style="text-align: left; font-weight: 600;">{{ row.subject }}</td>
             {% endif %}
-            {% if row.component == 'TH' %}
-            <td>{{ row.th_fm }}</td>
-            <td>{{ row.th_mo }}</td>
-            <td></td>
-            <td></td>
-            {% else %}
-            <td></td>
-            <td></td>
-            <td>{{ row.pr_fm }}</td>
-            <td>{{ row.pr_mo }}</td>
-            {% endif %}
             <td>
-              {% if row.is_absent %}
-                <span class="text-muted">-</span>
+              {% if row.component == 'TH' %}
+                {{ row.th_short|default:"TH" }}
               {% else %}
-                {{ row.total_mo }} / {{ row.total_fm }}
+                {{ row.pr_short|default:"IN" }}
               {% endif %}
             </td>
+            <td>
+              {% if row.is_absent %}
+                <span class="grade-badge grade-absent">Abs</span>
+              {% elif row.failed %}
+                <span class="grade-badge grade-fail">{{ row.final_grade }}</span>
+              {% else %}
+                <span class="grade-badge grade-pass">{{ row.final_grade }}</span>
+              {% endif %}
+            </td>
+            <td>{{ row.final_gp }}</td>
             <td>
               {% if row.is_absent %}
                 <span class="grade-badge grade-absent">Abs</span>
@@ -245,6 +241,9 @@
           </tr>
           {% endfor %}
         </tbody>
+      </table>
+    </div>
+  </div>
       </table>
     </div>
   </div>
