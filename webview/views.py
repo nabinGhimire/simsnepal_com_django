@@ -362,7 +362,7 @@ def parent_result(request):
 
 def parent_result_detail(request):
     from panel.func import get_percentage, get_grade_point
-    from sms.models import GradeFullMarks, Attendance, Rank, SchoolTerminology, SchoolResultType
+    from sms.models import GradeFullMarks, Attendance, Rank, SchoolTerminology, SchoolResultType, LiveResult
 
     phone = validate_webview_token(request, "parent")
     if not phone:
@@ -574,41 +574,10 @@ def parent_result_detail(request):
     except SchoolTerminology.DoesNotExist:
         pass
 
-    # Check result type configuration for this school and session
-    result_type = 0  # Default to Legacy System (0)
-    try:
-        school_result_type = SchoolResultType.objects.get(
-            school=student.school,
-            session=current_session
-        )
-        result_type = school_result_type.result_type
-    except SchoolResultType.DoesNotExist:
-        # If not configured, use default (0 = Legacy/Graded)
-        result_type = 0
-
-    print(f"Result type for {student.school.name} in session {current_session}: {result_type}")
-
     # Calculate GPA grade
     from panel.func import get_grade_point_from_point
     gpa_grade, gpa_symbol = get_grade_point_from_point(gpa) if gpa > 0 else ('NG', ' ')
     gpa_grade_display = f"{gpa_grade}{gpa_symbol}".strip()
-
-    # Rank display: show rank for passed students, "Not Graded" with absent details for failed
-    if has_ng:
-        if absent_count > 0:
-            rank_display = f"Not Graded (Absent in {absent_count} subject{'s' if absent_count > 1 else ''})"
-        else:
-            rank_display = f"Not Graded (Failed in {ng_count} subject{'s' if ng_count > 1 else ''})"
-    else:
-        # Try to get rank from Rank model
-        try:
-            rank_obj = Rank.objects.get(
-                reg_no=student, session=current_session,
-                grade=ss.grade, term=term.id
-            )
-            rank_display = f"Rank {rank_obj.rank}"
-        except Rank.DoesNotExist:
-            rank_display = "—"
 
     context = {
         'student': student,
@@ -625,24 +594,16 @@ def parent_result_detail(request):
         'has_ng': has_ng,
         'ng_count': ng_count,
         'overall_percent': overall_percent,
-        'rank_display': rank_display,
         'attendance': attendance,
         'th_label': terminology.theory_long if terminology else 'Theory',
         'pr_label': terminology.practical_long if terminology else 'Practical',
         'th_short': terminology.theory_short if terminology else 'TH',
         'pr_short': terminology.practical_short if terminology else 'PR',
         'current_session': current_session,
-        'result_type': result_type,  # Pass result_type to template
     }
-    
-    # Render different templates based on result_type
-    # result_type: 0 = Legacy System (old/graded), 1 = Non-Graded System, 2 = Graded System (new)
-    if result_type == 1:
-        # Non-Graded Mode - use simplified template without attendance
-        return render(request, "webview/parent_result_detail_ng.html", context)
-    else:
-        # Legacy or Graded System
-        return render(request, "webview/parent_result_detail.html", context)
+
+    # Always use Non-Graded template for parents (simplified view with attendance)
+    return render(request, "webview/parent_result_detail_ng.html", context)
 
 
 @csrf_exempt

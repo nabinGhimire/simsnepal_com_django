@@ -938,6 +938,8 @@ exam_board = [10]
 @login_required
 def index(request):
     user = request.user
+    print(user)
+    print(user.id)
     if CreatedUsers.objects.filter(guardian=user).exists():
         return redirect("/guardian/")
     if SuperBranchUser.objects.filter(user=user).exists():
