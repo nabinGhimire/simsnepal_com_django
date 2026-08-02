@@ -224,11 +224,17 @@
     .result-table {
       border-collapse: collapse;
       width: 100%;
+      min-width: 800px;
+    }
+    .result-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .result-table th,
     .result-table td {
       border: 1px solid #9ca3af;
       padding: 8px;
+      white-space: nowrap;
     }
     .result-table th {
       background-color: #f3f4f6;
