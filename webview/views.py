@@ -619,9 +619,27 @@ def parent_result_detail(request):
                 grand_total_mo += total_mo
                 grand_total_fm += total_fm
 
-    # Add serial numbers
-    for idx, row in enumerate(result_rows):
-        row['sn'] = idx + 1
+    # Add serial numbers and group by subject for rowspan display
+    subject_groups = {}
+    for row in result_rows:
+        subject_name = row['subject']
+        if subject_name not in subject_groups:
+            subject_groups[subject_name] = []
+        subject_groups[subject_name].append(row)
+    
+    # Create grouped result rows with rowspan info
+    grouped_rows = []
+    sn = 0
+    for subject_name, rows in subject_groups.items():
+        sn += 1
+        has_pr = any(r['component'] == 'PR' for r in rows)
+        for row in rows:
+            row['sn'] = sn
+            row['rowspan'] = 2 if has_pr else 1
+            row['is_first_row'] = row['component'] == 'TH'
+        grouped_rows.extend(rows)
+    
+    result_rows = grouped_rows
 
     # Calculate GPA - if any subject failed or absent, GPA should be 0.0
     if has_ng:

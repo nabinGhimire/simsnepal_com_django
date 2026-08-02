@@ -206,14 +206,10 @@
         <tbody>
           {% for row in result_rows %}
           <tr class="{% if row.is_absent %}absent-row{% elif row.failed %}failed-row{% endif %}">
-            <td style="text-align: center;">{{ row.sn }}</td>
-            <td style="text-align: left;">
-              {% if row.component == 'PR' %}
-                <span style="color: #666; margin-left: 1rem;">{{ row.subject }} ({{ row.component }})</span>
-              {% else %}
-                <strong>{{ row.subject }}</strong>
-              {% endif %}
-            </td>
+            {% if row.is_first_row %}
+            <td rowspan="{{ row.rowspan }}" style="text-align: center;">{{ row.sn }}</td>
+            <td rowspan="{{ row.rowspan }}" style="text-align: left; font-weight: 600;">{{ row.subject }}</td>
+            {% endif %}
             <td>{{ row.th_fm }}</td>
             <td>{{ row.th_mo }}</td>
             <td>{{ row.pr_fm }}</td>
