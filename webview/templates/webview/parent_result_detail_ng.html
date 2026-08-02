@@ -192,15 +192,19 @@
       <table class="result-table">
         <thead>
           <tr>
-            <th>S.N</th>
-            <th style="text-align: left;">Subject</th>
-            <th>{{ th_short }} FM</th>
-            <th>{{ th_short }}</th>
-            <th>{{ pr_short }} FM</th>
-            <th>{{ pr_short }}</th>
-            <th>Total</th>
-            <th>Grade</th>
-            <th>GP</th>
+            <th rowspan="2">S.N</th>
+            <th rowspan="2" style="text-align: left;">Subject</th>
+            <th colspan="2">{{ th_short }}</th>
+            <th colspan="2">{{ pr_short }}</th>
+            <th rowspan="2">Total</th>
+            <th rowspan="2">Grade</th>
+            <th rowspan="2">GP</th>
+          </tr>
+          <tr>
+            <th>FM</th>
+            <th>MO</th>
+            <th>FM</th>
+            <th>MO</th>
           </tr>
         </thead>
         <tbody>
@@ -210,10 +214,17 @@
             <td rowspan="{{ row.rowspan }}" style="text-align: center;">{{ row.sn }}</td>
             <td rowspan="{{ row.rowspan }}" style="text-align: left; font-weight: 600;">{{ row.subject }}</td>
             {% endif %}
+            {% if row.component == 'TH' %}
             <td>{{ row.th_fm }}</td>
             <td>{{ row.th_mo }}</td>
+            <td></td>
+            <td></td>
+            {% else %}
+            <td></td>
+            <td></td>
             <td>{{ row.pr_fm }}</td>
             <td>{{ row.pr_mo }}</td>
+            {% endif %}
             <td>
               {% if row.is_absent %}
                 <span class="text-muted">-</span>
