@@ -526,11 +526,15 @@ def parent_result_detail(request):
             # Non-Graded calculation: use GradeAndGpaNonGradeTheory/Practical (same as panel)
             from panel.func import GradeAndGpaNonGradeTheory, GradeAndGpaNonGradePractical
 
+            # Calculate pass marks like panel: use GradeFullMarks.pm or default to 35%/40%
+            th_pm_calc = th_pm if th_pm > 0 else int(th_fm * 0.35) if th_fm > 0 else 0
+            pr_pm_calc = pr_pm if pr_pm > 0 else int(pr_fm * 0.40) if pr_fm > 0 else 0
+
             # Theory calculation
             th_grade = th_symbol = th_point = ''
             th_failed = False
             if th_fm > 0:
-                th_obj = GradeAndGpaNonGradeTheory(th_fm, mark.th_mo, th_pm)
+                th_obj = GradeAndGpaNonGradeTheory(th_fm, mark.th_mo, th_pm_calc)
                 th_grade = th_obj.th_grade
                 th_symbol = th_obj.th_symbol
                 th_point = th_obj.th_point
@@ -543,7 +547,7 @@ def parent_result_detail(request):
             pr_grade = pr_symbol = pr_point = ''
             pr_failed = False
             if pr_fm > 0:
-                pr_obj = GradeAndGpaNonGradePractical(pr_fm, mark.pr_mo, pr_pm)
+                pr_obj = GradeAndGpaNonGradePractical(pr_fm, mark.pr_mo, pr_pm_calc)
                 pr_grade = pr_obj.pr_grade
                 pr_symbol = pr_obj.pr_symbol
                 pr_point = pr_obj.pr_point
