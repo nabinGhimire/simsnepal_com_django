@@ -10,15 +10,102 @@ logger = logging.getLogger(__name__)
 import os
 
 def _request_with_retry(method, url, max_retries=3, backoff=1.0, **kwargs):
-    """Make an HTTP request with exponential backoff retry for transient errors.
+    """
+    Make an HTTP request with exponential backoff retry for transient errors.
+    Retries on connection errors, timeouts, and 5xx status codes.
+
+    Args:
+        method (str): HTTP verb ('get', 'post', 'put', 'delete', ...)
+        url (str): Request URL
+        max_retries (int): Maximum number of retry attempts
+        backoff (float): Initial backoff factor (sleep = backoff * 2^attempt)
+        **kwargs: Additional arguments passed to requests (headers, json, timeout, etc.)
+
+    Returns:
+        requests.Response: Successful response (status < 500)
+
+    Raises:
+        requests.HTTPError: On persistent server errors
+        requests.RequestException: On persistent network errors
+    """
+    kwargs.setdefault('timeout', 15)  # Reasonable default timeout
+
+    last_exc = None
+
+    for attempt in range(max_retries):
+        try:
+            # Log the attempt for debugging
+            logger.debug(f"Sending {method.upper()} request to {url} (attempt {attempt+1}/{max_retries})")
+
+            # Use explicit method calls for clarity and safety
+            method_lower = method.lower()
+            if method_lower == 'get':
+                response = requests.get(url, **kwargs)
+            elif method_lower == 'post':
+                response = requests.post(url, **kwargs)
+            elif method_lower == 'put':
+                response = requests.put(url, **kwargs)
+            elif method_lower == 'delete':
+                response = requests.delete(url, **kwargs)
+            else:
+                # Fallback to dynamic dispatch for any other verb (e.g., 'patch')
+                response = getattr(requests, method_lower)(url, **kwargs)
+
+            # Log if a redirect happened – this is the most common reason POST becomes GET
+            if response.history:
+                for resp in response.history:
+                    if resp.status_code in (301, 302, 303) and method_lower != 'get':
+                        logger.warning(
+                            f"Redirect {resp.status_code} from {method.upper()} to GET "
+                            f"(final URL: {response.url}). Server may not accept POST."
+                        )
+                # Optionally, you could raise an exception to stop the request
+                # raise requests.HTTPError(f"Unexpected redirect from POST to GET", response=response)
+
+            # Success: any status < 500 is returned to the caller (including 4xx)
+            if response.status_code < 500:
+                return response
+
+            # Server error (5xx) → log and retry
+            logger.warning(
+                f"Server error {response.status_code} on {method.upper()} {url} "
+                f"(attempt {attempt+1}/{max_retries})"
+            )
+            last_exc = requests.HTTPError(
+                f"Server error: {response.status_code}", response=response
+            )
+
+        except (requests.ConnectionError, requests.Timeout,
+                requests.exceptions.ChunkedEncodingError) as e:
+            # Network‑level transient errors → retry
+            logger.warning(
+                f"Transient error on {method.upper()} {url} "
+                f"(attempt {attempt+1}/{max_retries}): {e}"
+            )
+            last_exc = e
+
+        # Exponential backoff before next retry (skip after last attempt)
+        if attempt < max_retries - 1:
+            sleep_time = backoff * (2 ** attempt)
+            time.sleep(sleep_time)
+
+    # All retries exhausted – raise the last captured exception
+    raise last_exc
+"""
+def _request_with_retry(method, url, max_retries=3, backoff=1.0, **kwargs):
+    ""Make an HTTP request with exponential backoff retry for transient errors.
     Retries on connection errors, timeouts, and 5xx status codes.
     Returns the response on success, raises on persistent failure.
-    """
+    ""
     kwargs.setdefault('timeout', 15)
     last_exc = None
     for attempt in range(max_retries):
         try:
-            response = getattr(requests, method)(url, **kwargs)
+            # response = getattr(requests, method)(url, **kwargs)
+            if method == 'get':
+                response = requests.get(url, **kwargs)
+            elif method == 'post':
+            response = requests.post(url, **kwargs)
             if response.status_code < 500:
                 return response  # 2xx, 3xx, 4xx — caller handles
             logger.warning(f"Server error {response.status_code} on {method} {url} (attempt {attempt + 1}/{max_retries})")
@@ -29,6 +116,8 @@ def _request_with_retry(method, url, max_retries=3, backoff=1.0, **kwargs):
         if attempt < max_retries - 1:
             time.sleep(backoff * (2 ** attempt))
     raise last_exc
+
+"""
 
 def get_platform_setting(key, default=''):
     try:
