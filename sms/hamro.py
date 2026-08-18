@@ -490,14 +490,21 @@ def add_user_to_thread(thread_id, user_id, school=None):
     return False
 
 def remove_user_from_thread(thread_id, user_id, school=None):
-    """Remove a user from a thread in Hamro platform."""
+    """Remove a user from a thread in Hamro platform using DELETE /platform/threads/{id}/users."""
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
     payload = {
-        'user_id': user_id
+        'user_id': str(user_id)
     }
     try:
-        response = requests.delete(url, json=payload, headers=get_headers(school=school))
+        response = _request_with_retry('delete', url, json=payload, headers=get_headers(school=school), timeout=15)
         if response.status_code in (200, 204, 202):
+            logger.info(f"Successfully removed user {user_id} from thread {thread_id}.")
+            return True
+        elif response.status_code == 403 and "business owner" in response.text.lower():
+            logger.debug(f"User {user_id} is business owner; cannot remove from thread {thread_id}.")
+            return False
+        elif response.status_code == 404:
+            # Already not in thread
             return True
         else:
             logger.error(f"Failed to remove user {user_id} from thread {thread_id}: status={response.status_code}, response={response.text}")
@@ -506,40 +513,25 @@ def remove_user_from_thread(thread_id, user_id, school=None):
     return False
 
 def remove_users_from_thread_batch(thread_id, user_ids, school=None):
-    """Remove multiple users from a thread.
-    Tries the batch DELETE endpoint first; if unsupported (405), falls back
-    to individual remove_user_from_thread calls.
+    """Remove multiple users from a thread using individual DELETE requests.
     Returns the set of user_ids that were successfully removed.
     """
     user_ids = list(set(user_ids))
     removed = set()
+    owner_id = None
+    
+    # Exclude business owner from removal attempts
+    try:
+        if school and hasattr(school, 'owner') and school.owner:
+            owner_id = school.owner.user.username
+    except Exception:
+        pass
 
-    # Try batch endpoint first (POST with action=remove or DELETE)
-    url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/batch"
-    for chunk in chunk_list(user_ids, 50):
-        if not chunk:
+    for uid in user_ids:
+        if owner_id and str(uid) == str(owner_id):
             continue
-        payload = {'user_ids': chunk, 'action': 'remove'}
-        try:
-            response = _request_with_retry('post', url, json=payload, headers=get_headers(school=school), timeout=30)
-            if response.status_code in (200, 204, 202):
-                removed.update(chunk)
-            elif response.status_code == 405:
-                # Batch endpoint doesn't support this action — break to fallback
-                logger.info(f"Batch remove not supported for thread {thread_id}, using individual removes")
-                break
-            else:
-                logger.error(f"Batch remove failed for thread {thread_id}: status={response.status_code}, response={response.text}")
-        except Exception as e:
-            logger.error(f"Error in batch remove from thread {thread_id}: {e}")
-            break
-
-    # Fallback: remove one by one for any not yet removed
-    remaining = [uid for uid in user_ids if uid not in removed]
-    if remaining:
-        for uid in remaining:
-            if remove_user_from_thread(thread_id, uid, school=school):
-                removed.add(uid)
+        if remove_user_from_thread(thread_id, uid, school=school):
+            removed.add(uid)
 
     return removed
 
@@ -685,19 +677,61 @@ def add_users_to_thread_batch(thread_id, user_ids, school=None):
 
 def get_thread_participants(thread_id, school=None):
     """Fetch current participant details in a thread from Hamro platform.
+    Paginates through all pages to ensure every single participant is fetched.
     Returns list of dicts containing 'user_id' and 'admin' on success, or None if 404.
-    Raises requests.HTTPError or requests.RequestException on failure.
     """
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users"
-    response = _request_with_retry('get', url, headers=get_headers(school=school))
-    if response.status_code == 200:
-        users_list = response.json()
-        return [{'user_id': u.get('user_id'), 'admin': u.get('admin', False)} for u in users_list if u.get('user_id')]
-    elif response.status_code == 404:
-        logger.warning(f"Thread {thread_id} not found on platform (404).")
-        return None
-    else:
-        raise requests.HTTPError(f"Failed to fetch users for thread {thread_id}: status={response.status_code}, response={response.text}")
+    all_participants = []
+    seen_user_ids = set()
+    page = 1
+    
+    while True:
+        try:
+            params = {'per_page': 100, 'page': page}
+            response = _request_with_retry('get', url, params=params, headers=get_headers(school=school), timeout=15)
+            if response.status_code == 200:
+                data = response.json()
+                raw_list = []
+                has_next = False
+                
+                if isinstance(data, list):
+                    raw_list = data
+                    has_next = False
+                elif isinstance(data, dict):
+                    raw_list = data.get('data') or data.get('users') or data.get('participants') or data.get('results') or []
+                    current_page = data.get('current_page') or data.get('page') or page
+                    last_page = data.get('last_page') or data.get('total_pages')
+                    if last_page and current_page < last_page:
+                        has_next = True
+                    elif data.get('next_page_url'):
+                        has_next = True
+                        
+                count_added = 0
+                for u in raw_list:
+                    if isinstance(u, dict):
+                        uid = u.get('user_id') or u.get('id') or u.get('participant_id')
+                        if uid and str(uid) not in seen_user_ids:
+                            seen_user_ids.add(str(uid))
+                            all_participants.append({
+                                'user_id': str(uid),
+                                'admin': bool(u.get('admin', False))
+                            })
+                            count_added += 1
+                
+                if not has_next or count_added == 0 or len(raw_list) == 0:
+                    break
+                page += 1
+            elif response.status_code == 404:
+                logger.warning(f"Thread {thread_id} not found on platform (404).")
+                return None
+            else:
+                logger.error(f"Failed to fetch users for thread {thread_id}: status={response.status_code}, response={response.text}")
+                break
+        except Exception as e:
+            logger.error(f"Error fetching participants for thread {thread_id}: {e}")
+            break
+            
+    return all_participants
 
 def get_thread_users(thread_id, school=None):
     """Fetch current user_ids in a thread from Hamro platform.
