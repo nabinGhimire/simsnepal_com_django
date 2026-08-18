@@ -1886,6 +1886,7 @@ def student_detail(request, grade=False, section=False):
         for sis in student_in_session:
             students[sis.student.reg_no] = {
                 'reg_no': sis.student.reg_no,
+                'iemis': sis.student.iemis or '',
                 'name': sis.student.name,
                 'grade': sis.grade.grade_name,
                 'section': sis.section.section,
@@ -1934,7 +1935,7 @@ def student_detail(request, grade=False, section=False):
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         writer = csv.writer(response)
         writer.writerow([
-            'Reg No', 'Name', 'Grade', 'Section', 'House', 'Roll No',
+            'Reg No', 'EMIS', 'Name', 'Grade', 'Section', 'House', 'Roll No',
             'DOB', 'Gender', 'Temp Address', 'Perm Address',
             "Father's Name", "Father's Phone", "Father's Email",
             "Mother's Name", "Mother's Phone", "Mother's Email",
@@ -1942,7 +1943,7 @@ def student_detail(request, grade=False, section=False):
         ])
         for s in students.values():
             writer.writerow([
-                s.get('reg_no'), s.get('name'), s.get('grade'), s.get('section'),
+                s.get('reg_no'), s.get('iemis', ''), s.get('name'), s.get('grade'), s.get('section'),
                 s.get('house'), s.get('roll_no'),
                 getattr(s.get('student_info'), 'dob', ''),
                 'M' if s.get('gender') else 'F',
@@ -1976,7 +1977,7 @@ def student_detail(request, grade=False, section=False):
         ws.append([])
         # Header row
         headers = [
-            'Reg No', 'Name', 'Grade', 'Section', 'House', 'Roll No',
+            'Reg No', 'EMIS', 'Name', 'Grade', 'Section', 'House', 'Roll No',
             'DOB', 'Gender', 'Temp Address', 'Perm Address',
             "Father's Name", "Father's Phone", "Father's Email",
             "Mother's Name", "Mother's Phone", "Mother's Email",
@@ -1987,7 +1988,7 @@ def student_detail(request, grade=False, section=False):
         # Data rows
         for s in students.values():
             ws.append([
-                s.get('reg_no'), s.get('name'), s.get('grade'), s.get('section'),
+                s.get('reg_no'), s.get('iemis', ''), s.get('name'), s.get('grade'), s.get('section'),
                 s.get('house'), s.get('roll_no'),
                 getattr(s.get('student_info'), 'dob', ''),
                 'M' if s.get('gender') else 'F',

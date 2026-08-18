@@ -39,6 +39,7 @@
             <th>S.N.</th>
             <th>Student Name</th>
             <th>Reg. No.</th>
+            <th>EMIS</th>
             <th>Grade</th>
             <th>Section</th>
             <th>Roll</th>
@@ -64,6 +65,7 @@
             <td>{{ forloop.counter }}</td>
             <td><strong>{{ student.name }}</strong></td>
             <td>{{ student.reg_no }}</td>
+            <td>{{ student.iemis|default:"—" }}</td>
             <td>{{ student.grade }}</td>
             <td>{{ student.section }}</td>
             <td>{{ student.roll_no }}</td>
@@ -95,6 +97,7 @@
             <th rowspan="2">S.N.</th>
             <th rowspan="2">Student Name</th>
             <th rowspan="2">Reg. No.</th>
+            <th rowspan="2">EMIS</th>
             {% if grade_print %}
               {% if section_print %}
                 <th rowspan="2">Roll</th>
@@ -124,6 +127,7 @@
             <td style="padding-left:5px;" rowspan="3">{{ forloop.counter }}</td>
             <td style="padding-left:5px;" rowspan="3">{{ student.name }}</td>
             <td style="padding-left:5px;" rowspan="3">{{ student.reg_no }}</td>
+            <td style="padding-left:5px;" rowspan="3">{{ student.iemis|default:"—" }}</td>
             {% if grade_print %}
               {% if section_print %}
                 <td style="padding-left:5px;" rowspan="3">{{ student.roll_no }}</td>
