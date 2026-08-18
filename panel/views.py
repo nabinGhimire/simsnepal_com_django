@@ -207,20 +207,63 @@ def run_full_sync(request, school, current_session):
             request.session['sync_progress'] = progress
             request.session.modified = True
         
-        # Step 1: Sync School Channel
-        update_progress(1, 3, 'Syncing School Channel...', f'School: {school.name}')
+        # Step 1: Discover & Map Parents and Teachers on Hamro App
+        update_progress(1, 4, 'Finding parents and teachers on Hamro app...', f'Searching registered users for {school.name}')
+        
+        from panel.platform_sync import get_platform_users_map, format_phone
+        from sms.models import StudentSession, Teacher
+        
+        teacher_users = [
+            t.teacher for t in Teacher.objects.filter(
+                teacher__teachersubjectaccess__subject__branch=school,
+                teacher__teachersubjectaccess__status=True,
+            ).select_related('teacher').distinct()
+        ]
+        extra_teachers = Teacher.objects.filter(
+            added_by__branchuser__school=school
+        ).select_related('teacher').distinct()
+        for t in extra_teachers:
+            teacher_users.append(t.teacher)
+            
+        teacher_emails = [t.email for t in teacher_users if t.email]
+        teacher_phones = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
+        
+        student_sessions = StudentSession.objects.filter(
+            session=current_session, student__school=school, status=True
+        ).select_related('student')
+        parent_emails = []
+        parent_phones = []
+        for ss in student_sessions:
+            s = ss.student
+            if s.fathers_email: parent_emails.append(s.fathers_email)
+            if s.fathers_phone: parent_phones.append(format_phone(str(s.fathers_phone)))
+            if s.mothers_email: parent_emails.append(s.mothers_email)
+            if s.mothers_phone: parent_phones.append(format_phone(str(s.mothers_phone)))
+            if s.guardian_email: parent_emails.append(s.guardian_email)
+            if s.guardian_phone: parent_phones.append(format_phone(str(s.guardian_phone)))
+            
+        all_emails = list(set(teacher_emails + parent_emails))
+        all_phones = list(set(teacher_phones + parent_phones))
+        total_unique_contacts = len(set(all_emails + all_phones))
+        
+        users_map = get_platform_users_map(all_emails, all_phones, school=school)
+        found_count = len([uid for uid in users_map.values() if uid])
+        update_progress(1, 4, f'User mapping complete: {found_count} registered users found on Hamro', f'Matched {found_count} of {total_unique_contacts} contacts')
+
+        # Step 2: Sync School Channel
+        update_progress(2, 4, 'Syncing School Channel...', f'School: {school.name}')
         school_chan = sync_school_channel(school, current_session)
-        update_progress(1, 3, 'School Channel synced', f'Result: {"Success" if school_chan else "Failed"}')
+        update_progress(2, 4, 'School Channel synced', f'Result: {"Success" if school_chan else "Failed"}')
         
-        # Step 2: Sync Teachers Group
-        update_progress(2, 3, 'Syncing Teachers Group...', f'School: {school.name}')
+        # Step 3: Sync Teachers Group
+        update_progress(3, 4, 'Syncing Teachers Group...', f'School: {school.name}')
         teachers_grp = sync_teachers_group(school, current_session)
-        update_progress(2, 3, 'Teachers Group synced', f'Result: {"Success" if teachers_grp else "Failed"}')
+        update_progress(3, 4, 'Teachers Group synced', f'Result: {"Success" if teachers_grp else "Failed"}')
         
-        # Step 3: Sync Grade Groups
-        update_progress(3, 3, 'Syncing Grade/Section Groups...', f'School: {school.name}')
+        # Step 4: Sync Grade Groups
+        update_progress(4, 4, 'Syncing Grade/Section Groups...', f'School: {school.name}')
         grade_groups = sync_grade_groups(school, current_session)
-        update_progress(3, 3, 'Grade Groups synced', f'Count: {len(grade_groups or [])}')
+        update_progress(4, 4, 'Grade Groups synced', f'Count: {len(grade_groups or [])}')
         
         # Finalize
         total_time = time.time() - request.session['sync_progress'].get('start_time', time.time())
@@ -232,11 +275,11 @@ def run_full_sync(request, school, current_session):
                 key='LAST_SYNC_TIME',
                 defaults={'value': timezone.now().isoformat()}
             )
-            result_msg = f"Successfully synced in {total_time:.0f}s. School channel, teachers group, and {len(grade_groups or [])} grade groups synced."
+            result_msg = f"Successfully synced in {total_time:.0f}s. Found {found_count} users on Hamro. Synced school channel, teachers group, and {len(grade_groups or [])} grade groups."
         else:
             result_msg = f"Sync completed in {total_time:.0f}s but no groups were created. Ensure API keys are configured correctly."
         
-        update_progress(3, 3, 'Sync complete!', result_msg)
+        update_progress(4, 4, 'Sync complete!', result_msg)
         request.session['sync_progress']['status'] = 'completed'
         request.session['sync_progress']['message'] = result_msg
         request.session['sync_progress']['elapsed'] = f'{total_time:.0f}s'
@@ -450,7 +493,7 @@ def sync_platform_async(request):
         'status': 'running',
         'message': 'Initializing sync...',
         'step': 0,
-        'total_steps': 6,
+        'total_steps': 4,
         'details': [],
         'start_time': time.time()
     }
@@ -529,12 +572,13 @@ def sync_single_group_view(request, group_id):
         to_add_ids = []
         admin_ids = set()
 
-        owner_platform_id = get_owner_platform_id(school)
-        if owner_platform_id:
-            to_add_ids.append(owner_platform_id)
-            admin_ids.add(owner_platform_id)
+        if group_obj.group_type == 'school':
+            # Auto-add the school owner/admin
+            owner_platform_id = get_owner_platform_id(school)
+            if owner_platform_id:
+                to_add_ids.append(owner_platform_id)
+                admin_ids.add(owner_platform_id)
 
-        if group_obj.is_broadcast:
             teacher_users = [
                 t.teacher for t in Teacher.objects.filter(
                     teacher__teachersubjectaccess__subject__branch=school,
@@ -550,6 +594,7 @@ def sync_single_group_view(request, group_id):
             ).select_related('teacher').distinct()
             for t in extra_teachers:
                 teacher_users.append(t.teacher)
+
             emails = [t.email for t in teacher_users if t.email]
             phones = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
 
@@ -570,19 +615,26 @@ def sync_single_group_view(request, group_id):
                 if eid:
                     to_add_ids.append(eid)
             for t_user in teacher_users:
-                t_obj = Teacher.objects.filter(teacher=t_user).first()
-                if t_obj and t_obj.external_id:
-                    to_add_ids.append(t_obj.external_id)
-                    admin_ids.add(t_obj.external_id)
+                norm_email = normalize_lookup_key(t_user.email) if t_user.email else None
+                norm_phone = normalize_lookup_key(format_phone(t_user.username)) if t_user.username and t_user.username.isdigit() else None
+                ext_id = users_map.get(norm_email) or users_map.get(norm_phone)
+                if ext_id:
+                    to_add_ids.append(ext_id)
+                    admin_ids.add(ext_id)
 
-        elif not group_obj.grade and not group_obj.section:
+        elif group_obj.group_type == 'teachers':
+            # Auto-add the school owner/admin
+            owner_platform_id = get_owner_platform_id(school)
+            if owner_platform_id:
+                to_add_ids.append(owner_platform_id)
+                admin_ids.add(owner_platform_id)
+
             teacher_users = [
                 t.teacher for t in Teacher.objects.filter(
                     teacher__teachersubjectaccess__subject__branch=school,
                     teacher__teachersubjectaccess__status=True,
                 ).select_related('teacher').distinct()
             ]
-            # Also include extra teachers added by school users without subject assignments
             teacher_ids_with_access = set(u.id for u in teacher_users)
             extra_teachers = Teacher.objects.filter(
                 added_by__branchuser__school=school
@@ -591,6 +643,7 @@ def sync_single_group_view(request, group_id):
             ).select_related('teacher').distinct()
             for t in extra_teachers:
                 teacher_users.append(t.teacher)
+
             emails = [t.email for t in teacher_users if t.email]
             phones = [format_phone(t.username) for t in teacher_users if t.username and t.username.isdigit()]
             users_map = get_platform_users_map(emails, phones, school=school)
@@ -600,44 +653,46 @@ def sync_single_group_view(request, group_id):
                     admin_ids.add(eid)
 
         else:
+            # Class / Section group: Strictly assigned teachers and section parents only
             teaching_accesses = TeacherSubjectAccess.objects.filter(
-                session=current_session, grade=group_obj.grade, section=group_obj.section, status=True
-            ).select_related('teacher')
-            teaching_users = [a.teacher for a in teaching_accesses]
-            # Also include extra teachers added by school users for this grade/section
-            teaching_user_ids = set(u.id for u in teaching_users)
-            extra_teachers = Teacher.objects.filter(
-                added_by__branchuser__school=school
-            ).exclude(
-                teacher_id__in=teaching_user_ids
+                session=current_session,
+                grade=group_obj.grade,
+                section=group_obj.section,
+                subject__branch=school,
+                status=True
             ).select_related('teacher').distinct()
-            for t in extra_teachers:
-                teaching_users.append(t.teacher)
-            emails = [t.email for t in teaching_users if t.email]
-            phones = [format_phone(t.username) for t in teaching_users if t.username and t.username.isdigit()]
+            teaching_users = [a.teacher for a in teaching_accesses]
+            teacher_emails = [t.email for t in teaching_users if t.email]
+            teacher_phones = [format_phone(t.username) for t in teaching_users if t.username and t.username.isdigit()]
 
             student_sessions = StudentSession.objects.filter(
                 session=current_session, grade=group_obj.grade, section=group_obj.section, status=True,
                 student__school=school
             ).select_related('student')
+            parent_emails = []
+            parent_phones = []
             for ss in student_sessions:
                 s = ss.student
-                if s.fathers_email: emails.append(s.fathers_email)
-                if s.fathers_phone: phones.append(format_phone(str(s.fathers_phone)))
-                if s.mothers_email: emails.append(s.mothers_email)
-                if s.mothers_phone: phones.append(format_phone(str(s.mothers_phone)))
-                if s.guardian_email: emails.append(s.guardian_email)
-                if s.guardian_phone: phones.append(format_phone(str(s.guardian_phone)))
+                if s.fathers_email: parent_emails.append(s.fathers_email)
+                if s.fathers_phone: parent_phones.append(format_phone(str(s.fathers_phone)))
+                if s.mothers_email: parent_emails.append(s.mothers_email)
+                if s.mothers_phone: parent_phones.append(format_phone(str(s.mothers_phone)))
+                if s.guardian_email: parent_emails.append(s.guardian_email)
+                if s.guardian_phone: parent_phones.append(format_phone(str(s.guardian_phone)))
 
-            users_map = get_platform_users_map(list(set(emails)), list(set(phones)), school=school)
+            all_emails = list(set(teacher_emails + parent_emails))
+            all_phones = list(set(parent_phones + teacher_phones))
+            users_map = get_platform_users_map(all_emails, all_phones, school=school)
+
             for eid in users_map.values():
                 if eid:
                     to_add_ids.append(eid)
             for t_user in teaching_users:
-                t_obj = Teacher.objects.filter(teacher=t_user).first()
-                if t_obj and t_obj.external_id:
-                    to_add_ids.append(t_obj.external_id)
-                    admin_ids.add(t_obj.external_id)
+                norm_email = normalize_lookup_key(t_user.email) if t_user.email else None
+                norm_phone = normalize_lookup_key(format_phone(t_user.username)) if t_user.username and t_user.username.isdigit() else None
+                ext_id = users_map.get(norm_email) or users_map.get(norm_phone)
+                if ext_id:
+                    admin_ids.add(ext_id)
 
         to_add_ids = list(set(to_add_ids))
         sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school, force_refresh=True)

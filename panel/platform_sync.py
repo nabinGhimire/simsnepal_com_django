@@ -776,30 +776,21 @@ def sync_single_group(group_name, grade, section, session, school):
                 logger.error(f"Failed to create class group {group_name} on platform: {e}")
                 return None
 
-    # Get section teachers
+    # Get section teachers (only teachers assigned to subjects for this specific grade and section)
     teaching_users = [
         access.teacher for access in TeacherSubjectAccess.objects.filter(
             session=session,
             grade=grade,
             section=section,
+            subject__branch=school,
             status=True
-        ).select_related('teacher')
+        ).select_related('teacher').distinct()
     ]
-    
-    # Also include teachers added by school users for this grade/section but without subject assignments
-    teaching_user_ids = set(u.id for u in teaching_users)
-    extra_teachers = Teacher.objects.filter(
-        added_by__branchuser__school=school
-    ).exclude(
-        teacher_id__in=teaching_user_ids
-    ).select_related('teacher').distinct()
-    for t in extra_teachers:
-        teaching_users.append(t.teacher)
     
     teacher_emails = [t.email for t in teaching_users if t.email]
     teacher_phones = [format_phone(t.username) for t in teaching_users if t.username and t.username.isdigit()]
 
-    # Get section parents (scoped to this school)
+    # Get section parents (scoped strictly to this school and section)
     student_sessions = StudentSession.objects.filter(
         session=session, grade=grade, section=section, status=True,
         student__school=school
@@ -828,12 +819,6 @@ def sync_single_group(group_name, grade, section, session, school):
     # Collect members
     to_add_ids = []
     admin_ids = set()
-    
-    # Auto-add the school owner/admin to protect them from removal
-    owner_platform_id = get_owner_platform_id(school)
-    if owner_platform_id:
-        to_add_ids.append(owner_platform_id)
-        admin_ids.add(owner_platform_id)
     
     # Section teachers
     # Pre-fetch Teacher objects to avoid N+1 queries

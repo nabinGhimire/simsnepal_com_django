@@ -324,8 +324,9 @@
     }
 
     function pollSyncProgress() {
-      var totalSteps = 3; // School Channel, Teachers Group, Grade Groups
+      var totalSteps = 4;
       var stepLabels = [
+        'Finding Parents & Teachers on Hamro App',
         'Syncing School Channel/Group',
         'Syncing Teachers Group/Channel',
         'Syncing Class/Section Groups'
@@ -340,7 +341,7 @@
         .then(function(data) {
           if (data.status === 'running') {
             var step = (data.step || 1) - 1; // Convert 1-indexed to 0-indexed
-            var message = stepLabels[step] || 'Processing...';
+            var message = data.message || stepLabels[step] || 'Processing...';
             var details = [];
             for (var i = 0; i < totalSteps; i++) {
               details.push({
@@ -349,13 +350,13 @@
               });
             }
             updateProgress(step + 1, totalSteps, message, details);
-            setTimeout(poll, 2000);
+            setTimeout(poll, 1500);
           } else if (data.status === 'completed') {
             showCompletion(true, data.message || 'Sync completed successfully!', data.elapsed || '');
           } else if (data.status === 'failed' || data.status === 'error') {
             showCompletion(false, 'Sync failed: ' + (data.message || data.error || 'Unknown error'));
           } else {
-            setTimeout(poll, 2000);
+            setTimeout(poll, 1500);
           }
         })
         .catch(function(err) {
