@@ -203,27 +203,33 @@
       var modalHtml = `
         <div class="modal fade" id="syncProgressModal" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title"><i class="ti ti-refresh me-2"></i> Syncing Platform Data</h5>
+            <div class="modal-content shadow-lg border-0">
+              <div class="modal-header bg-light">
+                <h5 class="modal-title"><i class="ti ti-refresh me-2 text-primary"></i> Syncing Platform Data</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
-              <div class="modal-body">
+              <div class="modal-body p-4">
                 <div id="sync-progress-container">
-                  <div class="text-center py-4">
-                    <div class="spinner-border text-primary mb-3" role="status">
-                      <span class="visually-hidden">Initializing...</span>
+                  <div class="text-center py-3">
+                    <div id="sync-top-spinner" class="spinner-border text-primary mb-3" style="width: 2.75rem; height: 2.75rem;" role="status">
+                      <span class="visually-hidden">Syncing...</span>
                     </div>
-                    <p class="text-secondary" id="sync-status-message">Initializing sync process...</p>
+                    <div id="sync-top-success" class="text-success mb-2" style="display: none;">
+                      <i class="ti ti-circle-check" style="font-size: 3rem;"></i>
+                    </div>
+                    <div id="sync-top-error" class="text-danger mb-2" style="display: none;">
+                      <i class="ti ti-alert-circle" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="text-secondary fw-medium fs-4 mb-0" id="sync-status-message">Initializing sync process...</p>
                   </div>
-                  <div class="progress mb-3" style="height: 8px;">
-                    <div id="sync-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                  <div class="progress mb-3 shadow-xs" style="height: 10px; border-radius: 6px;">
+                    <div id="sync-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%; transition: width 0.4s ease;"></div>
                   </div>
                   <div id="sync-steps-container"></div>
                 </div>
               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="sync-close-btn" style="display: none;">Close</button>
+              <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal" id="sync-close-btn" style="display: none;">Done</button>
               </div>
             </div>
           </div>
@@ -249,13 +255,14 @@
       document.getElementById('sync-status-message').textContent = message;
       
       var stepsContainer = document.getElementById('sync-steps-container');
-      var html = '<div class="small mb-2"><ul class="list-unstyled mb-0" style="padding-left: 0.2rem;">';
+      var html = '<div class="small mb-2 p-2 bg-white border rounded shadow-xs"><ul class="list-unstyled mb-0" style="padding-left: 0.2rem;">';
       if (steps && steps.length > 0) {
         steps.forEach(function(s) {
-          var icon = s.status === 'done' ? 'ti ti-check text-success' : 
-                     s.status === 'current' ? 'ti ti-loader-2 animate-spin text-primary' : 
-                     'ti ti-circle text-muted';
-          html += '<li class="py-1"><i class="' + icon + ' me-2"></i>' + s.label + '</li>';
+          var icon = s.status === 'done' ? '<i class="ti ti-circle-check text-success me-2 fs-3 align-middle"></i>' : 
+                     s.status === 'current' ? '<span class="spinner-border spinner-border-sm text-primary me-2 align-middle" style="width: 1rem; height: 1rem; border-width: 2px;" role="status"></span>' : 
+                     '<i class="ti ti-circle text-muted me-2 fs-3 align-middle"></i>';
+          var textClass = s.status === 'current' ? 'fw-bold text-primary' : (s.status === 'done' ? 'fw-medium text-dark' : 'text-muted');
+          html += '<li class="py-1 d-flex align-items-center">' + icon + '<span class="' + textClass + '">' + s.label + '</span></li>';
         });
       }
       html += '</ul></div>';
@@ -276,18 +283,37 @@
       }
     }
 
-    function showCompletion(success, message, elapsed) {
+    function showCompletion(success, message, elapsed, logDetails) {
       var msgEl = document.getElementById('sync-status-message');
       var barEl = document.getElementById('sync-progress-bar');
       var closeBtn = document.getElementById('sync-close-btn');
+      var topSpinner = document.getElementById('sync-top-spinner');
+      var topSuccess = document.getElementById('sync-top-success');
+      var topError = document.getElementById('sync-top-error');
+      
+      if (topSpinner) topSpinner.style.display = 'none';
+
+      var totalSteps = 4;
+      var stepLabels = [
+        'Finding Parents & Teachers on Hamro App',
+        'Syncing School Channel/Group',
+        'Syncing Teachers Group/Channel',
+        'Syncing Class/Section Groups'
+      ];
       
       if (success) {
-        msgEl.innerHTML = '<i class="ti ti-check-circle text-success me-2"></i>' + message + ' <span class="text-secondary">(' + elapsed + ')</span>';
+        if (topSuccess) topSuccess.style.display = 'block';
+        msgEl.innerHTML = '<span class="text-success fw-bold">' + message + '</span> <span class="text-secondary small">(' + elapsed + ')</span>';
         barEl.classList.remove('progress-bar-striped', 'progress-bar-animated');
         barEl.classList.add('bg-success');
         barEl.style.width = '100%';
+        
+        // Mark ALL 4 steps as done with green checkmarks
+        var allDone = stepLabels.map(function(l) { return { label: l, status: 'done' }; });
+        updateProgress(totalSteps, totalSteps, message, allDone, logDetails);
       } else {
-        msgEl.innerHTML = '<i class="ti ti-alert-circle text-danger me-2"></i>' + message;
+        if (topError) topError.style.display = 'block';
+        msgEl.innerHTML = '<span class="text-danger fw-bold">' + message + '</span>';
         barEl.classList.remove('progress-bar-striped', 'progress-bar-animated');
         barEl.classList.add('bg-danger');
       }
@@ -302,6 +328,19 @@
       syncButton.addEventListener('click', function(e) {
         e.preventDefault();
         if (!progressModal) createProgressModal();
+        
+        // Reset modal visual states
+        if (document.getElementById('sync-top-spinner')) document.getElementById('sync-top-spinner').style.display = 'inline-block';
+        if (document.getElementById('sync-top-success')) document.getElementById('sync-top-success').style.display = 'none';
+        if (document.getElementById('sync-top-error')) document.getElementById('sync-top-error').style.display = 'none';
+        if (document.getElementById('sync-progress-bar')) {
+          var bar = document.getElementById('sync-progress-bar');
+          bar.classList.add('progress-bar-striped', 'progress-bar-animated');
+          bar.classList.remove('bg-success', 'bg-danger');
+          bar.style.width = '0%';
+        }
+        if (document.getElementById('sync-close-btn')) document.getElementById('sync-close-btn').style.display = 'none';
+        
         progressModal.show();
         
         this.classList.add('disabled');
@@ -324,15 +363,15 @@
           if (data.status === 'started' || data.task_id) {
             pollSyncProgress();
           } else if (data.status === 'error') {
-            showCompletion(false, 'Failed to start sync: ' + data.message);
+            showCompletion(false, 'Failed to start sync: ' + data.message, '', []);
           } else if (data.error) {
-            showCompletion(false, 'Failed to start sync: ' + data.error);
+            showCompletion(false, 'Failed to start sync: ' + data.error, '', []);
           } else {
-            showCompletion(false, 'Failed to start sync: Unknown error');
+            showCompletion(false, 'Failed to start sync: Unknown error', '', []);
           }
         })
         .catch(function(err) {
-          showCompletion(false, 'Network error: ' + err.message);
+          showCompletion(false, 'Network error: ' + err.message, '', []);
         });
       });
     }
@@ -366,15 +405,15 @@
             updateProgress(step + 1, totalSteps, message, steps, data.details || []);
             setTimeout(poll, 1200);
           } else if (data.status === 'completed') {
-            showCompletion(true, data.message || 'Sync completed successfully!', data.elapsed || '');
+            showCompletion(true, data.message || 'Sync completed successfully!', data.elapsed || '', data.details || []);
           } else if (data.status === 'failed' || data.status === 'error') {
-            showCompletion(false, 'Sync failed: ' + (data.message || data.error || 'Unknown error'));
+            showCompletion(false, 'Sync failed: ' + (data.message || data.error || 'Unknown error'), '', data.details || []);
           } else {
             setTimeout(poll, 1200);
           }
         })
         .catch(function(err) {
-          showCompletion(false, 'Polling error: ' + err.message);
+          showCompletion(false, 'Polling error: ' + err.message, '', []);
         });
       }
       poll();
