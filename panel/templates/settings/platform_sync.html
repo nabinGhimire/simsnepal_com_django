@@ -296,10 +296,14 @@
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-          if (data.task_id) {
-            pollSyncProgress(data.task_id);
+          if (data.status === 'started' || data.task_id) {
+            pollSyncProgress();
+          } else if (data.status === 'error') {
+            showCompletion(false, 'Failed to start sync: ' + data.message);
           } else if (data.error) {
             showCompletion(false, 'Failed to start sync: ' + data.error);
+          } else {
+            showCompletion(false, 'Failed to start sync: Unknown error');
           }
         })
         .catch(function(err) {
