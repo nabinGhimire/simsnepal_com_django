@@ -557,7 +557,7 @@ def sync_single_group_view(request, group_id):
     """Sync a single group's membership to Hamro. Lightweight — runs fast, no timeout risk."""
     import logging
     import time as time_mod
-    from panel.platform_sync import sync_group_membership_cached, get_owner_platform_id, get_platform_users_map
+    from panel.platform_sync import sync_group_membership_cached, get_owner_platform_id, get_platform_users_map, normalize_lookup_key
     from sms.hamro import format_phone, create_thread, thread_exists
 
     _sync_logger = logging.getLogger('panel.sync')
