@@ -229,8 +229,17 @@
           </div>
         </div>
       `;
+      modalHtml += '<button id="hiddenSyncModalBtn" data-bs-toggle="modal" data-bs-target="#syncProgressModal" style="display:none;"></button>';
       document.body.insertAdjacentHTML('beforeend', modalHtml);
-      progressModal = new bootstrap.Modal(document.getElementById('syncProgressModal'), {backdrop: 'static', keyboard: false});
+      progressModal = {
+        show: function() {
+          document.getElementById('hiddenSyncModalBtn').click();
+        },
+        hide: function() {
+          var closeBtn = document.querySelector('#syncProgressModal .btn-close');
+          if (closeBtn) closeBtn.click();
+        }
+      };
     }
 
     function updateProgress(step, totalSteps, message, details) {
