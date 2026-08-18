@@ -190,7 +190,9 @@
     </div>
   </div>
 </div>
+{% endblock content %}
 
+{% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     var syncButton = document.getElementById('sync-button');
@@ -402,4 +404,4 @@
     }
   });
 </script>
-{% endblock %}
+{% endblock scripts %}
