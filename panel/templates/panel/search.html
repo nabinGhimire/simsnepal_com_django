@@ -193,6 +193,10 @@
                         <div class="fw-bold">{{ student.student.reg_no }}</div>
                     </div>
                     <div class="col-6">
+                        <label class="form-label text-muted small">EMIS</label>
+                        <div class="fw-bold">{{ student.student.iemis|default:"—" }}</div>
+                    </div>
+                    <div class="col-6">
                         <label class="form-label text-muted small">Pin Code</label>
                         <div class="fw-bold">{{ student.student.pin_code|default:"—" }}</div>
                     </div>

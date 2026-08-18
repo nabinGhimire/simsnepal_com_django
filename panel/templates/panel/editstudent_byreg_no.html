@@ -142,6 +142,10 @@
                     <input type="text" class="form-control" name="dateofbirth" {% if student.dob %} value="{{ student.dob }}" {% else %} placeholder="YYYY/MM/DD" {% endif %}>
                   </div>
                 </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">EMIS</label>
+                  <input type="number" class="form-control" name="emis" {% if student.iemis %} value="{{ student.iemis }}" {% else %} placeholder="Enter EMIS / IEMIS number" {% endif %}>
+                </div>
               </div>
 
               <div class="row">

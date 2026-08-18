@@ -1532,9 +1532,16 @@ def addstudent(request):
         reg_no = findNewRegNo(school.id)
 
         # Gather optional fields
+        iemis_val = request.POST.get("iemis") or request.POST.get("emis") or None
+        if iemis_val:
+            try:
+                iemis_val = int(str(iemis_val).strip())
+            except (ValueError, TypeError):
+                iemis_val = None
+
         optional_fields = {
-            "dob": request.POST.get("dob") or None,
-            "iemis": request.POST.get("iemis") or None,
+            "dob": request.POST.get("dob") or request.POST.get("dateofbirth") or None,
+            "iemis": iemis_val,
             "house_id": request.POST.get("house") or None,
             "temporary_address": request.POST.get("tempaddr") or None,
             "permanent_address": request.POST.get("peraddr") or None,
@@ -7175,6 +7182,15 @@ def edit_student(request, regno):
                 student.gender = gender
 
                 student.dob = dateofbirth  # datetime.strptime(dateofbirth, '%y/%m/%d')
+                emis_val = request.POST.get('emis') or request.POST.get('iemis')
+                if emis_val:
+                    try:
+                        student.iemis = int(str(emis_val).strip())
+                    except (ValueError, TypeError):
+                        student.iemis = None
+                else:
+                    student.iemis = None
+
                 student.temporary_address = tempaddr
                 student.permanent_address = peraddr
                 # student.grade = grade
