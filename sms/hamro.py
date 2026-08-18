@@ -640,6 +640,8 @@ def lookup_hamro_users_batch(emails=None, phones=None, school=None):
 
 def add_users_to_thread_batch(thread_id, user_ids, school=None):
     """Add multiple users to a thread in Hamro platform using batch endpoint.
+    If batch endpoint fails with 422 or any validation error, falls back to adding
+    users individually so a single invalid user ID does not fail the entire batch.
     Returns the set of user_ids that were successfully added.
     """
     url = f"{get_base_url()}/api/v1/platform/threads/{thread_id}/users/batch"
@@ -656,15 +658,28 @@ def add_users_to_thread_batch(thread_id, user_ids, school=None):
             response = _request_with_retry('post', url, json=payload, headers=get_headers(school=school))
             if response.status_code in (200, 201):
                 result = response.json()
-                # API may return a list of successfully added user_ids
                 if isinstance(result, list):
                     added.update(result)
+                elif isinstance(result, dict) and 'user_ids' in result:
+                    added.update(result['user_ids'])
                 else:
                     added.update(chunk)
             else:
-                logger.error(f"Failed to batch add users to thread {thread_id}: status={response.status_code}, response={response.text}")
+                logger.warning(f"Batch add users returned status={response.status_code} for thread {thread_id}: {response.text}. Falling back to individual adds.")
+                # Fallback: add one-by-one so one invalid user doesn't block the rest
+                for uid in chunk:
+                    if add_user_to_thread(thread_id, uid, school=school):
+                        added.add(uid)
+                    else:
+                        logger.warning(f"Skipping invalid user {uid} in thread {thread_id}")
         except Exception as e:
-            logger.error(f"Error in batch adding users to thread: {e}")
+            logger.warning(f"Batch add users error for thread {thread_id}: {e}. Falling back to individual adds.")
+            for uid in chunk:
+                try:
+                    if add_user_to_thread(thread_id, uid, school=school):
+                        added.add(uid)
+                except Exception:
+                    pass
             
     return added
 
@@ -704,6 +719,10 @@ def update_user_role_in_thread(thread_id, user_id, role, school=None):
         response = requests.patch(url, json=payload, headers=get_headers(school=school))
         if response.status_code == 200:
             logger.info(f"Successfully updated role of user {user_id} to '{role}' in thread {thread_id}.")
+            return True
+        elif response.status_code == 403 and "business owner" in response.text.lower():
+            # Business owner role is permanently fixed as admin on Hamro
+            logger.debug(f"User {user_id} is business owner (role fixed on platform).")
             return True
         else:
             logger.error(f"Failed to update role of user {user_id} in thread {thread_id}: status={response.status_code}, response={response.text}")

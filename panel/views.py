@@ -192,20 +192,31 @@ _sync_logger = logging.getLogger('panel.sync')
 
 def run_full_sync(request, school, current_session):
     """Background thread function to run full sync with progress updates."""
+    from django.core.cache import cache
+    cache_key = f"sync_progress_{school.id}"
     try:
         _sync_logger.info(f"Starting async sync for school {school.name} (session {current_session.year})")
+        start_time = time.time()
         
-        def update_progress(step, total_steps, message, detail=None):
-            """Update session progress."""
-            progress = request.session.get('sync_progress', {})
-            progress['status'] = 'running'
+        def update_progress(step, total_steps, message, detail=None, is_completed=False):
+            """Update cached progress."""
+            progress = cache.get(cache_key) or {}
+            progress['status'] = 'completed' if is_completed else 'running'
             progress['step'] = step
             progress['total_steps'] = total_steps
             progress['message'] = message
             if detail:
-                progress.setdefault('details', []).append(detail)
-            request.session['sync_progress'] = progress
-            request.session.modified = True
+                details = progress.setdefault('details', [])
+                if detail not in details:
+                    details.append(detail)
+            progress['elapsed'] = f"{time.time() - start_time:.0f}s"
+            cache.set(cache_key, progress, timeout=3600)
+            
+            try:
+                request.session['sync_progress'] = progress
+                request.session.save()
+            except Exception:
+                pass
         
         # Step 1: Discover & Map Parents and Teachers on Hamro App
         update_progress(1, 4, 'Finding parents and teachers on Hamro app...', f'Searching registered users for {school.name}')
@@ -248,25 +259,35 @@ def run_full_sync(request, school, current_session):
         
         users_map = get_platform_users_map(all_emails, all_phones, school=school)
         found_count = len([uid for uid in users_map.values() if uid])
-        update_progress(1, 4, f'User mapping complete: {found_count} registered users found on Hamro', f'Matched {found_count} of {total_unique_contacts} contacts')
+        update_progress(1, 4, f'Found {found_count} registered users on Hamro', detail=f'✓ User Discovery: {found_count} of {total_unique_contacts} contacts registered on Hamro')
 
         # Step 2: Sync School Channel
-        update_progress(2, 4, 'Syncing School Channel...', f'School: {school.name}')
+        update_progress(2, 4, f'Syncing School Channel ({school.name})...')
         school_chan = sync_school_channel(school, current_session)
-        update_progress(2, 4, 'School Channel synced', f'Result: {"Success" if school_chan else "Failed"}')
+        if school_chan and hasattr(school_chan, 'sync_info'):
+            info = school_chan.sync_info
+            update_progress(2, 4, f"School Channel synced ({info['total_members']} members)", detail=f"✓ School Channel: {info['name']} — {info['total_members']} members ({info['teachers_count']} teachers, {info['parents_count']} parents)")
+        else:
+            update_progress(2, 4, 'School Channel synced', detail=f"✓ School Channel: {school.name}")
         
         # Step 3: Sync Teachers Group
-        update_progress(3, 4, 'Syncing Teachers Group...', f'School: {school.name}')
+        update_progress(3, 4, f'Syncing Teachers Group ({school.name} Teachers)...')
         teachers_grp = sync_teachers_group(school, current_session)
-        update_progress(3, 4, 'Teachers Group synced', f'Result: {"Success" if teachers_grp else "Failed"}')
+        if teachers_grp and hasattr(teachers_grp, 'sync_info'):
+            info = teachers_grp.sync_info
+            update_progress(3, 4, f"Teachers Group synced ({info['teachers_count']} teachers)", detail=f"✓ Teachers Group: {info['name']} — {info['teachers_count']} teachers")
+        else:
+            update_progress(3, 4, 'Teachers Group synced', detail=f"✓ Teachers Group: {school.name} Teachers")
         
-        # Step 4: Sync Grade Groups
-        update_progress(4, 4, 'Syncing Grade/Section Groups...', f'School: {school.name}')
-        grade_groups = sync_grade_groups(school, current_session)
-        update_progress(4, 4, 'Grade Groups synced', f'Count: {len(grade_groups or [])}')
+        # Step 4: Sync Grade Groups with per-class live progress
+        def class_progress_callback(curr_idx, total_idx, msg, detail=None):
+            update_progress(4, 4, msg, detail=detail)
+            
+        grade_groups = sync_grade_groups(school, current_session, on_progress=class_progress_callback)
+        update_progress(4, 4, f'All {len(grade_groups or [])} Grade Groups synced', detail=f'✓ Successfully synced all {len(grade_groups or [])} Class/Section groups.')
         
         # Finalize
-        total_time = time.time() - request.session['sync_progress'].get('start_time', time.time())
+        total_time = time.time() - start_time
         
         if school_chan or teachers_grp or grade_groups:
             from django.utils import timezone
@@ -279,23 +300,24 @@ def run_full_sync(request, school, current_session):
         else:
             result_msg = f"Sync completed in {total_time:.0f}s but no groups were created. Ensure API keys are configured correctly."
         
-        update_progress(4, 4, 'Sync complete!', result_msg)
-        request.session['sync_progress']['status'] = 'completed'
-        request.session['sync_progress']['message'] = result_msg
-        request.session['sync_progress']['elapsed'] = f'{total_time:.0f}s'
-        request.session.modified = True
+        update_progress(4, 4, 'Sync complete!', result_msg, is_completed=True)
         
         _sync_logger.info(f"Async sync completed for {school.name} in {total_time:.1f}s")
         
     except Exception as e:
         _sync_logger.exception(f"Async sync failed for {school.name}")
-        request.session['sync_progress'] = {
+        err_progress = {
             'status': 'error',
             'message': f'Sync failed: {str(e)}',
             'step': 0,
             'total_steps': 0,
         }
-        request.session.modified = True
+        cache.set(cache_key, err_progress, timeout=3600)
+        try:
+            request.session['sync_progress'] = err_progress
+            request.session.save()
+        except Exception:
+            pass
     finally:
         release_sync_lock()
 
@@ -487,16 +509,20 @@ def sync_platform_async(request):
     if not acquire_sync_lock():
         return JsonResponse({'status': 'error', 'message': 'Another sync process is currently running. Please wait a moment.'})
     
-    # Initialize progress tracking
+    # Initialize progress tracking in cache
+    from django.core.cache import cache
     import time
-    request.session['sync_progress'] = {
+    initial_progress = {
         'status': 'running',
         'message': 'Initializing sync...',
         'step': 0,
         'total_steps': 4,
         'details': [],
-        'start_time': time.time()
+        'start_time': time.time(),
+        'elapsed': '0s'
     }
+    cache.set(f"sync_progress_{school.id}", initial_progress, timeout=3600)
+    request.session['sync_progress'] = initial_progress
     request.session.modified = True
     
     # Start sync in background thread
@@ -510,7 +536,19 @@ def sync_platform_async(request):
 @login_required
 def sync_platform_progress(request):
     """Get sync progress - used by frontend polling."""
-    progress = request.session.get('sync_progress', {'status': 'idle', 'message': '', 'step': 0, 'total_steps': 0, 'details': []})
+    from django.core.cache import cache
+    school_id = None
+    try:
+        branch_user = BranchUser.objects.select_related('school').get(user=request.user)
+        school_id = branch_user.school_id
+    except Exception:
+        pass
+        
+    progress = None
+    if school_id:
+        progress = cache.get(f"sync_progress_{school_id}")
+    if not progress:
+        progress = request.session.get('sync_progress', {'status': 'idle', 'message': '', 'step': 0, 'total_steps': 0, 'details': []})
     return JsonResponse(progress)
 
 

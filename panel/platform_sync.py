@@ -289,6 +289,12 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, force_ref
             else:
                 to_demote.append(u_id)
 
+    # Business owner role is permanently fixed as admin on Hamro; do not attempt to demote
+    if school:
+        owner_id = get_owner_platform_id(school)
+        if owner_id and owner_id in to_demote:
+            to_demote.remove(owner_id)
+
     # 3. Apply changes via APIs and update local cache
     # Add users (batch — single API call for all adds)
     if to_add:
@@ -523,10 +529,15 @@ def sync_school_channel(school, session):
         if norm in users_map:
             to_add_ids.append(users_map[norm])
 
-    to_add_ids = list(set(to_add_ids))
-
     # Sync using our optimized membership cache helper with force_refresh to sync from platform
     sync_group_membership_cached(channel_group, to_add_ids, admin_ids, force_refresh=True, school=school)
+
+    channel_group.sync_info = {
+        'name': channel_name,
+        'teachers_count': len(admin_ids),
+        'parents_count': len(set(to_add_ids) - set(admin_ids)),
+        'total_members': len(to_add_ids)
+    }
 
     return channel_group
 
@@ -673,32 +684,38 @@ def sync_teachers_group(school, session):
     # admin_ids already contains owner and teacher IDs
     sync_group_membership_cached(group_obj, to_add_ids, admin_ids, force_refresh=True, school=school)
 
+    group_obj.sync_info = {
+        'name': group_name,
+        'teachers_count': len(to_add_ids),
+        'parents_count': 0,
+        'total_members': len(to_add_ids)
+    }
+
     return group_obj
 
-def sync_grade_groups(school, session):
+def sync_grade_groups(school, session, on_progress=None):
     """Create group for each grade and section, and populate with teachers and parents."""
     grades = SchoolGrade.objects.filter(school=school, active=True)
     sync_results = []
     
+    pairs = []
     for grade in grades:
         sections = Section.objects.filter(grade=grade, school=school, session=session)
         section_count = sections.count()
-        
-        if section_count == 0:
-            continue
+        for sec in sections:
+            pairs.append((grade, sec, section_count))
             
-        if section_count == 1:
-            sec = sections.first()
-            group_name = normalize_group_name(grade.grade_name, sec.section, session.year, section_count)
-            group_obj = sync_single_group(group_name, grade, sec, session, school)
-            if group_obj:
-                sync_results.append(group_obj)
-        else:
-            for sec in sections:
-                group_name = normalize_group_name(grade.grade_name, sec.section, session.year, section_count)
-                group_obj = sync_single_group(group_name, grade, sec, session, school)
-                if group_obj:
-                    sync_results.append(group_obj)
+    total_pairs = len(pairs)
+    for idx, (grade, sec, section_count) in enumerate(pairs, 1):
+        group_name = normalize_group_name(grade.grade_name, sec.section, session.year, section_count)
+        if on_progress:
+            on_progress(idx, total_pairs, f"Syncing {group_name} ({idx}/{total_pairs})...")
+        group_obj = sync_single_group(group_name, grade, sec, session, school)
+        if group_obj:
+            sync_results.append(group_obj)
+            if on_progress and hasattr(group_obj, 'sync_info'):
+                info = group_obj.sync_info
+                on_progress(idx, total_pairs, f"Synced {group_name}", detail=f"✓ {info['name']}: {info['total_members']} members ({info['teachers_count']} teachers, {info['parents_count']} parents)")
                     
     return sync_results
 
@@ -865,6 +882,13 @@ def sync_single_group(group_name, grade, section, session, school):
 
     # Sync using our optimized membership cache helper
     sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school, force_refresh=True)
+
+    group_obj.sync_info = {
+        'name': group_name,
+        'teachers_count': len(admin_ids),
+        'parents_count': len(set(to_add_ids) - set(admin_ids)),
+        'total_members': len(to_add_ids)
+    }
 
     return group_obj
 

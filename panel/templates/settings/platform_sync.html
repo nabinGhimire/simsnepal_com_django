@@ -242,23 +242,37 @@
       };
     }
 
-    function updateProgress(step, totalSteps, message, details) {
+    function updateProgress(step, totalSteps, message, steps, logDetails) {
       var progress = Math.round((step / totalSteps) * 100);
       document.getElementById('sync-progress-bar').style.width = progress + '%';
       document.getElementById('sync-progress-bar').setAttribute('aria-valuenow', progress);
       document.getElementById('sync-status-message').textContent = message;
       
       var stepsContainer = document.getElementById('sync-steps-container');
-      if (details && details.length > 0) {
-        var html = '<div class="small"><strong>Steps:</strong><ul class="mb-0 mt-2" style="padding-left: 1.2rem;">';
-        details.forEach(function(d) {
-          var icon = d.status === 'done' ? 'ti ti-check text-success' : 
-                     d.status === 'current' ? 'ti ti-loader-2 animate-spin text-primary' : 
+      var html = '<div class="small mb-2"><ul class="list-unstyled mb-0" style="padding-left: 0.2rem;">';
+      if (steps && steps.length > 0) {
+        steps.forEach(function(s) {
+          var icon = s.status === 'done' ? 'ti ti-check text-success' : 
+                     s.status === 'current' ? 'ti ti-loader-2 animate-spin text-primary' : 
                      'ti ti-circle text-muted';
-          html += '<li><i class="' + icon + ' me-2"></i>' + d.label + '</li>';
+          html += '<li class="py-1"><i class="' + icon + ' me-2"></i>' + s.label + '</li>';
+        });
+      }
+      html += '</ul></div>';
+      
+      if (logDetails && logDetails.length > 0) {
+        html += '<div class="small mt-2" style="max-height: 180px; overflow-y: auto; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px;"><strong class="text-secondary d-block mb-1" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Live Sync Activity:</strong><ul class="list-unstyled mb-0" style="font-size: 0.82rem; font-family: monospace;">';
+        logDetails.forEach(function(d) {
+          html += '<li class="py-0.5 text-muted">' + d + '</li>';
         });
         html += '</ul></div>';
-        stepsContainer.innerHTML = html;
+      }
+      stepsContainer.innerHTML = html;
+      
+      // Auto-scroll activity box to bottom if present
+      var activityBox = stepsContainer.querySelector('div[style*="overflow-y"]');
+      if (activityBox) {
+        activityBox.scrollTop = activityBox.scrollHeight;
       }
     }
 
@@ -342,21 +356,21 @@
           if (data.status === 'running') {
             var step = (data.step || 1) - 1; // Convert 1-indexed to 0-indexed
             var message = data.message || stepLabels[step] || 'Processing...';
-            var details = [];
+            var steps = [];
             for (var i = 0; i < totalSteps; i++) {
-              details.push({
+              steps.push({
                 label: stepLabels[i],
                 status: i < step ? 'done' : (i === step ? 'current' : 'pending')
               });
             }
-            updateProgress(step + 1, totalSteps, message, details);
-            setTimeout(poll, 1500);
+            updateProgress(step + 1, totalSteps, message, steps, data.details || []);
+            setTimeout(poll, 1200);
           } else if (data.status === 'completed') {
             showCompletion(true, data.message || 'Sync completed successfully!', data.elapsed || '');
           } else if (data.status === 'failed' || data.status === 'error') {
             showCompletion(false, 'Sync failed: ' + (data.message || data.error || 'Unknown error'));
           } else {
-            setTimeout(poll, 1500);
+            setTimeout(poll, 1200);
           }
         })
         .catch(function(err) {
