@@ -1,5 +1,12 @@
 import os
+import sys
 import csv
+
+# Initialize Django environment
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
+import django
+django.setup()
+
 from django.core.files import File
 from sms.models import Student, StudentSession, EduSession
 
