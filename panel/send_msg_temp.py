@@ -45,14 +45,21 @@ def send_parent_message(request):
         return redirect(request.META.get('HTTP_REFERER', 'panel:index'))
     # Ensure group exists (or create)
     from sms.hamro import ensure_group, add_user_to_group, send_message_to_thread
-    # Build group name without the 'Student_' prefix as per requirement
+    # Build group name as "{reg_no}_{student_name}" (no "_Parents" suffix)
     clean_name = student.name.replace(' ', '')
-    group_name = f"{reg_no}_{clean_name}_Parents"
+    group_name = f"{reg_no}_{clean_name}"
     current_session = get_current_session()
-    avatar_url = student.avatar.url if getattr(student, 'avatar', None) else None
-    # Include description for the group
+    avatar_url = getattr(student, 'avatar', None).url if getattr(student, 'avatar', None) else None
     description = f"Group of parents of {student.name}"
-    group = ensure_group(group_name, current_session.id, school=student.school, avatar_url=avatar_url, description=description)
+    # Use dedicated helper for student‑parent groups (type 'custom')
+    from sms.hamro import ensure_student_parent_group
+    group = ensure_student_parent_group(
+        name=group_name,
+        session_id=current_session.id,
+        school=student.school,
+        avatar_url=avatar_url,
+        description=description,
+    )
     if not group:
         messages.error(request, 'Failed to create or retrieve Hamro group.')
         return redirect(request.META.get('HTTP_REFERER', 'panel:index'))

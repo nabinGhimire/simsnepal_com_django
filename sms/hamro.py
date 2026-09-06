@@ -348,11 +348,35 @@ def ensure_group(name, session_id, grade=None, section=None, school=None, avatar
                 school=school,
                 external_id=external_id,
                 is_broadcast=False,
+                description=description,
+                group_type='class',
             )
             return group
     else:
         logger.error(f'Failed to ensure group {name}')
         return None
+
+def ensure_student_parent_group(name, session_id, school=None, avatar_url=None, description=None):
+    """Create or retrieve a student-parent group (type 'custom')."""
+    group = Group.objects.filter(name=name, session_id=session_id, school=school, group_type='custom').first()
+    if group and group.external_id:
+        return group
+    
+    external_id = create_thread('group', name, description or f"Parents group for {name}", avatar_url=avatar_url, school=school)
+    if external_id:
+        if group:
+            group.external_id = external_id
+            group.save()
+        else:
+            group = Group.objects.create(
+                name=name,
+                session_id=session_id,
+                school=school,
+                external_id=external_id,
+                group_type='custom',
+                is_broadcast=False
+            )
+    return group
 
 def add_user_to_group(user_external_id, group_external_id, school=None):
     """Add a user to a Hamro group.
