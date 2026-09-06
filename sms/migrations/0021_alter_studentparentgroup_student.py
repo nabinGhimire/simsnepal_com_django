@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='studentparentgroup',
             name='student',
-            field=models.OneToOneField(db_column='student_reg_no', on_delete=django.db.models.deletion.CASCADE, related_name='parent_group', to='sms.student'),
+            field=models.OneToOneField(to='sms.student', db_column='student_reg_no', on_delete=django.db.models.deletion.CASCADE, related_name='parent_group', to_field='reg_no'),
         ),
     ]

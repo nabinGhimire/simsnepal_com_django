@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('group', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sms.group')),
-                ('student', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='parent_group', to='sms.student')),
+                ('student', models.OneToOneField(to='sms.student', on_delete=django.db.models.deletion.CASCADE, related_name='parent_group', to_field='reg_no', db_column='student_reg_no')),
             ],
         ),
     ]
