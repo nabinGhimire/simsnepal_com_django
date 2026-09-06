@@ -13170,10 +13170,10 @@ def send_parent_message(request):
         return redirect(request.META.get('HTTP_REFERER', 'panel:index'))
         
     # Ensure group exists (or create)
-    from sms.hamro import ensure_group, add_user_to_group, send_message_to_thread
+    from sms.hamro import ensure_student_parent_group, add_user_to_group, send_message_to_thread
     group_name = f"Student_{reg_no}_Parents"
     current_session = get_current_session()
-    group = ensure_group(group_name, current_session.id, school=student.school)
+    group = ensure_student_parent_group(group_name, current_session.id, school=student.school)
     if not group:
         if is_ajax: return JsonResponse({'success': False, 'error': 'Failed to create or retrieve Hamro group.'})
         messages.error(request, 'Failed to create or retrieve Hamro group.')
