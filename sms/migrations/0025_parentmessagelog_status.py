@@ -10,9 +10,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            sql="/* no-op */",
-            reverse_sql="/* no-op */",
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
             state_operations=[
                 migrations.AddField(
                     model_name='parentmessagelog',
