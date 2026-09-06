@@ -562,6 +562,7 @@ class ParentMessageLog(models.Model):
     hamro_message_id = models.CharField(max_length=200, blank=True, null=True)
     content = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='SENT')
 
 class StudentParentGroup(models.Model):
     student = models.OneToOneField('Student', on_delete=models.CASCADE, to_field='reg_no', db_column='student_reg_no', related_name='parent_group')
