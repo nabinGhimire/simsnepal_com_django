@@ -10,9 +10,23 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='parentmessagelog',
-            name='status',
-            field=models.CharField(choices=[('SENT', 'Sent'), ('FAILED', 'Failed')], default='SENT', max_length=10),
+        migrations.RunSQL(
+            sql=(
+                "ALTER TABLE sms_parentmessagelog "
+                "ADD COLUMN IF NOT EXISTS status VARCHAR(10) NOT NULL DEFAULT 'SENT' "
+                "COMMENT 'Message status' "
+            ),
+            reverse_sql="ALTER TABLE sms_parentmessagelog DROP COLUMN IF EXISTS status;",
+            state_operations=[
+                migrations.AddField(
+                    model_name='parentmessagelog',
+                    name='status',
+                    field=models.CharField(
+                        max_length=10,
+                        choices=[('SENT', 'Sent'), ('FAILED', 'Failed')],
+                        default='SENT',
+                    ),
+                ),
+            ],
         ),
     ]
