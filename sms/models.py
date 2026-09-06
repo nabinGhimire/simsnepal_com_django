@@ -514,6 +514,9 @@ class Group(models.Model):
         ('school', 'School Channel/Group'),
         ('teachers', 'Teachers Channel/Group'),
         ('class', 'Class/Section Group'),
+        ('event', 'Event Group'),
+        ('exam', 'Exam Preparation Group'),
+        ('custom', 'Custom Group'),
     ]
     name = models.CharField(max_length=200)
     session = models.ForeignKey('EduSession', on_delete=models.CASCADE)
@@ -523,6 +526,7 @@ class Group(models.Model):
     is_broadcast = models.BooleanField(default=False)
     group_type = models.CharField(max_length=20, choices=GROUP_TYPE_CHOICES, default='class')
     external_id = models.CharField(max_length=100, blank=True, null=True)  # Hamro group ID
+    description = models.CharField(max_length=500, blank=True, null=True)  # Group description
 
     class Meta:
         unique_together = (('group_type', 'session', 'school', 'grade', 'section'),)
@@ -558,10 +562,17 @@ class ParentMessageLog(models.Model):
     hamro_message_id = models.CharField(max_length=200, blank=True, null=True)
     content = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='SENT')
+
+class StudentParentGroup(models.Model):
+    student = models.OneToOneField('Student', on_delete=models.CASCADE, to_field='reg_no', db_column='student_reg_no', related_name='parent_group')
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    description = models.CharField(max_length=500, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Message to {self.parent.username} about {self.student.reg_no} ({self.status})"
+        return f"{self.student.name} parents group ({self.group.name})"
+    # The status field and duplicate __str__ were removed – the group now only stores the linkage
 
 
 

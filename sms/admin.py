@@ -14,6 +14,7 @@ from sms.models import (
     SchoolTerm,
     EduSession,
     StudentComplain,
+    StudentParentGroup,
 )
 
 # Register core teacher related models
@@ -33,5 +34,5 @@ admin.site.register(SchoolBranch)
 admin.site.register(SchoolGrade)
 admin.site.register(Section)
 admin.site.register(Subject)
-admin.site.register(SchoolTerm)
+admin.site.register(StudentParentGroup)
 admin.site.register(EduSession)

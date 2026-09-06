@@ -297,7 +297,7 @@ def ensure_channel(name, school=None):
         logger.error(f'Failed to ensure channel {name}')
         return None
 
-def ensure_group(name, session_id, grade=None, section=None, school=None):
+def ensure_group(name, session_id, grade=None, section=None, school=None, avatar_url=None, description=None):
     """Create or retrieve a group for a grade/section.
     Returns the Group instance (with external_id populated).
     """
@@ -331,7 +331,8 @@ def ensure_group(name, session_id, grade=None, section=None, school=None):
                 # exists is True or None (transient error) — trust the DB record
                 return group
         
-    external_id = create_thread('group', name, f"Group for {name}", school=school)
+    desc = description if description is not None else f"Group for {name}"
+    external_id = create_thread('group', name, desc, avatar_url=avatar_url, school=school)
     if external_id:
         if group:
             # Group exists but no external_id, update it
@@ -400,14 +401,18 @@ def list_threads(school=None):
         logger.error(f"Error listing threads: {e}")
     return None
 
-def create_thread(thread_type, name, description="", school=None):
-    """Create a new thread (group or channel) in Hamro platform."""
+def create_thread(thread_type, name, description="", avatar_url=None, school=None):
+    """Create a new thread (group or channel) in Hamro platform.
+    Optional avatar_url can be provided to set the thread's avatar/icon.
+    """
     url = f"{get_base_url()}/api/v1/platform/threads"
     payload = {
         'type': thread_type,
         'name': name,
         'description': description
     }
+    if avatar_url:
+        payload['avatar_url'] = avatar_url
     try:
         response = requests.post(url, json=payload, headers=get_headers(school=school))
         if response.status_code in (200, 201):
