@@ -11,12 +11,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(
-            sql=(
-                "ALTER TABLE sms_parentmessagelog "
-                "ADD COLUMN IF NOT EXISTS status VARCHAR(10) NOT NULL DEFAULT 'SENT' "
-                "COMMENT 'Message status' "
-            ),
-            reverse_sql="ALTER TABLE sms_parentmessagelog DROP COLUMN IF EXISTS status;",
+            sql="/* no-op */",
+            reverse_sql="/* no-op */",
             state_operations=[
                 migrations.AddField(
                     model_name='parentmessagelog',
