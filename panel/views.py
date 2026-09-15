@@ -25,7 +25,7 @@ from django.http import Http404, HttpResponse, HttpResponseRedirect
 # # from .func import *
 
 # # # from .student_reg import my_students
-# # from django.db.models import Q
+# from django.db.models import Q
 
 from io import BytesIO
 from django.template.loader import get_template
@@ -69,6 +69,7 @@ import logging
 import secrets
 import csv
 from collections import OrderedDict, defaultdict
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import datetime
 from io import BytesIO
 from random import randint
@@ -96,7 +97,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseForbidden
 from .forms import PlatformSettingForm
 from sms.models import SchoolBranch, BranchUser, Teacher, Group, StudentSession, Student, Section, GroupMembership, SchoolGrade, GradeLevel, EduSession, SchoolTerm, PlatformSetting
-from sms.hamro import ensure_channel, ensure_group, add_user_to_group, user_exists_in_hamro
+from sms.hamro import ensure_channel, ensure_group, add_user_to_group, user_exists_in_hamro, send_message_to_thread
 from django.contrib import messages
 
 
@@ -743,6 +744,31 @@ def sync_single_group_view(request, group_id):
         group_name = group_obj.name if group_obj else f'group {group_id}'
         _sync_logger.exception(f"Single group sync failed for {group_name}")
         return JsonResponse({'ok': False, 'error': str(e)})
+
+
+@login_required
+def student_parent_sync(request):
+    """Sync student parents to Hamro platform."""
+    messages.info(request, "Student parent sync is not yet fully implemented.")
+    return redirect('panel:sync_platform')
+
+@login_required
+def group_management(request):
+    """Group management view."""
+    messages.info(request, "Group management is not yet fully implemented.")
+    return redirect('panel:sync_platform')
+
+@login_required
+def send_group_message(request, group_id):
+    """Send group message view."""
+    messages.info(request, "Send group message is not yet fully implemented.")
+    return redirect('panel:sync_platform')
+
+@login_required
+def broadcast_history_view(request):
+    """Broadcast history view."""
+    messages.info(request, "Broadcast history is not yet fully implemented.")
+    return redirect('panel:sync_platform')
 
 
 @login_required
@@ -6124,7 +6150,7 @@ def print_teachers(request):
     grade_level = GradeLevel.objects.all()
     school_branch = SchoolBranch.objects.get(id=branch_user.school_id)
     grades = SchoolGrade.objects.filter(school=school_branch).order_by("id")
-    teachers = Teacher.objects.filter(added_by=request.user).select_related('teacher', 'teacher__hamro_profile')
+    teachers = Teacher.objects.filter(teacher__branchuser__school=school_branch, teacher__branchuser__status=True).distinct().select_related('teacher', 'teacher__hamro_profile')
 
     subject_access = dict()
 
@@ -6548,6 +6574,10 @@ def add_teacher(request):
             hamro_uuid = request.POST.get("hamro_uuid")
             avatar_url = request.POST.get("avatar_url")
             mobile_number = request.POST.get("mobile_number")
+            
+            # Fallback for empty usernames from SSO
+            if not username or username.strip() == "":
+                username = mobile_number if mobile_number else f"sso_{hamro_uuid}"
             
             rand_pwd = secrets.token_urlsafe(16)
             try:
@@ -9627,7 +9657,7 @@ def print_homeworks(request):
     grade_level = GradeLevel.objects.all()
     school_branch = SchoolBranch.objects.get(id=branch_user.school_id)
     grades = SchoolGrade.objects.filter(school=school_branch).order_by("id")
-    teachers = Teacher.objects.filter(added_by=request.user)
+    teachers = Teacher.objects.filter(teacher__branchuser__school=school_branch, teacher__branchuser__status=True).distinct()
     current_session = get_current_session()
     # Filter homeworks for today or newer (recently added)
     from datetime import date
@@ -9834,7 +9864,7 @@ def new_session(request):
     grade_level = GradeLevel.objects.all()
     school_branch = SchoolBranch.objects.get(id=branchuser.school_id)
     grades = SchoolGrade.objects.filter(school=school_branch).order_by("id")
-    teachers = Teacher.objects.filter(added_by=request.user)
+    teachers = Teacher.objects.filter(teacher__branchuser__school=school_branch, teacher__branchuser__status=True).distinct()
 
     studentsDict = OrderedDict()
 
