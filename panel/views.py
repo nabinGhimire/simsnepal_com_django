@@ -1112,7 +1112,8 @@ def index(request):
         "grades": grades,
         "branchuser": branchuser,
         "school": schoolbranch,
-        "total_grades": total_grades
+        "total_grades": total_grades,
+        "show_migration_card": branchuser.admin_status and not schoolbranch.migration_completed,
     }
     return render(request, "panel/index.html", context)
 
@@ -10029,6 +10030,37 @@ def new_session(request):
     
     context = {'user':user, 'grade_level':grade_level, 'school_branch':school_branch, 'grades':grades, 'teachers':teachers, 'branchuser':branchuser, 'students_dict': studentsDict}
     return render(request, "panel/new_session.html", context)    
+
+@login_required
+def set_migration_status(request):
+    """Admin toggle for the session-migration card on the dashboard."""
+    if request.method != "POST":
+        return redirect("panel:index")
+
+    branchuser, error = get_branch_info(request.user)
+    if error:
+        messages.error(request, error)
+        return redirect("panel:index")
+
+    if not branchuser.admin_status:
+        messages.error(request, "Only administrators can update the migration status.")
+        return redirect("panel:index")
+
+    completed = request.POST.get("completed") == "true"
+    school = branchuser.school
+    school.migration_completed = completed
+    school.save(update_fields=["migration_completed"])
+
+    if completed:
+        messages.success(request, "Session migration marked as complete. The dashboard card is now hidden.")
+    else:
+        messages.info(request, "Session migration reopened. The dashboard card is visible again.")
+
+    referer = request.META.get("HTTP_REFERER")
+    if referer:
+        return redirect(referer)
+    return redirect("panel:index")
+
 
 @login_required
 def migration(request):

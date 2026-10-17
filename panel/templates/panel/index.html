@@ -45,7 +45,8 @@
 
 {% block content %}
 
-<!-- Migration Banner -->
+<!-- Migration Banner (hidden once an admin marks the migration complete) -->
+{% if show_migration_card %}
 <div class="card banner-gradient mb-3 card-dynamic shadow-sm">
   <div class="card-body py-2 px-3">
     <div class="row align-items-center g-2">
@@ -53,14 +54,22 @@
         <div class="fw-semibold">Session Migration</div>
         <div class="small opacity-75">Migrate students to the upcoming 2083 session.</div>
       </div>
-      <div class="col-auto">
+      <div class="col-auto d-flex align-items-center gap-2">
         <a href="/panel/migration" class="btn btn-warning btn-sm">
           <i class="ti ti-rocket me-1"></i> Start Migration
         </a>
+        <form method="POST" action="{% url 'panel:set_migration_status' %}">
+          {% csrf_token %}
+          <input type="hidden" name="completed" value="true">
+          <button type="submit" class="btn btn-sm btn-outline-light" title="Hide this card">
+            <i class="ti ti-check me-1"></i> Mark Complete
+          </button>
+        </form>
       </div>
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Grade Cards -->
 <div class="row g-3">

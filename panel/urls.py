@@ -85,6 +85,7 @@ urlpatterns = [
     path('settings/school/', views.school_settings, name='school_settings'),
     path('grades/<int:grade_id>/create-groups/', views.create_groups_view, name='create_groups'),
     path("migration", views.migration, name="migration"),
+    path("migration/status/", views.set_migration_status, name="set_migration_status"),
     path("2081", views.new_session, name="2081"),
     path("2082", views.new_session, name="2082"),
     path("2083", views.new_session, name="2083"),
