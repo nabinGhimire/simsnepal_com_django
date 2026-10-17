@@ -1,0 +1,257 @@
+{% extends 'attendance/base.html' %}
+
+{% block attendance_content %}
+<!-- Student Header Card -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-3">
+      <span class="avatar avatar-lg bg-primary-lt text-primary font-weight-bold fs-2">
+        {{ student.name|slice:":1"|upper }}
+      </span>
+      <div>
+        <h2 class="m-0 text-dark font-weight-bold">
+          {{ student.name }}
+          {% if student.gender %}
+            <span class="badge bg-blue-lt text-blue ms-1 fs-6">Male</span>
+          {% else %}
+            <span class="badge bg-pink-lt text-pink ms-1 fs-6">Female</span>
+          {% endif %}
+        </h2>
+        <div class="text-muted small mt-1">
+          Reg No: <code>{{ student.reg_no }}</code> | 
+          Roll No: <strong>{{ student_session.roll_no|default:'-' }}</strong> | 
+          Grade: <strong>Grade {{ student_session.grade.grade_name|default:'-' }}</strong>
+          {% if student_session.section %}(Section {{ student_session.section.section }}){% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 d-print-none">
+      <a href="{% url 'attendance:dashboard' %}{% if student_session.grade %}?grade={{ student_session.grade.id }}{% endif %}" class="btn btn-outline-secondary btn-sm">
+        Back to Class
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stat Overview Cards -->
+<div class="row g-2 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center py-2.5 bg-white">
+      <div class="text-muted small font-weight-bold">SCHOOL DAYS</div>
+      <div class="h2 m-0 text-primary font-weight-bold">{{ total_records }}</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center py-2.5 bg-white">
+      <div class="text-muted small font-weight-bold">PRESENT DAYS</div>
+      <div class="h2 m-0 text-success font-weight-bold">
+        {{ present_count }}
+        <span class="fs-6 font-weight-normal text-muted">({{ percentage }}%)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center py-2.5 bg-white">
+      <div class="text-muted small font-weight-bold">INFORMED ABSENT</div>
+      <div class="h2 m-0 text-warning font-weight-bold">{{ informed_absent_count }}</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm text-center py-2.5 bg-white">
+      <div class="text-muted small font-weight-bold">UNINFORMED ABSENT</div>
+      <div class="h2 m-0 text-danger font-weight-bold">{{ uninformed_absent_count }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Monthly Attendance Summary Table -->
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+        <h6 class="card-title m-0 text-dark font-weight-bold">
+          Monthly Breakdown (BS {{ selected_year }})
+        </h6>
+        <form method="GET" action="" class="d-print-none">
+          <select name="year" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+            {% for y in years_list %}
+            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-vcenter table-hover card-table border-0 m-0" style="font-size:0.78rem;">
+          <thead class="bg-light">
+            <tr>
+              <th>Month</th>
+              <th class="text-center">Rec</th>
+              <th class="text-center">P</th>
+              <th class="text-center">Inf</th>
+              <th class="text-center">Uninf</th>
+              <th class="text-center">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in monthly_summary %}
+            <tr style="cursor:pointer;" onclick="window.location.href='?year={{ selected_year }}&month={{ m.month_num }}{% if student_session.grade %}&grade={{ student_session.grade.id }}{% endif %}'" class="{% if selected_month == m.month_num %}table-active{% endif %}">
+              <td><strong class="text-primary">{{ m.month_name }}</strong></td>
+              <td class="text-center">{{ m.total_recorded }}</td>
+              <td class="text-center text-success">{{ m.present }}</td>
+              <td class="text-center text-warning">{{ m.informed_absent }}</td>
+              <td class="text-center text-danger">{{ m.uninformed_absent }}</td>
+              <td class="text-center">
+                {% if m.total_recorded > 0 %}
+                  <span class="badge {% if m.percentage >= 80 %}bg-success-lt text-success{% elif m.percentage >= 60 %}bg-warning-lt text-warning{% else %}bg-danger-lt text-danger{% endif %}">
+                    {{ m.percentage }}%
+                  </span>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+            <tr class="font-weight-bold" style="background:#f8f9fa;">
+              <td>Total</td>
+              <td class="text-center">{{ total_recorded }}</td>
+              <td class="text-center text-success">{{ total_present_monthly }}</td>
+              <td class="text-center text-warning">{{ total_informed_absent_monthly }}</td>
+              <td class="text-center text-danger">{{ total_uninformed_absent_monthly }}</td>
+              <td class="text-center"><span class="badge bg-info-lt text-info">{{ avg_percentage }}%</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Daily Attendance Log -->
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+        <h6 class="card-title m-0 text-dark font-weight-bold">
+          {% if selected_month %}
+            {{ selected_month_name }} {{ selected_year }} — Daily Logs
+            <a href="?year={{ selected_year }}" class="btn btn-sm btn-outline-secondary ms-2" style="font-size:0.72rem;">Show All Months</a>
+          {% else %}
+            Recent Daily Logs
+          {% endif %}
+        </h6>
+      </div>
+
+      {% if selected_month %}
+      <div class="px-3 py-2 bg-light border-bottom" style="font-size:0.75rem;">
+        {% for m in monthly_summary %}
+          {% if m.month_num == selected_month %}
+          <div class="d-flex gap-3">
+            <span>Days: <strong>{{ m.total_recorded }}</strong></span>
+            <span class="text-success">Present: <strong>{{ m.present }}</strong></span>
+            <span class="text-warning">Informed: <strong>{{ m.informed_absent }}</strong></span>
+            <span class="text-danger">Uninformed: <strong>{{ m.uninformed_absent }}</strong></span>
+            <span>Rate: <strong class="{% if m.percentage >= 80 %}text-success{% elif m.percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">{{ m.percentage }}%</strong></span>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+        <table class="table table-vcenter table-hover card-table border-0 m-0" style="font-size:0.78rem;">
+          <thead class="bg-light sticky-top">
+            <tr>
+              <th>Date</th>
+              <th class="text-center">Status</th>
+              <th>Subject</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in attendance_records %}
+            <tr>
+              <td>
+                <span class="font-weight-bold text-dark">{{ log.nepali_date|default:log.date }}</span>
+                <small class="text-muted d-block">{{ log.date|date:"Y-m-d" }}</small>
+              </td>
+              <td class="text-center">
+                {% if log.is_present %}
+                  <span class="badge bg-success-lt text-success">Present</span>
+                {% elif log.absent_informed %}
+                  <span class="badge bg-warning-lt text-warning">Informed</span>
+                {% else %}
+                  <span class="badge bg-danger-lt text-danger">Uninformed</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if log.subject %}<span class="badge bg-blue-lt text-blue">{{ log.subject.subject }}</span>{% endif %}
+                {% if log.remarks %}<small class="text-muted d-block">{{ log.remarks }}</small>{% endif %}
+              </td>
+              <td class="text-muted">{{ log.taken_by.username|default:'-' }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-4 text-muted">
+                No attendance logs found for this student in current session.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Audit Trail Logs for Student -->
+{% if audit_logs %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header bg-white py-2.5">
+    <h4 class="card-title m-0 text-dark font-weight-bold">
+      📜 Modification History & Audit Trail for {{ student.name }}
+    </h4>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-vcenter table-striped card-table border-0 m-0">
+      <thead class="bg-light">
+        <tr>
+          <th>Date & Time</th>
+          <th>Attendance Date</th>
+          <th>Updated By</th>
+          <th>Status Change</th>
+          <th>Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for audit in audit_logs %}
+        <tr>
+          <td class="small text-muted">{{ audit.created_at|date:"Y-m-d H:i" }}</td>
+          <td class="font-weight-bold">{{ audit.attendance.date|date:"Y-m-d" }}</td>
+          <td><span class="badge bg-secondary-lt text-dark">{{ audit.updated_by.username }}</span></td>
+          <td>
+            {% if audit.previous_status != audit.new_status %}
+              <span class="badge bg-danger-lt text-danger">{% if audit.previous_status %}Present{% else %}Absent{% endif %}</span>
+              ➔
+              <span class="badge bg-success-lt text-success">{% if audit.new_status %}Present{% else %}Absent{% endif %}</span>
+            {% else %}
+              <span class="text-muted">Unchanged</span>
+            {% endif %}
+          </td>
+          <td class="small">
+            {% if audit.new_remarks %}{{ audit.new_remarks }}
+            {% elif audit.previous_remarks %}{{ audit.previous_remarks }}
+            {% else %}-{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,459 @@
+{% extends 'panel/panel-main.html' %}
+
+{% block title %}Attendance Management | SIMSnepal{% endblock %}
+
+{% block extra_css %}
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<!-- Nepali Datepicker CSS -->
+<link href="https://cdn.hamro.com/hamro/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
+<!-- ApexCharts CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@latest/dist/apexcharts.css"/>
+<style>
+  .nepali-datepicker-container { font-family: inherit !important; }
+  .card-compact { margin-bottom: 0.75rem; }
+  .card-compact .card-body { padding: 0.75rem 1rem; }
+  .card-compact .card-header { padding: 0.5rem 1rem; }
+  .remarks-textarea:focus { height: 70px !important; }
+
+  /* ═══════ Dashboard UI ═══════ */
+
+  /* Fix nepali datepicker overflow */
+  .nepali-datepicker-container {
+    position: absolute !important;
+    z-index: 1050 !important;
+  }
+
+  /* Stat cards */
+  .stat-card {
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 10px;
+    transition: box-shadow 0.15s ease;
+    background: #fff;
+  }
+  .stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .stat-card .stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .stat-card .stat-icon svg { width: 20px; height: 20px; }
+  .stat-card .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  .stat-card .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: #6c757d;
+  }
+  .stat-card .stat-sub {
+    font-size: 0.75rem;
+    color: #6c757d;
+  }
+
+  /* Progress bar in stat cards */
+  .stat-progress {
+    height: 3px;
+    border-radius: 2px;
+    background: #f1f3f5;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .stat-progress .stat-progress-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+  }
+
+  /* Gender cards */
+  .gender-card {
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 10px;
+    background: #fff;
+    transition: box-shadow 0.15s ease;
+  }
+  .gender-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .gender-card .gender-stat-val {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  /* Class cards */
+  .class-card {
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 10px;
+    background: #fff;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .class-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    border-color: rgba(0,0,0,0.1);
+  }
+  .class-card .attendance-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: #f1f3f5;
+    overflow: hidden;
+  }
+  .class-card .attendance-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  /* Level group header */
+  .level-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .level-header .level-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6c757d;
+    white-space: nowrap;
+  }
+  .level-header .level-line {
+    flex: 1;
+    height: 1px;
+    background: #e9ecef;
+  }
+  .level-header .level-badge {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #f1f3f5;
+    color: #495057;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Table enhancements */
+  .attendance-table thead th {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: #6c757d;
+    border-bottom: 1px solid #e9ecef;
+    padding: 8px 12px;
+    background: #f8f9fa;
+  }
+  .attendance-table tbody tr {
+    transition: background 0.1s ease;
+  }
+  .attendance-table tbody tr:hover {
+    background: #f8f9fa;
+  }
+  .attendance-table tbody td {
+    padding: 10px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f3f5;
+  }
+
+  /* Badge */
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  /* Sticky save footer */
+  .save-footer {
+    border-top: 1px solid #e9ecef;
+    background: rgba(255,255,255,0.97);
+  }
+
+  /* Batch action bar */
+  .batch-bar {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  /* Summary row for grade view */
+  .att-summary-row {
+    border-bottom: 1px solid #e9ecef;
+    background: #fff;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .stat-card .stat-value { font-size: 1.25rem; }
+    .stat-card .stat-icon { width: 36px; height: 36px; }
+    .gender-card .gender-stat-val { font-size: 1.15rem; }
+  }
+</style>
+{% endblock %}
+
+{% block navbar %}
+<!-- Dedicated Attendance Top Sub-Navbar -->
+<div class="navbar-expand-md">
+  <div class="collapse navbar-collapse" id="navbar-menu">
+    <div class="navbar navbar-light bg-white border-bottom shadow-xs">
+      <div class="container-xl">
+        <ul class="navbar-nav">
+          
+          <!-- Home -->
+          <li class="nav-item {% if not selected_grade and not is_report and not is_settings %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'attendance:dashboard' %}{% if selected_bs_date_str %}?date={{ selected_bs_date_str }}{% endif %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+                  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+                  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+                </svg>
+              </span>
+              <span class="nav-link-title">Home</span>
+            </a>
+          </li>
+
+          <!-- Dynamic Grade Levels in Header Menu (Panel Concept) -->
+          {% for level in nav_grade_levels %}
+          <li class="nav-item dropdown {% if selected_grade and selected_grade.level.id == level.id %}active{% endif %}">
+            <a class="nav-link dropdown-toggle font-weight-bold" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-teal" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12z" />
+                  <path d="M19 16h-12a2 2 0 0 0 -2 2" />
+                  <path d="M9 8h6" />
+                </svg>
+              </span>
+              <span class="nav-link-title">{{ level.name|upper }}</span>
+            </a>
+            <div class="dropdown-menu">
+              {% for grade in nav_grades %}
+              {% if grade.level.id == level.id %}
+              <a class="dropdown-item {% if selected_grade.id == grade.id %}active font-weight-bold{% endif %}" 
+                 href="{% url 'attendance:dashboard' %}?grade={{ grade.id }}{% if selected_bs_date_str %}&date={{ selected_bs_date_str }}{% endif %}">
+                Grade {{ grade.grade_name|upper }}
+              </a>
+              {% endif %}
+              {% endfor %}
+            </div>
+          </li>
+          {% endfor %}
+
+          <li class="nav-item dropdown {% if is_report and not is_settings %}active{% endif %}">
+            <a class="nav-link dropdown-toggle font-weight-bold" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-purple" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M17 17h2a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-14a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h2" />
+                  <path d="M17 9v-4a2 2 0 0 0 -2 -2h-6a2 2 0 0 0 -2 2v4" />
+                  <rect x="7" y="13" width="10" height="8" rx="1" />
+                </svg>
+              </span>
+              <span class="nav-link-title">Reports & Tools</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-arrow">
+              <a class="dropdown-item" href="{% url 'attendance:daily_report' %}{% if selected_bs_date_str %}?date={{ selected_bs_date_str }}{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-info" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" /><rect x="9" y="3" width="6" height="4" rx="2" /><path d="M9 14l2 2l4 -4" /></svg>
+                Daily Attendance Report
+              </a>
+              <a class="dropdown-item" href="{% url 'attendance:monthly_report' %}{% if selected_grade %}?grade={{ selected_grade.id }}{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-primary" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /><path d="M16 3l0 4" /><path d="M8 3l0 4" /><path d="M4 11l16 0" /><path d="M8 15l2 2l4 -4" /></svg>
+                Monthly Attendance Matrix
+              </a>
+              <a class="dropdown-item" href="{% url 'attendance:yearly_report' %}{% if selected_grade %}?grade={{ selected_grade.id }}{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-success" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 9v4l3 3" /></svg>
+                Yearly Attendance Summary
+              </a>
+              <div class="dropdown-divider"></div>
+              <!-- Transfer Date Tool Modal Trigger -->
+              <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#transferDateModal">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-danger" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M7 10h14l-4 -4" /><path d="M17 14h-14l4 4" /></svg>
+                Transfer Date Tool (Admin)
+              </a>
+              <!-- Bulk Backfill Monthly Matrix Link -->
+              <a class="dropdown-item text-primary" href="{% url 'attendance:bulk_backfill' %}{% if selected_grade %}?grade={{ selected_grade.id }}{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-primary" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M12 4v16m-8 -8h16" /></svg>
+                Bulk Backfill Matrix (Admin)
+              </a>
+              <div class="dropdown-divider"></div>
+            </div>
+          </li>
+
+          <!-- Settings -->
+          <li class="nav-item {% if is_settings %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'attendance:settings' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-secondary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </span>
+              <span class="nav-link-title">Settings</span>
+            </a>
+          </li>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock navbar %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <div class="row">
+    <!-- Full-Width Content Area -->
+    <div class="col-12">
+      {% block attendance_content %}
+      {% endblock %}
+    </div>
+  </div>
+</div>
+
+<!-- Admin Transfer Date Modal -->
+<div class="modal fade" id="transferDateModal" tabindex="-1" aria-labelledby="transferDateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="{% url 'attendance:transfer_date' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-header-title text-white font-weight-bold" id="transferDateModalLabel">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M7 10h14l-4 -4" /><path d="M17 14h-14l4 4" /></svg>
+            Transfer Attendance to New Date
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small">Use this tool if attendance was marked on the wrong date (e.g. marked on Yesterday instead of Today). All attendance records for the selected class/date will be moved.</p>
+          
+          <div class="mb-3">
+            <label class="form-label font-weight-bold">Select Grade:</label>
+            <select name="grade" class="form-select">
+              <option value="">All Grades</option>
+              {% for g in nav_grades %}
+              <option value="{{ g.id }}">Grade {{ g.grade_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label font-weight-bold">From BS Date (Wrong):</label>
+              <input type="text" name="from_date" class="form-control" placeholder="2083-05-24" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label font-weight-bold">To BS Date (Correct):</label>
+              <input type="text" name="to_date" class="form-control" placeholder="2083-05-25" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link text-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger font-weight-bold">Transfer Attendance Records</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Backfill Attendance Modal -->
+<div class="modal fade" id="bulkBackfillModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="{% url 'attendance:bulk_backfill' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title font-weight-bold">🚀 Bulk Backfill Attendance (Admin)</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small mb-3">
+            <strong>Mid-Session Onboarding Tool:</strong> Mass mark past attendance for date ranges (e.g. Baisakh to Jestha). This populates historical attendance records instantly for reporting.
+          </div>
+          
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label font-weight-bold small">Start BS Date:</label>
+              <input type="text" name="start_date" class="form-control form-control-sm" placeholder="2083-01-01" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label font-weight-bold small">End BS Date:</label>
+              <input type="text" name="end_date" class="form-control form-control-sm" placeholder="2083-05-20" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label font-weight-bold small">Target Grade:</label>
+            <select name="grade" class="form-select form-select-sm">
+              <option value="">All Grades</option>
+              {% for g in nav_grades %}
+              <option value="{{ g.id }}">Grade {{ g.grade_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label font-weight-bold small">Default Status:</label>
+            <select name="default_status" class="form-select form-select-sm">
+              <option value="present" selected>Mark All Students Present</option>
+              <option value="absent">Mark All Students Absent</option>
+            </select>
+          </div>
+
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="exclude_saturdays" value="yes" id="exclude_saturdays" checked>
+            <label class="form-check-label small" for="exclude_saturdays">
+              Exclude Saturdays (Skip Saturdays)
+            </label>
+          </div>
+
+          <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" name="overwrite_existing" value="yes" id="overwrite_existing">
+            <label class="form-check-label small text-muted" for="overwrite_existing">
+              Overwrite existing attendance records if any
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link text-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm font-weight-bold">Run Bulk Backfill</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Nepali Datepicker & ApexCharts Scripts -->
+<script src="https://cdn.hamro.com/hamro/js/nepali.datepicker.v4.0.1.min.js" type="text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const pickerElement = document.getElementById("nepali-datepicker");
+    if (pickerElement && typeof pickerElement.nepaliDatePicker === 'function') {
+      pickerElement.nepaliDatePicker({
+        ndpYear: true,
+        ndpMonth: true,
+        ndpYearCount: 10,
+        onChange: function() {
+          if (pickerElement.form) pickerElement.form.submit();
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

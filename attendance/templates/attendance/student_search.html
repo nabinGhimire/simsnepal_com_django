@@ -1,0 +1,107 @@
+{% extends 'attendance/base.html' %}
+
+{% block attendance_content %}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white py-3 border-bottom">
+    <h3 class="card-title m-0 text-primary font-weight-bold fs-3">
+      🔍 Search Student Attendance Profile
+    </h3>
+  </div>
+
+  <div class="card-body bg-light py-3">
+    <form method="GET" action="{% url 'attendance:student_search' %}" class="row g-2 align-items-center">
+      <div class="col-md-6 col-lg-5">
+        <div class="input-group">
+          <span class="input-group-text bg-white">🔍</span>
+          <input type="text" name="q" value="{{ query }}" class="form-control font-weight-bold" 
+                 placeholder="Search student by Name, Reg No, or Roll No..." autofocus required />
+          <button type="submit" class="btn btn-primary font-weight-bold px-4">Search</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if query %}
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white py-2.5">
+    <h4 class="card-title m-0 font-weight-bold text-dark">
+      Search Results for "{{ query }}" ({{ total_count }} found)
+    </h4>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-vcenter table-hover card-table">
+      <thead class="bg-light">
+        <tr>
+          <th>Roll</th>
+          <th>Reg No</th>
+          <th>Student Name</th>
+          <th>Grade & Section</th>
+          <th>Gender</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ss in results %}
+        <tr>
+          <td class="font-weight-bold text-dark">{{ ss.roll_no }}</td>
+          <td><code>{{ ss.student.reg_no }}</code></td>
+          <td>
+            <a href="{% url 'attendance:student_profile' reg_no=ss.student.reg_no %}" class="font-weight-bold text-primary fs-5 text-decoration-none">
+              {{ ss.student.name }}
+            </a>
+          </td>
+          <td>
+            Grade {{ ss.grade.grade_name }}
+            {% if ss.section %}(Section {{ ss.section.section }}){% endif %}
+          </td>
+          <td>
+            {% if ss.student.gender %}
+              <span class="badge bg-blue-lt text-blue">Male</span>
+            {% else %}
+              <span class="badge bg-pink-lt text-pink">Female</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'attendance:student_profile' reg_no=ss.student.reg_no %}" class="btn btn-sm btn-outline-primary font-weight-bold">
+              View Profile ➔
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">
+            No students found matching "{{ query }}".
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if results.has_other_pages %}
+  <div class="card-footer bg-white py-2 d-flex justify-content-center">
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if results.has_previous %}
+          <li class="page-item"><a class="page-link" href="?q={{ query }}&page={{ results.previous_page_number }}">&laquo; Prev</a></li>
+        {% endif %}
+        {% for num in results.paginator.page_range %}
+          {% if results.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > results.number|add:'-3' and num < results.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?q={{ query }}&page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+        {% if results.has_next %}
+          <li class="page-item"><a class="page-link" href="?q={{ query }}&page={{ results.next_page_number }}">Next &raquo;</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

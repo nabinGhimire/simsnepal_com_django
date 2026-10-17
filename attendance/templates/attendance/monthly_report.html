@@ -1,0 +1,154 @@
+{% extends 'attendance/base.html' %}
+{% load attendance_tags %}
+
+{% block attendance_content %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h6 class="card-title m-0 text-primary font-weight-bold">
+        Monthly Matrix — {{ month_name }} {{ selected_year }}
+      </h6>
+      <div class="text-muted" style="font-size:0.75rem;">
+        {% if selected_grade %}Grade {{ selected_grade.grade_name }}{% else %}All{% endif %}
+        {% if selected_section %}(Section {{ selected_section.section }}){% endif %}
+        | {{ taken_days_count }} Days
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'attendance:export_monthly_excel' %}?grade={{ selected_grade.id }}{% if selected_section %}&section={{ selected_section.id }}{% endif %}&month={{ selected_month }}&year={{ selected_year }}" 
+         class="btn btn-success btn-sm px-3 font-weight-bold">
+        Export Excel
+      </a>
+      <a href="{% url 'attendance:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        Back
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Form -->
+  <div class="card-body bg-light py-2.5">
+    <form method="GET" action="" class="row g-2 align-items-center">
+      <!-- Grade Filter -->
+      <div class="col-auto">
+        <label class="form-label small text-muted font-weight-bold m-0 me-1">Grade:</label>
+        <select name="grade" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          {% for g in grades %}
+          <option value="{{ g.id }}" {% if selected_grade.id == g.id %}selected{% endif %}>
+            Grade {{ g.grade_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Section Filter -->
+      {% if sections %}
+      <div class="col-auto">
+        <label class="form-label small text-muted font-weight-bold m-0 me-1">Section:</label>
+        <select name="section" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          <option value="">All Sections</option>
+          {% for sec in sections %}
+          <option value="{{ sec.id }}" {% if selected_section.id == sec.id %}selected{% endif %}>
+            Section {{ sec.section }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- Month Filter -->
+      <div class="col-auto">
+        <label class="form-label small text-muted font-weight-bold m-0 me-1">Month (BS):</label>
+        <select name="month" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          {% for m_num, m_label in nepali_months %}
+          <option value="{{ m_num }}" {% if selected_month == m_num %}selected{% endif %}>
+            {{ m_label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Year Filter -->
+      <div class="col-auto">
+        <label class="form-label small text-muted font-weight-bold m-0 me-1">Year (BS):</label>
+        <select name="year" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          {% for y in years_list %}
+          <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>
+            {{ y }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-auto ms-auto">
+        <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table Card -->
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-vcenter table-bordered table-sm card-table text-center align-middle" style="font-size: 0.8rem;">
+      <thead>
+        <tr class="bg-light">
+          <th style="width: 35px;">#</th>
+          <th style="width: 70px;">Roll</th>
+          <th style="width: 80px;">Reg No</th>
+          <th style="min-width: 140px;" class="text-start">Student Name</th>
+          <th style="width: 55px;" class="bg-success-lt text-success">P</th>
+          <th style="width: 55px;" class="bg-danger-lt text-danger">A</th>
+          <th style="width: 55px;" class="bg-warning-lt text-warning">L</th>
+          <th style="width: 65px;" class="bg-primary-lt text-primary">% Rate</th>
+          <!-- Days 1 to 32 -->
+          {% for d in days_range %}
+          <th style="width: 26px; padding: 4px 2px;" class="text-muted font-weight-normal">{{ d }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in student_rows %}
+        <tr>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td class="font-weight-bold">{{ row.student_session.roll_no }}</td>
+          <td><code>{{ row.student.reg_no }}</code></td>
+          <td class="text-start font-weight-bold">
+            <a href="{% url 'attendance:student_profile' reg_no=row.student.reg_no %}" class="text-primary text-decoration-none">
+              {{ row.student.name }}
+            </a>
+          </td>
+          
+          <!-- Summary Totals -->
+          <td class="font-weight-bold text-success bg-success-lt">{{ row.present_cnt }}</td>
+          <td class="font-weight-bold text-danger bg-danger-lt">{{ row.absent_cnt }}</td>
+          <td class="font-weight-bold text-warning bg-warning-lt">{{ row.informed_cnt }}</td>
+          <td class="font-weight-bold text-primary bg-primary-lt">{{ row.percentage }}%</td>
+
+          <!-- Day-by-Day Matrix (1..32) -->
+          {% for day in row.day_matrix %}
+          <td class="p-0 text-center {{ day.class }}">
+            {% if day.status == 'P' %}
+              <span class="badge bg-success-lt text-success p-1">P</span>
+            {% elif day.status == 'A' %}
+              <span class="badge bg-danger-lt text-danger p-1">A</span>
+            {% elif day.status == 'L' %}
+              <span class="badge bg-warning-lt text-warning p-1">L</span>
+            {% else %}
+              <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="40" class="text-center py-5 text-muted">
+            No attendance records or students found for {{ month_name }} {{ selected_year }}.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

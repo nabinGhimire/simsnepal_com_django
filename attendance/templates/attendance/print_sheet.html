@@ -1,0 +1,138 @@
+{% load attendance_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Sheet - {% if selected_grade %}Grade {{ selected_grade.grade_name }}{% else %}All Classes{% endif %} ({{ selected_date }})</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 13px; color: #000; background: #fff; }
+    .school-header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+    .table-attendance { border: 1px solid #000; }
+    .table-attendance th, .table-attendance td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; }
+    .table-attendance th { background-color: #f0f0f0 !important; font-weight: bold; text-align: center; }
+    .signature-section { margin-top: 50px; }
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body class="p-4">
+
+  <!-- Floating Print Toolbar (Hidden during print) -->
+  <div class="no-print mb-4 p-3 bg-light border rounded d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="m-0 font-weight-bold">Printable Attendance Sheet</h5>
+      <span class="text-muted small">Optimized for A4 paper output</span>
+    </div>
+    <div class="d-flex gap-2">
+      <button onclick="window.print()" class="btn btn-primary btn-sm px-4">
+        🖨️ Print Now
+      </button>
+      <button onclick="window.close()" class="btn btn-outline-secondary btn-sm">
+        Close Window
+      </button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="school-header text-center">
+    <h2 class="m-0 font-weight-bold text-uppercase">{{ school.name|default:"SIMS School" }}</h2>
+    <p class="m-0 small">{{ school.address|default:"" }}</p>
+    <h4 class="mt-2 text-decoration-underline font-weight-bold">
+      DAILY ATTENDANCE SHEET
+    </h4>
+  </div>
+
+  <!-- Meta Info -->
+  <div class="row mb-3 font-weight-bold">
+    <div class="col-4">
+      Grade / Class: <u>{% if selected_grade %}Grade {{ selected_grade.grade_name }}{% else %}All Classes{% endif %}</u>
+      {% if selected_section %}(Section: <u>{{ selected_section.section }}</u>){% endif %}
+    </div>
+    <div class="col-4 text-center">
+      Academic Session: <u>{{ current_session.year }}</u>
+    </div>
+    <div class="col-4 text-end">
+      Date: <u>{{ selected_date }}</u> {% if nepali_date_str %}(BS <u>{{ nepali_date_str }}</u>){% endif %}
+    </div>
+  </div>
+
+  <!-- Table -->
+  <table class="table table-attendance">
+    <thead>
+      <tr>
+        <th style="width: 40px;">#</th>
+        <th style="width: 80px;">Roll No</th>
+        <th style="width: 100px;">Reg No</th>
+        <th>Student Name</th>
+        <th style="width: 80px;">Gender</th>
+        <th style="width: 90px;">Status</th>
+        <th style="width: 130px;">Informed?</th>
+        <th>Remarks / Note</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ss in student_sessions %}
+      {% with record=attendance_map|default:''|get_item:ss.student.reg_no %}
+      <tr>
+        <td class="text-center">{{ forloop.counter }}</td>
+        <td class="text-center">{{ ss.roll_no }}</td>
+        <td class="text-center"><code>{{ ss.student.reg_no }}</code></td>
+        <td class="font-weight-bold">{{ ss.student.name }}</td>
+        <td class="text-center">{% if ss.student.gender %}Male{% else %}Female{% endif %}</td>
+        <td class="text-center font-weight-bold">
+          {% if record %}
+            {% if record.is_present %}<span class="text-success">PRESENT</span>{% else %}<span class="text-danger">ABSENT</span>{% endif %}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td class="text-center">
+          {% if record and record.absent_informed %}Yes (Informed){% elif record and not record.is_present %}No{% else %}-{% endif %}
+        </td>
+        <td>{{ record.remarks|default:"" }}</td>
+      </tr>
+      {% endwith %}
+      {% empty %}
+      <tr>
+        <td colspan="8" class="text-center py-4 text-muted">No student records found for the selected criteria.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Summary Statistics -->
+  <div class="row mt-3 p-2 bg-light border rounded">
+    <div class="col-3">Total Students: <strong>{{ student_sessions|length }}</strong></div>
+    <div class="col-3">Total Present: <strong class="text-success">{{ attendance_summary.present|default:0 }}</strong></div>
+    <div class="col-3">Total Absent: <strong class="text-danger">{{ attendance_summary.absent|default:0 }}</strong></div>
+    <div class="col-3">Attendance Rate: <strong>{{ attendance_summary.percentage|default:0 }}%</strong></div>
+  </div>
+
+  <!-- Signatures -->
+  <div class="row signature-section text-center">
+    <div class="col-4">
+      <div style="border-top: 1px dashed #000; width: 80%; margin: 0 auto; padding-top: 5px;">
+        Class Teacher Signature<br>
+        <span class="small text-muted">({% if taken_by_user %}{{ taken_by_user.get_full_name|default:taken_by_user.username }}{% else %}Name & Sign{% endif %})</span>
+      </div>
+    </div>
+    <div class="col-4">
+      <div style="border-top: 1px dashed #000; width: 80%; margin: 0 auto; padding-top: 5px;">
+        Verified By (HOD / Admin)<br>
+        <span class="small text-muted">Signature</span>
+      </div>
+    </div>
+    <div class="col-4">
+      <div style="border-top: 1px dashed #000; width: 80%; margin: 0 auto; padding-top: 5px;">
+        Principal / Vice Principal<br>
+        <span class="small text-muted">School Seal</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

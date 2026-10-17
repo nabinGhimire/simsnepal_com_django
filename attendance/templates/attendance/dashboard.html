@@ -1,0 +1,842 @@
+﻿{% extends 'attendance/base.html' %}
+{% load attendance_tags %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+.att-summary-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.att-cell {
+  display: flex;
+}
+.att-box {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e3e8ef;
+  border-radius: 8px;
+  padding: 12px 18px;
+}
+.att-enrollment-cell {
+  grid-row: span 2;
+  display: flex;
+}
+.att-enrollment-cell .att-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  padding: 12px 14px;
+}
+.att-icon-box {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.att-section-title {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: #6c757d;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.att-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.att-stat-row:last-child { margin-bottom: 0; }
+.att-stat-icon { width: 14px; text-align: center; font-size: 0.75rem; flex-shrink: 0; }
+.att-stat-label { font-size: 0.72rem; color: #6c757d; flex: 1; }
+.att-stat-value { font-size: 1.05rem; font-weight: 700; line-height: 1; }
+.att-stat-pct { font-size: 0.68rem; font-weight: 600; min-width: 36px; text-align: right; }
+.att-divider { height: 1px; background: #e9ecef; margin: 4px 0; }
+
+/* Chart cards — remove Tabler's extra card-body padding */
+.chart-card > .card-body {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+/* Grade class cards — kill Tabler's card bottom margin */
+.grade-class-card > .card-body,
+.grade-class-card .card-body {
+  padding: 0 !important;
+}
+/* Kill Tabler's default bottom margin on all .card inside the class grid */
+.row.g-2 .card {
+  margin-bottom: 0 !important;
+}
+/* Grade view card header — override Tabler's large padding */
+.grade-view-card > .card-header {
+  padding: 8px 14px !important;
+}
+</style>
+{% endblock %}
+
+{% block attendance_content %}
+
+{% if not selected_grade %}
+<!-- HOME OVERVIEW MODE WITH APEXCHARTS GRAPHS -->
+
+<!-- Date & BS Selector Header -->
+<div class="mb-2">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3 bg-white" style="border:1px solid #e9ecef;border-radius:8px;">
+    <div>
+      <h6 class="m-0" style="font-weight:700;color:#212529;">Daily Attendance Dashboard</h6>
+      <span style="font-size:0.75rem;color:#6c757d;">
+        BS: <strong class="text-primary">{{ selected_bs_date_str }}</strong>
+        <span class="ms-1" style="opacity:0.5;">({{ selected_date }})</span>
+      </span>
+    </div>
+    <form method="GET" class="d-flex align-items-center gap-2 m-0">
+      <input type="text" id="nepali-datepicker" name="date" class="form-control form-control-sm text-primary" style="cursor:pointer;font-size:0.82rem;font-weight:600;width:130px;" value="{{ selected_bs_date_str }}" readonly placeholder="YYYY-MM-DD">
+      <button type="submit" class="btn btn-sm btn-primary px-3">Go</button>
+    </form>
+  </div>
+</div>
+
+<!-- Overall Summary -->
+<div class="att-summary-grid">
+
+  <!-- ENROLLMENT (spans 2 rows) -->
+  <div class="att-enrollment-cell">
+    <div class="att-box">
+      <div class="att-section-title">Enrollment</div>
+      <div class="d-flex align-items-center gap-3 py-2">
+        <div class="att-icon-box" style="background:#e3f0fb;">
+          <i class="fa-solid fa-mars" style="color:#1976d2;font-size:1.1rem;"></i>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:#6c757d;font-weight:500;">Boys</div>
+          <div style="font-size:1.5rem;font-weight:800;color:#212529;line-height:1.1;">{{ overall_summary.total_boys }}</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-3 py-2">
+        <div class="att-icon-box" style="background:#fce4ec;">
+          <i class="fa-solid fa-venus" style="color:#c2185b;font-size:1.1rem;"></i>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:#6c757d;font-weight:500;">Girls</div>
+          <div style="font-size:1.5rem;font-weight:800;color:#212529;line-height:1.1;">{{ overall_summary.total_girls }}</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-3 py-2" style="border-top:1px solid #e9ecef;">
+        <div class="att-icon-box" style="background:#f1f3f5;">
+          <i class="fa-solid fa-users" style="color:#495057;font-size:1.1rem;"></i>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:#6c757d;font-weight:500;">Total</div>
+          <div style="font-size:1.5rem;font-weight:800;color:#212529;line-height:1.1;">{{ overall_summary.total_enrolled }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 1: Class Recorded -->
+  <div class="att-cell">
+    <div class="att-box">
+      <div class="att-section-title"><i class="fa-solid fa-chalkboard" style="color:#f59f00;"></i> Class Recorded</div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-check att-stat-icon" style="color:#2fb344;"></i>
+        <span class="att-stat-label">Recorded</span>
+        <span class="att-stat-value" style="color:#2fb344;">{{ overall_summary.sections_taken }}</span>
+        <span class="att-stat-pct" style="color:#2fb344;">{{ overall_summary.recorded_pct }}%</span>
+      </div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-times att-stat-icon" style="color:#d63939;"></i>
+        <span class="att-stat-label">Unrecorded</span>
+        <span class="att-stat-value" style="color:#d63939;">{{ overall_summary.unrecorded_sections }}</span>
+        <span class="att-stat-pct" style="color:#d63939;">{{ overall_summary.unrecorded_pct }}%</span>
+      </div>
+      <div class="att-divider"></div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-list att-stat-icon" style="color:#6c757d;"></i>
+        <span class="att-stat-label">Total</span>
+        <span class="att-stat-value" style="color:#212529;">{{ overall_summary.total_sections }}</span>
+        <span style="min-width:36px;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 1: Today's Attendance -->
+  <div class="att-cell">
+    <div class="att-box">
+      <div class="att-section-title"><i class="fa-solid fa-calendar-day" style="color:#1976d2;"></i> Today's Attendance</div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-mars att-stat-icon" style="color:#1976d2;"></i>
+        <span class="att-stat-label">Boys</span>
+        <span class="att-stat-value" style="color:#212529;">{{ overall_summary.evaluated_boys }}</span>
+        <span class="att-stat-pct" style="color:#2fb344;">{{ overall_summary.boy_present_pct }}%</span>
+      </div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-venus att-stat-icon" style="color:#c2185b;"></i>
+        <span class="att-stat-label">Girls</span>
+        <span class="att-stat-value" style="color:#212529;">{{ overall_summary.evaluated_girls }}</span>
+        <span class="att-stat-pct" style="color:#2fb344;">{{ overall_summary.girl_present_pct }}%</span>
+      </div>
+      <div class="att-divider"></div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-users att-stat-icon" style="color:#6c757d;"></i>
+        <span class="att-stat-label">Total</span>
+        <span class="att-stat-value" style="color:#212529;">{{ overall_summary.evaluated_students }}</span>
+        <span class="att-stat-pct" style="color:#2fb344;">{{ overall_summary.evaluated_percentage }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 1: Present -->
+  <div class="att-cell">
+    <div class="att-box">
+      <div class="att-section-title"><i class="fa-solid fa-check-circle" style="color:#2fb344;"></i> Present</div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-mars att-stat-icon" style="color:#1976d2;"></i>
+        <span class="att-stat-label">Boys</span>
+        <span class="att-stat-value" style="color:#2fb344;">{{ overall_summary.present_boys }}</span>
+        <span class="att-stat-pct" style="color:#2fb344;">{{ overall_summary.boy_present_pct }}%</span>
+      </div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-venus att-stat-icon" style="color:#c2185b;"></i>
+        <span class="att-stat-label">Girls</span>
+        <span class="att-stat-value" style="color:#2fb344;">{{ overall_summary.present_girls }}</span>
+        <span class="att-stat-pct" style="color:#2fb344;">{{ overall_summary.girl_present_pct }}%</span>
+      </div>
+      <div class="att-divider"></div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-users att-stat-icon" style="color:#6c757d;"></i>
+        <span class="att-stat-label">Total</span>
+        <span class="att-stat-value" style="color:#2fb344;">{{ overall_summary.present_students }}</span>
+        <span class="att-stat-pct" style="color:#2fb344;">{{ overall_summary.evaluated_percentage }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Absent -->
+  <div class="att-cell">
+    <div class="att-box">
+      <div class="att-section-title"><i class="fa-solid fa-times-circle" style="color:#d63939;"></i> Absent</div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-mars att-stat-icon" style="color:#1976d2;"></i>
+        <span class="att-stat-label">Boys</span>
+        <span class="att-stat-value" style="color:#d63939;">{{ overall_summary.absent_boys }}</span>
+        <span class="att-stat-pct" style="color:#d63939;">{{ overall_summary.boy_absent_pct }}%</span>
+      </div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-venus att-stat-icon" style="color:#c2185b;"></i>
+        <span class="att-stat-label">Girls</span>
+        <span class="att-stat-value" style="color:#d63939;">{{ overall_summary.absent_girls }}</span>
+        <span class="att-stat-pct" style="color:#d63939;">{{ overall_summary.girl_absent_pct }}%</span>
+      </div>
+      <div class="att-divider"></div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-users att-stat-icon" style="color:#6c757d;"></i>
+        <span class="att-stat-label">Total</span>
+        <span class="att-stat-value" style="color:#d63939;">{{ overall_summary.absent_students }}</span>
+        <span class="att-stat-pct" style="color:#d63939;">{{ overall_summary.absent_pct }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Informed -->
+  <div class="att-cell">
+    <div class="att-box">
+      <div class="att-section-title"><i class="fa-solid fa-info-circle" style="color:#e67700;"></i> Informed</div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-mars att-stat-icon" style="color:#1976d2;"></i>
+        <span class="att-stat-label">Boys</span>
+        <span class="att-stat-value" style="color:#e67700;">{{ overall_summary.informed_absent_boys }}</span>
+        <span class="att-stat-pct" style="color:#e67700;">{{ overall_summary.informed_boy_pct }}%</span>
+      </div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-venus att-stat-icon" style="color:#c2185b;"></i>
+        <span class="att-stat-label">Girls</span>
+        <span class="att-stat-value" style="color:#e67700;">{{ overall_summary.informed_absent_girls }}</span>
+        <span class="att-stat-pct" style="color:#e67700;">{{ overall_summary.informed_girl_pct }}%</span>
+      </div>
+      <div class="att-divider"></div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-users att-stat-icon" style="color:#6c757d;"></i>
+        <span class="att-stat-label">Total</span>
+        <span class="att-stat-value" style="color:#e67700;">{{ overall_summary.informed_absent }}</span>
+        <span class="att-stat-pct" style="color:#e67700;">{{ overall_summary.informed_pct }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Uninformed -->
+  <div class="att-cell">
+    <div class="att-box">
+      <div class="att-section-title"><i class="fa-solid fa-exclamation-triangle" style="color:#d63939;"></i> Uninformed</div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-mars att-stat-icon" style="color:#1976d2;"></i>
+        <span class="att-stat-label">Boys</span>
+        <span class="att-stat-value" style="color:#d63939;">{{ overall_summary.uninformed_absent_boys }}</span>
+        <span class="att-stat-pct" style="color:#d63939;">{{ overall_summary.uninformed_boy_pct }}%</span>
+      </div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-venus att-stat-icon" style="color:#c2185b;"></i>
+        <span class="att-stat-label">Girls</span>
+        <span class="att-stat-value" style="color:#d63939;">{{ overall_summary.uninformed_absent_girls }}</span>
+        <span class="att-stat-pct" style="color:#d63939;">{{ overall_summary.uninformed_girl_pct }}%</span>
+      </div>
+      <div class="att-divider"></div>
+      <div class="att-stat-row">
+        <i class="fa-solid fa-users att-stat-icon" style="color:#6c757d;"></i>
+        <span class="att-stat-label">Total</span>
+        <span class="att-stat-value" style="color:#d63939;">{{ overall_summary.uninformed_absent }}</span>
+        <span class="att-stat-pct" style="color:#d63939;">{{ overall_summary.uninformed_pct }}%</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ApexCharts Graphical Analytics Row -->
+{% if cards_data %}
+<div class="row g-2 mb-3">
+  <!-- Chart 1: Overall Ratio Donut -->
+  <div class="col-md-3">
+    <div class="card chart-card shadow-sm h-100">
+      <div class="card-header py-2 px-3">
+        <div class="d-flex align-items-center gap-2">
+          <div style="width:8px;height:8px;border-radius:50%;background:#008877;"></div>
+          <h6 class="card-title m-0 font-weight-bold" style="font-size:0.82rem;">Attendance Share</h6>
+        </div>
+      </div>
+      <div class="card-body py-2 d-flex align-items-center justify-content-center" style="padding-bottom:6px!important;padding-top:6px!important;">
+        <div id="attendance-donut-chart" style="min-height: 220px; width: 100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-9">
+    <div class="card chart-card shadow-sm h-100">
+      <div class="card-header py-2 px-3">
+        <div class="d-flex align-items-center gap-2">
+          <div style="width:8px;height:8px;border-radius:50%;background:#2fb344;"></div>
+          <h6 class="card-title m-0 font-weight-bold" style="font-size:0.82rem;">Class-wise Attendance Rates (%)</h6>
+        </div>
+      </div>
+      <div class="card-body py-2" style="padding-bottom:6px!important;padding-top:6px!important;">
+        <div id="class-line-chart" style="min-height:260px;width:100%;overflow-x:auto;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Compact Class Cards Grouped by Grade Level -->
+{% for lvl_group in cards_by_level %}
+<div class="mb-3">
+  <!-- Level Header Divider -->
+  <div class="level-header">
+    <span class="level-name">{{ lvl_group.level.name }}</span>
+    <div class="level-line"></div>
+    <span class="level-badge">{{ lvl_group.cards|length }} Classes</span>
+  </div>
+
+  <!-- High-Density Compact Cards Grid -->
+  <div class="row g-2">
+    {% for card in lvl_group.cards %}
+    <div class="col-sm-6 col-md-4 col-xl-3">
+      <a href="?grade={{ card.grade.id }}{% if card.section %}&section={{ card.section.id }}{% endif %}&date={{ selected_bs_date_str }}&mode={% if card.is_taken %}view{% else %}edit{% endif %}"
+         class="text-decoration-none">
+      <div class="card shadow-sm" style="cursor:pointer;border:{% if card.is_taken %}1px solid rgba(47,179,68,0.2){% else %}1px solid #e0e0e0{% endif %};border-radius:8px;overflow:hidden;margin-bottom:0;">
+        <!-- Header bar -->
+        <div style="padding:6px 10px;background:{% if card.is_taken %}linear-gradient(135deg,#e8f5e9,#f1f8e9){% else %}linear-gradient(135deg,#fff8e1,#fff3e0){% endif %};display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid {% if card.is_taken %}rgba(47,179,68,0.15){% else %}rgba(0,0,0,0.06){% endif %};">
+          <div>
+            <span style="font-size:0.85rem;font-weight:700;color:#212529;">{{ card.grade.grade_name }}</span>
+            {% if card.section %}
+              <span style="font-size:0.5rem;padding:1px 4px;border-radius:3px;background:{% if card.is_taken %}rgba(47,179,68,0.15){% else %}rgba(0,0,0,0.06){% endif %};font-weight:600;color:{% if card.is_taken %}#2e7d32{% else %}#757575{% endif %};margin-left:3px;">{{ card.section.section }}</span>
+            {% endif %}
+          </div>
+          {% if card.is_taken %}
+          <span style="font-size:0.75rem;font-weight:800;color:#2e7d32;">{{ card.percentage }}%</span>
+          {% else %}
+          <span style="font-size:0.58rem;font-weight:700;color:#fff;background:#ef6c00;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:0.03em;">Take</span>
+          {% endif %}
+        </div>
+
+        <!-- Body -->
+        <div style="padding:6px 10px;background:{% if card.is_taken %}#fafdf8{% else %}#fffefb{% endif %};">
+          <!-- Stats row -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <div style="display:flex;align-items:center;gap:3px;font-size:0.68rem;">
+              <i class="fa-solid fa-mars" style="color:{% if card.is_taken %}#1976d2{% else %}#9e9e9e{% endif %};font-size:0.5rem;"></i>
+              <span style="color:#616161;">{% if card.is_taken %}<strong style="color:#2e7d32;">{{ card.present_boys }}</strong>/{% endif %}<strong>{{ card.total_boys }}</strong></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:3px;font-size:0.68rem;">
+              <i class="fa-solid fa-venus" style="color:{% if card.is_taken %}#c2185b{% else %}#9e9e9e{% endif %};font-size:0.5rem;"></i>
+              <span style="color:#616161;">{% if card.is_taken %}<strong style="color:#2e7d32;">{{ card.present_girls }}</strong>/{% endif %}<strong>{{ card.total_girls }}</strong></span>
+            </div>
+            <span style="font-size:0.68rem;color:#616161;">
+              {% if card.is_taken %}<strong style="color:#2e7d32;">{{ card.present_boys|add:card.present_girls }}</strong>/{% endif %}<strong>{{ card.total_students }}</strong>
+            </span>
+          </div>
+
+          <!-- Progress bar -->
+          {% if card.is_taken %}
+          <div style="height:4px;background:#e8e8e8;border-radius:2px;overflow:hidden;">
+            <div style="width:{{ card.percentage }}%;height:100%;background:{% if card.percentage >= 80 %}#43a047{% elif card.percentage >= 60 %}#f9a825{% else %}#e53935{% endif %};border-radius:2px;transition:width 0.6s;"></div>
+          </div>
+          {% else %}
+          <div style="height:4px;background:repeating-linear-gradient(90deg,#e0e0e0 0,#e0e0e0 4px,transparent 4px,transparent 8px);border-radius:2px;"></div>
+          {% endif %}
+        </div>
+      </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% empty %}
+<div class="card border-0 shadow-sm text-center py-5" style="border-radius:12px;">
+  <div class="text-muted">
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-info-circle mb-3" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none"><circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12.01" y2="8" /><polyline points="11 12 12 12 12 16 13 16" /></svg>
+    <p class="m-0" style="font-size:0.9rem;">No active classes or student sessions found for the current school session.</p>
+  </div>
+</div>
+{% endfor %}
+
+{% if cards_data %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Donut Chart
+  const donutOptions = {
+    series: [
+      {{ overall_summary.present_students }}, 
+      {{ overall_summary.informed_absent }}, 
+      {{ overall_summary.uninformed_absent }},
+      {{ overall_summary.pending_students }}
+    ],
+    labels: ['Present', 'Informed Absent', 'Uninformed Absent', 'Pending Classes'],
+    chart: { type: 'donut', height: 220, fontFamily: 'Inter, sans-serif' },
+    colors: ['#2fb344', '#f59f00', '#d63939', '#dee2e6'],
+    legend: { position: 'bottom', fontSize: '12px', fontWeight: 500, itemMargin: { horizontal: 8 } },
+    dataLabels: { enabled: true, style: { fontSize: '11px', fontWeight: 600 } },
+    plotOptions: { pie: { donut: { size: '65%' } } },
+    stroke: { width: 2, colors: ['#fff'] }
+  };
+  new ApexCharts(document.querySelector("#attendance-donut-chart"), donutOptions).render();
+
+  // Line Chart — scrollable when many classes
+  const classNames = {{ chart_class_names|safe }};
+  const minChartWidth = Math.max(600, classNames.length * 42);
+  const lineOptions = {
+    series: [
+      { name: 'Present (%)', data: {{ chart_present_rates|safe }} },
+      { name: 'Absent (%)', data: {{ chart_absent_rates|safe }} },
+      { name: 'Boys Present (%)', data: {{ chart_boy_present_rates|safe }} },
+      { name: 'Boys Absent (%)', data: {{ chart_boy_absent_rates|safe }} },
+      { name: 'Girls Present (%)', data: {{ chart_girl_present_rates|safe }} },
+      { name: 'Girls Absent (%)', data: {{ chart_girl_absent_rates|safe }} }
+    ],
+    chart: {
+      type: 'line',
+      height: 250,
+      width: '100%',
+      toolbar: { show: true, tools: { download: false, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true } },
+      zoom: { enabled: true, type: 'x' },
+      fontFamily: 'Inter, sans-serif'
+    },
+    stroke: { curve: 'smooth', width: [3, 2, 1.5, 1.5, 1.5, 1.5], dashArray: [0, 4, 0, 4, 0, 4] },
+    colors: ['#2fb344', '#d63939', '#206bc4', '#79a6dc', '#d63384', '#f1aeb5'],
+    markers: { size: classNames.length > 30 ? 0 : 3, hover: { size: 5 } },
+    xaxis: {
+      categories: classNames,
+      tickPlacement: 'on',
+      labels: {
+        rotate: -45,
+        rotateAlways: classNames.length > 12,
+        style: { fontSize: classNames.length > 20 ? '9px' : '11px' },
+        trim: true,
+        maxHeight: 60
+      }
+    },
+    yaxis: { max: 100, min: 0, labels: { formatter: (val) => val.toFixed(0) + "%", style: { fontSize: '11px' } } },
+    tooltip: { y: { formatter: (val) => val + "%" } },
+    legend: { position: 'bottom', horizontalAlign: 'center', fontSize: '11px', fontWeight: 500, itemMargin: { horizontal: 8 } },
+    grid: { borderColor: 'rgba(0,0,0,0.05)', padding: { bottom: 10 } }
+  };
+  new ApexCharts(document.querySelector("#class-line-chart"), lineOptions).render();
+});
+</script>
+{% endif %}
+
+{% else %}
+<!-- SPECIFIC GRADE VIEW / EDIT MODE -->
+
+<div class="card shadow-sm mb-2" style="border:1px solid #e9ecef;border-radius:8px;">
+  <!-- Grade Header -->
+  <div class="card-header bg-white" style="border-bottom:1px solid #e9ecef;padding:8px 14px;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 w-100">
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <h6 class="m-0" style="font-weight:700;color:#212529;font-size:0.92rem;">
+            Grade {{ selected_grade.grade_name }} Attendance
+            {% if selected_section %}<span style="font-size:0.7rem;padding:1px 6px;border-radius:4px;background:#f1f3f5;font-weight:600;color:#6c757d;margin-left:4px;">Sec {{ selected_section.section }}</span>{% endif %}
+          </h6>
+          {% if is_already_taken %}
+            <span class="badge-status" style="background:#ebfbee;color:#2fb344;font-size:0.68rem;">Recorded</span>
+          {% else %}
+            <span class="badge-status" style="background:#fff9db;color:#e67700;font-size:0.68rem;">New Entry</span>
+          {% endif %}
+        </div>
+        <div style="font-size:0.72rem;color:#6c757d;margin-top:1px;">
+          BS {{ selected_bs_date_str }} (AD {{ selected_date }})
+          {% if taken_by_user %}
+            <span class="ms-1">by <strong style="color:#212529;">{{ taken_by_user.get_full_name|default:taken_by_user.username }}</strong></span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="d-flex gap-1">
+        {% if is_already_taken and mode != 'edit' %}
+          <a href="?grade={{ selected_grade.id }}{% if selected_section %}&section={{ selected_section.id }}{% endif %}&date={{ selected_bs_date_str }}&mode=edit"
+             class="btn btn-sm btn-primary px-3" style="font-size:0.78rem;font-weight:600;">
+            Edit
+          </a>
+        {% elif is_already_taken and mode == 'edit' %}
+          <a href="?grade={{ selected_grade.id }}{% if selected_section %}&section={{ selected_section.id }}{% endif %}&date={{ selected_bs_date_str }}&mode=view"
+             class="btn btn-sm btn-outline-secondary px-3" style="font-size:0.78rem;font-weight:600;">
+            View Mode
+          </a>
+        {% endif %}
+        {% if audit_logs %}
+          <button type="button" class="btn btn-sm btn-outline-secondary px-3" style="font-size:0.78rem;font-weight:600;" data-bs-toggle="modal" data-bs-target="#auditLogModal">
+            Audit ({{ audit_logs|length }})
+          </button>
+        {% endif %}
+        <a href="{% url 'attendance:dashboard' %}?date={{ selected_bs_date_str }}" class="btn btn-sm btn-outline-secondary px-3" style="font-size:0.78rem;font-weight:600;">
+          Back
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Toolbar -->
+  <div class="bg-light" style="border-bottom:1px solid #e9ecef;padding:6px 14px;">
+    <form method="GET" action="" class="d-flex align-items-center gap-2 flex-wrap">
+      <input type="hidden" name="grade" value="{{ selected_grade.id }}">
+      <input type="hidden" name="mode" value="{{ mode }}">
+
+      {% if sections %}
+      <div class="d-flex align-items-center gap-1">
+        <label class="m-0" style="font-size:0.72rem;font-weight:600;color:#6c757d;">Section:</label>
+        <select name="section" class="form-select form-select-sm" style="width:100px;font-size:0.78rem;" onchange="this.form.submit()">
+          <option value="">All</option>
+          {% for sec in sections %}
+          <option value="{{ sec.id }}" {% if selected_section.id == sec.id %}selected{% endif %}>Sec {{ sec.section }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      {% if subjects %}
+      <div class="d-flex align-items-center gap-1">
+        <label class="m-0" style="font-size:0.72rem;font-weight:600;color:#6c757d;">Subject:</label>
+        <select name="subject" class="form-select form-select-sm" style="width:110px;font-size:0.78rem;" onchange="this.form.submit()">
+          <option value="">General</option>
+          {% for subj in subjects %}
+          <option value="{{ subj.id }}" {% if selected_subject.id == subj.id %}selected{% endif %}>{{ subj.subject }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div class="d-flex align-items-center gap-1 ms-auto">
+        <label class="m-0" style="font-size:0.72rem;font-weight:600;color:#6c757d;">Date:</label>
+        <input type="text" id="nepali-datepicker" name="date" class="form-control form-control-sm text-primary" style="cursor:pointer;font-size:0.78rem;font-weight:600;width:120px;" value="{{ selected_bs_date_str }}" readonly placeholder="YYYY-MM-DD">
+      </div>
+    </form>
+  </div>
+
+  {% if is_already_taken and mode != 'edit' %}
+  <!-- Attendance Summary -->
+  {% if grade_summary %}
+  <div class="att-summary-row py-2 px-3">
+    <div class="d-flex align-items-center gap-4 flex-wrap" style="font-size:0.8rem;">
+      <span style="color:#6c757d;">Total: <strong style="color:#212529;">{{ grade_summary.total }}</strong></span>
+      <span style="color:#6c757d;">Present: <strong style="color:#2fb344;">{{ grade_summary.present }}</strong></span>
+      <span style="color:#6c757d;">Absent: <strong style="color:#d63939;">{{ grade_summary.absent }}</strong></span>
+      {% if grade_summary.informed_absent %}
+      <span style="color:#6c757d;">Informed: <strong style="color:#e67700;">{{ grade_summary.informed_absent }}</strong></span>
+      {% endif %}
+      {% if grade_summary.uninformed_absent %}
+      <span style="color:#6c757d;">Uninformed: <strong style="color:#d63939;">{{ grade_summary.uninformed_absent }}</strong></span>
+      {% endif %}
+      <span style="color:#6c757d;">Rate: <strong style="color:#2fb344;">{{ grade_summary.percentage }}%</strong></span>
+    </div>
+  </div>
+  {% endif %}
+  <!-- READ-ONLY ATTENDANCE TABLE VIEW -->
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-vcenter table-hover attendance-table" style="margin-bottom:0;">
+        <thead>
+          <tr>
+            <th style="width: 50px;">Roll</th>
+            <th style="width: 100px;">Reg No</th>
+            <th>Student Name</th>
+            <th style="width: 90px;">Gender</th>
+            <th style="width: 130px;" class="text-center">Status</th>
+            <th style="width: 120px;">Informed?</th>
+            <th>Remarks / Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ss in student_sessions %}
+          {% with record=attendance_map|default:''|get_item:ss.student.reg_no %}
+          <tr>
+            <td class="font-weight-bold" style="color:#1a1a2e;">{{ ss.roll_no }}</td>
+            <td><code style="font-size:0.78rem;background:rgba(0,0,0,0.04);padding:2px 6px;border-radius:4px;">{{ ss.student.reg_no }}</code></td>
+            <td>
+              <a href="{% url 'attendance:student_profile' reg_no=ss.student.reg_no %}" class="font-weight-bold text-decoration-none" style="color:#008877;font-size:0.9rem;">
+                {{ ss.student.name }}
+              </a>
+              {% if ss.section and not selected_section %}
+                <span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,0.05);font-weight:600;color:#6c757d;margin-left:4px;">Sec {{ ss.section.section }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if ss.student.gender %}
+                <span style="padding:2px 8px;border-radius:4px;background:#e7f1ff;color:#206bc4;font-size:0.72rem;font-weight:600;">Male</span>
+              {% else %}
+                <span style="padding:2px 8px;border-radius:4px;background:#fce4ec;color:#d63384;font-size:0.72rem;font-weight:600;">Female</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if record %}
+                {% if record.is_present %}
+                  <span class="badge-status" style="background:#ebfbee;color:#2fb344;">PRESENT</span>
+                {% else %}
+                  <span class="badge-status" style="background:#fff5f5;color:#d63939;">ABSENT</span>
+                {% endif %}
+              {% else %}
+                <span style="font-size:0.8rem;color:#adb5bd;">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if record and record.absent_informed %}
+                <span class="badge-status" style="background:#fff9db;color:#e67700;">Informed</span>
+              {% else %}
+                <span style="font-size:0.8rem;color:#adb5bd;">-</span>
+              {% endif %}
+            </td>
+            <td style="font-size:0.82rem;color:#6c757d;">{{ record.remarks|default:'-' }}</td>
+          </tr>
+          {% endwith %}
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-4 text-muted">No students found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- EDITABLE ATTENDANCE FORM MODE -->
+  <div class="card-body p-0">
+    <form method="POST" action="">
+      {% csrf_token %}
+
+      <!-- Batch Action Controls -->
+      <div class="batch-bar p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span style="font-size:0.78rem;font-weight:600;color:#6c757d;">Batch:</span>
+          <button type="button" class="btn btn-sm btn-outline-success px-3" style="font-weight:600;font-size:0.78rem;" onclick="markAll(true)">Mark All Present</button>
+          <button type="button" class="btn btn-sm btn-outline-danger px-3" style="font-weight:600;font-size:0.78rem;" onclick="markAll(false)">Mark All Absent</button>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge-status" style="background:#ebfbee;color:#2fb344;font-size:0.82rem;padding:5px 12px;" id="present-count-badge">Present: 0</span>
+          <span class="badge-status" style="background:#fff5f5;color:#d63939;font-size:0.82rem;padding:5px 12px;" id="absent-count-badge">Absent: 0</span>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-vcenter table-hover attendance-table" style="margin-bottom:0;">
+          <thead>
+            <tr>
+              <th style="width: 50px;">Roll</th>
+              <th style="width: 100px;">Reg No</th>
+              <th>Student Name</th>
+              <th style="width: 85px;">Gender</th>
+              <th style="width: 210px;" class="text-center">Status</th>
+              <th style="width: 110px;">Informed?</th>
+              <th style="min-width: 180px;">Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ss in student_sessions %}
+            {% with record=attendance_map|default:''|get_item:ss.student.reg_no %}
+            <tr>
+              <td class="font-weight-bold" style="color:#1a1a2e;">{{ ss.roll_no }}</td>
+              <td><code style="font-size:0.78rem;background:rgba(0,0,0,0.04);padding:2px 6px;border-radius:4px;">{{ ss.student.reg_no }}</code></td>
+              <td>
+                <a href="{% url 'attendance:student_profile' reg_no=ss.student.reg_no %}" class="font-weight-bold text-decoration-none" style="color:#008877;font-size:0.9rem;" target="_blank">
+                  {{ ss.student.name }}
+                </a>
+                {% if ss.section and not selected_section %}
+                  <span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,0.05);font-weight:600;color:#6c757d;margin-left:4px;">Sec {{ ss.section.section }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if ss.student.gender %}
+                  <span style="padding:2px 8px;border-radius:4px;background:#e7f1ff;color:#206bc4;font-size:0.72rem;font-weight:600;">Male</span>
+                {% else %}
+                  <span style="padding:2px 8px;border-radius:4px;background:#fce4ec;color:#d63384;font-size:0.72rem;font-weight:600;">Female</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="btn-group btn-group-sm w-100" role="group">
+                  <input type="radio" class="btn-check att-radio att-present"
+                         name="attendance_{{ ss.student.reg_no }}"
+                         id="p_{{ ss.student.reg_no }}"
+                         value="present"
+                         {% if not record or record.is_present %}checked{% endif %}
+                         onchange="updateCounts()">
+                  <label class="btn btn-outline-success font-weight-bold py-1" style="font-size:0.78rem;" for="p_{{ ss.student.reg_no }}">Present</label>
+
+                  <input type="radio" class="btn-check att-radio att-absent"
+                         name="attendance_{{ ss.student.reg_no }}"
+                         id="a_{{ ss.student.reg_no }}"
+                         value="absent"
+                         {% if record and not record.is_present %}checked{% endif %}
+                         onchange="updateCounts()">
+                  <label class="btn btn-outline-danger font-weight-bold py-1" style="font-size:0.78rem;" for="a_{{ ss.student.reg_no }}">Absent</label>
+                </div>
+              </td>
+              <td>
+                <label class="form-check m-0 d-flex align-items-center gap-1">
+                  <input class="form-check-input" type="checkbox"
+                         name="informed_{{ ss.student.reg_no }}"
+                         value="yes"
+                         {% if record and record.absent_informed %}checked{% endif %}
+                         style="margin-top:0;">
+                  <span style="font-size:0.78rem;color:#6c757d;font-weight:500;">Informed</span>
+                </label>
+              </td>
+              <td>
+                <textarea class="form-control form-control-sm remarks-textarea"
+                          name="remarks_{{ ss.student.reg_no }}"
+                          placeholder="Add note..."
+                          rows="1"
+                          style="height: 34px; min-height: 34px; transition: height 0.2s ease-in-out; resize: vertical; border-radius: 8px; font-size: 0.82rem;"
+                          onfocus="this.style.height='70px'"
+                          onblur="if(!this.value.trim()) this.style.height='34px'">{{ record.remarks|default:'' }}</textarea>
+              </td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">
+                <p class="m-0">No active students enrolled in this grade/section for current session.</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if student_sessions %}
+      <div class="save-footer text-end py-3 px-3 sticky-bottom">
+        <button type="submit" class="btn btn-primary px-4 py-2" style="border-radius:10px;font-weight:600;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          {% if is_already_taken %}Update Attendance{% else %}Save Attendance{% endif %}
+        </button>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Audit Log History Modal -->
+{% if audit_logs %}
+<div class="modal fade" id="auditLogModal" tabindex="-1" aria-labelledby="auditLogModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="border-radius:10px;overflow:hidden;">
+      <div class="modal-header py-3 bg-white" style="border-bottom:1px solid #e9ecef;">
+        <h5 class="modal-title m-0" style="font-size:0.95rem;font-weight:700;color:#212529;" id="auditLogModalLabel">
+          Attendance Modification Logs
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive">
+          <table class="table table-vcenter attendance-table" style="margin-bottom:0;">
+            <thead>
+              <tr>
+                <th>Date & Time</th>
+                <th>Student</th>
+                <th>Changed By</th>
+                <th>Status Change</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in audit_logs %}
+              <tr>
+                <td style="font-size:0.78rem;color:#6c757d;">{{ log.created_at|date:"Y-m-d H:i" }}</td>
+                <td style="font-weight:600;color:#212529;">{{ log.attendance.reg_no.name }}</td>
+                <td><span style="padding:2px 8px;border-radius:4px;background:#f1f3f5;font-weight:600;font-size:0.78rem;">{{ log.updated_by.username }}</span></td>
+                <td>
+                  {% if log.previous_status != log.new_status %}
+                    <span class="badge-status" style="background:#fff5f5;color:#d63939;">{% if log.previous_status %}Present{% else %}Absent{% endif %}</span>
+                    &rarr;
+                    <span class="badge-status" style="background:#ebfbee;color:#2fb344;">{% if log.new_status %}Present{% else %}Absent{% endif %}</span>
+                  {% else %}
+                    <span style="font-size:0.8rem;color:#adb5bd;">Unchanged</span>
+                  {% endif %}
+                </td>
+                <td style="font-size:0.8rem;color:#6c757d;">{{ log.new_remarks|default:log.previous_remarks|default:'-' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function markAll(isPresent) {
+  const classTarget = isPresent ? '.att-present' : '.att-absent';
+  document.querySelectorAll(classTarget).forEach(radio => {
+    radio.checked = true;
+  });
+  updateCounts();
+}
+
+function updateCounts() {
+  const presentCount = document.querySelectorAll('.att-present:checked').length;
+  const absentCount = document.querySelectorAll('.att-absent:checked').length;
+  
+  const presentBadge = document.getElementById('present-count-badge');
+  const absentBadge = document.getElementById('absent-count-badge');
+  
+  if (presentBadge) presentBadge.textContent = 'Present: ' + presentCount;
+  if (absentBadge) absentBadge.textContent = 'Absent: ' + absentCount;
+}
+
+document.addEventListener('DOMContentLoaded', updateCounts);
+</script>
+{% endif %}
+
+{% endblock %}

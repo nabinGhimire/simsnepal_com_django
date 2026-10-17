@@ -1,0 +1,459 @@
+{% extends 'attendance/base.html' %}
+
+{% block title %}Attendance Settings{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .settings-section {
+    background: #fff;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .settings-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e3e8ef;
+  }
+  .settings-section-header .section-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .settings-section-header h6 {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #212529;
+  }
+  .settings-section-header p {
+    margin: 0;
+    font-size: 0.7rem;
+    color: #6c757d;
+  }
+  .settings-body {
+    padding: 14px 16px;
+  }
+  .setting-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f3f5;
+  }
+  .setting-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .setting-row:first-child {
+    padding-top: 0;
+  }
+  .setting-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #212529;
+    flex: 1;
+  }
+  .setting-label small {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: #6c757d;
+    margin-top: 1px;
+  }
+  .setting-control {
+    flex-shrink: 0;
+  }
+  /* Toggle switch */
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+  }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #dee2e6;
+    border-radius: 22px;
+    transition: 0.2s;
+  }
+  .toggle-slider:before {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    left: 3px; bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.2s;
+  }
+  .toggle-switch input:checked + .toggle-slider { background: #2fb344; }
+  .toggle-switch input:checked + .toggle-slider:before { transform: translateX(18px); }
+
+  /* Channel grid */
+  .channel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .channel-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid #e3e8ef;
+    border-radius: 6px;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .channel-item:has(input:checked) {
+    border-color: #2fb344;
+    background: #f0faf2;
+  }
+  .channel-item input { display: none; }
+  .channel-item .ch-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  .channel-item .ch-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #212529;
+    flex: 1;
+  }
+  .channel-check {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid #dee2e6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem;
+    color: transparent;
+    flex-shrink: 0;
+    transition: 0.15s;
+  }
+  .channel-item:has(input:checked) .channel-check {
+    background: #2fb344;
+    border-color: #2fb344;
+    color: #fff;
+  }
+
+  .save-bar {
+    position: sticky;
+    bottom: 0;
+    background: rgba(255,255,255,0.97);
+    border-top: 1px solid #e3e8ef;
+    padding: 10px 0;
+    margin-top: 8px;
+    z-index: 10;
+  }
+</style>
+{% endblock %}
+
+{% block attendance_content %}
+<div class="mb-2">
+  <div class="d-flex justify-content-between align-items-center py-2 px-3 bg-white" style="border:1px solid #e9ecef;border-radius:8px;">
+    <div>
+      <h6 class="m-0" style="font-weight:700;color:#212529;font-size:0.92rem;">
+        <i class="fa-solid fa-gear me-2" style="color:#6c757d;"></i>Attendance Settings
+      </h6>
+      <span style="font-size:0.72rem;color:#6c757d;">Per-school configuration for attendance rules and notifications</span>
+    </div>
+    {% if settings.updated_at %}
+    <span style="font-size:0.68rem;color:#6c757d;">
+      Last saved: <strong>{{ settings.updated_at|date:"d M Y, H:i" }}</strong>
+      {% if settings.updated_by %} by <strong>{{ settings.updated_by.get_full_name|default:settings.updated_by.username }}</strong>{% endif %}
+    </span>
+    {% endif %}
+  </div>
+</div>
+
+{% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags|default:'success' }} alert-dismissible fade show py-2 px-3" style="font-size:0.8rem;border-radius:8px;">
+    {{ msg }}<button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+{% endif %}
+
+<form method="POST">
+  {% csrf_token %}
+
+  <!-- ══ GROUP 1: Subject Conflict Rule ═══════════════════════════════════ -->
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div class="section-icon" style="background:#fff3cd;">
+        <i class="fa-solid fa-code-branch" style="color:#e67700;"></i>
+      </div>
+      <div>
+        <h6>Subject Attendance Conflict</h6>
+        <p>What to do when a student has mixed attendance across subjects on the same day</p>
+      </div>
+    </div>
+    <div class="settings-body">
+      <div class="setting-row">
+        <div class="setting-label">
+          Conflict resolution rule
+          <small>Applies when subject-specific attendance is taken and synced to the general record</small>
+        </div>
+        <div class="setting-control">
+          <div class="d-flex gap-2 flex-wrap">
+            {% for value, label in conflict_choices %}
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;cursor:pointer;padding:6px 12px;border:1px solid {% if settings.subject_conflict_rule == value %}#2fb344{% else %}#e3e8ef{% endif %};border-radius:6px;background:{% if settings.subject_conflict_rule == value %}#f0faf2{% else %}#f8fafc{% endif %};">
+              <input type="radio" name="subject_conflict_rule" value="{{ value }}" {% if settings.subject_conflict_rule == value %}checked{% endif %} style="accent-color:#2fb344;">
+              <span>{{ label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GROUP 2: Notification Channels ══════════════════════════════════ -->
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div class="section-icon" style="background:#e3f0fb;">
+        <i class="fa-solid fa-bell" style="color:#1976d2;"></i>
+      </div>
+      <div>
+        <h6>Notification Channels</h6>
+        <p>Select which channels to use when sending notifications to parents (applies to all triggers below)</p>
+      </div>
+    </div>
+    <div class="settings-body">
+      <div class="channel-grid">
+        <label class="channel-item">
+          <input type="checkbox" name="notify_sms" {% if settings.notify_sms %}checked{% endif %}>
+          <div class="ch-icon" style="background:#e8f5e9;"><i class="fa-solid fa-comment-sms" style="color:#2fb344;"></i></div>
+          <span class="ch-label">SMS to Parents</span>
+          <span class="channel-check"><i class="fa-solid fa-check"></i></span>
+        </label>
+        <label class="channel-item">
+          <input type="checkbox" name="notify_push" {% if settings.notify_push %}checked{% endif %}>
+          <div class="ch-icon" style="background:#e3f0fb;"><i class="fa-solid fa-mobile-screen-button" style="color:#1976d2;"></i></div>
+          <span class="ch-label">Push Notification (HamroApp)</span>
+          <span class="channel-check"><i class="fa-solid fa-check"></i></span>
+        </label>
+        <label class="channel-item">
+          <input type="checkbox" name="notify_class_group" {% if settings.notify_class_group %}checked{% endif %}>
+          <div class="ch-icon" style="background:#fff3e0;"><i class="fa-solid fa-users" style="color:#e67700;"></i></div>
+          <span class="ch-label">Class Group Message</span>
+          <span class="channel-check"><i class="fa-solid fa-check"></i></span>
+        </label>
+        <label class="channel-item">
+          <input type="checkbox" name="notify_student_channel" {% if settings.notify_student_channel %}checked{% endif %}>
+          <div class="ch-icon" style="background:#fce4ec;"><i class="fa-solid fa-hashtag" style="color:#c2185b;"></i></div>
+          <span class="ch-label">Student's Channel</span>
+          <span class="channel-check"><i class="fa-solid fa-check"></i></span>
+        </label>
+        <label class="channel-item">
+          <input type="checkbox" name="notify_student_group" {% if settings.notify_student_group %}checked{% endif %}>
+          <div class="ch-icon" style="background:#ede7f6;"><i class="fa-solid fa-user-group" style="color:#7b1fa2;"></i></div>
+          <span class="ch-label">Student's Group</span>
+          <span class="channel-check"><i class="fa-solid fa-check"></i></span>
+        </label>
+        <label class="channel-item">
+          <input type="checkbox" name="notify_sims_attendance" {% if settings.notify_sims_attendance %}checked{% endif %}>
+          <div class="ch-icon" style="background:#e8f5e9;"><i class="fa-solid fa-calendar-check" style="color:#2fb344;"></i></div>
+          <span class="ch-label">SIMS Attendance Message</span>
+          <span class="channel-check"><i class="fa-solid fa-check"></i></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GROUP 3: Notification Triggers ══════════════════════════════════ -->
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div class="section-icon" style="background:#fff3cd;">
+        <i class="fa-solid fa-bolt" style="color:#e67700;"></i>
+      </div>
+      <div>
+        <h6>Notification Triggers</h6>
+        <p>When to notify parents — uses the channels selected above</p>
+      </div>
+    </div>
+    <div class="settings-body">
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Notify when student is marked absent
+          <small>Send a notification immediately when daily attendance is saved as absent</small>
+        </div>
+        <div class="setting-control">
+          <label class="toggle-switch">
+            <input type="checkbox" name="notify_on_absent" {% if settings.notify_on_absent %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Only notify after N consecutive absences
+          <small>Skip notification for isolated absences; alert only after a streak</small>
+        </div>
+        <div class="setting-control d-flex align-items-center gap-2">
+          <label class="toggle-switch">
+            <input type="checkbox" name="notify_consecutive_only" id="id_consecutive_toggle"
+                   {% if settings.notify_consecutive_only %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+          <div id="consecutive-threshold-wrap" style="display:{% if settings.notify_consecutive_only %}flex{% else %}none{% endif %};align-items:center;gap:4px;">
+            <input type="number" name="consecutive_absence_threshold"
+                   value="{{ settings.consecutive_absence_threshold }}"
+                   min="2" max="30"
+                   class="form-control form-control-sm"
+                   style="width:60px;font-size:0.78rem;text-align:center;">
+            <span style="font-size:0.72rem;color:#6c757d;">days</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Notify on late absence (subject flip)
+          <small>Student was present on one subject then absent on a later subject the same day</small>
+        </div>
+        <div class="setting-control">
+          <label class="toggle-switch">
+            <input type="checkbox" name="notify_on_late_absence" {% if settings.notify_on_late_absence %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Notify when admin manually changes attendance
+          <small>Alert parents when a teacher or admin edits an already-saved attendance record</small>
+        </div>
+        <div class="setting-control">
+          <label class="toggle-switch">
+            <input type="checkbox" name="notify_on_manual_change" {% if settings.notify_on_manual_change %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ GROUP 4: Monthly Report ══════════════════════════════════════════ -->
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div class="section-icon" style="background:#e8f5e9;">
+        <i class="fa-solid fa-file-lines" style="color:#2fb344;"></i>
+      </div>
+      <div>
+        <h6>Monthly Attendance Report</h6>
+        <p>Automatically send monthly attendance summaries to parents</p>
+      </div>
+    </div>
+    <div class="settings-body">
+      <div class="setting-row">
+        <div class="setting-label">
+          Send monthly attendance report to parents
+          <small>Uses the same notification channels selected above. Sent at end of each month.</small>
+        </div>
+        <div class="setting-control">
+          <label class="toggle-switch">
+            <input type="checkbox" name="send_monthly_report" {% if settings.send_monthly_report %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GROUP 5: Record Locking ══════════════════════════════════════════ -->
+  <div class="settings-section">
+    <div class="settings-section-header">
+      <div class="section-icon" style="background:#fce4ec;">
+        <i class="fa-solid fa-lock" style="color:#c2185b;"></i>
+      </div>
+      <div>
+        <h6>Attendance Record Locking</h6>
+        <p>Prevent edits to attendance records after a set time window</p>
+      </div>
+    </div>
+    <div class="settings-body">
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Lock attendance records after N hours
+          <small>Once locked, records cannot be edited without admin override</small>
+        </div>
+        <div class="setting-control d-flex align-items-center gap-2">
+          <label class="toggle-switch">
+            <input type="checkbox" name="lock_attendance" id="id_lock_toggle"
+                   {% if settings.lock_attendance %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+          <div id="lock-hours-wrap" style="display:{% if settings.lock_attendance %}flex{% else %}none{% endif %};align-items:center;gap:4px;">
+            <input type="number" name="lock_after_hours"
+                   value="{{ settings.lock_after_hours }}"
+                   min="1" max="168"
+                   class="form-control form-control-sm"
+                   style="width:60px;font-size:0.78rem;text-align:center;">
+            <span style="font-size:0.72rem;color:#6c757d;">hours</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">
+          Allow admin to override locked records
+          <small>Super admins can still edit records even after the lock window has passed</small>
+        </div>
+        <div class="setting-control">
+          <label class="toggle-switch">
+            <input type="checkbox" name="admin_can_override_lock" {% if settings.admin_can_override_lock %}checked{% endif %}>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ Save Bar ═══════════════════════════════════════════════════════ -->
+  <div class="save-bar">
+    <div class="d-flex align-items-center justify-content-between">
+      <span style="font-size:0.72rem;color:#6c757d;">Changes apply immediately after saving.</span>
+      <button type="submit" class="btn btn-primary btn-sm px-4" style="font-weight:600;font-size:0.82rem;">
+        <i class="fa-solid fa-floppy-disk me-1"></i> Save Settings
+      </button>
+    </div>
+  </div>
+
+</form>
+
+<script>
+  // Toggle consecutive threshold visibility
+  document.getElementById('id_consecutive_toggle').addEventListener('change', function () {
+    document.getElementById('consecutive-threshold-wrap').style.display = this.checked ? 'flex' : 'none';
+  });
+  // Toggle lock hours visibility
+  document.getElementById('id_lock_toggle').addEventListener('change', function () {
+    document.getElementById('lock-hours-wrap').style.display = this.checked ? 'flex' : 'none';
+  });
+</script>
+{% endblock %}

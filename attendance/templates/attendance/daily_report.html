@@ -1,0 +1,228 @@
+{% extends 'attendance/base.html' %}
+
+{% block attendance_content %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h6 class="card-title m-0 text-primary font-weight-bold">
+        Daily Attendance Summary
+      </h6>
+      <div class="text-muted" style="font-size:0.75rem;">
+        BS {{ selected_bs_date_str }} (AD {{ selected_date }}) | 
+        {% if selected_grade %}Grade {{ selected_grade.grade_name }}{% else %}All Grades{% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'attendance:export_daily_excel' %}?date={{ selected_bs_date_str }}{% if selected_grade %}&grade={{ selected_grade.id }}{% endif %}{% if selected_section %}&section={{ selected_section.id }}{% endif %}" 
+         class="btn btn-success btn-sm px-3 font-weight-bold">
+        Export Excel
+      </a>
+      <a href="{% url 'attendance:dashboard' %}?date={{ selected_bs_date_str }}" class="btn btn-outline-secondary btn-sm">
+        Back
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body bg-light py-2">
+    <form method="GET" action="" class="d-flex align-items-center gap-2 flex-wrap">
+      <div class="d-flex align-items-center gap-1">
+        <label class="text-muted font-weight-bold m-0" style="font-size:0.78rem;">Date:</label>
+        <input type="text" id="daily_report_date" name="date" value="{{ selected_bs_date_str }}" 
+               class="form-control form-control-sm nepali-datepicker bg-white border" style="width:130px;font-size:0.82rem;" placeholder="YYYY-MM-DD" autocomplete="off" />
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <label class="text-muted font-weight-bold m-0" style="font-size:0.78rem;">Grade:</label>
+        <select name="grade" class="form-select form-select-sm border" style="width:130px;font-size:0.82rem;" onchange="this.form.submit()">
+          <option value="">All</option>
+          {% for g in grades %}
+          <option value="{{ g.id }}" {% if selected_grade.id == g.id %}selected{% endif %}>Grade {{ g.grade_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm px-3" style="font-size:0.82rem;">
+        Filter
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row g-2 mb-3">
+  <!-- Total -->
+  <div class="col">
+    <div class="card border-0 shadow-sm py-2 px-3 bg-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div style="font-size:0.68rem;text-transform:uppercase;font-weight:600;color:#6c757d;">Total</div>
+          <div class="font-weight-bold" style="font-size:1.25rem;color:#212529;">{{ total_stds }}</div>
+        </div>
+        <div class="text-end" style="font-size:0.72rem;color:#6c757d;">
+          <div>B: <strong style="color:#212529;">{{ total_boys }}</strong> / G: <strong style="color:#212529;">{{ total_girls }}</strong></div>
+          <div style="color:#008877;font-weight:600;">{{ percentage }}% <small style="font-weight:400;">rate</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending -->
+  <div class="col">
+    <div class="card border-0 shadow-sm py-2 px-3 bg-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div style="font-size:0.68rem;text-transform:uppercase;font-weight:600;color:#6c757d;">Pending</div>
+          <div class="font-weight-bold" style="font-size:1.25rem;color:#e67700;">{{ total_pending }}</div>
+        </div>
+        <div class="text-end" style="font-size:0.72rem;color:#6c757d;">
+          <div>B: <strong style="color:#212529;">{{ pending_boys }}</strong> / G: <strong style="color:#212529;">{{ pending_girls }}</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recorded -->
+  <div class="col">
+    <div class="card border-0 shadow-sm py-2 px-3 bg-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div style="font-size:0.68rem;text-transform:uppercase;font-weight:600;color:#6c757d;">Recorded</div>
+          <div class="font-weight-bold" style="font-size:1.25rem;color:#2fb344;">{{ total_recorded }}</div>
+        </div>
+        <div class="text-end" style="font-size:0.72rem;color:#6c757d;">
+          <div>B: <strong style="color:#212529;">{{ recorded_boys }}</strong> / G: <strong style="color:#212529;">{{ recorded_girls }}</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Present -->
+  <div class="col">
+    <div class="card border-0 shadow-sm py-2 px-3 bg-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div style="font-size:0.68rem;text-transform:uppercase;font-weight:600;color:#6c757d;">Present</div>
+          <div class="font-weight-bold" style="font-size:1.25rem;color:#2fb344;">{{ total_present }}</div>
+        </div>
+        <div class="text-end" style="font-size:0.72rem;color:#6c757d;">
+          <div>B: <strong style="color:#212529;">{{ present_boys }}</strong></div>
+          <div>G: <strong style="color:#212529;">{{ present_girls }}</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Absent + Rate -->
+  <div class="col">
+    <div class="card border-0 shadow-sm py-2 px-3 bg-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div style="font-size:0.68rem;text-transform:uppercase;font-weight:600;color:#6c757d;">Absent</div>
+          <div class="font-weight-bold" style="font-size:1.25rem;color:#d63939;">{{ total_absent }}</div>
+        </div>
+        <div class="text-end" style="font-size:0.72rem;color:#6c757d;">
+          <div>B: <strong style="color:#212529;">{{ absent_boys }}</strong> / G: <strong style="color:#212529;">{{ absent_girls }}</strong></div>
+          <div>Informed: <strong style="color:#e67700;">{{ total_informed_absent }}</strong> <small>(B:{{ informed_absent_boys }} / G:{{ informed_absent_girls }})</small></div>
+          <div>Uninformed: <strong style="color:#d63939;">{{ total_uninformed_absent }}</strong> <small>(B:{{ uninformed_absent_boys }} / G:{{ uninformed_absent_girls }})</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Class-by-Class Attendance Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white py-2">
+    <h6 class="card-title m-0 text-dark font-weight-bold">
+      Class-wise Attendance — {{ selected_bs_date_str }}
+    </h6>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-vcenter table-hover table-sm card-table border-0 m-0" style="font-size:0.82rem;">
+      <thead class="bg-light">
+        <tr>
+          <th>Class</th>
+          <th class="text-center">Total</th>
+          <th class="text-center">Present (B / G)</th>
+          <th class="text-center">Absent (B / G)</th>
+          <th class="text-center">Rate</th>
+          <th class="text-center">Status</th>
+          <th class="text-end d-print-none"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in class_summaries %}
+        <tr>
+          <td>
+            <strong class="text-primary">
+              {{ c.grade.grade_name }}{% if c.section %}-{{ c.section.section }}{% endif %}
+            </strong>
+          </td>
+          <td class="text-center font-weight-bold">{{ c.total_students }}</td>
+          <td class="text-center">
+            {% if c.is_taken %}
+              <span class="text-success font-weight-bold">{{ c.present_total }}</span>
+              <small class="text-muted">({{ c.present_boys }}B / {{ c.present_girls }}G)</small>
+            {% else %}
+              <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if c.is_taken %}
+              <span class="text-danger font-weight-bold">{{ c.absent_total }}</span>
+              <small class="text-muted">({{ c.absent_boys }}B / {{ c.absent_girls }}G)</small>
+            {% else %}
+              <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if c.is_taken %}
+              <span class="font-weight-bold {% if c.percentage >= 80 %}text-success{% elif c.percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+                {{ c.percentage }}%
+              </span>
+            {% else %}
+              <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if c.is_taken %}
+              <span class="badge bg-success-lt text-success">Taken</span>
+            {% else %}
+              <span class="badge bg-warning-lt text-warning">Pending</span>
+            {% endif %}
+          </td>
+          <td class="text-end d-print-none">
+            <a href="{% url 'attendance:dashboard' %}?grade={{ c.grade.id }}{% if c.section %}&section={{ c.section.id }}{% endif %}&date={{ selected_bs_date_str }}" 
+               class="btn btn-outline-primary btn-sm" style="font-size:0.72rem;padding:0.15rem 0.5rem;">
+              {% if c.is_taken %}View{% else %}Take{% endif %}
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted">
+            No class attendance records found for this date.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var dateElem = document.getElementById("daily_report_date");
+    if (dateElem && typeof dateElem.nepaliDatePicker === "function") {
+      dateElem.nepaliDatePicker({
+        ndpYear: true,
+        ndpMonth: true,
+        ndpYearCount: 20,
+        onChange: function() {
+          dateElem.form.submit();
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

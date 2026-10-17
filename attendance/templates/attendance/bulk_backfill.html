@@ -1,0 +1,304 @@
+{% extends 'attendance/base.html' %}
+
+{% block attendance_content %}
+<div class="card border-0 shadow-sm mb-3">
+  <!-- Card Header -->
+  <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h3 class="card-title m-0 text-primary font-weight-bold fs-3">
+        🚀 Monthly Attendance Matrix Backfill Grid
+      </h3>
+      <div class="text-muted small mt-0.5">
+        Batch record historical attendance for an entire BS month per class.
+      </div>
+    </div>
+    <div>
+      <a href="{% url 'attendance:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter & Working Days Selector Form -->
+  <div class="card-body bg-light py-3">
+    <form method="GET" action="" id="matrix-filter-form">
+      <div class="row g-2 align-items-center mb-3">
+        <!-- Grade Filter -->
+        <div class="col-auto">
+          <label class="form-label small text-muted font-weight-bold m-0 me-1">Grade:</label>
+          <select name="grade" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+            <option value="">Select Grade</option>
+            {% for g in grades %}
+            <option value="{{ g.id }}" {% if selected_grade.id == g.id %}selected{% endif %}>
+              Grade {{ g.grade_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Section Filter -->
+        {% if sections %}
+        <div class="col-auto">
+          <label class="form-label small text-muted font-weight-bold m-0 me-1">Section:</label>
+          <select name="section" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+            <option value="">All Sections</option>
+            {% for sec in sections %}
+            <option value="{{ sec.id }}" {% if selected_section.id == sec.id %}selected{% endif %}>
+              Section {{ sec.section }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <!-- Year Filter -->
+        <div class="col-auto">
+          <label class="form-label small text-muted font-weight-bold m-0 me-1">BS Year:</label>
+          <select name="year" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+            {% for y in years_list %}
+            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }} BS</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Month Filter -->
+        <div class="col-auto">
+          <label class="form-label small text-muted font-weight-bold m-0 me-1">BS Month:</label>
+          <select name="month" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+            {% for m_num, m_name in nepali_months %}
+            <option value="{{ m_num }}" {% if selected_month == m_num %}selected{% endif %}>{{ m_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary btn-sm px-3 font-weight-bold">
+            🔍 Load Matrix Grid
+          </button>
+        </div>
+      </div>
+
+      <!-- School Open Working Days Selection Box -->
+      <div class="border rounded bg-white p-2.5">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          <div>
+            <span class="font-weight-bold text-dark small">📅 School Open Working Days (Uncheck closed/holiday dates):</span>
+            <span class="badge bg-primary-lt text-primary ms-1" id="selected-days-count">{{ month_days|length }} Open Days Selected</span>
+          </div>
+
+          <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-outline-primary btn-sm py-0.5 px-2 small" onclick="selectWorkingDaysOnly()">
+              Check Working Days (Excl. Sat)
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm py-0.5 px-2 small" onclick="selectAllDays(true)">
+              Check All Days
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm py-0.5 px-2 small" onclick="selectAllDays(false)">
+              Uncheck All
+            </button>
+          </div>
+        </div>
+
+        <!-- Day Checkboxes Container -->
+        <div class="d-flex flex-wrap gap-1 align-items-center">
+          {% for d in month_days_all %}
+          <label class="btn btn-outline-secondary btn-sm p-1 d-inline-flex align-items-center gap-1 extra-small {% if d.is_saturday %}btn-outline-danger{% endif %}" 
+                 style="font-size: 0.72rem; min-width: 58px;">
+            <input type="checkbox" name="open_days" value="{{ d.day }}" 
+                   class="open-day-chk {% if d.is_saturday %}chk-sat{% else %}chk-work{% endif %}" 
+                   {% if d.day in selected_open_days %}checked{% endif %} 
+                   onchange="updateOpenDaysCount()" />
+            <span>{{ d.day }} <small class="text-muted">({{ d.weekday_name }})</small></span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if selected_grade %}
+<form method="POST" action="">
+  {% csrf_token %}
+  <input type="hidden" name="grade" value="{{ selected_grade.id }}">
+  <input type="hidden" name="section" value="{{ selected_section.id|default:'' }}">
+  <input type="hidden" name="year" value="{{ selected_year }}">
+  <input type="hidden" name="month" value="{{ selected_month }}">
+
+  <!-- Pass selected open_days in POST so matrix submission preserves active open days -->
+  {% for d_num in selected_open_days %}
+    <input type="hidden" name="open_days" value="{{ d_num }}">
+  {% endfor %}
+
+  <!-- Batch Action & Legend Toolbar -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 px-3 bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-muted small font-weight-bold">Batch Actions:</span>
+        <button type="button" class="btn btn-sm btn-outline-success font-weight-bold" onclick="markAllGridPresent()">
+          ✓ Mark All Displayed Days Present
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAllGrid()">
+          ✕ Clear All
+        </button>
+      </div>
+
+      <!-- Legend Badges -->
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-success text-white">P = Present</span>
+        <span class="badge bg-danger text-white">A = Uninformed Absent</span>
+        <span class="badge bg-warning text-dark">I = Informed Absent</span>
+        <span class="badge bg-secondary text-white">- = Skip / Empty</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly Backfill Matrix Table -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="table-responsive" style="max-height: 600px; overflow: auto;">
+      <table class="table table-bordered table-sm table-vcenter text-center card-table m-0" style="font-size: 0.8rem;">
+        <thead class="bg-light sticky-top shadow-xs" style="z-index: 10;">
+          <tr>
+            <th style="min-width: 45px; position: sticky; left: 0; background: #f8f9fa; z-index: 11;">Roll</th>
+            <th style="min-width: 140px; position: sticky; left: 45px; background: #f8f9fa; z-index: 11;" class="text-start">Student Name</th>
+            <th style="min-width: 75px; position: sticky; left: 185px; background: #f8f9fa; z-index: 11;">Batch</th>
+            
+            {% for day_info in month_days %}
+            <th style="min-width: 44px;" class="{% if day_info.is_saturday %}bg-danger-lt text-danger{% endif %} py-1">
+              <div>{{ day_info.day }}</div>
+              <small class="d-block text-muted" style="font-size: 0.65rem;">{{ day_info.weekday_name }}</small>
+              <button type="button" class="btn btn-link p-0 extra-small font-weight-bold text-decoration-none {% if day_info.is_saturday %}text-danger{% else %}text-success{% endif %}"
+                      onclick="markDayColumn('{{ day_info.day }}', 'P')" title="Mark Day {{ day_info.day }} Present for All">
+                [P]
+              </button>
+            </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in matrix_rows %}
+          <tr>
+            <td style="position: sticky; left: 0; background: #fff; z-index: 5;" class="font-weight-bold text-dark">
+              {{ r.student_session.roll_no }}
+            </td>
+            <td style="position: sticky; left: 45px; background: #fff; z-index: 5;" class="text-start font-weight-bold text-dark">
+              <div class="text-truncate" style="max-width: 135px;" title="{{ r.student.name }}">
+                {{ r.student.name }}
+              </div>
+            </td>
+            <td style="position: sticky; left: 185px; background: #fff; z-index: 5;">
+              <button type="button" class="btn btn-outline-success btn-sm py-0 px-1 extra-small font-weight-bold" 
+                      onclick="markStudentRow('{{ r.student.reg_no }}', 'P')" title="Mark all open days P for {{ r.student.name }}">
+                All P
+              </button>
+            </td>
+
+            {% for ds in r.day_statuses %}
+            <td class="p-0 {% if ds.is_saturday %}bg-light{% endif %}">
+              <select name="att_{{ r.student.reg_no }}_{{ ds.day }}" 
+                      class="form-select form-select-sm text-center font-weight-bold border-0 p-0 shadow-none matrix-select day-col-{{ ds.day }} student-row-{{ r.student.reg_no }}"
+                      style="height: 28px; width: 44px; cursor: pointer;"
+                      onchange="colorSelect(this)">
+                <option value="" {% if ds.code == "" %}selected{% endif %}>-</option>
+                <option value="P" class="text-success font-weight-bold" {% if ds.code == "P" %}selected{% endif %}>P</option>
+                <option value="A" class="text-danger font-weight-bold" {% if ds.code == "A" %}selected{% endif %}>A</option>
+                <option value="I" class="text-warning font-weight-bold" {% if ds.code == "I" %}selected{% endif %}>I</option>
+              </select>
+            </td>
+            {% endfor %}
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="35" class="text-center py-4 text-muted">
+              No active students found for Grade {{ selected_grade.grade_name }}.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Sticky Bottom Save Footer -->
+    <div class="card-footer bg-white border-top text-end py-3 sticky-bottom shadow-sm">
+      <button type="submit" class="btn btn-primary px-4 py-2 font-weight-bold">
+        💾 Save Monthly Attendance Matrix ({{ month_days|length }} Open Days)
+      </button>
+    </div>
+  </div>
+</form>
+
+<script>
+  function colorSelect(elem) {
+    elem.classList.remove('bg-success-lt', 'text-success', 'bg-danger-lt', 'text-danger', 'bg-warning-lt', 'text-warning');
+    if (elem.value === 'P') {
+      elem.classList.add('bg-success-lt', 'text-success');
+    } else if (elem.value === 'A') {
+      elem.classList.add('bg-danger-lt', 'text-danger');
+    } else if (elem.value === 'I') {
+      elem.classList.add('bg-warning-lt', 'text-warning');
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll('.matrix-select').forEach(colorSelect);
+    updateOpenDaysCount();
+  });
+
+  function updateOpenDaysCount() {
+    const checkedCount = document.querySelectorAll('.open-day-chk:checked').length;
+    const badge = document.getElementById('selected-days-count');
+    if (badge) badge.textContent = checkedCount + ' Open Days Selected';
+  }
+
+  function selectWorkingDaysOnly() {
+    document.querySelectorAll('.chk-work').forEach(chk => chk.checked = true);
+    document.querySelectorAll('.chk-sat').forEach(chk => chk.checked = false);
+    updateOpenDaysCount();
+  }
+
+  function selectAllDays(checked) {
+    document.querySelectorAll('.open-day-chk').forEach(chk => chk.checked = checked);
+    updateOpenDaysCount();
+  }
+
+  function markStudentRow(regNo, val) {
+    document.querySelectorAll('.student-row-' + regNo).forEach(sel => {
+      sel.value = val;
+      colorSelect(sel);
+    });
+  }
+
+  function markDayColumn(dayNum, val) {
+    document.querySelectorAll('.day-col-' + dayNum).forEach(sel => {
+      sel.value = val;
+      colorSelect(sel);
+    });
+  }
+
+  function markAllGridPresent() {
+    document.querySelectorAll('.matrix-select').forEach(sel => {
+      sel.value = 'P';
+      colorSelect(sel);
+    });
+  }
+
+  function clearAllGrid() {
+    document.querySelectorAll('.matrix-select').forEach(sel => {
+      sel.value = '';
+      colorSelect(sel);
+    });
+  }
+</script>
+{% else %}
+<div class="card border-0 shadow-sm text-center py-5">
+  <div class="card-body">
+    <div class="text-muted">
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-event mb-2" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none"><rect x="4" y="5" width="16" height="16" rx="2" /><line x1="16" y1="3" x2="16" y2="7" /><line x1="8" y1="3" x2="8" y2="7" /><line x1="4" y1="11" x2="20" y2="11" /><rect x="8" y="15" width="2" height="2" /></svg>
+      <h4 class="font-weight-bold text-dark mb-1">Select a Grade & Month to Load the Matrix Grid</h4>
+      <p class="small text-muted">Use the filter bar above to select Grade, Section, Year, and Month to start batch backfilling attendance.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

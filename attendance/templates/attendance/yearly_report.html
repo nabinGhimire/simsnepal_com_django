@@ -1,0 +1,142 @@
+{% extends 'attendance/base.html' %}
+{% load attendance_tags %}
+
+{% block attendance_content %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h6 class="card-title m-0 text-primary font-weight-bold">
+        Yearly Summary (BS {{ selected_year }})
+      </h6>
+      <div class="text-muted" style="font-size:0.75rem;">
+        {% if selected_grade %}Grade {{ selected_grade.grade_name }}{% else %}All{% endif %}
+        {% if selected_section %}(Section {{ selected_section.section }}){% endif %}
+        | {{ total_recorded_year_days }} Days
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'attendance:export_yearly_excel' %}?grade={{ selected_grade.id }}{% if selected_section %}&section={{ selected_section.id }}{% endif %}&year={{ selected_year }}" 
+         class="btn btn-success btn-sm px-3 font-weight-bold">
+        Export Excel
+      </a>
+      <a href="{% url 'attendance:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        Back
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Form -->
+  <div class="card-body bg-light py-2.5">
+    <form method="GET" action="" class="row g-2 align-items-center">
+      <!-- Grade Filter -->
+      <div class="col-auto">
+        <label class="form-label small text-muted font-weight-bold m-0 me-1">Grade:</label>
+        <select name="grade" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          {% for g in grades %}
+          <option value="{{ g.id }}" {% if selected_grade.id == g.id %}selected{% endif %}>
+            Grade {{ g.grade_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Section Filter -->
+      {% if sections %}
+      <div class="col-auto">
+        <label class="form-label small text-muted font-weight-bold m-0 me-1">Section:</label>
+        <select name="section" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          <option value="">All Sections</option>
+          {% for sec in sections %}
+          <option value="{{ sec.id }}" {% if selected_section.id == sec.id %}selected{% endif %}>
+            Section {{ sec.section }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- Year Filter -->
+      <div class="col-auto">
+        <label class="form-label small text-muted font-weight-bold m-0 me-1">Academic Year (BS):</label>
+        <select name="year" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          {% for y in years_list %}
+          <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>
+            {{ y }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-auto ms-auto">
+        <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Table Card -->
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-vcenter table-bordered table-sm card-table text-center align-middle" style="font-size: 0.8rem;">
+      <thead>
+        <!-- Double Header for Month Groups -->
+        <tr class="bg-primary text-white">
+          <th rowspan="2" style="width: 35px;" class="align-middle bg-primary text-white">#</th>
+          <th rowspan="2" style="width: 65px;" class="align-middle bg-primary text-white">Roll</th>
+          <th rowspan="2" style="width: 80px;" class="align-middle bg-primary text-white">Reg No</th>
+          <th rowspan="2" style="min-width: 140px;" class="text-start align-middle bg-primary text-white">Student Name</th>
+          
+          {% for m_name in nepali_month_names %}
+          <th colspan="2" class="border-start border-end py-1 text-center bg-primary text-white font-weight-bold" style="font-size: 0.75rem;">
+            {{ m_name }}
+          </th>
+          {% endfor %}
+
+          <th colspan="3" class="bg-dark text-white text-center py-1">YEAR TOTAL</th>
+        </tr>
+        <tr class="bg-light text-muted font-weight-bold">
+          {% for m_name in nepali_month_names %}
+          <th style="width: 25px; padding: 2px;" class="text-success bg-success-lt">P</th>
+          <th style="width: 25px; padding: 2px;" class="text-danger bg-danger-lt">A</th>
+          {% endfor %}
+          <th style="width: 45px;" class="bg-success-lt text-success font-weight-bold">Present</th>
+          <th style="width: 45px;" class="bg-danger-lt text-danger font-weight-bold">Absent</th>
+          <th style="width: 55px;" class="bg-primary-lt text-primary font-weight-bold">% Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in student_rows %}
+        <tr>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td class="font-weight-bold">{{ row.student_session.roll_no }}</td>
+          <td><code>{{ row.student.reg_no }}</code></td>
+          <td class="text-start font-weight-bold">
+            <a href="{% url 'attendance:student_profile' reg_no=row.student.reg_no %}" class="text-primary text-decoration-none">
+              {{ row.student.name }}
+            </a>
+          </td>
+
+          <!-- 12 Months Breakdown (P & A) -->
+          {% for m in row.months_breakdown %}
+          <td class="text-success font-weight-bold bg-success-lt" style="font-size: 0.75rem;">{{ m.present }}</td>
+          <td class="text-danger font-weight-bold bg-danger-lt" style="font-size: 0.75rem;">{{ m.absent }}</td>
+          {% endfor %}
+
+          <!-- Year Totals -->
+          <td class="font-weight-bold text-success bg-success-lt fs-5">{{ row.year_present_cnt }}</td>
+          <td class="font-weight-bold text-danger bg-danger-lt fs-5">{{ row.year_absent_cnt }}</td>
+          <td class="font-weight-bold text-primary bg-primary-lt fs-5">{{ row.percentage }}%</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="30" class="text-center py-5 text-muted">
+            No yearly attendance data found for BS {{ selected_year }}.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
