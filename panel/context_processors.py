@@ -4,19 +4,65 @@ into every template. This ensures the Tabler navbar with grade menus renders
 on all pages — including print pages that previously had no nav.
 """
 from sms.models import BranchUser, GradeLevel, SchoolGrade, EduSession
+from django.urls import NoReverseMatch, reverse
 import time
 
 this_year = 2083
 
+# Modules listed in the "My Apps" switcher and shown in the top header as "SIMS | <Module>".
+# `color` is a Tabler color name (blue/green/purple/...), used as text-<color> / bg-<color>-lt.
+# `url_name` is the optional Django URL name used for the tile link ('#' when not wired yet).
+PANEL_MODULES = [
+    {'key': 'student', 'label': 'Student', 'color': 'blue', 'icon': 'school', 'prefix': '/panel/', 'url_name': 'panel:index'},
+    {'key': 'grihakarya', 'label': 'Grihakarya', 'color': 'green', 'icon': 'pencil', 'prefix': '/grihakarya/', 'url_name': 'grihakarya'},
+    {'key': 'attendance', 'label': 'Attendance', 'color': 'purple', 'icon': 'clipboard-check', 'prefix': '/attendance/', 'url_name': 'attendance:dashboard'},
+    {'key': 'cas', 'label': 'CAS', 'color': 'orange', 'icon': 'clipboard-list', 'prefix': '/cas/', 'url_name': 'cas'},
+    {'key': 'billing', 'label': 'Billing', 'color': 'cyan', 'icon': 'receipt', 'prefix': '/billing/', 'url_name': 'billing'},
+    {'key': 'calendar', 'label': 'Calendar', 'color': 'emerald', 'icon': 'calendar', 'prefix': '/calendar/', 'url_name': 'patro:calendar'},
+]
+
+DEFAULT_MODULE = PANEL_MODULES[0]
+
+# Match longer prefixes first so e.g. /panel/calendar/ wins over /panel/.
+MODULES_BY_PREFIX = sorted(PANEL_MODULES, key=lambda m: len(m['prefix']), reverse=True)
+
+
+def get_active_module(path):
+    """Resolve the active app from the request path (falls back to Student/SIMS)."""
+    for module in MODULES_BY_PREFIX:
+        if path.startswith(module['prefix']):
+            return module
+    return DEFAULT_MODULE
+
+
+def get_panel_modules():
+    """Return PANEL_MODULES with each tile's resolved `url` link."""
+    modules = []
+    for module in PANEL_MODULES:
+        url = '#'
+        if module['url_name']:
+            try:
+                url = reverse(module['url_name'])
+            except NoReverseMatch:
+                url = '#'
+        modules.append({**module, 'url': url})
+    return modules
+
+
 def nav_context(request):
     """Return grade_level, grades, branchuser, school, current_session, and all_sessions."""
+    context = {
+        'active_module': get_active_module(request.path),
+        'panel_modules': get_panel_modules(),
+    }
+
     if not request.user.is_authenticated:
-        return {}
+        return context
 
     try:
         branchuser = BranchUser.objects.select_related('school').get(user=request.user)
     except BranchUser.DoesNotExist:
-        return {}
+        return context
 
     school = branchuser.school
     grade_level = GradeLevel.objects.filter(schoolgrade__school=school, schoolgrade__active=True).distinct().order_by('id')
@@ -54,5 +100,6 @@ def nav_context(request):
         'school_logo_url': logo_url,
         'current_session': current_session,
         'all_sessions': all_sessions,
+        **context,
     }
 

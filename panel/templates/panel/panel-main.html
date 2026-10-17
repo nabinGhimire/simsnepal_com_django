@@ -121,6 +121,16 @@
       color: #008877 !important;
     }
 
+    /* Emerald accent (Calendar / Nepali Patro module) */
+    .text-emerald {
+      color: #059669 !important;
+    }
+
+    .bg-emerald-lt {
+      background-color: rgba(5, 150, 105, 0.1) !important;
+      color: #059669 !important;
+    }
+
     .nav-link.active,
     .dropdown-item.active,
     .dropdown-item:active {
@@ -132,6 +142,102 @@
     .navbar-light .navbar-nav .nav-link.show,
     .navbar-light .navbar-nav .nav-link.active {
       color: #008877 !important;
+    }
+
+    /* Header brand: "SIMS | <Active Module>" */
+    .brand-title-link {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 7px;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .brand-title-link,
+    .brand-title-link:hover,
+    .brand-title-link:focus,
+    .brand-title-link:active {
+      text-decoration: none;
+    }
+
+    .brand-title-link .brand-sims {
+      color: #008877;
+    }
+
+    .brand-title-link:hover .brand-sims {
+      color: #006c5e;
+    }
+
+    .brand-title-link .brand-separator {
+      color: #ced4da;
+      font-weight: 400;
+    }
+
+    .brand-title-link .brand-module {
+      font-weight: 700;
+    }
+
+    /* My Apps module tiles */
+    .app-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      padding: 9px 2px;
+      border-radius: 10px;
+      text-decoration: none;
+      text-align: center;
+      color: #6c757d;
+      transition: background-color 0.15s ease;
+    }
+
+    .app-tile:hover,
+    .app-tile:focus {
+      background-color: rgba(0, 136, 119, 0.07);
+      color: #495057;
+      text-decoration: none;
+    }
+
+    .app-tile.active {
+      background-color: rgba(0, 136, 119, 0.08);
+    }
+
+    .app-tile.active .app-tile-label {
+      color: #008877;
+    }
+
+    .app-tile-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+    }
+
+    .app-tile-icon i,
+    .app-tile-icon svg {
+      display: block;
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .app-tile-label {
+      display: block;
+      max-width: 100%;
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   </style>
 
@@ -165,10 +271,12 @@
           <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- Logo -->
+        <!-- Brand: SIMS | active module -->
         <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
-          <a href="/panel/" aria-label="Hamro SIMS">
-            <img src="{% static '/images/sims.png' %}" alt="Hamro App Panel" height="36" class="navbar-brand-image">
+          <a href="/panel/" class="brand-title-link" aria-label="Hamro SIMS">
+            <span class="brand-sims">SIMS</span>
+            <span class="brand-separator">|</span>
+            <span class="brand-module text-{{ active_module.color }}">{{ active_module.label }}</span>
           </a>
         </div>
 
@@ -260,69 +368,23 @@
                 </svg>
               </a>
               <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card">
-                <div class="card">
+                <div class="card apps-card">
                   <div class="card-header">
                     <div class="card-title">My Apps</div>
                   </div>
-                  <div class="card-body scroll-y p-2" style="max-height: 50vh">
+                  <div class="card-body p-2">
                     <div class="row g-0">
+                      {% for module in panel_modules %}
                       <div class="col-4">
-                        <a href="/panel/"
-                          class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
-                          <span class="avatar bg-blue-lt mb-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                              fill="none" stroke="currentColor" stroke-width="2" class="icon text-blue">
-                              <path d="M22 9l-10 -4l-10 4l10 4l10 -4v6" />
-                              <path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4" />
-                            </svg>
+                        <a href="{{ module.url }}"
+                          class="app-tile{% if module.key == active_module.key %} active{% endif %}">
+                          <span class="app-tile-icon bg-{{ module.color }}-lt text-{{ module.color }}">
+                            <i class="ti ti-{{ module.icon }}"></i>
                           </span>
-                          <span class="h5">SIMS</span>
+                          <span class="app-tile-label">{{ module.label }}</span>
                         </a>
                       </div>
-                      <div class="col-4">
-                        <a href="#"
-                          class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
-                          <span class="avatar bg-green-lt mb-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                              fill="none" stroke="currentColor" stroke-width="2" class="icon text-green">
-                              <path
-                                d="M3 19v-14a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" />
-                              <path d="M9 16v-8" />
-                              <path d="M12 16v-6" />
-                              <path d="M15 16v-4" />
-                            </svg>
-                          </span>
-                          <span class="h5">Grihakarya</span>
-                        </a>
-                      </div>
-                      <div class="col-4">
-                        <a href="#"
-                          class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
-                          <span class="avatar bg-orange-lt mb-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                              fill="none" stroke="currentColor" stroke-width="2" class="icon text-orange">
-                              <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                              <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
-                              <path d="M9 13l2 2l4 -4" />
-                            </svg>
-                          </span>
-                          <span class="h5">Vacancy</span>
-                        </a>
-                      </div>
-                      <div class="col-4">
-                        <a href="{% url 'attendance:dashboard' %}"
-                          class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
-                          <span class="avatar bg-purple-lt mb-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon text-purple">
-                              <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" />
-                              <rect x="9" y="3" width="6" height="4" rx="2" />
-                              <path d="M9 14l2 2l4 -4" />
-                            </svg>
-                          </span>
-                          <span class="h5">Attendance</span>
-                        </a>
-                      </div>
+                      {% endfor %}
                     </div>
                   </div>
                 </div>
