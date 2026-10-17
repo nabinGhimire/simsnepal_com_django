@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'frontend',
     'webview',
     'attendance',
+    'patro',
 ]
 
 MIDDLEWARE = [

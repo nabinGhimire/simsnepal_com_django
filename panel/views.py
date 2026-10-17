@@ -1055,6 +1055,12 @@ def ensure_branch_user(request, obj):
 exam_board = [10]
 
 @login_required
+def coming_soon(request):
+    """Placeholder page for modules that are registered but not built yet."""
+    return render(request, "panel/coming_soon.html")
+
+
+@login_required
 def index(request):
     user = request.user
     print(user)

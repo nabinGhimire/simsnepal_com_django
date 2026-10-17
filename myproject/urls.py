@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 from django.views.generic import TemplateView
 from frontend.sitemaps import FrontendSitemap
+from panel import views as panel_views
 
 sitemaps = {
     'frontend': FrontendSitemap,
@@ -14,6 +15,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('panel/', include(('panel.urls', 'panel'), namespace='panel')),
     path('attendance/', include(('attendance.urls', 'attendance'), namespace='attendance')),
+    path('calendar/', include(('patro.urls', 'patro'), namespace='patro')),
+    path('grihakarya/', panel_views.coming_soon, name='grihakarya'),
+    path('cas/', panel_views.coming_soon, name='cas'),
+    path('billing/', panel_views.coming_soon, name='billing'),
     path('', include('frontend.urls')),
     path('', include('sso.urls')),
     path('webview/', include('webview.urls')),

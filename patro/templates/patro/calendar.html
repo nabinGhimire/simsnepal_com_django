@@ -1,0 +1,1386 @@
+{% extends 'panel/panel-main.html' %}
+
+{% block title %}Nepali Academic Patro | Hamro Panel{% endblock title %}
+
+{% block extra_css %}
+<style>
+  /* Nepali Patro (Calendar) module — emerald theme */
+  :root {
+    --module-nepalidate: #059669;
+    --module-nepalidate-rgb: 5, 150, 105;
+    --module-color: var(--module-nepalidate);
+  }
+
+  .btn-outline-emerald {
+    color: #059669;
+    border-color: #059669;
+  }
+
+  .btn-outline-emerald:hover {
+    background: #059669;
+    border-color: #059669;
+    color: #fff;
+  }
+
+  .border-emerald {
+    border-color: #059669 !important;
+  }
+
+  .btn-xs {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.7rem;
+    line-height: 1.25;
+    border-radius: 4px;
+  }
+
+  /* Exam Routine Builder */
+  .step-indicator {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+
+  .step-dot {
+    width: 26px;
+    height: 5px;
+    border-radius: 3px;
+    background: #e2e8f0;
+  }
+
+  .step-dot.active { background: #f76707; }
+  .step-dot.done { background: #2fb344; }
+
+  .routine-builder-day {
+    border: 1px solid var(--tblr-border-color, #e2e8f0);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #fff;
+  }
+
+  .routine-builder-day .day-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #d35400;
+    margin-bottom: 6px;
+  }
+
+  .grade-tier-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    border-top: 1px dashed #eef2f6;
+  }
+
+  .grade-tier-row .tier-label {
+    flex: 0 0 120px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .routine-table {
+    width: 100%;
+    font-size: 0.72rem;
+    border-collapse: collapse;
+  }
+
+  .routine-table th {
+    padding: 3px 6px;
+    text-align: left;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  .routine-table td {
+    padding: 3px 6px;
+    border-top: 1px solid #eef2f6;
+  }
+
+  .holiday-cancelled {
+    text-decoration: line-through;
+    opacity: 0.55;
+  }
+
+  .holiday-override-badge {
+    display: block;
+    margin-top: 2px;
+    padding: 0 3px;
+    border-radius: 3px;
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: #059669;
+    background: rgba(5, 150, 105, 0.12);
+  }
+
+  .exam-range-highlight { background: rgba(247, 103, 7, 0.05); }
+
+  .routine-exam-badge {
+    display: block;
+    margin-top: 2px;
+    padding: 1px 4px;
+    border-left: 2px solid #f76707;
+    border-radius: 3px;
+    font-size: 0.58rem;
+    font-weight: 600;
+    color: #d35400;
+    background: rgba(247, 103, 7, 0.13);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+<style>
+
+    /* Full Nepali Patro Grid Styles */
+    .patro-scroll-container {
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--module-nepalidate) rgba(0,0,0,0.05);
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+    }
+    .patro-scroll-container::-webkit-scrollbar {
+      height: 6px;
+    }
+    .patro-scroll-container::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.02);
+      border-radius: 4px;
+    }
+    .patro-scroll-container::-webkit-scrollbar-thumb {
+      background: rgba(5, 150, 105, 0.3);
+      border-radius: 4px;
+    }
+    .patro-scroll-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(5, 150, 105, 0.5);
+    }
+    .patro-grid-wrapper {
+      min-width: 780px; /* Prevents cell contents and headers from wrapping awkwardly */
+    }
+
+    .patro-header-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .patro-day-head {
+      text-align: center;
+      padding: 6px 2px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      background: var(--tblr-card-bg, #fff);
+      border: 1px solid var(--tblr-border-color, #e2e8f0);
+      border-radius: 6px;
+    }
+    .patro-day-head.sat {
+      color: #e74c3c;
+      background: rgba(231, 76, 60, 0.05);
+    }
+    
+    .patro-calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 4px;
+    }
+    .patro-cell {
+      min-height: 95px;
+      padding: 6px;
+      border: 1px solid var(--tblr-border-color, #e2e8f0);
+      border-radius: 8px;
+      background: var(--tblr-card-bg, #fff);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .patro-cell:hover {
+      border-color: #059669;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.12);
+      transform: translateY(-1px);
+      z-index: 2;
+    }
+    .patro-cell.other-month {
+      background: rgba(0,0,0,0.02);
+      opacity: 0.45;
+      cursor: default;
+    }
+    .patro-cell.today {
+      border: 2px solid #059669 !important;
+      background: rgba(5, 150, 105, 0.04);
+    }
+    .patro-cell.saturday {
+      background: rgba(231, 76, 60, 0.03);
+    }
+    .patro-cell.saturday .bs-num {
+      color: #e74c3c;
+    }
+
+    /* Date Numbers & Tithi */
+    .patro-cell-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .bs-num {
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--tblr-body-color, #1e293b);
+    }
+    .ad-num {
+      font-size: 0.68rem;
+      color: var(--tblr-secondary, #64748b);
+      font-weight: 500;
+    }
+    .tithi-label {
+      font-size: 0.62rem;
+      color: #64748b;
+      line-height: 1.1;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Event Badges inside Cells */
+    .cell-events {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: auto;
+    }
+    .event-chip {
+      font-size: 0.64rem;
+      font-weight: 600;
+      padding: 2px 4px;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+      line-height: 1.2;
+      text-align: left;
+    }
+    .event-holiday { background: rgba(231, 76, 60, 0.15); color: #c0392b; border-left: 2px solid #e74c3c; }
+    .event-exam { background: rgba(247, 103, 7, 0.15); color: #d35400; border-left: 2px solid #f76707; }
+    .event-activity { background: rgba(47, 179, 68, 0.15); color: #27ae60; border-left: 2px solid #2fb344; }
+    .event-notice { background: rgba(32, 107, 196, 0.15); color: #206bc4; border-left: 2px solid #206bc4; }
+    .event-grihakarya { background: rgba(155, 89, 182, 0.15); color: #8e44ad; border-left: 2px solid #9b59b6; }
+
+    /* Category Legend Chips */
+    .legend-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.76rem;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #fff;
+      border: 1px solid var(--tblr-border-color);
+      cursor: pointer;
+    }
+    .legend-chip.active {
+      border-color: #059669;
+      background: rgba(5, 150, 105, 0.08);
+      font-weight: 600;
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .day-name-short {
+      display: none;
+    }
+
+    .patro-cell.selected-day {
+      border: 2px solid var(--module-nepalidate) !important;
+      background: rgba(5, 150, 105, 0.08) !important;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+    }
+
+    .cell-event-dots {
+      display: none;
+      justify-content: center;
+      gap: 3px;
+      margin-top: auto;
+      padding-top: 4px;
+    }
+    .event-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .event-dot.holiday { background-color: #e74c3c; }
+    .event-dot.exam { background-color: #f76707; }
+    .event-dot.activity { background-color: #2fb344; }
+    .event-dot.notice { background-color: #206bc4; }
+    .event-dot.grihakarya { background-color: #9b59b6; }
+
+    @media (max-width: 991.98px) {
+      .day-name-full {
+        display: none;
+      }
+      .day-name-short {
+        display: inline;
+      }
+    }
+
+    @media (max-width: 767.98px) {
+      .patro-scroll-container {
+        overflow-x: auto !important;
+      }
+      .patro-grid-wrapper {
+        min-width: 780px !important; /* Force desktop-grade width to allow horizontal scrolling slider */
+      }
+      .patro-cell {
+        min-height: 85px !important;
+        padding: 5px !important;
+      }
+      .bs-num {
+        font-size: 1.05rem !important;
+      }
+      .ad-num {
+        font-size: 0.62rem !important;
+      }
+      .ad-month-name {
+        display: none !important; /* Hide month name (Aug/Sep) to save space inside cells */
+      }
+      .today .badge {
+        display: none !important;
+      }
+      .tithi-label {
+        display: block !important; /* Keep tithi label visible inside the scrolled cells */
+        font-size: 0.58rem !important;
+      }
+      .cell-events {
+        display: flex !important; /* Keep event chips visible inside the scrolled cells */
+      }
+      .cell-event-dots {
+        display: none !important; /* No dots needed when the cell size is scrolled */
+      }
+    }
+</style>
+{% endblock extra_css %}
+
+{% block page_header %}
+      <div class="page-header d-print-none py-3">
+        <div class="container-xl">
+          <div class="row g-2 align-items-center">
+            <div class="col">
+              <div class="page-pretitle text-secondary">School Calendar & Academic Planner</div>
+              <h2 class="page-title" style="color:#059669;"><i class="ti ti-calendar-event me-2"></i>Nepali Academic Patro (नेपाली पात्रो)</h2>
+            </div>
+            <div class="col-auto ms-auto d-flex gap-2 flex-wrap">
+              <a href="#" class="btn btn-sm btn-outline-secondary"><i class="ti ti-arrows-exchange me-1"></i>BS ⇄ AD Converter</a>
+              <button class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="ti ti-printer me-1"></i>Print Patro</button>
+              <button class="btn btn-sm btn-primary" style="background:#059669;border-color:#059669;" data-bs-toggle="modal" data-bs-target="#eventModal" onclick="openAddEventModal('2082-05-10', '१० भदौ २०८२')">
+                <i class="ti ti-plus me-1"></i>Add Event / Holiday
+              </button>
+              <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#examRoutineModal">
+                <i class="ti ti-clipboard-text me-1"></i>Exam Routine Builder
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+{% endblock page_header %}
+
+{% block content %}
+          <!-- Calendar Month Navigation Strip & Stats -->
+          <div class="card mb-3">
+            <div class="card-body py-2">
+              <div class="row g-2 align-items-center justify-content-between">
+                <!-- Month & Year Selector -->
+                <div class="col-12 col-md-auto d-flex align-items-center gap-2">
+                  <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-secondary" title="Previous Month"><i class="ti ti-chevron-left"></i> साउन</button>
+                    <button class="btn btn-sm btn-outline-secondary fw-bold text-dark px-3" style="background:#f1f5f9;">
+                      भदौ २०८२ (Bhadra 2082 B.S.)
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" title="Next Month">असोज <i class="ti ti-chevron-right"></i></button>
+                  </div>
+                  <span class="badge bg-emerald-lt d-none d-lg-inline">17 Aug 2026 – 16 Sep 2026 A.D.</span>
+                </div>
+
+                <!-- Category Filter Legends -->
+                <div class="col-12 col-md-auto d-flex flex-wrap gap-1">
+                  <div class="legend-chip active" onclick="filterCategory('all')"><span class="legend-dot" style="background:#059669;"></span> All Events</div>
+                  <div class="legend-chip" onclick="filterCategory('holiday')"><span class="legend-dot" style="background:#e74c3c;"></span> Holidays (4)</div>
+                  <div class="legend-chip" onclick="filterCategory('exam')"><span class="legend-dot" style="background:#f76707;"></span> Term Exams</div>
+                  <div class="legend-chip" onclick="filterCategory('activity')"><span class="legend-dot" style="background:#2fb344;"></span> Activities (3)</div>
+                  <div class="legend-chip" onclick="filterCategory('notice')"><span class="legend-dot" style="background:#206bc4;"></span> Notices</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <!-- Left: Main Full 31-Day Calendar Grid -->
+            <div class="col-12 col-lg-9">
+              <div class="card p-2">
+                <div class="patro-scroll-container">
+                  <div class="patro-grid-wrapper">
+                    <!-- 31 Days Calendar Cells with Integrated Headers -->
+                    <div class="patro-calendar-grid">
+                      <div class="patro-day-head"><span class="day-name-full">आइतबार (Sun)</span><span class="day-name-short text-danger">Sun</span></div>
+                      <div class="patro-day-head"><span class="day-name-full">सोमबार (Mon)</span><span class="day-name-short">Mon</span></div>
+                      <div class="patro-day-head"><span class="day-name-full">मङ्गलबार (Tue)</span><span class="day-name-short">Tue</span></div>
+                      <div class="patro-day-head"><span class="day-name-full">बुधबार (Wed)</span><span class="day-name-short">Wed</span></div>
+                      <div class="patro-day-head"><span class="day-name-full">बिहीबार (Thu)</span><span class="day-name-short">Thu</span></div>
+                      <div class="patro-day-head"><span class="day-name-full">शुक्रबार (Fri)</span><span class="day-name-short">Fri</span></div>
+                      <div class="patro-day-head sat"><span class="day-name-full">शनिबार (Sat)</span><span class="day-name-short">Sat</span></div>
+                  <!-- Row 1 -->
+                  <div class="patro-cell other-month">
+                    <div class="patro-cell-top"><span class="bs-num">३१</span><span class="ad-num">16 Aug</span></div>
+                    <div class="tithi-label">साउन मसान्त</div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-01', '१ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">१</span><span class="ad-num">17 Aug</span></div>
+                    <div class="tithi-label">प्रतिपदा · भदौ संक्रान्ति</div>
+                    <div class="cell-events"><span class="event-chip event-activity">Syllabus Review</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-02', '२ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२</span><span class="ad-num">18 Aug</span></div>
+                    <div class="tithi-label">द्वितीया</div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-03', '३ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">३</span><span class="ad-num">19 Aug</span></div>
+                    <div class="tithi-label">तृतीया</div>
+                    <div class="cell-events"><span class="event-chip event-grihakarya">Math Project Due</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-04', '४ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">४</span><span class="ad-num">20 Aug</span></div>
+                    <div class="tithi-label">चतुर्थी</div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-05', '५ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">५</span><span class="ad-num">21 Aug</span></div>
+                    <div class="tithi-label">पञ्चमी</div>
+                    <div class="cell-events"><span class="event-chip event-notice">Fee Notice Sent</span></div>
+                  </div>
+                  <div class="patro-cell saturday" onclick="openAddEventModal('2082-05-06', '६ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">६</span><span class="ad-num">22 Aug</span></div>
+                    <div class="tithi-label">षष्ठी · शनिबार</div>
+                    <div class="cell-events"><span class="event-chip event-holiday">शनिबार बिदा</span></div>
+                  </div>
+
+                  <!-- Row 2 -->
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-07', '७ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">७</span><span class="ad-num">23 Aug</span></div>
+                    <div class="tithi-label">सप्तमी</div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-08', '८ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">८</span><span class="ad-num">24 Aug</span></div>
+                    <div class="tithi-label">अष्टमी · गौरा पर्व</div>
+                    <div class="cell-events"><span class="event-chip event-holiday">गौरा पर्व बिदा</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-09', '९ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">९</span><span class="ad-num">25 Aug</span></div>
+                    <div class="tithi-label">नवमी</div>
+                  </div>
+                  <div class="patro-cell today" onclick="openAddEventModal('2082-05-10', '१० भदौ २०८२')">
+                    <div class="patro-cell-top">
+                      <span class="bs-num text-success">१०</span>
+                      <span class="badge bg-green-lt py-0 px-1" style="font-size:0.6rem;">आज (Today)</span>
+                    </div>
+                    <div class="tithi-label">दशमी · बुधबार</div>
+                    <div class="cell-events">
+                      <span class="event-chip event-activity"><i class="ti ti-bulb me-1"></i>Science Fair Prep</span>
+                    </div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-11', '११ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">११</span><span class="ad-num">27 Aug</span></div>
+                    <div class="tithi-label">एकादशी · हरिवासर</div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-12', '१२ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">१२</span><span class="ad-num">28 Aug</span></div>
+                    <div class="tithi-label">द्वादशी</div>
+                    <div class="cell-events">
+                      <span class="event-chip event-activity"><i class="ti ti-trophy me-1"></i>Science Model Fair</span>
+                    </div>
+                  </div>
+                  <div class="patro-cell saturday" onclick="openAddEventModal('2082-05-13', '१३ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">१३</span><span class="ad-num">29 Aug</span></div>
+                    <div class="tithi-label">त्रयोदशी · शनिबार</div>
+                    <div class="cell-events"><span class="event-chip event-holiday">शनिबार बिदा</span></div>
+                  </div>
+
+                  <!-- Row 3 -->
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-14', '१४ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">१४</span><span class="ad-num">30 Aug</span></div>
+                    <div class="tithi-label">चतुर्दशी · दर खाने दिन</div>
+                    <div class="cell-events"><span class="event-chip event-notice">Half Day School</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-15', '१५ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num text-danger">१५</span><span class="ad-num">31 Aug</span></div>
+                    <div class="tithi-label text-danger">पूर्णिमा · हरितालिका तीज</div>
+                    <div class="cell-events"><span class="event-chip event-holiday">हरितालिका तीज बिदा</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-16', '१६ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">१६</span><span class="ad-num">01 Sep</span></div>
+                    <div class="tithi-label">प्रतिपदा · गणेश चतुर्थी</div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-17', '१७ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">१७</span><span class="ad-num">02 Sep</span></div>
+                    <div class="tithi-label">द्वितीया · ऋषिपञ्चमी</div>
+                    <div class="cell-events"><span class="event-chip event-holiday">ऋषिपञ्चमी बिदा</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-18', '१८ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">१८</span><span class="ad-num">03 Sep</span></div>
+                    <div class="tithi-label">तृतीया</div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-19', '१९ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">१९</span><span class="ad-num">04 Sep</span></div>
+                    <div class="tithi-label">चतुर्थी</div>
+                    <div class="cell-events"><span class="event-chip event-activity">Inter-House Quiz</span></div>
+                  </div>
+                  <div class="patro-cell saturday" onclick="openAddEventModal('2082-05-20', '२० भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२०</span><span class="ad-num">05 Sep</span></div>
+                    <div class="tithi-label">पञ्चमी · शनिबार</div>
+                    <div class="cell-events"><span class="event-chip event-holiday">शनिबार बिदा</span></div>
+                  </div>
+
+                  <!-- Row 4 -->
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-21', '२१ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२१</span><span class="ad-num">06 Sep</span></div>
+                    <div class="tithi-label">षष्ठी</div>
+                    <div class="cell-events"><span class="event-chip event-notice">Admit Card Distribution</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-22', '२२ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२२</span><span class="ad-num">07 Sep</span></div>
+                    <div class="tithi-label">सप्तमी · निजामती सेवा दिवस</div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-23', '२३ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२३</span><span class="ad-num">08 Sep</span></div>
+                    <div class="tithi-label">अष्टमी · अन्तर्राष्ट्रिय साक्षरता</div>
+                    <div class="cell-events"><span class="event-chip event-activity">Literacy Day Event</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-24', '२४ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२४</span><span class="ad-num">09 Sep</span></div>
+                    <div class="tithi-label">नवमी</div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-25', '२५ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२५</span><span class="ad-num">10 Sep</span></div>
+                    <div class="tithi-label">दशमी</div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-26', '२६ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२६</span><span class="ad-num">11 Sep</span></div>
+                    <div class="tithi-label">एकादशी · इन्दिरा एकादशी</div>
+                  </div>
+                  <div class="patro-cell saturday" onclick="openAddEventModal('2082-05-27', '२७ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२७</span><span class="ad-num">12 Sep</span></div>
+                    <div class="tithi-label">द्वादशी · शनिबार</div>
+                    <div class="cell-events"><span class="event-chip event-holiday">शनिबार बिदा</span></div>
+                  </div>
+
+                  <!-- Row 5 -->
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-28', '२८ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२८</span><span class="ad-num">13 Sep</span></div>
+                    <div class="tithi-label">त्रयोदशी</div>
+                    <div class="cell-events"><span class="event-chip event-exam">Pre-Terminal Mock Test</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-29', '२९ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">२९</span><span class="ad-num">14 Sep</span></div>
+                    <div class="tithi-label">चतुर्दशी · बाल दिवस</div>
+                    <div class="cell-events"><span class="event-chip event-activity">Children's Day Gala</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-30', '३० भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">३०</span><span class="ad-num">15 Sep</span></div>
+                    <div class="tithi-label">औंसी · कुशे औंसी / बाबुको मुख</div>
+                    <div class="cell-events"><span class="event-chip event-holiday">कुशे औंसी बिदा</span></div>
+                  </div>
+                  <div class="patro-cell" onclick="openAddEventModal('2082-05-31', '३१ भदौ २०८२')">
+                    <div class="patro-cell-top"><span class="bs-num">३१</span><span class="ad-num">16 Sep</span></div>
+                    <div class="tithi-label">प्रतिपदा · भदौ मसान्त</div>
+                    <div class="cell-events"><span class="event-chip event-notice">Term Exam Routine</span></div>
+                  </div>
+                  <!-- Remaining empty cells to complete week -->
+                  <div class="patro-cell other-month"><div class="patro-cell-top"><span class="bs-num">१</span><span class="ad-num">17 Sep</span></div><div class="tithi-label">असोज संक्रान्ति</div></div>
+                  <div class="patro-cell other-month"><div class="patro-cell-top"><span class="bs-num">२</span><span class="ad-num">18 Sep</span></div><div class="tithi-label">द्वितीया</div></div>
+                  <div class="patro-cell other-month"><div class="patro-cell-top"><span class="bs-num">३</span><span class="ad-num">19 Sep</span></div><div class="tithi-label">शनिबार</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+            <!-- Right Sidebar: Academic Events, Holiday List & Routine Integration -->
+            <div class="col-12 col-lg-3">
+              <!-- Selected Day Details Card -->
+              <div class="card mb-3 border-emerald" id="selected-day-card" style="border: 1px solid var(--module-nepalidate);">
+                <div class="card-header bg-emerald-lt d-flex justify-content-between py-2" style="background: rgba(5,150,105,0.05);">
+                  <h3 class="card-title fw-bold text-emerald" id="selected-day-title" style="color: var(--module-nepalidate);"><i class="ti ti-calendar me-1"></i>१० भदौ २०८२</h3>
+                  <span class="badge bg-green text-white" id="selected-day-today-badge">आज (Today)</span>
+                </div>
+                <div class="card-body p-3">
+                  <div class="mb-2"><span class="text-secondary small">तिति / Tithi:</span> <strong id="selected-day-tithi" class="text-dark">दशमी · बुधबार</strong></div>
+                  <div id="selected-day-events-list">
+                    <div class="p-2 border rounded mb-2 bg-green-lt border-emerald">
+                      <div class="fw-bold text-success"><i class="ti ti-bulb me-1"></i>Science Fair Prep</div>
+                      <div class="text-secondary small" style="font-size:0.68rem;">Category: ACTIVITY · Synced with School Hub</div>
+                    </div>
+                  </div>
+                  <!-- Exam Routine Table (dynamically populated) -->
+                  <div id="selected-day-routine" style="display:none;" class="mt-2"></div>
+                  <!-- Holiday Override Toggle -->
+                  <div id="holiday-override-section" style="display:none;" class="mt-2 p-2 border rounded bg-light">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="holidayOverrideToggle" onchange="toggleHolidayOverride()">
+                      <label class="form-check-label small fw-semibold" for="holidayOverrideToggle">
+                        <i class="ti ti-school me-1"></i>Class Running (Cancel Holiday)
+                      </label>
+                    </div>
+                    <div class="text-secondary" style="font-size:0.65rem; margin-top:2px;">Override national holiday — mark this day as a working school day.</div>
+                  </div>
+                  <div class="d-grid mt-2 gap-1">
+                    <button class="btn btn-xs btn-outline-emerald" onclick="triggerAddEventForSelected()" style="color:var(--module-nepalidate); border-color:var(--module-nepalidate);"><i class="ti ti-plus me-1"></i>Add Event to this Day</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Stats -->
+              <div class="card mb-3">
+                <div class="card-header"><h3 class="card-title"><i class="ti ti-chart-pie me-2 text-emerald" style="color:#059669;"></i>Month Overview</h3></div>
+                <div class="card-body p-2">
+                  <div class="row g-2 text-center" style="font-size:0.8rem;">
+                    <div class="col-6"><div class="p-2 border rounded bg-light"><div class="h3 mb-0 text-danger">4</div><div class="text-secondary small">Festival Holidays</div></div></div>
+                    <div class="col-6"><div class="p-2 border rounded bg-light"><div class="h3 mb-0 text-warning">1</div><div class="text-secondary small">Exam Routines</div></div></div>
+                    <div class="col-6"><div class="p-2 border rounded bg-light"><div class="h3 mb-0 text-success">3</div><div class="text-secondary small">School Events</div></div></div>
+                    <div class="col-6"><div class="p-2 border rounded bg-light"><div class="h3 mb-0 text-primary">2</div><div class="text-secondary small">Parent Notices</div></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Upcoming Events List -->
+              <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between">
+                  <h3 class="card-title"><i class="ti ti-list-check me-2" style="color:#059669;"></i>Upcoming Schedule</h3>
+                  <button class="btn btn-xs btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#eventModal"><i class="ti ti-plus"></i></button>
+                </div>
+                <div class="list-group list-group-flush" style="font-size:0.8rem;">
+                  <div class="list-group-item py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <div class="fw-bold text-success"><i class="ti ti-bulb me-1"></i>Science Model Fair</div>
+                        <div class="text-secondary small">School Auditorium · Grades 8-10</div>
+                      </div>
+                      <span class="badge bg-green-lt">12 Bhadra</span>
+                    </div>
+                  </div>
+                  <div class="list-group-item py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <div class="fw-bold text-danger"><i class="ti ti-umbrella me-1"></i>हरितालिका तीज बिदा</div>
+                        <div class="text-secondary small">Public Holiday · School Closed</div>
+                      </div>
+                      <span class="badge bg-red-lt">15 Bhadra</span>
+                    </div>
+                  </div>
+                  <div class="list-group-item py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <div class="fw-bold text-danger"><i class="ti ti-flame me-1"></i>ऋषिपञ्चमी बिदा</div>
+                        <div class="text-secondary small">Holiday for Female Faculty & Students</div>
+                      </div>
+                      <span class="badge bg-red-lt">17 Bhadra</span>
+                    </div>
+                  </div>
+                  <div class="list-group-item py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <div class="fw-bold text-warning"><i class="ti ti-file-text me-1"></i>First Terminal Exam</div>
+                        <div class="text-secondary small">All Grades · 15 to 24 Ashwin</div>
+                      </div>
+                      <span class="badge bg-orange-lt">15 Ashwin</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Integration Card -->
+              <div class="card">
+                <div class="card-header"><h3 class="card-title"><i class="ti ti-link me-2 text-teal"></i>SIMS & Grihakarya Sync</h3></div>
+                <div class="card-body py-2">
+                  <p class="text-secondary small mb-2">
+                    Events and exam dates created in this calendar automatically reflect in SIMS Entrance Cards, Report Cards, and Grihakarya homework schedules.
+                  </p>
+                  <div class="d-grid gap-1">
+                    <a href="#" class="btn btn-sm btn-outline-teal"><i class="ti ti-school me-1"></i>Sync SIMS Exam Routine</a>
+                    <a href="#" class="btn btn-sm btn-outline-primary"><i class="ti ti-speakerphone me-1"></i>Broadcast SMS for Holidays</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+      <!-- Add / Edit Calendar Event & Holiday Modal -->
+      <div class="modal modal-blur fade" id="eventModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" style="color:#059669;"><i class="ti ti-calendar-plus me-2"></i>Add Academic Event / Holiday / Exam</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form onsubmit="event.preventDefault(); saveEvent();">
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label required">Event / Holiday Title</label>
+                  <input type="text" id="modal-event-title" class="form-control form-control-sm" placeholder="e.g. First Terminal Examination, Teej Holiday, Sports Meet..." required />
+                </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label required">Category / Type</label>
+                    <select id="modal-event-type" class="form-select form-select-sm" required>
+                      <option value="holiday">🔴 Public / Festival Holiday (School Closed)</option>
+                      <option value="exam">🟠 Term Exam / Routine Milestone</option>
+                      <option value="activity">🟢 School Activity / Sports / Exhibition</option>
+                      <option value="notice">🔵 General Notice / Circular</option>
+                      <option value="grihakarya">🟣 Homework / Project Deadline</option>
+                    </select>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label required">Applicable For</label>
+                    <select class="form-select form-select-sm">
+                      <option>All School (Students & Staff)</option>
+                      <option>Secondary Level (Grades 9 & 10)</option>
+                      <option>Basic Level (Grades 1 to 8)</option>
+                      <option>Teachers & Staff Only</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Date Range (B.S.) -->
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label required">Start Date (B.S.)</label>
+                    <input type="text" id="modal-start-date" class="form-control form-control-sm" value="2082-05-10" placeholder="YYYY-MM-DD (e.g. 2082-05-10)" required />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label">End Date (B.S.) <span class="text-secondary small">(For multi-day range)</span></label>
+                    <input type="text" id="modal-end-date" class="form-control form-control-sm" placeholder="Optional (e.g. 2082-05-15)" />
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Description & Notice Remarks</label>
+                  <textarea class="form-control form-control-sm" rows="2" placeholder="Details about timings, syllabus or holiday notice text..."></textarea>
+                </div>
+
+                <!-- Cross-Module Integration Checkboxes -->
+                <div class="p-2 border rounded bg-light">
+                  <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="syncSims" checked />
+                    <label class="form-check-label small" for="syncSims">Sync with SIMS Academic Terms & Admit Cards</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="sendSms" />
+                    <label class="form-check-label small" for="sendSms">Queue automated SMS Notice to Parents / Guardians</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-ghost-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-sm btn-primary" style="background:#059669;border-color:#059669;">
+                  <i class="ti ti-check me-1"></i>Save to Nepali Calendar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ Exam Routine Builder Modal ═══════ -->
+      <div class="modal modal-blur fade" id="examRoutineModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+          <div class="modal-content">
+            <div class="modal-header" style="background: rgba(247, 103, 7, 0.05);">
+              <h5 class="modal-title" style="color:#d35400;"><i class="ti ti-clipboard-text me-2"></i>Exam Routine Builder</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <!-- Step Indicator -->
+              <div class="step-indicator" id="step-indicator">
+                <div class="step-dot active" data-step="1"></div>
+                <div class="step-dot" data-step="2"></div>
+              </div>
+
+              <!-- Step 1: Exam Title & Date Range -->
+              <div id="routine-step-1">
+                <h4 class="mb-3" style="font-size:0.95rem;"><i class="ti ti-info-circle me-1 text-warning"></i>Step 1: Exam Details & Date Range</h4>
+                <div class="mb-3">
+                  <label class="form-label required">Examination Title</label>
+                  <input type="text" id="routine-exam-title" class="form-control form-control-sm" placeholder="e.g. First Terminal Examination 2082" value="First Terminal Examination" />
+                </div>
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label required">Start Date (B.S. Day)</label>
+                    <select id="routine-start-day" class="form-select form-select-sm">
+                      <option value="25">२५ भदौ (Bhadra 25)</option>
+                      <option value="26">२६ भदौ (Bhadra 26)</option>
+                      <option value="27">२७ भदौ (Bhadra 27)</option>
+                      <option value="28">२८ भदौ (Bhadra 28)</option>
+                      <option value="29">२९ भदौ (Bhadra 29)</option>
+                      <option value="30">३० भदौ (Bhadra 30)</option>
+                      <option value="31">३१ भदौ (Bhadra 31)</option>
+                    </select>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label required">End Date (B.S. Day)</label>
+                    <select id="routine-end-day" class="form-select form-select-sm">
+                      <option value="25">२५ भदौ (Bhadra 25)</option>
+                      <option value="26">२६ भदौ (Bhadra 26)</option>
+                      <option value="27">२७ भदौ (Bhadra 27)</option>
+                      <option value="28" selected>२८ भदौ (Bhadra 28)</option>
+                      <option value="29">२९ भदौ (Bhadra 29)</option>
+                      <option value="30">३० भदौ (Bhadra 30)</option>
+                      <option value="31">३१ भदौ (Bhadra 31)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Grade Tiers to Include</label>
+                  <div class="d-flex flex-wrap gap-2">
+                    <label class="form-check form-check-inline"><input class="form-check-input" type="checkbox" value="nursery" checked> <span class="form-check-label small">Nursery & KG</span></label>
+                    <label class="form-check form-check-inline"><input class="form-check-input" type="checkbox" value="primary" checked> <span class="form-check-label small">Class 1-5</span></label>
+                    <label class="form-check form-check-inline"><input class="form-check-input" type="checkbox" value="middle" checked> <span class="form-check-label small">Class 6-9</span></label>
+                    <label class="form-check form-check-inline"><input class="form-check-input" type="checkbox" value="secondary" checked> <span class="form-check-label small">Class 10 (S.E.E.)</span></label>
+                  </div>
+                </div>
+                <div class="text-end">
+                  <button class="btn btn-sm btn-warning" onclick="routineGoToStep2()">
+                    Next: Assign Subjects <i class="ti ti-arrow-right ms-1"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Step 2: Daily Subject Assignment -->
+              <div id="routine-step-2" style="display:none;">
+                <h4 class="mb-2" style="font-size:0.95rem;"><i class="ti ti-edit me-1 text-warning"></i>Step 2: Assign Subjects Per Day</h4>
+                <p class="text-secondary small mb-3">For each exam day, assign the subject each grade tier will be tested on. Leave blank if no exam for that tier on that day.</p>
+                <div id="routine-days-container"></div>
+                <div class="d-flex justify-content-between mt-3">
+                  <button class="btn btn-sm btn-outline-secondary" onclick="routineGoToStep1()">
+                    <i class="ti ti-arrow-left me-1"></i> Back
+                  </button>
+                  <button class="btn btn-sm btn-warning" onclick="saveExamRoutine()">
+                    <i class="ti ti-check me-1"></i> Save Exam Routine
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+{% endblock content %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+    // ═══════════════════════════════════════════════════════════
+    //  NEPALIDATE CALENDAR ENGINE
+    //  Base Calendar + School Overlay + Exam Routine System
+    // ═══════════════════════════════════════════════════════════
+
+    let selectedDateBs = '2082-05-10';
+    let selectedDateDisplay = '१० भदौ २०८२';
+
+    // ── Nepali numeral conversion ──
+    const nepaliDigits = ['०','१','२','३','४','५','६','७','८','९'];
+    function toNepaliNum(n) {
+      return String(n).split('').map(d => nepaliDigits[parseInt(d)] || d).join('');
+    }
+
+    // ── localStorage Helpers ──
+    function getStoredData(key) {
+      try { return JSON.parse(localStorage.getItem(key)) || {}; } catch(e) { return {}; }
+    }
+    function setStoredData(key, data) {
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    // ── Data stores ──
+    function getCustomEvents() { return getStoredData('nepalidate_custom_events'); }
+    function getRemovedHolidays() { return getStoredData('nepalidate_removed_holidays'); }
+    function getExamRoutines() { return getStoredData('nepalidate_exam_routines'); }
+    function setCustomEvents(d) { setStoredData('nepalidate_custom_events', d); }
+    function setRemovedHolidays(d) { setStoredData('nepalidate_removed_holidays', d); }
+    function setExamRoutines(d) { setStoredData('nepalidate_exam_routines', d); }
+
+    // ── Base National Calendar Data (Bhadra 2082) ──
+    const baseCalendar = {
+      '2082-05-08': { holiday: 'गौरा पर्व बिदा', isNational: true },
+      '2082-05-15': { holiday: 'हरितालिका तीज बिदा', isNational: true },
+      '2082-05-17': { holiday: 'ऋषिपञ्चमी बिदा', isNational: true },
+      '2082-05-30': { holiday: 'कुशे औंसी बिदा', isNational: true }
+    };
+
+    // ═══ Event Modal ═══
+    function openAddEventModal(dateBs, dateDisplay) {
+      document.getElementById('modal-start-date').value = dateBs;
+      document.getElementById('modal-event-title').placeholder = 'Event on ' + dateDisplay + '...';
+      var myModal = new bootstrap.Modal(document.getElementById('eventModal'));
+      myModal.show();
+    }
+
+    function saveEvent() {
+      const title = document.getElementById('modal-event-title').value.trim();
+      const type = document.getElementById('modal-event-type').value;
+      const startDate = document.getElementById('modal-start-date').value.trim();
+      const endDate = document.getElementById('modal-end-date').value.trim();
+      if (!title || !startDate) return;
+
+      const customs = getCustomEvents();
+
+      // Expand date range if endDate given
+      const dates = [];
+      if (endDate && endDate !== startDate) {
+        const startDay = parseInt(startDate.split('-')[2]);
+        const endDay = parseInt(endDate.split('-')[2]);
+        const prefix = startDate.substring(0, 8);
+        for (let d = startDay; d <= endDay; d++) {
+          dates.push(prefix + String(d).padStart(2, '0'));
+        }
+      } else {
+        dates.push(startDate);
+      }
+
+      dates.forEach(function(dt) {
+        if (!customs[dt]) customs[dt] = [];
+        customs[dt].push({ title: title, type: type });
+      });
+      setCustomEvents(customs);
+
+      // Close modal
+      const modalEl = document.getElementById('eventModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+      document.getElementById('modal-event-title').value = '';
+      document.getElementById('modal-end-date').value = '';
+
+      // Re-render overlays on grid
+      renderOverlays();
+
+      // Show confirmation
+      showToast('Event "' + title + '" saved for ' + dates.length + ' day(s) & synced with SIMS!');
+    }
+
+    // ═══ Toast notification ═══
+    function showToast(msg) {
+      let toast = document.getElementById('patro-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'patro-toast';
+        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;background:#059669;color:#fff;border-radius:10px;font-size:0.82rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.18);transform:translateY(80px);opacity:0;transition:all 0.35s cubic-bezier(.4,0,.2,1);max-width:400px;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      requestAnimationFrame(() => {
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+      });
+      setTimeout(() => {
+        toast.style.transform = 'translateY(80px)';
+        toast.style.opacity = '0';
+      }, 3500);
+    }
+
+    // ═══ Category Filter ═══
+    function filterCategory(cat) {
+      document.querySelectorAll('.legend-chip').forEach(function(el) { el.classList.remove('active'); });
+      if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+      }
+      document.querySelectorAll('.patro-cell:not(.other-month)').forEach(function(cell) {
+        if (cat === 'all') {
+          cell.style.opacity = '1';
+          cell.style.border = '';
+          return;
+        }
+        let hasType = false;
+        cell.querySelectorAll('.event-chip').forEach(function(chip) {
+          if (cat === 'holiday' && chip.classList.contains('event-holiday')) hasType = true;
+          else if (cat === 'exam' && chip.classList.contains('event-exam')) hasType = true;
+          else if (cat === 'activity' && chip.classList.contains('event-activity')) hasType = true;
+          else if (cat === 'notice' && chip.classList.contains('event-notice')) hasType = true;
+          else if (cat === 'grihakarya' && chip.classList.contains('event-grihakarya')) hasType = true;
+        });
+        cell.style.opacity = hasType ? '1' : '0.3';
+        cell.style.border = hasType ? '1px solid var(--module-nepalidate)' : '1px solid var(--tblr-border-color)';
+      });
+    }
+
+    // ═══ Selected Day Card ═══
+    function updateSelectedDayCard(dateBs, dateDisplay, tithi, events) {
+      selectedDateBs = dateBs;
+      selectedDateDisplay = dateDisplay;
+      
+      document.getElementById('selected-day-title').innerHTML = '<i class="ti ti-calendar me-1"></i>' + dateDisplay;
+      document.getElementById('selected-day-tithi').textContent = tithi || 'सामान्य दिन';
+      
+      const badge = document.getElementById('selected-day-today-badge');
+      badge.style.display = (dateBs === '2082-05-10') ? 'inline-block' : 'none';
+
+      const listContainer = document.getElementById('selected-day-events-list');
+      listContainer.innerHTML = '';
+
+      if (events.length === 0) {
+        listContainer.innerHTML = '<div class="text-secondary small text-center py-2">बिदा वा कुनै कार्यक्रम तालिका छैन<br>(No events scheduled)</div>';
+      } else {
+        events.forEach(function(ev) {
+          let badgeClass = 'bg-secondary-lt', textColor = 'text-secondary', icon = 'ti-calendar';
+          if (ev.type === 'holiday') { badgeClass = 'bg-red-lt'; textColor = 'text-danger'; icon = 'ti-umbrella'; }
+          else if (ev.type === 'exam') { badgeClass = 'bg-orange-lt'; textColor = 'text-warning'; icon = 'ti-file-text'; }
+          else if (ev.type === 'activity') { badgeClass = 'bg-green-lt'; textColor = 'text-success'; icon = 'ti-bulb'; }
+          else if (ev.type === 'notice') { badgeClass = 'bg-blue-lt'; textColor = 'text-primary'; icon = 'ti-speakerphone'; }
+          else if (ev.type === 'grihakarya') { badgeClass = 'bg-purple-lt'; textColor = 'text-purple'; icon = 'ti-pencil'; }
+          const item = document.createElement('div');
+          item.className = 'p-2 border rounded mb-2 ' + badgeClass;
+          item.style.fontSize = '0.75rem';
+          item.innerHTML = `<div class="fw-bold ${textColor}"><i class="ti ${icon} me-1"></i>${ev.title}</div><div class="text-secondary small" style="font-size:0.68rem;margin-top:2px;">Category: ${ev.type.toUpperCase()} · Synced with School Hub</div>`;
+          listContainer.appendChild(item);
+        });
+      }
+
+      // ── Show exam routine table if exists ──
+      const routineContainer = document.getElementById('selected-day-routine');
+      const routines = getExamRoutines();
+      if (routines[dateBs]) {
+        const r = routines[dateBs];
+        let html = `<div class="p-2 border rounded mb-1" style="background:rgba(247,103,7,0.05);border-color:rgba(247,103,7,0.2)!important;">`;
+        html += `<div class="fw-bold text-warning mb-1" style="font-size:0.78rem;"><i class="ti ti-clipboard-text me-1"></i>${r.examTitle}</div>`;
+        html += `<table class="routine-table"><thead><tr><th>Grade Tier</th><th>Subject</th></tr></thead><tbody>`;
+        r.routines.forEach(function(row) {
+          html += `<tr><td class="fw-semibold">${row.grades}</td><td>${row.subject || '<span class="text-secondary">—</span>'}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+        // Delete button
+        html += `<div class="text-end mt-1"><button class="btn btn-xs btn-outline-danger" onclick="deleteExamRoutineDay('${dateBs}')"><i class="ti ti-trash me-1"></i>Remove Routine</button></div>`;
+        html += `</div>`;
+        routineContainer.innerHTML = html;
+        routineContainer.style.display = 'block';
+      } else {
+        routineContainer.style.display = 'none';
+        routineContainer.innerHTML = '';
+      }
+
+      // ── Show holiday override toggle if base holiday exists ──
+      const overrideSection = document.getElementById('holiday-override-section');
+      const overrideToggle = document.getElementById('holidayOverrideToggle');
+      if (baseCalendar[dateBs] && baseCalendar[dateBs].holiday) {
+        overrideSection.style.display = 'block';
+        const removed = getRemovedHolidays();
+        overrideToggle.checked = !!removed[dateBs];
+      } else {
+        overrideSection.style.display = 'none';
+      }
+    }
+
+    // ═══ Holiday Override Toggle ═══
+    function toggleHolidayOverride() {
+      const removed = getRemovedHolidays();
+      const toggle = document.getElementById('holidayOverrideToggle');
+      if (toggle.checked) {
+        removed[selectedDateBs] = true;
+        showToast('Holiday cancelled — ' + selectedDateDisplay + ' is now a working day.');
+      } else {
+        delete removed[selectedDateBs];
+        showToast('Holiday restored for ' + selectedDateDisplay);
+      }
+      setRemovedHolidays(removed);
+      renderOverlays();
+      // Re-click cell to refresh sidebar
+      const day = parseInt(selectedDateBs.split('-')[2]);
+      const cells = document.querySelectorAll('.patro-calendar-grid .patro-cell:not(.other-month)');
+      cells.forEach(c => {
+        const bs = c.querySelector('.bs-num');
+        if (bs) {
+          const num = bs.textContent.trim();
+          const numInt = parseInt(toArabicNum(num));
+          if (numInt === day) c.click();
+        }
+      });
+    }
+
+    function toArabicNum(nepStr) {
+      const map = {'०':'0','१':'1','२':'2','३':'3','४':'4','५':'5','६':'6','७':'7','८':'8','९':'9'};
+      return nepStr.split('').map(c => map[c] || c).join('');
+    }
+
+    function deleteExamRoutineDay(dateBs) {
+      const routines = getExamRoutines();
+      delete routines[dateBs];
+      setExamRoutines(routines);
+      renderOverlays();
+      showToast('Exam routine removed for ' + dateBs);
+      // Re-click to refresh sidebar
+      const day = parseInt(dateBs.split('-')[2]);
+      document.querySelectorAll('.patro-calendar-grid .patro-cell:not(.other-month)').forEach(c => {
+        const bs = c.querySelector('.bs-num');
+        if (bs && parseInt(toArabicNum(bs.textContent.trim())) === day) c.click();
+      });
+    }
+
+    // ═══ Exam Routine Builder — Step Navigation ═══
+    function routineGoToStep2() {
+      const startDay = parseInt(document.getElementById('routine-start-day').value);
+      const endDay = parseInt(document.getElementById('routine-end-day').value);
+      if (endDay < startDay) {
+        alert('End date must be on or after start date.');
+        return;
+      }
+
+      // Collect selected tiers
+      const tiers = [];
+      document.querySelectorAll('#routine-step-1 .form-check-input:checked').forEach(cb => {
+        const val = cb.value;
+        if (val === 'nursery') tiers.push({ key: 'nursery', label: 'Nursery & KG' });
+        else if (val === 'primary') tiers.push({ key: 'primary', label: 'Class 1 to 5' });
+        else if (val === 'middle') tiers.push({ key: 'middle', label: 'Class 6 to 9' });
+        else if (val === 'secondary') tiers.push({ key: 'secondary', label: 'Class 10 (S.E.E.)' });
+      });
+      if (tiers.length === 0) {
+        alert('Select at least one grade tier.');
+        return;
+      }
+
+      // Build dynamic form for each day
+      const container = document.getElementById('routine-days-container');
+      container.innerHTML = '';
+
+      const commonSubjects = ['English', 'Nepali', 'Mathematics', 'Science', 'Social Studies', 'Computer', 'Health & Env.', 'Moral Ed.', 'Opt. Mathematics', 'Account', 'Drawing'];
+
+      for (let day = startDay; day <= endDay; day++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'routine-builder-day';
+        let nepDay = toNepaliNum(day);
+        dayDiv.innerHTML = `<div class="day-header"><i class="ti ti-calendar-event"></i> ${nepDay} भदौ २०८२ <span class="badge bg-orange-lt">Day ${day - startDay + 1}</span></div>`;
+
+        tiers.forEach(tier => {
+          const row = document.createElement('div');
+          row.className = 'grade-tier-row';
+          const selectId = `routine-${day}-${tier.key}`;
+          row.innerHTML = `
+            <span class="tier-label">${tier.label}</span>
+            <select class="form-select form-select-sm" id="${selectId}" style="max-width:220px;">
+              <option value="">— No Exam —</option>
+              ${commonSubjects.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+            <input type="text" class="form-control form-control-sm" id="${selectId}-custom" placeholder="or type custom..." style="max-width:160px;" />
+          `;
+          dayDiv.appendChild(row);
+        });
+        container.appendChild(dayDiv);
+      }
+
+      // Switch steps
+      document.getElementById('routine-step-1').style.display = 'none';
+      document.getElementById('routine-step-2').style.display = 'block';
+      document.querySelectorAll('.step-dot').forEach(d => d.classList.remove('active'));
+      document.querySelector('.step-dot[data-step="1"]').classList.add('done');
+      document.querySelector('.step-dot[data-step="2"]').classList.add('active');
+    }
+
+    function routineGoToStep1() {
+      document.getElementById('routine-step-1').style.display = 'block';
+      document.getElementById('routine-step-2').style.display = 'none';
+      document.querySelectorAll('.step-dot').forEach(d => d.classList.remove('active', 'done'));
+      document.querySelector('.step-dot[data-step="1"]').classList.add('active');
+    }
+
+    function saveExamRoutine() {
+      const startDay = parseInt(document.getElementById('routine-start-day').value);
+      const endDay = parseInt(document.getElementById('routine-end-day').value);
+      const title = document.getElementById('routine-exam-title').value.trim() || 'Exam';
+
+      const tiers = [];
+      document.querySelectorAll('#routine-step-1 .form-check-input:checked').forEach(cb => {
+        const val = cb.value;
+        if (val === 'nursery') tiers.push({ key: 'nursery', label: 'Nursery & KG' });
+        else if (val === 'primary') tiers.push({ key: 'primary', label: 'Class 1 to 5' });
+        else if (val === 'middle') tiers.push({ key: 'middle', label: 'Class 6 to 9' });
+        else if (val === 'secondary') tiers.push({ key: 'secondary', label: 'Class 10 (S.E.E.)' });
+      });
+
+      const routines = getExamRoutines();
+      let savedCount = 0;
+
+      for (let day = startDay; day <= endDay; day++) {
+        const dateKey = '2082-05-' + String(day).padStart(2, '0');
+        const dayRoutines = [];
+        tiers.forEach(tier => {
+          const selectEl = document.getElementById(`routine-${day}-${tier.key}`);
+          const customEl = document.getElementById(`routine-${day}-${tier.key}-custom`);
+          const subject = (customEl && customEl.value.trim()) ? customEl.value.trim() : (selectEl ? selectEl.value : '');
+          if (subject) {
+            dayRoutines.push({ grades: tier.label, subject: subject });
+          }
+        });
+        if (dayRoutines.length > 0) {
+          routines[dateKey] = { examTitle: title, routines: dayRoutines };
+          savedCount++;
+        }
+      }
+      setExamRoutines(routines);
+
+      // Close modal
+      const modalEl = document.getElementById('examRoutineModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+
+      // Reset to step 1 for next use
+      routineGoToStep1();
+
+      // Re-render
+      renderOverlays();
+      showToast(`Exam routine "${title}" saved for ${savedCount} day(s)!`);
+    }
+
+    // ═══ Dynamic Overlay Renderer ═══
+    // Merges: base holidays + custom events + removed holidays + exam routines
+    // and injects chips/badges into the calendar grid cells
+    function renderOverlays() {
+      const customs = getCustomEvents();
+      const removed = getRemovedHolidays();
+      const routines = getExamRoutines();
+
+      document.querySelectorAll('.patro-calendar-grid .patro-cell:not(.other-month)').forEach(function(cell) {
+        const bsNumEl = cell.querySelector('.bs-num');
+        if (!bsNumEl) return;
+        const bsNum = bsNumEl.textContent.trim();
+        const dayNum = parseInt(toArabicNum(bsNum));
+        const dateKey = '2082-05-' + String(dayNum).padStart(2, '0');
+
+        // Remove previously injected dynamic elements
+        cell.querySelectorAll('.dynamic-overlay').forEach(el => el.remove());
+        cell.classList.remove('exam-range-highlight');
+
+        // ── Holiday override: strikethrough cancelled holidays ──
+        const existingHolidayChips = cell.querySelectorAll('.event-chip.event-holiday');
+        existingHolidayChips.forEach(chip => {
+          if (removed[dateKey]) {
+            chip.classList.add('holiday-cancelled');
+          } else {
+            chip.classList.remove('holiday-cancelled');
+          }
+        });
+
+        // Show override badge in cell
+        if (removed[dateKey] && baseCalendar[dateKey]) {
+          const badge = document.createElement('span');
+          badge.className = 'holiday-override-badge dynamic-overlay';
+          badge.innerHTML = '<i class="ti ti-school" style="font-size:0.6rem;"></i> Class On';
+          cell.querySelector('.patro-cell-top').appendChild(badge);
+        }
+
+        // ── Custom events: inject dynamic chips ──
+        if (customs[dateKey]) {
+          const eventsContainer = cell.querySelector('.cell-events') || (() => {
+            const div = document.createElement('div');
+            div.className = 'cell-events';
+            cell.appendChild(div);
+            return div;
+          })();
+          customs[dateKey].forEach(function(ev) {
+            const chip = document.createElement('span');
+            chip.className = 'event-chip event-' + ev.type + ' dynamic-overlay';
+            chip.textContent = ev.title;
+            eventsContainer.appendChild(chip);
+          });
+        }
+
+        // ── Exam routines: inject compact badge in cell ──
+        if (routines[dateKey]) {
+          cell.classList.add('exam-range-highlight');
+          const eventsContainer = cell.querySelector('.cell-events') || (() => {
+            const div = document.createElement('div');
+            div.className = 'cell-events';
+            cell.appendChild(div);
+            return div;
+          })();
+          const routineBadge = document.createElement('span');
+          routineBadge.className = 'routine-exam-badge dynamic-overlay';
+          const subjects = routines[dateKey].routines.map(r => r.subject).filter(Boolean);
+          routineBadge.innerHTML = '<i class="ti ti-clipboard-text" style="font-size:0.55rem;"></i> ' + subjects.join(' / ');
+          routineBadge.title = routines[dateKey].examTitle + ': ' + routines[dateKey].routines.map(r => r.grades + ': ' + r.subject).join(', ');
+          eventsContainer.appendChild(routineBadge);
+        }
+      });
+    }
+
+    function triggerAddEventForSelected() {
+      openAddEventModal(selectedDateBs, selectedDateDisplay);
+    }
+
+    // ═══ DOM Ready: Bootstrap cell listeners + overlay render ═══
+    document.addEventListener('DOMContentLoaded', function() {
+      // Wrap month names in ad-num elements to hide on mobile
+      document.querySelectorAll('.ad-num').forEach(function(el) {
+        const text = el.textContent.trim();
+        const parts = text.split(' ');
+        if (parts.length > 1) {
+          el.innerHTML = parts[0] + ' <span class="ad-month-name">' + parts[1] + '</span>';
+        }
+      });
+
+      // Dynamic cell listener and parsing
+      document.querySelectorAll('.patro-calendar-grid .patro-cell:not(.other-month)').forEach(function(cell) {
+        const tithiEl = cell.querySelector('.tithi-label');
+        const tithi = tithiEl ? tithiEl.textContent.trim() : '';
+        const bsNum = cell.querySelector('.bs-num').textContent.trim();
+        const dayInt = parseInt(toArabicNum(bsNum));
+        const dateBs = '2082-05-' + String(dayInt).padStart(2, '0');
+        const dateDisplay = bsNum + ' भदौ २०८२';
+
+        // Create event dots
+        function collectEvents() {
+          const events = [];
+          cell.querySelectorAll('.event-chip').forEach(function(chip) {
+            if (chip.classList.contains('holiday-cancelled')) return; // skip cancelled
+            let type = 'activity';
+            if (chip.classList.contains('event-holiday')) type = 'holiday';
+            else if (chip.classList.contains('event-exam')) type = 'exam';
+            else if (chip.classList.contains('event-notice')) type = 'notice';
+            else if (chip.classList.contains('event-grihakarya')) type = 'grihakarya';
+            events.push({ title: chip.textContent.trim(), type: type });
+          });
+          // Also include routine badge text as exam event
+          cell.querySelectorAll('.routine-exam-badge').forEach(function(rb) {
+            events.push({ title: rb.textContent.trim(), type: 'exam' });
+          });
+          return events;
+        }
+
+        // Add click event listener
+        cell.addEventListener('click', function(e) {
+          document.querySelectorAll('.patro-cell').forEach(c => c.classList.remove('selected-day'));
+          cell.classList.add('selected-day');
+          updateSelectedDayCard(dateBs, dateDisplay, tithi, collectEvents());
+          e.stopPropagation();
+        });
+      });
+
+      // Render all overlays from localStorage
+      renderOverlays();
+
+      // Select today by default
+      const todayCell = document.querySelector('.patro-cell.today');
+      if (todayCell) todayCell.click();
+    });
+</script>
+{% endblock scripts %}

@@ -1,0 +1,57 @@
+{% extends 'panel/panel-main.html' %}
+
+{% block title %}{{ active_module.label }} | Hamro Panel{% endblock title %}
+
+{% block extra_css %}
+<style>
+  .coming-soon-wrap {
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+
+  .coming-soon-badge {
+    width: 84px;
+    height: 84px;
+    margin: 0 auto 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 24px;
+  }
+
+  .coming-soon-badge i {
+    display: block;
+    font-size: 2.6rem;
+    line-height: 1;
+  }
+
+  .coming-soon-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.35rem;
+  }
+
+  .coming-soon-text {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="coming-soon-wrap">
+  <div class="coming-soon-badge bg-{{ active_module.color }}-lt text-{{ active_module.color }}">
+    <i class="ti ti-{{ active_module.icon }}"></i>
+  </div>
+  <h1 class="coming-soon-title text-{{ active_module.color }}">Coming Soon</h1>
+  <p class="coming-soon-text">
+    The <strong>{{ active_module.label }}</strong> module is on its way. We're building it now &mdash; check back soon.
+  </p>
+  <a href="{% url 'panel:index' %}" class="btn btn-primary">
+    <i class="ti ti-arrow-left me-1"></i>Back to SIMS
+  </a>
+</div>
+{% endblock content %}
