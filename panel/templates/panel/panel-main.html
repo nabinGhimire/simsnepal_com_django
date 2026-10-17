@@ -463,6 +463,9 @@
            SUB-NAVBAR  (injected by child templates)
       ═══════════════════════════════════════════ -->
     {% block navbar %}
+    {# Only the Student (panel) module shows the school-management sub-navbar. #}
+    {# Other modules render their own navbar or none. #}
+    {% if active_module.key == 'student' %}
     {% if branchuser %}
     {% if branchuser.admin_status %}
     {% include 'snippets/nav_admin.html' %}
@@ -471,6 +474,7 @@
     {% endif %}
     {% elif user.is_authenticated %}
     {% include 'snippets/nav.html' %}
+    {% endif %}
     {% endif %}
     {% endblock navbar %}
 
