@@ -27,26 +27,27 @@ DEFAULT_MODULE = PANEL_MODULES[0]
 MODULES_BY_PREFIX = sorted(PANEL_MODULES, key=lambda m: len(m['prefix']), reverse=True)
 
 
+def get_module_url(module):
+    """Resolve a module's `url_name` to a link ('#' when it is not wired yet)."""
+    if not module['url_name']:
+        return '#'
+    try:
+        return reverse(module['url_name'])
+    except NoReverseMatch:
+        return '#'
+
+
 def get_active_module(path):
     """Resolve the active app from the request path (falls back to Student/SIMS)."""
     for module in MODULES_BY_PREFIX:
         if path.startswith(module['prefix']):
-            return module
-    return DEFAULT_MODULE
+            return {**module, 'url': get_module_url(module)}
+    return {**DEFAULT_MODULE, 'url': get_module_url(DEFAULT_MODULE)}
 
 
 def get_panel_modules():
     """Return PANEL_MODULES with each tile's resolved `url` link."""
-    modules = []
-    for module in PANEL_MODULES:
-        url = '#'
-        if module['url_name']:
-            try:
-                url = reverse(module['url_name'])
-            except NoReverseMatch:
-                url = '#'
-        modules.append({**module, 'url': url})
-    return modules
+    return [{**module, 'url': get_module_url(module)} for module in PANEL_MODULES]
 
 
 def nav_context(request):
