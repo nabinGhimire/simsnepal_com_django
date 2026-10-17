@@ -177,7 +177,7 @@
 
           <!-- Search -->
           <div class="nav-item d-none d-md-flex me-3">
-            <form role="search" class="nabsearch-form" action="/panel/search/">
+            <form id="global-search-form" role="search" class="nabsearch-form" action="/panel/search/">
               <div class="input-group">
                 <input type="text" class="form-control" name="q" placeholder="Search…" aria-label="Search">
                 <button type="submit" class="btn input-group-text">
@@ -307,6 +307,20 @@
                             </svg>
                           </span>
                           <span class="h5">Vacancy</span>
+                        </a>
+                      </div>
+                      <div class="col-4">
+                        <a href="{% url 'attendance:dashboard' %}"
+                          class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
+                          <span class="avatar bg-purple-lt mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon text-purple">
+                              <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" />
+                              <rect x="9" y="3" width="6" height="4" rx="2" />
+                              <path d="M9 14l2 2l4 -4" />
+                            </svg>
+                          </span>
+                          <span class="h5">Attendance</span>
                         </a>
                       </div>
                     </div>
@@ -493,6 +507,14 @@
   <script src="{% static 'tabler/js/tabler.min.js' %}"></script>
 
   {% block scripts %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var form = document.getElementById('global-search-form');
+      if (form && window.location.pathname.indexOf('/attendance/') === 0) {
+        form.action = '/attendance/student-search/';
+      }
+    });
+  </script>
   {% endblock scripts %}
 
   <!-- Message History Modal -->

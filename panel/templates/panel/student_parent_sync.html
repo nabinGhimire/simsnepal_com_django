@@ -1,0 +1,131 @@
+{% extends 'panel/base.html' %}
+{% load static %}
+
+{% block title %}Student‑Parent Groups Sync{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+/* Dark‑mode gradient background */
+body { background: linear-gradient(135deg, hsl(210,30%,12%), hsl(210,30%,16%)); color: #e0e0e0; }
+.table-hover tbody tr:hover { background-color: rgba(255,255,255,0.05); }
+.modal-bg { background: rgba(0,0,0,0.8); position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal { background: hsl(210,30%,22%); border-radius: 8px; max-width: 500px; width: 90%; padding: 1.5rem; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.modal-header h5 { margin: 0; color: #fff; }
+.modal-body textarea { width: 100%; height: 120px; background: hsl(210,30%,18%); border: 1px solid hsl(210,30%,30%); color: #fff; border-radius: 4px; padding: .5rem; }
+.modal-footer { display: flex; justify-content: flex-end; margin-top: 1rem; }
+.btn-primary { background: hsl(200,70%,45%); border: none; }
+.btn-primary:hover { background: hsl(200,70%,50%); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Student‑Parent Groups</h2>
+  {% if group_page.object_list %}
+  <table class="table table-dark table-hover">
+    <thead>
+      <tr>
+        <th>Group Name</th>
+        <th>Student</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for spg in group_page.object_list %}
+      <tr>
+        <td>{{ spg.group.name }}</td>
+        <td>{{ spg.student.reg_no }} – {{ spg.student.name }}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" data-group-id="{{ spg.group.id }}" data-group-name="{{ spg.group.name }}" onclick="openMessageModal(this)"><i class="fa-solid fa-paper-plane"></i> Message</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+      {% if group_page.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ group_page.previous_page_number }}">Previous</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Previous</span></li>
+      {% endif %}
+      {% for num in group_page.paginator.page_range %}
+        {% if num == group_page.number %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num > group_page.number|add:'-3' and num < group_page.number|add:'3' %}
+        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+      {% if group_page.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ group_page.next_page_number }}">Next</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Next</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% else %}
+    <p>No student‑parent groups found.</p>
+  {% endif %}
+</div>
+
+<!-- Modal -->
+<div id="messageModal" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h5>Send Message to <span id="modalGroupName"></span></h5>
+      <button type="button" class="btn-close" aria-label="Close" onclick="closeMessageModal()"></button>
+    </div>
+    <div class="modal-body">
+      <textarea id="modalMessage" placeholder="Type your message …"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeMessageModal()">Cancel</button>
+      <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+let currentGroupId = null;
+function openMessageModal(btn) {
+  currentGroupId = btn.getAttribute('data-group-id');
+  document.getElementById('modalGroupName').textContent = btn.getAttribute('data-group-name');
+  document.getElementById('modalMessage').value = '';
+  document.getElementById('messageModal').style.display = 'flex';
+}
+function closeMessageModal() { document.getElementById('messageModal').style.display = 'none'; }
+function sendMessage() {
+  const body = new URLSearchParams();
+  body.append('message_body', document.getElementById('modalMessage').value);
+  fetch(`/panel/send_group_message/${currentGroupId}/`, {
+    method: 'POST',
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRFToken': getCookie('csrftoken'),
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: body
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert('Message sent successfully');
+    } else {
+      alert('Error: ' + (data.error || 'unknown'));
+    }
+    closeMessageModal();
+  })
+  .catch(err => { alert('Request failed'); console.error(err); });
+}
+</script>
+{% endblock %}
