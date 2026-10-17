@@ -1113,7 +1113,8 @@ def index(request):
         "branchuser": branchuser,
         "school": schoolbranch,
         "total_grades": total_grades,
-        "show_migration_card": branchuser.admin_status and not schoolbranch.migration_completed,
+        "migration_target_year": str(this_year),
+        "show_migration_card": branchuser.admin_status and schoolbranch.migration_completed_session != str(this_year),
     }
     return render(request, "panel/index.html", context)
 
@@ -10046,15 +10047,16 @@ def set_migration_status(request):
         messages.error(request, "Only administrators can update the migration status.")
         return redirect("panel:index")
 
+    target_year = str(this_year)
     completed = request.POST.get("completed") == "true"
     school = branchuser.school
-    school.migration_completed = completed
-    school.save(update_fields=["migration_completed"])
+    school.migration_completed_session = target_year if completed else ""
+    school.save(update_fields=["migration_completed_session"])
 
     if completed:
-        messages.success(request, "Session migration marked as complete. The dashboard card is now hidden.")
+        messages.success(request, f"Session migration to {target_year} marked as complete. The dashboard card is now hidden.")
     else:
-        messages.info(request, "Session migration reopened. The dashboard card is visible again.")
+        messages.info(request, f"Session migration to {target_year} reopened. The dashboard card is visible again.")
 
     referer = request.META.get("HTTP_REFERER")
     if referer:
@@ -10159,7 +10161,7 @@ def migration(request):
 
 
 
-    context = {'user':user, 'grade_level':grade_level, 'school_branch':school_branch, 'grades':grades, 'branchuser':branchuser, 'students_dict': studentsDict, 'students': students, 'section_list':section_list, 'this_grade': this_grade, 'gradelevel': gradelevel}
+    context = {'user':user, 'grade_level':grade_level, 'school_branch':school_branch, 'grades':grades, 'branchuser':branchuser, 'students_dict': studentsDict, 'students': students, 'section_list':section_list, 'this_grade': this_grade, 'gradelevel': gradelevel, 'migration_target_year': str(this_year)}
     return render(request, "panel/migration.html", context) 
 
 

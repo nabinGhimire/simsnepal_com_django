@@ -117,9 +117,9 @@ class SchoolBranch(models.Model):
     teachers_as_channel = models.BooleanField(default=False, help_text="Teachers group as channel (broadcast) instead of group (discussion)")
     class_groups_as_channel = models.BooleanField(default=False, help_text="Class/section groups as channel (broadcast) instead of group (discussion)")
 
-    # Set by an admin once students have been migrated to the upcoming session;
-    # hides the "Session Migration" card on the dashboard until reopened.
-    migration_completed = models.BooleanField(default=False, help_text="Admin has finished migrating students to the upcoming session")
+    # Year (EduSession.year) of the session this school has finished migrating students into.
+    # The dashboard "Session Migration" card is hidden while it matches the upcoming session.
+    migration_completed_session = models.CharField(max_length=4, blank=True, default="", help_text="EduSession year the school has finished migrating students into")
 
     def __str__(self):
         name_location = str(self.name) + ',' + str(self.location)
