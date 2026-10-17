@@ -72,6 +72,7 @@ urlpatterns = [
     path("settings/grades/", views.manage_grades, name="manage_grades"),
     path("settings/switch-session/", views.switch_session, name="switch_session"),
     path("settings/standard-subjects/", views.manage_standard_subjects, name="manage_standard_subjects"),
+    path("settings/modules/", views.manage_modules, name="manage_modules"),
     path('settings/platform/', views.platform_setting_view, name='platform_setting'),
     path('settings/platform/sync/', views.sync_platform_view, name='sync_platform'),
     path('settings/platform/sync/async/', views.sync_platform_async, name='sync_platform_async'),

@@ -74,6 +74,8 @@ from datetime import datetime
 from io import BytesIO
 from random import randint
 
+import nepali_datetime
+
 # Third-party
 import requests
 
@@ -96,7 +98,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseForbidden
 from .forms import PlatformSettingForm
-from sms.models import SchoolBranch, BranchUser, Teacher, Group, StudentSession, Student, Section, GroupMembership, SchoolGrade, GradeLevel, EduSession, SchoolTerm, PlatformSetting, StudentProfile, StudentHealthRecord, STUDENT_LANGUAGE_CHOICES
+from sms.models import SchoolBranch, BranchUser, Teacher, Group, StudentSession, Student, Section, GroupMembership, SchoolGrade, GradeLevel, EduSession, SchoolTerm, PlatformSetting, StudentProfile, StudentHealthRecord, SchoolModuleSubscription, STUDENT_LANGUAGE_CHOICES
+from .context_processors import PANEL_MODULES, CORE_MODULE_KEYS, get_module_url
 from sms.hamro import ensure_channel, ensure_group, add_user_to_group, user_exists_in_hamro, send_message_to_thread
 from django.contrib import messages
 
@@ -10062,6 +10065,92 @@ def set_migration_status(request):
     if referer:
         return redirect(referer)
     return redirect("panel:index")
+
+
+def _default_expiry():
+    """Default subscription expiry: one BS year from today."""
+    today = nepali_datetime.date.today()
+    for day in range(today.day, 0, -1):
+        try:
+            return today.replace(year=today.year + 1, day=day)
+        except ValueError:
+            continue
+    return today.replace(year=today.year + 1, day=1)
+
+
+def _parse_bs_date(value):
+    """Parse a BS date string (YYYY-MM-DD) into a nepali_datetime.date, or None."""
+    if not value:
+        return None
+    try:
+        year, month, day = (int(part) for part in value.split("-"))
+        return nepali_datetime.date(year, month, day)
+    except (ValueError, TypeError):
+        return None
+
+
+@login_required
+def manage_modules(request):
+    """View and subscribe the school's modules.
+
+    A subscribed module shows its start and expiry dates and offers no
+    resubscribe/unsubscribe control — it can only be changed at the next
+    billing. Modules the school is not subscribed to show a Subscribe action.
+    """
+    branchuser, error = get_branch_info(request.user)
+    if error:
+        messages.error(request, error)
+        return redirect("panel:index")
+
+    school = branchuser.school
+    editable_keys = {m["key"] for m in PANEL_MODULES} - CORE_MODULE_KEYS
+
+    if request.method == "POST":
+        if not branchuser.admin_status:
+            messages.error(request, "Only administrators can manage module subscriptions.")
+            return redirect("panel:manage_modules")
+
+        module_key = request.POST.get("module_key")
+        if request.POST.get("action") == "subscribe" and module_key in editable_keys:
+            today = nepali_datetime.date.today()
+            expires_on = _parse_bs_date(request.POST.get("expires_on")) or _default_expiry()
+            subscription, created = SchoolModuleSubscription.objects.get_or_create(
+                school=school,
+                module_key=module_key,
+                defaults={"active": True, "starts_on": today, "expires_on": expires_on},
+            )
+            if not created:
+                subscription.active = True
+                subscription.starts_on = today
+                subscription.expires_on = expires_on
+                subscription.save(update_fields=["active", "starts_on", "expires_on", "updated_at"])
+            messages.success(request, "Module subscribed.")
+        return redirect("panel:manage_modules")
+
+    subscriptions = {s.module_key: s for s in SchoolModuleSubscription.objects.filter(school=school)}
+    modules = []
+    for module in PANEL_MODULES:
+        subscription = subscriptions.get(module["key"])
+        is_core = module["key"] in CORE_MODULE_KEYS
+        modules.append(
+            {
+                **module,
+                "url": get_module_url(module),
+                "is_core": is_core,
+                "active": is_core or (subscription is not None and subscription.active),
+                "starts_on": subscription.starts_on if subscription else None,
+                "expires_on": subscription.expires_on if subscription else None,
+                "default_expiry": _default_expiry(),
+            }
+        )
+
+    context = {
+        "branchuser": branchuser,
+        "school": school,
+        "modules": modules,
+        "is_admin": branchuser.admin_status,
+    }
+    return render(request, "panel/manage_modules.html", context)
 
 
 @login_required

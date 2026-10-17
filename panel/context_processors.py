@@ -3,7 +3,7 @@ Context processor to auto-inject navigation data (grade levels, grades, branchus
 into every template. This ensures the Tabler navbar with grade menus renders
 on all pages — including print pages that previously had no nav.
 """
-from sms.models import BranchUser, GradeLevel, SchoolGrade, EduSession
+from sms.models import BranchUser, GradeLevel, SchoolGrade, EduSession, SchoolModuleSubscription
 from django.urls import NoReverseMatch, reverse
 import time
 
@@ -22,6 +22,9 @@ PANEL_MODULES = [
 ]
 
 DEFAULT_MODULE = PANEL_MODULES[0]
+
+# Modules every school always has, regardless of subscription (cannot be unsubscribed).
+CORE_MODULE_KEYS = {'student'}
 
 # Match longer prefixes first so e.g. /panel/calendar/ wins over /panel/.
 MODULES_BY_PREFIX = sorted(PANEL_MODULES, key=lambda m: len(m['prefix']), reverse=True)
@@ -50,6 +53,28 @@ def get_panel_modules():
     return [{**module, 'url': get_module_url(module)} for module in PANEL_MODULES]
 
 
+def get_school_modules(school):
+    """Return the modules visible in a school's "My Apps" switcher.
+
+    Core modules (see CORE_MODULE_KEYS) are always included; every other module
+    must have an active SchoolModuleSubscription row for the school. When no
+    school is available, all modules are returned.
+    """
+    if school is None:
+        return get_panel_modules()
+
+    active_keys = set(
+        SchoolModuleSubscription.objects
+        .filter(school=school, active=True)
+        .values_list('module_key', flat=True)
+    )
+    return [
+        {**module, 'url': get_module_url(module), 'is_core': module['key'] in CORE_MODULE_KEYS}
+        for module in PANEL_MODULES
+        if module['key'] in CORE_MODULE_KEYS or module['key'] in active_keys
+    ]
+
+
 def nav_context(request):
     """Return grade_level, grades, branchuser, school, current_session, and all_sessions."""
     context = {
@@ -66,6 +91,8 @@ def nav_context(request):
         return context
 
     school = branchuser.school
+    # Only show modules the school is subscribed to (plus core modules).
+    context['panel_modules'] = get_school_modules(school)
     grade_level = GradeLevel.objects.filter(schoolgrade__school=school, schoolgrade__active=True).distinct().order_by('id')
     grades = SchoolGrade.objects.filter(school=school, active=True).order_by('grade_weight')
 

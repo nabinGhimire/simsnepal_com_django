@@ -126,6 +126,32 @@ class SchoolBranch(models.Model):
         return name_location
 
 
+class SchoolModuleSubscription(models.Model):
+    """Per-school subscription to a SIMS module.
+
+    ``module_key`` matches a key in ``panel.context_processors.PANEL_MODULES``.
+    A module only appears in the school's "My Apps" switcher when a row exists
+    with ``active=True``.
+
+    A subscription runs from ``starts_on`` to ``expires_on``. While it is active
+    no resubscribe/unsubscribe control is offered — it can only be changed at the
+    next billing (i.e. once it expires).
+    """
+    school = models.ForeignKey(SchoolBranch, on_delete=models.CASCADE, related_name='module_subscriptions')
+    module_key = models.CharField(max_length=50)
+    active = models.BooleanField(default=True)
+    starts_on = NepaliDateField(null=True, blank=True)
+    expires_on = NepaliDateField(null=True, blank=True)
+    subscribed_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = (('school', 'module_key'),)
+
+    def __str__(self):
+        return f"{self.school_id}:{self.module_key}"
+
+
 class GradeLevel(models.Model):
     name = models.CharField(max_length=200)
 
