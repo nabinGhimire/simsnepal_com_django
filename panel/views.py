@@ -96,7 +96,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseForbidden
 from .forms import PlatformSettingForm
-from sms.models import SchoolBranch, BranchUser, Teacher, Group, StudentSession, Student, Section, GroupMembership, SchoolGrade, GradeLevel, EduSession, SchoolTerm, PlatformSetting
+from sms.models import SchoolBranch, BranchUser, Teacher, Group, StudentSession, Student, Section, GroupMembership, SchoolGrade, GradeLevel, EduSession, SchoolTerm, PlatformSetting, StudentProfile, StudentHealthRecord, STUDENT_LANGUAGE_CHOICES
 from sms.hamro import ensure_channel, ensure_group, add_user_to_group, user_exists_in_hamro, send_message_to_thread
 from django.contrib import messages
 
@@ -1407,6 +1407,8 @@ def listgradeitems(request, gradelevel):
         "list_student": list_student,
         "school": schoolbranch,
         "parent_exists": parent_exists,
+        "language_choices": STUDENT_LANGUAGE_CHOICES,
+        "is_ece_grade": is_ece_grade(gradelevel.grade_name),
     }
     return render(request, "panel/listgradeitems.html", context)
 
@@ -1516,6 +1518,100 @@ def addteacher(request):
         return HttpResponse(
             'Sorry! Something went wrong. Click <a href="/">Here</a> to go the homepage.'
         )
+
+
+def is_ece_grade(grade_name):
+    """True when the admission grade is Nursery or Class 1 (early childhood)."""
+    name = (grade_name or "").strip().lower()
+    return name in {"nursery", "1", "one", "class 1", "class one", "lkg", "ukg"}
+
+
+def parse_student_profile(request, grade_name=""):
+    """Collect the extra StudentProfile fields from POST.
+
+    ``has_experience`` is a single checkbox whose stored ``experience_type`` depends
+    on the admission grade (ECE for Nursery/Class 1, otherwise another institution).
+    """
+    has_experience = request.POST.get("has_experience") in ("on", "true", "True", "1")
+    experience_type = ""
+    if has_experience:
+        experience_type = "ece" if is_ece_grade(grade_name) else "other_institution"
+
+    return {
+        "mother_tongue": (request.POST.get("mother_tongue") or "").strip() or None,
+        "other_languages": request.POST.getlist("other_languages"),
+        "experience_type": experience_type,
+        "experience_details": (request.POST.get("experience_details") or "").strip() or None,
+        "special_disease": (request.POST.get("special_disease") or "").strip() or None,
+        "disability_details": (request.POST.get("disability_details") or "").strip() or None,
+        "other_details": (request.POST.get("other_details") or "").strip() or None,
+    }
+
+
+def save_student_profile(student, request, grade_name=""):
+    """Create or update the extra profile (languages, experience, health notes)."""
+    data = parse_student_profile(request, grade_name)
+    StudentProfile.objects.update_or_create(student=student, defaults=data)
+
+
+def parse_health_rows(request):
+    """Parse repeatable health rows (health_date[], health_weight[], health_height[], health_response[]).
+
+    Returns ``(rows, error)``. Each non-empty row requires a BS date plus weight and
+    height; fully empty rows are ignored.
+    """
+    import nepali_datetime
+
+    dates = request.POST.getlist("health_date")
+    weights = request.POST.getlist("health_weight")
+    heights = request.POST.getlist("health_height")
+    responses = request.POST.getlist("health_response")
+
+    rows = []
+    total = max(len(dates), len(weights), len(heights), len(responses))
+    for i in range(total):
+        d = (dates[i] if i < len(dates) else "").strip()
+        w = (weights[i] if i < len(weights) else "").strip()
+        h = (heights[i] if i < len(heights) else "").strip()
+        r = (responses[i] if i < len(responses) else "").strip()
+        if not (d or w or h or r):
+            continue
+        if not (d and w and h):
+            return [], "Each health record needs a date, weight and height."
+        try:
+            parts = d.replace("/", "-").split("-")
+            bs_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
+        except (ValueError, TypeError, IndexError):
+            return [], f'Invalid health date "{d}". Use the Nepali date picker (YYYY-MM-DD BS).'
+        try:
+            rows.append({
+                "date": bs_date,
+                "weight_kg": float(w),
+                "height_cm": float(h),
+                "response": r or None,
+            })
+        except ValueError:
+            return [], "Weight and height must be numbers."
+    return rows, None
+
+
+def student_profile_context(student, student_session):
+    """Context used by the edit form for languages / experience / health."""
+    profile = getattr(student, "profile", None)
+    grade_name = student_session.grade.grade_name if student_session else ""
+    if profile is not None and profile.experience_type:
+        is_ece = profile.experience_type == "ece"
+    else:
+        is_ece = is_ece_grade(grade_name)
+    return {
+        "student_profile": profile,
+        "health_records": StudentHealthRecord.objects.filter(student=student),
+        "language_choices": STUDENT_LANGUAGE_CHOICES,
+        "has_experience": bool(profile is not None and profile.experience_type),
+        "experience_prompt": (
+            "early childhood development and education" if is_ece else "other institutions"
+        ),
+    }
 
 
 @login_required
@@ -1643,6 +1739,20 @@ def addstudent(request):
             if avatar:
                 student_session.avatar = avatar
                 student_session.save()
+
+            # Save extra profile (languages, experience, health notes)
+            save_student_profile(student, request, grade_obj.grade_name)
+
+            # Save optional health measurements
+            health_rows, health_error = parse_health_rows(request)
+            if health_error:
+                messages.warning(request, health_error)
+            for row in health_rows:
+                StudentHealthRecord.objects.create(
+                    student=student,
+                    session=get_current_session(),
+                    **row,
+                )
 
             messages.success(request, f"Student {student.name} added successfully.")
         except IntegrityError as e:
@@ -1906,10 +2016,13 @@ def student_detail(request, grade=False, section=False):
             query &= Q(section=this_section)
         
         student_in_session = StudentSession.objects.filter(query).select_related(
-            'student', 'grade', 'section'
-        ).order_by('section', 'roll_no', 'student')
+            'student', 'student__profile', 'grade', 'section'
+        ).prefetch_related('student__health_records').order_by('section', 'roll_no', 'student')
 
         for sis in student_in_session:
+            profile = getattr(sis.student, 'profile', None)
+            records = list(sis.student.health_records.all())
+            latest_health = records[0] if records else None
             students[sis.student.reg_no] = {
                 'reg_no': sis.student.reg_no,
                 'iemis': sis.student.iemis or '',
@@ -1931,6 +2044,12 @@ def student_detail(request, grade=False, section=False):
                 'house': sis.student.house.name if sis.student.house else '',
                 'temporary_address': sis.student.temporary_address,
                 'permanent_address': sis.student.permanent_address,
+                'mother_tongue': profile.mother_tongue if profile else '',
+                'other_languages': ', '.join(profile.other_languages) if profile and profile.other_languages else '',
+                'weight_kg': latest_health.weight_kg if latest_health else '',
+                'height_cm': latest_health.height_cm if latest_health else '',
+                'health_summary': f"{latest_health.weight_kg} / {latest_health.height_cm}" if latest_health else '',
+                'special_disease': profile.special_disease if profile else '',
                 'student_info': sis.student,
             }
 
@@ -1965,7 +2084,8 @@ def student_detail(request, grade=False, section=False):
             'DOB', 'Gender', 'Temp Address', 'Perm Address',
             "Father's Name", "Father's Phone", "Father's Email",
             "Mother's Name", "Mother's Phone", "Mother's Email",
-            "Guardian's Name", "Guardian's Phone", "Guardian's Email"
+            "Guardian's Name", "Guardian's Phone", "Guardian's Email",
+            'Mother Tongue', 'Other Languages', 'Weight (Kg)', 'Height (CM)', 'Special Disease'
         ])
         for s in students.values():
             writer.writerow([
@@ -1976,7 +2096,9 @@ def student_detail(request, grade=False, section=False):
                 s.get('temporary_address'), s.get('permanent_address'),
                 s.get('fathers_name'), s.get('fathers_phone'), s.get('fathers_email'),
                 s.get('mothers_name'), s.get('mothers_phone'), s.get('mothers_email'),
-                s.get('guardian_name'), s.get('guardian_phone'), s.get('guardian_email')
+                s.get('guardian_name'), s.get('guardian_phone'), s.get('guardian_email'),
+                s.get('mother_tongue', ''), s.get('other_languages', ''),
+                s.get('weight_kg', ''), s.get('height_cm', ''), s.get('special_disease', '')
             ])
         return response
     elif export_type == 'xlsx':
@@ -2007,7 +2129,8 @@ def student_detail(request, grade=False, section=False):
             'DOB', 'Gender', 'Temp Address', 'Perm Address',
             "Father's Name", "Father's Phone", "Father's Email",
             "Mother's Name", "Mother's Phone", "Mother's Email",
-            "Guardian's Name", "Guardian's Phone", "Guardian's Email"
+            "Guardian's Name", "Guardian's Phone", "Guardian's Email",
+            'Mother Tongue', 'Other Languages', 'Weight (Kg)', 'Height (CM)', 'Special Disease'
         ]
         ws.append(headers)
 
@@ -2021,7 +2144,9 @@ def student_detail(request, grade=False, section=False):
                 s.get('temporary_address'), s.get('permanent_address'),
                 s.get('fathers_name'), s.get('fathers_phone'), s.get('fathers_email'),
                 s.get('mothers_name'), s.get('mothers_phone'), s.get('mothers_email'),
-                s.get('guardian_name'), s.get('guardian_phone'), s.get('guardian_email')
+                s.get('guardian_name'), s.get('guardian_phone'), s.get('guardian_email'),
+                s.get('mother_tongue', ''), s.get('other_languages', ''),
+                s.get('weight_kg', ''), s.get('height_cm', ''), s.get('special_disease', '')
             ])
         output = io.BytesIO()
         wb.save(output)
@@ -2811,7 +2936,7 @@ def edgradeitems(request, gradelevel):
             if getattr(s, "guardian_email", None):
                 emails_to_check.add(s.guardian_email)
                 
-        batch_results = lookup_hamro_users_batch(emails=list(emails_to_check), phones=list(phones_to_check), school=schoolbranch)
+        batch_results = [] #lookup_hamro_users_batch(emails=list(emails_to_check), phones=list(phones_to_check), school=schoolbranch)
         
         for s_sess in students:
             s = s_sess.student
@@ -2870,7 +2995,9 @@ def edgradeitems(request, gradelevel):
         "houses": houses,
         "assign_section": assign_section,
         "this_section": this_section,
-        "parent_exists": parent_exists
+        "parent_exists": parent_exists,
+        "language_choices": STUDENT_LANGUAGE_CHOICES,
+        "is_ece_grade": is_ece_grade(this_grade.grade_name),
     }
     return render(request, "panel/listgradeitems.html", context)
 
@@ -7265,15 +7392,33 @@ def edit_student(request, regno):
                     mes = 'Sorry! something went wrong. Click <a href="/panel/">Here</a> to go the panel.'+ err
                     return HttpResponse(mes)
 
+                # Save extra profile (languages, experience, health notes)
+                grade_name = student_session.grade.grade_name if student_session else ''
+                save_student_profile(student, request, grade_name)
+
+                # Delete existing health records marked for removal
+                for record in StudentHealthRecord.objects.filter(student=student):
+                    if request.POST.get('delete_health_' + str(record.id)) == 'on':
+                        record.delete()
+
+                # Add new health measurements
+                health_rows, health_error = parse_health_rows(request)
+                if health_error:
+                    messages.warning(request, health_error)
+                for row in health_rows:
+                    StudentHealthRecord.objects.create(student=student, session=current_session, **row)
+
                 success = True
                 student = Student.objects.get(reg_no=regno)
                 message = 'Details of Student ' + student.name + ' has been updated.'
 
                 context = {'student': student, 'student_session': student_session, 'message': message, 'success': success}
+                context.update(student_profile_context(student, student_session))
                 return render(request, 'panel/editstudent_byreg_no.html', context)
 
             else:
                 context = {'student': student, 'student_session': student_session}
+                context.update(student_profile_context(student, student_session))
                 return render(request, 'panel/editstudent_byreg_no.html', context)
         else:
             return HttpResponse(

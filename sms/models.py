@@ -657,3 +657,74 @@ class GroupMembershipCache(models.Model):
         return f"{self.group.name} - {self.platform_user_id} ({self.role})"
 
 
+# Predefined languages offered in the "other languages" multi-select of the student form
+STUDENT_LANGUAGE_CHOICES = [
+    'Nepali',
+    'Maithili',
+    'Bhojpuri',
+    'Awadhi',
+    'Tharu',
+    'Newari (Nepal Bhasa)',
+    'Tamang',
+    'Gurung',
+    'Magar',
+    'Sherpa',
+    'Rai',
+    'Limbu',
+    'Doteli',
+    'English',
+    'Hindi',
+    'Urdu',
+    'Other',
+]
+
+
+class StudentProfile(models.Model):
+    """Extra student information: languages, previous experience and health notes."""
+    EXPERIENCE_TYPE_CHOICES = [
+        ('', 'None'),
+        ('ece', 'Early Childhood Development & Education'),
+        ('other_institution', 'Other Institution'),
+    ]
+
+    student = models.OneToOneField(Student, to_field='reg_no', on_delete=models.CASCADE, related_name='profile')
+
+    mother_tongue = models.CharField(max_length=100, blank=True, null=True)
+    other_languages = models.JSONField(default=list, blank=True)
+
+    experience_type = models.CharField(max_length=30, choices=EXPERIENCE_TYPE_CHOICES, blank=True, default='')
+    experience_details = models.TextField(blank=True, null=True)
+
+    special_disease = models.TextField(blank=True, null=True)
+    disability_details = models.TextField(blank=True, null=True)
+    other_details = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Profile of {self.student.name}"
+
+    @property
+    def experience_label(self):
+        return dict(self.EXPERIENCE_TYPE_CHOICES).get(self.experience_type, '')
+
+
+class StudentHealthRecord(models.Model):
+    """A single weight/height measurement for a student (repeatable across years/dates)."""
+    student = models.ForeignKey(Student, to_field='reg_no', on_delete=models.CASCADE, related_name='health_records')
+    session = models.ForeignKey(EduSession, on_delete=models.SET_NULL, blank=True, null=True)
+    date = NepaliDateField()
+    weight_kg = models.DecimalField(max_digits=5, decimal_places=2)
+    height_cm = models.DecimalField(max_digits=5, decimal_places=2)
+    response = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.student.name} - {self.date} ({self.weight_kg}kg / {self.height_cm}cm)"
+
+

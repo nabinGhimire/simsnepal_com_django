@@ -57,6 +57,10 @@
             <th>Guardian Name</th>
             <th>Guardian Phone</th>
             <th>Guardian Email</th>
+            <th>Mother Tongue</th>
+            <th>Other Languages</th>
+            <th>Weight / Height</th>
+            <th>Special Disease</th>
           </tr>
         </thead>
         <tbody>
@@ -83,6 +87,10 @@
             <td><small>{{ student.guardian_name|default:"" }}</small></td>
             <td><small>{{ student.guardian_phone|default:"" }}</small></td>
             <td><small>{{ student.guardian_email|default:"" }}</small></td>
+            <td><small>{{ student.mother_tongue|default:"" }}</small></td>
+            <td><small>{{ student.other_languages|default:"" }}</small></td>
+            <td><small>{{ student.health_summary|default:"" }}</small></td>
+            <td><small>{{ student.special_disease|default:"" }}</small></td>
           </tr>
           {% endfor %}
         </tbody>
@@ -115,6 +123,10 @@
             <th rowspan="3">Father</th>
             <th rowspan="3">Mother</th>
             <th rowspan="3">Guardian</th>
+            <th rowspan="3">Mother Tongue</th>
+            <th rowspan="3">Other Languages</th>
+            <th rowspan="3">Weight / Height</th>
+            <th rowspan="3">Special Disease</th>
           </tr>
           <!-- <tr>
             <th>Temporary</th>
@@ -145,6 +157,10 @@
             <td>{{ student.fathers_name }}</td>
             <td>{{ student.mothers_name }}</td>
             <td>{{ student.guardian_name }}</td>
+            <td rowspan="3">{{ student.mother_tongue|default:"" }}</td>
+            <td rowspan="3">{{ student.other_languages|default:"" }}</td>
+            <td rowspan="3">{{ student.health_summary|default:"" }}</td>
+            <td rowspan="3">{{ student.special_disease|default:"" }}</td>
           </tr>
           <tr>
             <th>Phone</th>
