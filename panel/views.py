@@ -2947,7 +2947,7 @@ def edgradeitems(request, gradelevel):
             if getattr(s, "guardian_email", None):
                 emails_to_check.add(s.guardian_email)
                 
-        batch_results = [] #lookup_hamro_users_batch(emails=list(emails_to_check), phones=list(phones_to_check), school=schoolbranch)
+        batch_results = lookup_hamro_users_batch(emails=list(emails_to_check), phones=list(phones_to_check), school=schoolbranch)
         
         for s_sess in students:
             s = s_sess.student
@@ -5413,7 +5413,19 @@ def search(request):
 
     data = request.GET.get("q")
     # print(data)
-    if data.isdigit():
+    if data.isdigit() and len(data) == 10 and data.startswith("9"):
+        # 10-digit number starting with 9 is a phone number - search parent info
+        students = (
+            StudentSession.objects.all().filter(
+                Q(student__fathers_phone__contains=data)
+                | Q(student__mothers_phone__contains=data)
+                | Q(student__guardian_phone__contains=data),
+                session=this_session,
+                student__school=schoolbranch,
+                status=True,
+            ).order_by("student")
+        )
+    elif data.isdigit():
         # print('True')
         # exam_years = Examyears.objects.all().order_by('-id')
         # exam_types = Examtypes.objects.all()
