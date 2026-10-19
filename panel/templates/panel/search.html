@@ -40,7 +40,7 @@
         <div class="col-md-8 col-lg-6">
             <form action="/panel/search/" method="GET">
                 <div class="input-group input-group-flat">
-                    <input type="text" class="form-control" value="{{ data }}" name="q" placeholder="Enter registration number, name or phone number..." autocomplete="off">
+                    <input type="text" class="form-control" value="{{ data }}" name="q" placeholder="Enter registration number, name, phone or email..." autocomplete="off">
                     <span class="input-group-text">
                         <button type="submit" class="btn btn-link link-secondary p-0" title="Search">
                             <i class="ti ti-search"></i>
@@ -70,6 +70,7 @@
                                 <th>Roll No</th>
                                 <th>Name</th>
                                 <th>Registration No</th>
+                                <th>Parent Match</th>
                                 <th>Code</th>
                                 <th class="w-1">Action</th>
                             </tr>
@@ -92,6 +93,15 @@
                                 <td class="text-secondary">{{ student.roll_no }}</td>
                                 <td class="fw-bold">{{ student.student.name }}</td>
                                 <td class="text-muted">{{ student.student.reg_no }}</td>
+                                <td>
+                                    {% with match=parent_match|get_item:student.student.reg_no %}
+                                    {% if match %}
+                                    <span class="badge bg-purple-lt">{{ match.relation }}</span>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                    {% endwith %}
+                                </td>
                                 <td class="text-muted">{{ student.student.pin_code }}</td>
                                 <td>
                                     <div class="btn-list flex-nowrap">
@@ -115,7 +125,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
+                                <td colspan="7" class="text-center py-4 text-muted">
                                     <i class="ti ti-alert-circle mb-2 d-block" style="font-size: 2rem;"></i>
                                     No students found matching your search.
                                 </td>

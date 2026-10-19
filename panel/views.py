@@ -5411,9 +5411,13 @@ def search(request):
             school=school, session=this_session
         )
 
-    data = request.GET.get("q")
+    data = request.GET.get("q", "").strip()
     # print(data)
-    if data.isdigit() and len(data) == 10 and data.startswith("9"):
+    is_phone = data.isdigit() and len(data) == 10 and data.startswith("9")
+    is_email = "@" in data
+    parent_match = {}
+
+    if is_phone:
         # 10-digit number starting with 9 is a phone number - search parent info
         students = (
             StudentSession.objects.all().filter(
@@ -5425,6 +5429,39 @@ def search(request):
                 status=True,
             ).order_by("student")
         )
+        for s_sess in students:
+            s = s_sess.student
+            relation = None
+            if s.fathers_phone and data in str(s.fathers_phone):
+                relation = "Father"
+            elif s.mothers_phone and data in str(s.mothers_phone):
+                relation = "Mother"
+            elif s.guardian_phone and data in str(s.guardian_phone):
+                relation = "Guardian"
+            if relation:
+                parent_match[s.reg_no] = {"relation": relation, "phone": data}
+    elif is_email:
+        students = (
+            StudentSession.objects.all().filter(
+                Q(student__fathers_email__icontains=data)
+                | Q(student__mothers_email__icontains=data)
+                | Q(student__guardian_email__icontains=data),
+                session=this_session,
+                student__school=schoolbranch,
+                status=True,
+            ).order_by("student")
+        )
+        for s_sess in students:
+            s = s_sess.student
+            relation = None
+            if s.fathers_email and data.lower() in s.fathers_email.lower():
+                relation = "Father"
+            elif s.mothers_email and data.lower() in s.mothers_email.lower():
+                relation = "Mother"
+            elif s.guardian_email and data.lower() in s.guardian_email.lower():
+                relation = "Guardian"
+            if relation:
+                parent_match[s.reg_no] = {"relation": relation, "email": data}
     elif data.isdigit():
         # print('True')
         # exam_years = Examyears.objects.all().order_by('-id')
@@ -5494,6 +5531,7 @@ def search(request):
         "schoolresulttype": schoolresulttype,
         "school": school,
         "parent_exists": parent_exists,
+        "parent_match": parent_match,
     }  # 'exam_years': exam_years, 'exam_types': exam_types, 'year':year,}
     return render(request, "panel/search.html", result)
 
