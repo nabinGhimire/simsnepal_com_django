@@ -224,36 +224,33 @@ def setup_platform_integration(school):
     logger.error("Failed to create delegated API key.")
     return False
 
-def sync_group_membership_cached(group_obj, target_members, admin_ids, force_refresh=False, school=None):
+def sync_group_membership_cached(group_obj, target_members, admin_ids, school=None):
     """
     Syncs the group membership with Hamro platform, utilizing a local GroupMembershipCache
     to minimize API requests.
-    
+
     target_members: set of platform user IDs that should be in the group.
     admin_ids: set of platform user IDs that should have 'admin' role.
     """
     group_id = group_obj.external_id
     if not group_id:
         return
-        
+
+    max_retries = 3
+
     # 1. Fetch cached members from database
     cached_qs = GroupMembershipCache.objects.filter(group=group_obj)
     cached_members = {
         m.platform_user_id: m.role
         for m in cached_qs
     }
-    
-    # If cache is empty or force_refresh is True, we fetch the actual participants from the platform
-    # to populate/reset the cache.
-    if not cached_members or force_refresh:
+
+    # Only fetch from platform if cache is empty (first sync for this group)
+    if not cached_members:
         try:
-            logger.info(f"Cache miss or force refresh for group {group_obj.name}. Fetching participants from platform...")
+            logger.info(f"Cache miss for group {group_obj.name}. Fetching participants from platform...")
             participants = get_thread_participants(group_id, school=school)
             if participants is not None:
-                # Clear existing cache
-                GroupMembershipCache.objects.filter(group=group_obj).delete()
-                
-                # Bulk create new cache
                 bulk_objs = []
                 cached_members = {}
                 for p in participants:
@@ -263,23 +260,22 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, force_ref
                     cached_members[u_id] = role
                 GroupMembershipCache.objects.bulk_create(bulk_objs)
         except Exception as e:
-            logger.error(f"Failed to fetch participants from platform for group {group_obj.name} to populate cache: {e}")
-            # If we couldn't fetch from platform and we have no cache, we cannot sync reliably.
+            logger.error(f"Failed to fetch participants from platform for group {group_obj.name}: {e}")
             if not cached_members:
                 return
 
     # 2. Determine changes
     target_members = set(target_members)
     admin_ids = set(admin_ids)
-    
+
     current_member_ids = set(cached_members.keys())
-    
+
     to_add = target_members - current_member_ids
     to_remove = current_member_ids - target_members
-    
+
     to_promote = []
     to_demote = []
-    
+
     for u_id in target_members & current_member_ids:
         target_role = 'admin' if u_id in admin_ids else 'member'
         current_role = cached_members[u_id]
@@ -289,49 +285,55 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, force_ref
             else:
                 to_demote.append(u_id)
 
-    # Business owner role is permanently fixed as admin on Hamro; do not attempt to demote
+    # Business owner role is permanently fixed as admin on Hamro; do not attempt to demote or remove
     if school:
         owner_id = get_owner_platform_id(school)
-        if owner_id and owner_id in to_demote:
-            to_demote.remove(owner_id)
+        if owner_id:
+            if owner_id in to_demote:
+                to_demote.remove(owner_id)
+            if owner_id in to_remove:
+                to_remove.remove(owner_id)
 
     # 3. Apply changes via APIs and update local cache
-    # Add users (batch — single API call for all adds)
     if to_add:
-        try:
-            logger.info(f"Adding {len(to_add)} users to group {group_obj.name} on platform...")
-            added_ids = add_users_to_thread_batch(group_id, list(to_add), school=school)
-            # Update cache — only for users actually added
-            if added_ids:
-                bulk_objs = []
-                for u_id in added_ids:
-                    bulk_objs.append(GroupMembershipCache(group=group_obj, platform_user_id=u_id, role='member'))
-                    # New members default to 'member' on addition. If their target role is 'admin', they must be explicitly promoted.
-                    if u_id in admin_ids:
-                        to_promote.append(u_id)
-                GroupMembershipCache.objects.bulk_create(bulk_objs)
-            # Log any that failed to add
-            failed = to_add - added_ids
-            if failed:
-                logger.warning(f"Failed to add {len(failed)} users to group {group_obj.name}: {failed}")
-        except Exception as e:
-            logger.error(f"Failed to add users to group {group_obj.name}: {e}")
+        logger.info(f"Adding {len(to_add)} users to group {group_obj.name} on platform...")
+        remaining = set(to_add)
+        for attempt in range(1, max_retries + 1):
+            try:
+                added_ids = add_users_to_thread_batch(group_id, list(remaining), school=school)
+                if added_ids:
+                    bulk_objs = []
+                    for u_id in added_ids:
+                        bulk_objs.append(GroupMembershipCache(group=group_obj, platform_user_id=u_id, role='member'))
+                        if u_id in admin_ids:
+                            to_promote.append(u_id)
+                    GroupMembershipCache.objects.bulk_create(bulk_objs)
+                    remaining -= set(added_ids)
+                if not remaining:
+                    break
+                logger.warning(f"Retry {attempt}/{max_retries}: {len(remaining)} users still pending add in {group_obj.name}")
+            except Exception as e:
+                logger.error(f"Add attempt {attempt}/{max_retries} failed for group {group_obj.name}: {e}")
+        if remaining:
+            logger.warning(f"Failed to add {len(remaining)} users to group {group_obj.name} after {max_retries} attempts")
 
-    # Remove users (batch — single API call for all removes instead of one-by-one)
     if to_remove:
         logger.info(f"Removing {len(to_remove)} users from group {group_obj.name} on platform...")
-        try:
-            removed_ids = remove_users_from_thread_batch(group_id, list(to_remove), school=school)
-            if removed_ids:
-                GroupMembershipCache.objects.filter(group=group_obj, platform_user_id__in=removed_ids).delete()
-            # Log any that failed to remove
-            failed = to_remove - removed_ids
-            if failed:
-                logger.warning(f"Failed to remove {len(failed)} users from group {group_obj.name}: {failed}")
-        except Exception as e:
-            logger.error(f"Failed to batch remove users from group {group_obj.name}: {e}")
+        remaining = set(to_remove)
+        for attempt in range(1, max_retries + 1):
+            try:
+                removed_ids = remove_users_from_thread_batch(group_id, list(remaining), school=school)
+                if removed_ids:
+                    GroupMembershipCache.objects.filter(group=group_obj, platform_user_id__in=removed_ids).delete()
+                    remaining -= set(removed_ids)
+                if not remaining:
+                    break
+                logger.warning(f"Retry {attempt}/{max_retries}: {len(remaining)} users still pending remove in {group_obj.name}")
+            except Exception as e:
+                logger.error(f"Remove attempt {attempt}/{max_retries} failed for group {group_obj.name}: {e}")
+        if remaining:
+            logger.warning(f"Failed to remove {len(remaining)} users from group {group_obj.name} after {max_retries} attempts")
 
-    # Update roles (promote/demote) in bulk
     if to_promote or to_demote:
         try:
             logger.info(f"Batch updating roles for {len(to_promote)} admins and {len(to_demote)} members in group {group_obj.name}...")
@@ -529,8 +531,7 @@ def sync_school_channel(school, session):
         if norm in users_map:
             to_add_ids.append(users_map[norm])
 
-    # Sync using our optimized membership cache helper with force_refresh to sync from platform
-    sync_group_membership_cached(channel_group, to_add_ids, admin_ids, force_refresh=True, school=school)
+    sync_group_membership_cached(channel_group, to_add_ids, admin_ids, school=school)
 
     channel_group.sync_info = {
         'name': channel_name,
@@ -680,9 +681,7 @@ def sync_teachers_group(school, session):
 
     to_add_ids = list(set(to_add_ids))
 
-    # Build admin ID set (owner + teachers)
-    # admin_ids already contains owner and teacher IDs
-    sync_group_membership_cached(group_obj, to_add_ids, admin_ids, force_refresh=True, school=school)
+    sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school)
 
     group_obj.sync_info = {
         'name': group_name,
@@ -880,8 +879,7 @@ def sync_single_group(group_name, grade, section, session, school):
 
     to_add_ids = list(set(to_add_ids))
 
-    # Sync using our optimized membership cache helper
-    sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school, force_refresh=True)
+    sync_group_membership_cached(group_obj, to_add_ids, admin_ids, school=school)
 
     group_obj.sync_info = {
         'name': group_name,
