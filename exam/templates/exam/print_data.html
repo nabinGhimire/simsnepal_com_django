@@ -1,0 +1,65 @@
+{% extends "exam/base.html" %}
+{% load static %}
+{% block title %}Print Marks Form{% endblock %}
+
+{% block exam_content %}
+<div class="mb-3">
+  <h6 class="m-0" style="font-weight:700;color:#212529;">Print Marks Form</h6>
+  <span style="font-size:0.75rem;color:#6c757d;">Select exam term and grade to generate a printable marks form</span>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-5">
+    <div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Select Options</h6>
+        <form method="GET">
+          <div class="mb-3">
+            <label class="form-label fw-semibold" style="font-size:0.82rem;">Exam Term</label>
+            <select name="term" class="form-select form-select-sm">
+              <option value="">— Select Term —</option>
+              {% for term in exam_terms %}
+              <option value="{{ term.id }}">{{ term.term_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold" style="font-size:0.82rem;">Grade</label>
+            <select name="grade" class="form-select form-select-sm">
+              <option value="">— Select Grade —</option>
+              {% for grade in nav_grades %}
+              <option value="{{ grade.id }}">Grade {{ grade.grade_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'exam:printmarksform' %}" class="btn btn-sm btn-primary">Open Print Form</a>
+            <a href="{% url 'exam:marksgradesheet' %}" class="btn btn-sm btn-outline-secondary">Grade Sheet</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;">
+      <div class="card-body">
+        <h6 class="fw-bold mb-2">Available Print Formats</h6>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+            <span style="font-size:0.85rem;">Marks Entry Form</span>
+            <a href="{% url 'exam:printmarksform' %}" class="btn btn-sm btn-outline-primary">Open</a>
+          </li>
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+            <span style="font-size:0.85rem;">Marks Grade Sheet</span>
+            <a href="{% url 'exam:marksgradesheet' %}" class="btn btn-sm btn-outline-primary">Open</a>
+          </li>
+          <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+            <span style="font-size:0.85rem;">Grade Ledger</span>
+            <a href="{% url 'exam:print_grade_ledger' %}" class="btn btn-sm btn-outline-primary">Open</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

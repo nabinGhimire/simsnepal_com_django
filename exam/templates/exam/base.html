@@ -1,0 +1,184 @@
+{% extends 'panel/panel-main.html' %}
+
+{% block title %}Exam Management | SIMSnepal{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<!-- Nepali Datepicker CSS -->
+<link href="https://cdn.hamro.com/hamro/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
+<style>
+  .nepali-datepicker-container { font-family: inherit !important; }
+  .card-compact { margin-bottom: 0.75rem; }
+  .card-compact .card-body { padding: 0.75rem 1rem; }
+  .card-compact .card-header { padding: 0.5rem 1rem; }
+
+  /* Stat cards */
+  .stat-card {
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 10px;
+    transition: box-shadow 0.15s ease;
+    background: #fff;
+  }
+  .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .stat-card .stat-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .stat-card .stat-icon svg { width: 20px; height: 20px; }
+  .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.01em; }
+  .stat-card .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: #6c757d; }
+  .stat-card .stat-sub { font-size: 0.75rem; color: #6c757d; }
+
+  /* Exam table */
+  .exam-table thead th {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+    font-weight: 600; color: #6c757d; border-bottom: 1px solid #e9ecef;
+    padding: 8px 12px; background: #f8f9fa;
+  }
+  .exam-table tbody tr { transition: background 0.1s ease; }
+  .exam-table tbody tr:hover { background: #f8f9fa; }
+  .exam-table tbody td { padding: 10px 12px; vertical-align: middle; border-bottom: 1px solid #f1f3f5; }
+
+  .badge-status {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 600;
+  }
+</style>
+{% endblock %}
+
+{% block navbar %}
+<div class="navbar-expand-md">
+  <div class="collapse navbar-collapse" id="navbar-menu">
+    <div class="navbar navbar-light bg-white border-bottom shadow-xs">
+      <div class="container-xl">
+        <ul class="navbar-nav">
+
+          <!-- Dashboard -->
+          <li class="nav-item {% if not is_exam_fullmarks and not is_exam_result and not is_exam_print and not is_exam_input and not is_exam_subject and not is_settings and not is_terms %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'exam:dashboard' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+                  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+                </svg>
+              </span>
+              <span class="nav-link-title">Home</span>
+            </a>
+          </li>
+
+          <!-- Exam Terms -->
+          <li class="nav-item {% if is_terms %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'exam:terms' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-teal" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+              </span>
+              <span class="nav-link-title">Terms</span>
+            </a>
+          </li>
+
+          <!-- Marks Entry Dropdown -->
+          <li class="nav-item dropdown {% if is_exam_fullmarks or is_exam_input or is_exam_subject %}active{% endif %}">
+            <a class="nav-link dropdown-toggle font-weight-bold" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-blue" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" />
+                  <rect x="9" y="3" width="6" height="4" rx="2" />
+                  <line x1="9" y1="12" x2="15" y2="12" />
+                  <line x1="9" y1="16" x2="12" y2="16" />
+                </svg>
+              </span>
+              <span class="nav-link-title">Marks Entry</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-arrow">
+              <a class="dropdown-item {% if is_exam_fullmarks %}active{% endif %}" href="{% url 'exam:fullmarks' %}">
+                Full Marks Setup
+              </a>
+              <a class="dropdown-item {% if is_exam_input %}active{% endif %}" href="{% url 'exam:inputfullmarksredirector' %}">
+                Enter Marks
+              </a>
+              <a class="dropdown-item {% if is_exam_subject %}active{% endif %}" href="{% url 'exam:subject_wise_mark_sentry' %}">
+                Subject-wise Entry
+              </a>
+            </div>
+          </li>
+
+          <!-- Results Dropdown -->
+          <li class="nav-item dropdown {% if is_exam_result %}active{% endif %}">
+            <a class="nav-link dropdown-toggle font-weight-bold" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-green" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+                  <path d="M12 9v4l3 3" />
+                </svg>
+              </span>
+              <span class="nav-link-title">Results</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-arrow">
+              <a class="dropdown-item" href="{% url 'exam:resultmanagement' %}">Result Management</a>
+              <a class="dropdown-item" href="{% url 'exam:weighted_result_calculation' %}">Weighted Calculation</a>
+              <a class="dropdown-item" href="{% url 'exam:school_public' %}">Public Result</a>
+            </div>
+          </li>
+
+          <!-- Print Dropdown -->
+          <li class="nav-item dropdown {% if is_exam_print %}active{% endif %}">
+            <a class="nav-link dropdown-toggle font-weight-bold" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-purple" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M17 17h2a2 2 0 0 0 2 -2v-4a2 2 0 0 0 -2 -2h-14a2 2 0 0 0 -2 2v4a2 2 0 0 0 2 2h2" />
+                  <path d="M17 9v-4a2 2 0 0 0 -2 -2h-6a2 2 0 0 0 -2 2v4" />
+                  <rect x="7" y="13" width="10" height="8" rx="1" />
+                </svg>
+              </span>
+              <span class="nav-link-title">Print</span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-arrow">
+              <a class="dropdown-item" href="{% url 'exam:printmarksform' %}">Marks Form</a>
+              <a class="dropdown-item" href="{% url 'exam:marksgradesheet' %}">Grade Sheet</a>
+              <a class="dropdown-item" href="{% url 'exam:print_grade_ledger' %}">Grade Ledger</a>
+            </div>
+          </li>
+
+          <!-- Settings -->
+          <li class="nav-item {% if is_settings %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'exam:settings' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-secondary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </span>
+              <span class="nav-link-title">Settings</span>
+            </a>
+          </li>
+
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock navbar %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <div class="row">
+    <div class="col-12">
+      {% block exam_content %}
+      {% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

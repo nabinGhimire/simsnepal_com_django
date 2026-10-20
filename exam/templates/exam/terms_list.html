@@ -1,0 +1,51 @@
+{% extends "exam/base.html" %}
+{% load static %}
+{% block title %}Exam Terms{% endblock %}
+
+{% block exam_content %}
+<div class="mb-3">
+  <h6 class="m-0" style="font-weight:700;color:#212529;">Exam Terms</h6>
+  <span style="font-size:0.75rem;color:#6c757d;">Manage exam terms for the current academic session</span>
+</div>
+
+<div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-vcenter table-hover mb-0">
+        <thead>
+          <tr>
+            <th style="width:50px;">#</th>
+            <th>Exam Term</th>
+            <th>Year</th>
+            <th style="width:100px;">Final Term</th>
+            <th style="width:90px;">Status</th>
+            <th style="width:120px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for term in exam_terms %}
+          <tr>
+            <td class="text-muted">{{ forloop.counter }}</td>
+            <td><strong>{{ term.term_name }}</strong>{% if term.name_in_short %} <span class="text-muted small">({{ term.name_in_short }})</span>{% endif %}</td>
+            <td>{{ term.year }}</td>
+            <td>{% if term.final_term %}<span class="badge bg-blue-lt">Final</span>{% else %}—{% endif %}</td>
+            <td>
+              <span class="badge bg-{% if term.active %}success{% else %}secondary{% endif %}-lt">
+                {% if term.active %}Active{% else %}Inactive{% endif %}
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'exam:resultmanagement' %}" class="btn btn-sm btn-outline-primary">Results</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">No exam terms found for the current session.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
