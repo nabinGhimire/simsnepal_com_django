@@ -713,8 +713,9 @@ def get_thread_participants(thread_id, school=None):
     all_participants = []
     seen_user_ids = set()
     page = 1
-    
-    while True:
+    max_pages = 100
+
+    while page <= max_pages:
         try:
             params = {'per_page': 100, 'page': page}
             response = _request_with_retry('get', url, params=params, headers=get_headers(school=school), timeout=15)
@@ -722,7 +723,7 @@ def get_thread_participants(thread_id, school=None):
                 data = response.json()
                 raw_list = []
                 has_next = False
-                
+
                 if isinstance(data, list):
                     raw_list = data
                     has_next = False
@@ -734,7 +735,7 @@ def get_thread_participants(thread_id, school=None):
                         has_next = True
                     elif data.get('next_page_url'):
                         has_next = True
-                        
+
                 count_added = 0
                 for u in raw_list:
                     if isinstance(u, dict):
@@ -746,7 +747,7 @@ def get_thread_participants(thread_id, school=None):
                                 'admin': bool(u.get('admin', False))
                             })
                             count_added += 1
-                
+
                 if not has_next or count_added == 0 or len(raw_list) == 0:
                     break
                 page += 1
@@ -759,7 +760,7 @@ def get_thread_participants(thread_id, school=None):
         except Exception as e:
             logger.error(f"Error fetching participants for thread {thread_id}: {e}")
             break
-            
+
     return all_participants
 
 def get_thread_users(thread_id, school=None):

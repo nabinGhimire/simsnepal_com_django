@@ -4,10 +4,9 @@ import nepali_datetime_field.models
 
 
 # ``sms_student.reg_no`` (the primary key this app references) is stored with the
-# utf8mb4_general_ci collation while newer tables inherit the database default
-# utf8mb4_unicode_ci. MySQL refuses a foreign key when the referencing and
-# referenced columns use different collations, so the new ``student_id`` columns
-# are created explicitly with the same collation as ``sms_student.reg_no``.
+# utf8mb4_0900_ai_ci collation (matching the database default). MySQL refuses a
+# foreign key when the referencing and referenced columns use different collations,
+# so the new ``student_id`` columns are created explicitly with the same collation.
 STUDENT_FK_SUFFIX = "_fk_%(to_table)s_%(to_column)s"
 
 
@@ -22,19 +21,11 @@ def create_tables(apps, schema_editor):
     ]
 
     if connection.vendor == "mysql":
-        # Create the tables without the student FK first, align the column
-        # collation, then add the constraint.
-        for model, field in student_fields:
-            field.db_constraint = False
-
-    schema_editor.create_model(HealthRecord)
-    schema_editor.create_model(Profile)
-
-    if connection.vendor == "mysql":
+        # Align the column collation and type to match sms_student.reg_no.
         for model, field in student_fields:
             schema_editor.execute(
                 "ALTER TABLE %s MODIFY %s varchar(9) "
-                "CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL"
+                "CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL"
                 % (
                     schema_editor.quote_name(model._meta.db_table),
                     schema_editor.quote_name(field.column),
