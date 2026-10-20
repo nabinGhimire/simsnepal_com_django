@@ -237,6 +237,7 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, school=No
         return
 
     max_retries = 3
+    retry_delay = 0.5
 
     # 1. Fetch cached members from database
     cached_qs = GroupMembershipCache.objects.filter(group=group_obj)
@@ -300,6 +301,7 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, school=No
         remaining = set(to_add)
         for attempt in range(1, max_retries + 1):
             try:
+                time.sleep(retry_delay)
                 added_ids = add_users_to_thread_batch(group_id, list(remaining), school=school)
                 if added_ids:
                     bulk_objs = []
@@ -322,6 +324,7 @@ def sync_group_membership_cached(group_obj, target_members, admin_ids, school=No
         remaining = set(to_remove)
         for attempt in range(1, max_retries + 1):
             try:
+                time.sleep(retry_delay)
                 removed_ids = remove_users_from_thread_batch(group_id, list(remaining), school=school)
                 if removed_ids:
                     GroupMembershipCache.objects.filter(group=group_obj, platform_user_id__in=removed_ids).delete()

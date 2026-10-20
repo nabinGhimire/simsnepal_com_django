@@ -27,6 +27,8 @@ from django.http import Http404, HttpResponse, HttpResponseRedirect
 # # # from .student_reg import my_students
 # from django.db.models import Q
 
+from panel.platform_sync import acquire_sync_lock, release_sync_lock
+
 from io import BytesIO
 from django.template.loader import get_template
 from xhtml2pdf import pisa
@@ -195,12 +197,18 @@ _sync_logger = logging.getLogger('panel.sync')
 
 def run_full_sync(school, current_session):
     """Run full platform sync synchronously with per-step error handling."""
+    from django.core.cache import cache
     results = {'steps': [], 'errors': []}
     try:
         _sync_logger.info(f"Starting sync for school {school.name} (session {current_session.year})")
         t0 = time.time()
 
         # Step 1: Sync School Channel
+        cache.set(f"sync_progress_{school.id}", {
+            'status': 'running', 'step': 1, 'total_steps': 4,
+            'message': 'Step 1/4: Syncing School Channel/Group...',
+            'details': [], 'start_time': t0, 'elapsed': '0s'
+        }, timeout=3600)
         try:
             school_chan = sync_school_channel(school, current_session)
             if school_chan and hasattr(school_chan, 'sync_info'):
@@ -213,6 +221,12 @@ def run_full_sync(school, current_session):
             results['errors'].append(f"School Channel: {e}")
 
         # Step 2: Sync Teachers Group
+        cache.set(f"sync_progress_{school.id}", {
+            'status': 'running', 'step': 2, 'total_steps': 4,
+            'message': 'Step 2/4: Syncing Teachers Group/Channel...',
+            'details': results['steps'], 'start_time': t0,
+            'elapsed': f"{time.time() - t0:.0f}s"
+        }, timeout=3600)
         try:
             teachers_grp = sync_teachers_group(school, current_session)
             if teachers_grp and hasattr(teachers_grp, 'sync_info'):
@@ -225,6 +239,12 @@ def run_full_sync(school, current_session):
             results['errors'].append(f"Teachers Group: {e}")
 
         # Step 3: Sync Grade Groups
+        cache.set(f"sync_progress_{school.id}", {
+            'status': 'running', 'step': 3, 'total_steps': 4,
+            'message': 'Step 3/4: Syncing Class/Section Groups...',
+            'details': results['steps'], 'start_time': t0,
+            'elapsed': f"{time.time() - t0:.0f}s"
+        }, timeout=3600)
         try:
             grade_groups = sync_grade_groups(school, current_session)
             results['steps'].append(f"Class/Section Groups: {len(grade_groups or [])} synced")
@@ -233,15 +253,43 @@ def run_full_sync(school, current_session):
             results['errors'].append(f"Class/Section Groups: {e}")
 
         total = time.time() - t0
+        # Step 4: Finalizing — update before writing completed
+        cache.set(f"sync_progress_{school.id}", {
+            'status': 'running', 'step': 4, 'total_steps': 4,
+            'message': 'Step 4/4: Finalizing...',
+            'details': results['steps'], 'start_time': t0,
+            'elapsed': f"{total:.0f}s"
+        }, timeout=3600)
+
         if not results['errors']:
             results['message'] = f"Sync completed in {total:.0f}s"
+            final_status = 'completed'
         else:
             results['message'] = f"Sync completed with {len(results['errors'])} error(s) in {total:.0f}s"
+            final_status = 'error'
+
+        # Always write final status so the progress endpoint sees completion
+        cache.set(f"sync_progress_{school.id}", {
+            'status': final_status,
+            'step': 4,
+            'total_steps': 4,
+            'message': results['message'],
+            'details': results['steps'],
+            'errors': results['errors'],
+            'start_time': t0,
+            'elapsed': f"{total:.0f}s"
+        }, timeout=3600)
 
         _sync_logger.info(results['message'])
         return results
     except Exception as e:
         _sync_logger.exception("Sync failed")
+        cache.set(f"sync_progress_{school.id}", {
+            'status': 'error', 'step': 0, 'total_steps': 4,
+            'message': f"Sync failed: {e}",
+            'details': [], 'errors': [str(e)],
+            'elapsed': '0s'
+        }, timeout=3600)
         return {'message': f"Sync failed: {e}", 'errors': [str(e)], 'steps': []}
 
 
@@ -328,6 +376,74 @@ def sync_platform_view(request):
         'last_sync_nepali': last_sync_nepali,
     }
     return render(request, 'settings/platform_sync.html', context)
+
+
+@login_required
+def sync_platform_async(request):
+    """Async sync endpoint - starts the sync process in background."""
+    try:
+        branch_user = BranchUser.objects.select_related('school__owner').get(user=request.user)
+    except BranchUser.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+        
+    is_admin = (branch_user.school.owner.user == request.user)
+    if not is_admin:
+        return JsonResponse({'status': 'error', 'message': 'Only school admin can sync'}, status=403)
+
+    school = branch_user.school
+    current_session = get_current_session()
+    
+    # Automatically register business and generate delegated key if they don't exist
+    if not setup_platform_integration(school):
+        return JsonResponse({'status': 'error', 'message': 'Failed to register Platform Integration. Check logs for details.'})
+    
+    school.refresh_from_db()
+    business_key = school.business_key or ''
+    
+    if not business_key:
+        return JsonResponse({'status': 'error', 'message': 'Failed to sync. Please configure your API integration keys first.'})
+    
+    # Initialize progress tracking in cache
+    from django.core.cache import cache
+    import time
+    initial_progress = {
+        'status': 'running',
+        'message': 'Initializing sync...',
+        'step': 0,
+        'total_steps': 4,
+        'details': [],
+        'start_time': time.time(),
+        'elapsed': '0s'
+    }
+    cache.set(f"sync_progress_{school.id}", initial_progress, timeout=3600)
+    request.session['sync_progress'] = initial_progress
+    request.session.modified = True
+    
+    # Start sync in background thread
+    import threading
+    sync_thread = threading.Thread(target=run_full_sync, args=(school, current_session))
+    sync_thread.start()
+    
+    return JsonResponse({'status': 'started', 'message': 'Sync started'})
+
+
+@login_required
+def sync_platform_progress(request):
+    """Get sync progress - used by frontend polling."""
+    from django.core.cache import cache
+    school_id = None
+    try:
+        branch_user = BranchUser.objects.select_related('school').get(user=request.user)
+        school_id = branch_user.school_id
+    except Exception:
+        pass
+        
+    progress = None
+    if school_id:
+        progress = cache.get(f"sync_progress_{school_id}")
+    if not progress:
+        progress = request.session.get('sync_progress', {'status': 'idle', 'message': '', 'step': 0, 'total_steps': 0, 'details': []})
+    return JsonResponse(progress)
 
 
 @login_required
