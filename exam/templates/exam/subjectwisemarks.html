@@ -1,0 +1,81 @@
+{% extends 'exam/base.html' %}
+{% block title %}Subject-wise Marks Entry{% endblock %}
+
+{% block exam_content %}
+<div class="mb-2 d-flex justify-content-between align-items-center py-2 px-3 bg-white" style="border:1px solid #e9ecef;border-radius:8px;">
+  <div>
+    <h6 class="m-0" style="font-weight:700;color:#212529;">Subject-wise Marks Entry</h6>
+    <span style="font-size:0.75rem;color:#6c757d;">{{ school.name }} &nbsp;·&nbsp; {{ this_year }}</span>
+  </div>
+</div>
+
+<div class="row g-3 justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    <div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;">
+      <div class="card-body">
+        <form action="" method="POST">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Exam Term</label>
+            <select name="term" id="term" class="form-select form-select-sm">
+              {% for exam_type in exam_types %}
+              <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Grade</label>
+            <select name="grade" id="grade" class="form-select form-select-sm" onchange="populate(this.id,'section')">
+              <option value="">— Select Grade —</option>
+              {% for grade in grades %}
+              <option value="{{ grade.id }}">{{ grade|upper }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Section</label>
+            <select name="section" id="section" class="form-select form-select-sm"></select>
+          </div>
+          {% if selected_grade and subjects %}
+          <div class="mb-3">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Subject</label>
+            <select name="subject" class="form-select form-select-sm">
+              {% for subj in subjects %}
+              <option value="{{ subj.id }}">{{ subj.subject }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="mb-3">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Order By</label>
+            <select name="order" class="form-select form-select-sm">
+              <option value="1">Registration Number</option>
+              <option value="2">Roll Number</option>
+              <option value="3">Name</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            <i class="fa-solid fa-arrow-right me-1"></i> Next Step
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var section_list = JSON.parse('{{ section_list|escapejs }}');
+function populate(s1, s2) {
+  var s1El = document.getElementById(s1);
+  var s2El = document.getElementById(s2);
+  s2El.innerHTML = '';
+  var sl = section_list[s1El.value] || {};
+  for (var p in sl) {
+    var opt = document.createElement('option');
+    opt.value = p;
+    opt.innerHTML = sl[p];
+    s2El.appendChild(opt);
+  }
+}
+</script>
+{% endblock %}

@@ -15,6 +15,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('panel/', include(('panel.urls', 'panel'), namespace='panel')),
     path('attendance/', include(('attendance.urls', 'attendance'), namespace='attendance')),
+    path('exam/', include(('exam.urls', 'exam'), namespace='exam')),
     path('calendar/', include(('patro.urls', 'patro'), namespace='patro')),
     path('grihakarya/', panel_views.coming_soon, name='grihakarya'),
     path('cas/', panel_views.coming_soon, name='cas'),

@@ -1,0 +1,139 @@
+{% extends 'exam/base.html' %}
+{% block title %}Marks / Grade Sheet{% endblock %}
+
+{% block exam_content %}
+<div class="mb-2 py-2 px-3 bg-white" style="border:1px solid #e9ecef;border-radius:8px;">
+  <h6 class="m-0" style="font-weight:700;color:#212529;">Marks / Grade Sheet</h6>
+  <span style="font-size:0.75rem;color:#6c757d;">Select options to generate and print the grade sheet</span>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-9 col-lg-8">
+    <div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;">
+      <div class="card-body">
+        <form action="" method="POST" target="_blank">
+          {% csrf_token %}
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <div style="font-size:0.72rem;color:#6c757d;font-weight:600;">School</div>
+              <div style="font-size:0.85rem;font-weight:600;">{{ school.name }}</div>
+            </div>
+            <div class="col-6">
+              <div style="font-size:0.72rem;color:#6c757d;font-weight:600;">Location</div>
+              <div style="font-size:0.85rem;font-weight:600;">{{ school.location }}</div>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Year</label>
+              <select name="edusession" id="edusession" class="form-select form-select-sm"
+                      onchange="filterTerms('edusession','term'); populate2('grade2','section2','edusession')">
+                {% for session in edusession %}
+                <option value="{{ session.id }}" {% if session.id == current_session.id %}selected{% endif %}>{{ session.year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Exam Term</label>
+              <select name="term" id="term" class="form-select form-select-sm">
+                {% for exam_type in exam_types %}
+                <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }} {{ exam_type.year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Ledger Type</label>
+              <select name="printtype" class="form-select form-select-sm">
+                <option value="1">Grade</option>
+                <option value="2">Marks</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Grade</label>
+              <select name="grade2" id="grade2" class="form-select form-select-sm"
+                      onchange="populate2(this.id,'section2','edusession')">
+                <option value=""></option>
+                {% for grade in grades %}
+                <option value="{{ grade.id }}">{{ grade|upper }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Section</label>
+              <select name="section2" id="section2" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Result Type</label>
+              <select name="result_type" class="form-select form-select-sm">
+                <option value="0" selected>Legacy</option>
+                <option value="1">Non-Grade System</option>
+                <option value="2">New Grading System</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Calculation</label>
+              <select name="calc_type" class="form-select form-select-sm">
+                <option value="legacy" {% if live_calc_type != 'weighted' %}selected{% endif %}>Legacy</option>
+                <option value="weighted" {% if live_calc_type == 'weighted' %}selected{% endif %}>Weighted</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Filter</label>
+              <select name="pass_fail_filter" class="form-select form-select-sm">
+                <option value="0">None</option>
+                <option value="1">Pass Only</option>
+                <option value="2">Fail Only</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" name="submit" value="Submit" class="btn btn-primary btn-sm px-4">
+              <i class="fa-solid fa-print me-1"></i> Generate
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var section_list_obj = JSON.parse('{{ section_list|escapejs }}');
+var term_list_obj = JSON.parse('{{ term_list|escapejs }}');
+function filterTerms(yearId, termId) {
+  var yearEl = document.getElementById(yearId);
+  var termEl = document.getElementById(termId);
+  if (!yearEl || !termEl) return;
+  var terms = term_list_obj[yearEl.value] || [];
+  termEl.innerHTML = '';
+  terms.forEach(function(term) {
+    var opt = document.createElement('option');
+    opt.value = term.id; opt.innerHTML = term.name;
+    termEl.appendChild(opt);
+  });
+}
+function populate2(s1, s2, y1) {
+  var s1El = document.getElementById(s1);
+  var s2El = document.getElementById(s2);
+  var y1El = document.getElementById(y1);
+  if (!s2El || !s1El || !y1El) return;
+  s2El.innerHTML = '';
+  var sl = (section_list_obj[y1El.value] || {})[s1El.value] || {};
+  var opts = ['0|ALL SECTION'];
+  for (var p in sl) opts.push(p + '|' + sl[p]);
+  opts.forEach(function(o) {
+    var pair = o.split('|');
+    var opt = document.createElement('option');
+    opt.value = pair[0]; opt.innerHTML = pair[1];
+    s2El.appendChild(opt);
+  });
+}
+document.addEventListener('DOMContentLoaded', function() {
+  filterTerms('edusession', 'term');
+  populate2('grade2', 'section2', 'edusession');
+});
+</script>
+{% endblock %}

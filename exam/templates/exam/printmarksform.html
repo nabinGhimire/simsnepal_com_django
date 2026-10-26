@@ -1,0 +1,80 @@
+{% extends 'exam/base.html' %}
+{% block title %}Print Marks Form{% endblock %}
+
+{% block exam_content %}
+<div class="mb-2 py-2 px-3 bg-white" style="border:1px solid #e9ecef;border-radius:8px;">
+  <h6 class="m-0" style="font-weight:700;color:#212529;">Print Marks Input Form</h6>
+  <span style="font-size:0.75rem;color:#6c757d;">Select term, grade and section to generate a printable marks form</span>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    <div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;">
+      <div class="card-body">
+        <form action="" method="POST">
+          {% csrf_token %}
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <div style="font-size:0.72rem;color:#6c757d;font-weight:600;">School</div>
+              <div style="font-size:0.85rem;font-weight:600;">{{ school.name }}</div>
+            </div>
+            <div class="col-6">
+              <div style="font-size:0.72rem;color:#6c757d;font-weight:600;">Year</div>
+              <div style="font-size:0.85rem;font-weight:600;">{{ this_year }}</div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Exam Term</label>
+            <select name="term" class="form-select form-select-sm" required>
+              <option value="" disabled selected>Select Term</option>
+              {% for exam_type in exam_types %}
+              <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Grade</label>
+            <select name="grade" id="grade" class="form-select form-select-sm" onchange="populate(this.id,'section')" required>
+              <option value="" disabled selected>Select Grade</option>
+              {% for grade in grades %}
+              <option value="{{ grade.id }}">{{ grade|upper }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Section</label>
+            <select name="section" id="section" class="form-select form-select-sm" required>
+              <option value="" disabled selected>Select Section</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            <i class="fa-solid fa-print me-1"></i> Generate Form
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var section_list_obj = JSON.parse('{{ section_list|escapejs }}');
+function populate(s1, s2) {
+  var s1El = document.getElementById(s1);
+  var s2El = document.getElementById(s2);
+  s2El.innerHTML = '<option value="" disabled selected>Select Section</option>';
+  var sl = (section_list_obj[/* year */Object.keys(section_list_obj)[0]] || {})[s1El.value] || {};
+  // section_list here is flat: grade_id -> {section_id: section_name}
+  var flat = section_list_obj[s1El.value] || {};
+  for (var p in flat) {
+    var opt = document.createElement('option');
+    opt.value = p; opt.innerHTML = flat[p];
+    s2El.appendChild(opt);
+  }
+}
+</script>
+{% endblock %}

@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'webview',
     'attendance',
     'patro',
+    'exam',
 ]
 
 MIDDLEWARE = [

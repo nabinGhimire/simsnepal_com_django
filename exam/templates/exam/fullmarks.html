@@ -1,0 +1,44 @@
+{% extends 'exam/base.html' %}
+{% block title %}Full Marks Setup{% endblock %}
+
+{% block exam_content %}
+<div class="mb-2 d-flex justify-content-between align-items-center py-2 px-3 bg-white" style="border:1px solid #e9ecef;border-radius:8px;">
+  <div>
+    <h6 class="m-0" style="font-weight:700;color:#212529;">Full Marks Setup</h6>
+    <span style="font-size:0.75rem;color:#6c757d;">
+      {{ school.name }} &nbsp;·&nbsp; {{ edusession.year|default:"—" }}
+    </span>
+  </div>
+</div>
+
+<div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;">
+  <div class="card-body">
+    <form action="/exam/inputfullmarksredirector/" method="POST" target="_blank">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-5">
+          <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Exam Term</label>
+          <select name="term" class="form-select form-select-sm">
+            {% for exam_type in exam_types %}
+            <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Grade</label>
+          <select name="grade" class="form-select form-select-sm">
+            {% for grade in grades %}
+            <option value="{{ grade.id }}">{{ grade|upper }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            <i class="fa-solid fa-arrow-right me-1"></i> Go
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
