@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     'attendance',
     'patro',
     'exam',
+    'grihakarya',
+    'concerns',
 ]
 
 MIDDLEWARE = [
