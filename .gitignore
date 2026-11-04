@@ -1,21 +1,60 @@
+# Python
 venv/
-db.sqlite3
-sso.txt
+__pycache__/
 *.pyc
-.env
-./sso/*/*.pyc
-sims_2026_02_16/
-static/
-zz_old_static/
-billing/
+*.pyo
+*.pyd
+*.pyw
+*.egg-info/
+dist/
+build/
+
+# Django
+db.sqlite3
+*.sqlite3
 media/
-test_*
-test*
-fix*
+staticfiles/
+static/
+
+# Environment
+.env
+.env.*
+sso.txt
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.orig
+
+# Kiro
+.kilo/
+
+# Project-specific generated / scratch
+sims_2026_02_16/
+zz_old_static/
+new_design/
+billing/
+scratch/
+
+# Temp / debug scripts (keep pattern-matched)
+fix*.py
+find_issue*.py
+test_*.py
+test*.py
+test/
+test_*.js
+debug_*.py
+extract*.py
+verify_*.py
+move_*.py
+import_*.py
+populate_*.py
+
+# Misc
 .graphify_detect.json
 .graphify_python
 commit_msg.txt
-find_issue.py
-find_issue2.py
-staticfiles/*
-new_design/*
+panel_views_diff.txt
+logs/
