@@ -1,0 +1,216 @@
+{% extends 'concerns/base.html' %}
+
+{% block concerns_content %}
+<div style="padding:1.25rem;">
+
+  <div style="margin-bottom:1rem;">
+    <a href="{% url 'concerns:dashboard' %}" class="att-btn"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+  </div>
+
+  <!-- Student header -->
+  <div class="att-card" style="padding:16px 20px;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.3rem;font-weight:700;color:var(--att-text-dark);margin:0;">{{ student.name }}</h2>
+      <div style="font-size:0.8rem;color:var(--att-text-muted);margin-top:3px;">
+        Reg: {{ student.reg_no }}
+        {% if student_session %} · Grade {{ student_session.grade.grade_name }}{% if student_session.section %} — {{ student_session.section.section }}{% endif %} · Roll {{ student_session.roll_no }}{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <div class="att-card" style="padding:6px 14px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:700;color:var(--att-primary);">{{ remark_count }}</div>
+        <div style="font-size:0.68rem;color:var(--att-text-muted);text-transform:uppercase;">Remarks</div>
+      </div>
+      <div class="att-card" style="padding:6px 14px;text-align:center;">
+        <div style="font-size:1.3rem;font-weight:700;color:var(--att-danger);">{{ concern_count }}</div>
+        <div style="font-size:0.68rem;color:var(--att-text-muted);text-transform:uppercase;">Concerns</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="att-card" style="padding:12px 18px;margin-bottom:1rem;">
+    <form method="GET" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Category</label>
+        <select name="category" class="att-input">
+          <option value="">All</option>
+          <option value="homework"    {% if selected_category == 'homework' %}selected{% endif %}>Homework</option>
+          <option value="behavior"    {% if selected_category == 'behavior' %}selected{% endif %}>Behavior</option>
+          <option value="cleanliness" {% if selected_category == 'cleanliness' %}selected{% endif %}>Cleanliness</option>
+          <option value="regularity"  {% if selected_category == 'regularity' %}selected{% endif %}>Regularity</option>
+          <option value="other"       {% if selected_category == 'other' %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Status</label>
+        <select name="status" class="att-input">
+          <option value="">All</option>
+          <option value="open"      {% if selected_status == 'open' %}selected{% endif %}>Open</option>
+          <option value="escalated" {% if selected_status == 'escalated' %}selected{% endif %}>Escalated</option>
+          <option value="dismissed" {% if selected_status == 'dismissed' %}selected{% endif %}>Dismissed</option>
+        </select>
+      </div>
+      <button type="submit" class="att-btn att-btn-primary"><i class="fa-solid fa-filter"></i> Filter</button>
+      <a href="{% url 'concerns:student_concerns' student.reg_no %}" class="att-btn">Clear</a>
+    </form>
+  </div>
+
+  <!-- Concerns -->
+  <div class="att-card" style="overflow:hidden;margin-bottom:1.5rem;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--att-border);">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--att-text-dark);">Concerns ({{ concern_count }})</span>
+    </div>
+    <table class="att-table">
+      <thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Assigned</th><th>Created By</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for c in concerns %}
+        <tr>
+          <td><a href="{% url 'concerns:concern_detail' c.pk %}" style="color:var(--att-primary);text-decoration:none;font-weight:600;">{{ c.title }}</a></td>
+          <td style="text-transform:capitalize;">{{ c.category }}</td>
+          <td><span class="stat-pill" style="background:{% if c.status == 'open' %}#e8f7ed{% elif c.status == 'resolved' or c.status == 'closed' %}#e8eefc{% elif c.status == 'dismissed' %}#f0f0f0{% else %}#fff4e6{% endif %};color:{% if c.status == 'open' %}#2fb344{% elif c.status == 'resolved' or c.status == 'closed' %}#4299e1{% elif c.status == 'dismissed' %}#999{% else %}#f76707{% endif %};">{{ c.status|title }}</span></td>
+          <td>{{ c.assigned_to|default:'—' }}</td>
+          <td>{{ c.created_by|default:'—' }}</td>
+          <td style="color:var(--att-text-muted);">{{ c.created_at|date:'Y-m-d' }}</td>
+          <td><button onclick="openConcernModal({{ c.pk }})" class="att-btn" style="padding:3px 7px;font-size:0.72rem;" title="View detail"><i class="fa-solid fa-eye"></i></button></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:var(--att-text-muted);padding:20px;">No concerns for this student.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Remarks -->
+  <div class="att-card" style="overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--att-border);">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--att-text-dark);">Remarks ({{ remark_count }})</span>
+    </div>
+    <table class="att-table">
+      <thead><tr><th>Date</th><th>Subject</th><th>Category</th><th>Reason</th><th>Severity</th><th>Visibility</th><th>Status</th><th>Teacher</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for r in remarks %}
+        <tr>
+          <td style="color:var(--att-text-muted);">{{ r.remark_date }}</td>
+          <td>{{ r.subject.subject|default:'—' }}</td>
+          <td style="text-transform:capitalize;">{{ r.category }}</td>
+          <td>{{ r.reason|default:'—' }}</td>
+          <td><span class="stat-pill" style="background:{% if r.severity == 'high' %}#fde8e8{% elif r.severity == 'medium' %}#fff4e6{% else %}#e8f7ed{% endif %};color:{% if r.severity == 'high' %}#d63939{% elif r.severity == 'medium' %}#f76707{% else %}#2fb344{% endif %};">{{ r.severity|title }}</span></td>
+          <td>{% if r.visibility == 'parent_visible' %}<span class="stat-pill" style="background:#e8eefc;color:#4299e1;">Visible</span>{% else %}<span class="stat-pill">Private</span>{% endif %}</td>
+          <td><span class="stat-pill">{{ r.status|title }}</span></td>
+          <td>{{ r.teacher|default:'—' }}</td>
+          <td style="white-space:nowrap;">
+            <div style="display:flex;gap:4px;">
+              <button onclick="openRemarkModal({{ r.pk }})" class="att-btn" style="padding:3px 7px;font-size:0.72rem;" title="View detail"><i class="fa-solid fa-eye"></i></button>
+              {% if is_admin %}
+              <form method="POST" action="{% url 'concerns:convert_to_concern' r.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="att-btn att-btn-primary" style="padding:3px 7px;font-size:0.72rem;" title="Convert to Concern"><i class="fa-solid fa-flag"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;color:var(--att-text-muted);padding:20px;">No remarks for this student.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Remark Detail Modal -->
+<div class="modal fade" id="remarkModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:var(--att-primary);color:#fff;">
+        <h5 class="modal-title text-white"><i class="fa-solid fa-flag me-2"></i>Remark Detail</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="remarkModalBody"><div class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm"></div> Loading...</div></div>
+      <div class="modal-footer">
+        <a href="#" id="remarkConvertLink" class="att-btn att-btn-primary"><i class="fa-solid fa-flag"></i> Convert to Concern</a>
+        <button type="button" class="att-btn" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Concern Detail Modal -->
+<div class="modal fade" id="concernModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:var(--att-danger);color:#fff;">
+        <h5 class="modal-title text-white"><i class="fa-solid fa-triangle-exclamation me-2"></i>Concern Detail</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="concernModalBody"><div class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm"></div> Loading...</div></div>
+      <div class="modal-footer">
+        <a href="#" id="concernDetailLink" class="att-btn att-btn-primary"><i class="fa-solid fa-up-right-from-square"></i> Open Full Page</a>
+        <button type="button" class="att-btn" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openRemarkModal(pk) {
+  fetch(`/concerns/remarks/${pk}/detail/`)
+    .then(r => r.json())
+    .then(d => {
+      let html = '<div style="font-size:0.88rem;line-height:1.7;">';
+      html += `<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Student</span><br><strong>${d.student_name}</strong> (${d.student_regno})</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Category</span><br>${d.category}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Date</span><br>${d.remark_date}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Teacher</span><br>${d.teacher}</div>`;
+      html += `</div>`;
+      html += `<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Grade/Section</span><br>${d.grade}${d.section ? ' / ' + d.section : ''}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Subject</span><br>${d.subject}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Severity</span><br>${d.severity}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Status</span><br>${d.status}</div>`;
+      html += `</div>`;
+      html += `<div style="margin-bottom:12px;"><span style="color:var(--att-text-muted);font-size:0.72rem;">Reason</span><br>${d.reason || '—'}</div>`;
+      html += `<div style="margin-bottom:12px;"><span style="color:var(--att-text-muted);font-size:0.72rem;">Note</span><br>${d.note || '—'}</div>`;
+      html += '</div>';
+      document.getElementById('remarkModalBody').innerHTML = html;
+      const convertLink = document.getElementById('remarkConvertLink');
+      convertLink.onclick = function(e) {
+        e.preventDefault();
+        const form = document.createElement('form');
+        form.method = 'POST'; form.action = d.convert_url;
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden'; csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = '{{ csrf_token }}'; form.appendChild(csrf);
+        document.body.appendChild(form); form.submit();
+      };
+      new bootstrap.Modal(document.getElementById('remarkModal')).show();
+    });
+}
+function openConcernModal(pk) {
+  fetch(`/concerns/concerns/${pk}/detail/`)
+    .then(r => r.json())
+    .then(d => {
+      let html = '<div style="font-size:0.88rem;line-height:1.7;">';
+      html += `<h4 style="font-weight:700;margin-bottom:8px;">${d.title}</h4>`;
+      html += `<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Student</span><br><strong>${d.student_name}</strong> (${d.student_regno})</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Status</span><br>${d.status}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Assigned</span><br>${d.assigned_to}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Created</span><br>${d.created_at}</div>`;
+      html += `</div>`;
+      if (d.description) html += `<div style="margin-bottom:12px;padding:10px;background:#f8f9fa;border-radius:6px;">${d.description}</div>`;
+      if (d.communications && d.communications.length) {
+        html += '<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Communication Log</span><div style="border-left:3px solid var(--att-border);padding-left:12px;margin-top:6px;">';
+        d.communications.forEach(c => { html += `<div style="font-size:0.8rem;margin-bottom:8px;"><strong>${c.author}</strong> <span style="color:var(--att-text-muted);font-size:0.7rem;">${c.created_at}</span><br>${c.message}</div>`; });
+        html += '</div></div>';
+      }
+      html += '</div>';
+      document.getElementById('concernModalBody').innerHTML = html;
+      document.getElementById('concernDetailLink').href = d.detail_url;
+      new bootstrap.Modal(document.getElementById('concernModal')).show();
+    });
+}
+</script>
+{% endblock %}

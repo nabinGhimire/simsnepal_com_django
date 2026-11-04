@@ -1,0 +1,236 @@
+{% extends 'concerns/base.html' %}
+{% load static %}
+
+{% block concerns_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <h2 style="font-size:1.4rem;font-weight:700;color:var(--att-text-dark);margin:0;">All Remarks</h2>
+    <div style="display:flex;gap:8px;">
+      <a href="{% url 'concerns:remark_add' %}" class="att-btn att-btn-primary"><i class="fa-solid fa-plus"></i> Add Remark</a>
+      <a href="{% url 'concerns:dashboard' %}" class="att-btn"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Count cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:1rem;">
+    <a href="{% url 'concerns:remark_list' %}" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Total</div>
+      <div style="font-size:1.3rem;font-weight:700;color:var(--att-text-dark);">{{ counts.total }}</div>
+    </a>
+    <a href="{% url 'concerns:remark_list' %}?status=open" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Open</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#2fb344;">{{ counts.open }}</div>
+    </a>
+    <a href="{% url 'concerns:remark_list' %}?status=escalated" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Escalated</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#d63939;">{{ counts.escalated }}</div>
+    </a>
+    <a href="{% url 'concerns:remark_list' %}?status=dismissed" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Dismissed</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#999;">{{ counts.dismissed }}</div>
+    </a>
+    <a href="{% url 'concerns:remark_list' %}?severity=high" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">High Sev.</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#d63939;">{{ counts.high_severity }}</div>
+    </a>
+    <a href="{% url 'concerns:remark_list' %}" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Parent Visible</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#4299e1;">{{ counts.parent_visible }}</div>
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="att-card" style="padding:14px 18px;margin-bottom:1rem;">
+    <form method="GET" id="remarkFilterForm" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Category</label>
+        <select name="category" class="att-input">
+          <option value="">All</option>
+          <option value="homework"    {% if selected_category == 'homework' %}selected{% endif %}>Homework</option>
+          <option value="behavior"    {% if selected_category == 'behavior' %}selected{% endif %}>Behavior</option>
+          <option value="cleanliness" {% if selected_category == 'cleanliness' %}selected{% endif %}>Cleanliness</option>
+          <option value="regularity"  {% if selected_category == 'regularity' %}selected{% endif %}>Regularity</option>
+          <option value="other"       {% if selected_category == 'other' %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Status</label>
+        <select name="status" class="att-input">
+          <option value="">All</option>
+          <option value="open"      {% if selected_status == 'open' %}selected{% endif %}>Open</option>
+          <option value="escalated" {% if selected_status == 'escalated' %}selected{% endif %}>Escalated</option>
+          <option value="dismissed" {% if selected_status == 'dismissed' %}selected{% endif %}>Dismissed</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Severity</label>
+        <select name="severity" class="att-input">
+          <option value="">All</option>
+          <option value="low"    {% if selected_severity == 'low' %}selected{% endif %}>Low</option>
+          <option value="medium" {% if selected_severity == 'medium' %}selected{% endif %}>Medium</option>
+          <option value="high"   {% if selected_severity == 'high' %}selected{% endif %}>High</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Grade</label>
+        <select name="grade" class="att-input">
+          <option value="">All</option>
+          {% for g in grades %}
+          <option value="{{ g.id }}" {% if selected_grade == g.id|stringformat:"s" %}selected{% endif %}>{{ g.grade_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Teacher</label>
+        <select name="teacher" class="att-input">
+          <option value="">All</option>
+          {% for t in teachers %}
+          <option value="{{ t.id }}" {% if selected_teacher == t.id|stringformat:"s" %}selected{% endif %}>{{ t.get_full_name|default:t.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">From (BS)</label>
+        <input type="text" name="date_from" class="att-input" value="{{ date_from }}" placeholder="2083-01-01" style="width:100px;">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">To (BS)</label>
+        <input type="text" name="date_to" class="att-input" value="{{ date_to }}" placeholder="2083-12-32" style="width:100px;">
+      </div>
+      <button type="submit" class="att-btn att-btn-primary"><i class="fa-solid fa-filter"></i> Filter</button>
+      <a href="{% url 'concerns:remark_list' %}" class="att-btn">Clear</a>
+      <a href="?{{ query_string }}&export=csv" class="att-btn"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="att-card" style="overflow:hidden;">
+    <table class="att-table">
+      <thead>
+        <tr><th>Student</th><th>Subject</th><th>Category</th><th>Reason</th><th>Severity</th><th>Visibility</th><th>Status</th><th>Teacher</th><th>Date</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for r in remarks %}
+        <tr>
+          <td>
+            <a href="{% url 'concerns:student_concerns' r.student.reg_no %}" style="color:var(--att-primary);text-decoration:none;font-weight:600;">{{ r.student.name }}</a>
+            <div style="font-size:0.7rem;color:var(--att-text-muted);">{{ r.student.reg_no }}</div>
+          </td>
+          <td>{{ r.subject.subject|default:'—' }}</td>
+          <td style="text-transform:capitalize;">{{ r.category }}</td>
+          <td>{{ r.reason|default:'—' }}</td>
+          <td><span class="stat-pill" style="background:{% if r.severity == 'high' %}#fde8e8{% elif r.severity == 'medium' %}#fff4e6{% else %}#e8f7ed{% endif %};color:{% if r.severity == 'high' %}#d63939{% elif r.severity == 'medium' %}#f76707{% else %}#2fb344{% endif %};">{{ r.severity|title }}</span></td>
+          <td>{% if r.visibility == 'parent_visible' %}<span class="stat-pill" style="background:#e8eefc;color:#4299e1;">Visible</span>{% else %}<span class="stat-pill">Private</span>{% endif %}</td>
+          <td><span class="stat-pill" style="background:{% if r.status == 'open' %}#e8f7ed{% elif r.status == 'escalated' %}#fde8e8{% else %}#f0f0f0{% endif %};color:{% if r.status == 'open' %}#2fb344{% elif r.status == 'escalated' %}#d63939{% else %}#999{% endif %};">{{ r.status|title }}</span></td>
+          <td>{{ r.teacher|default:'—' }}</td>
+          <td style="color:var(--att-text-muted);white-space:nowrap;">{{ r.remark_date }}</td>
+          <td style="white-space:nowrap;">
+            <div style="display:flex;gap:4px;">
+              <button onclick="openRemarkModal({{ r.pk }})" class="att-btn" style="padding:3px 7px;font-size:0.72rem;" title="View detail"><i class="fa-solid fa-eye"></i></button>
+              {% if r.status == 'open' %}
+              <form method="POST" action="{% url 'concerns:escalate_remark' r.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="att-btn att-btn-danger" style="padding:3px 7px;font-size:0.72rem;" title="Escalate"><i class="fa-solid fa-arrow-up"></i></button>
+              </form>
+              {% endif %}
+              <form method="POST" action="{% url 'concerns:convert_to_concern' r.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="att-btn att-btn-primary" style="padding:3px 7px;font-size:0.72rem;" title="Convert to Concern"><i class="fa-solid fa-flag"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="10" style="text-align:center;color:var(--att-text-muted);padding:24px;">No remarks found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:1rem;">
+    {% if page_obj.has_previous %}
+    <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}" class="att-btn"><i class="fa-solid fa-chevron-left"></i> Prev</a>
+    {% endif %}
+    <span style="font-size:0.8rem;color:var(--att-text-muted);">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}" class="att-btn">Next <i class="fa-solid fa-chevron-right"></i></a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Remark Detail Modal -->
+<div class="modal fade" id="remarkModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:var(--att-primary);color:#fff;">
+        <h5 class="modal-title text-white"><i class="fa-solid fa-flag me-2"></i>Remark Detail</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="remarkModalBody">
+        <div class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm"></div> Loading...</div>
+      </div>
+      <div class="modal-footer">
+        <a href="#" id="remarkStudentLink" class="att-btn" target="_blank"><i class="fa-solid fa-user"></i> View All for Student</a>
+        <a href="#" id="remarkConvertLink" class="att-btn att-btn-primary"><i class="fa-solid fa-flag"></i> Convert to Concern</a>
+        <button type="button" class="att-btn" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openRemarkModal(pk) {
+  fetch(`/concerns/remarks/${pk}/detail/`)
+    .then(r => r.json())
+    .then(d => {
+      let html = '<div style="font-size:0.88rem;line-height:1.7;">';
+      html += `<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Student</span><br><strong>${d.student_name}</strong> (${d.student_regno})</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Category</span><br><span class="text-capitalize">${d.category}</span></div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Date</span><br>${d.remark_date}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Teacher</span><br>${d.teacher}</div>`;
+      html += `</div>`;
+      html += `<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Grade/Section</span><br>${d.grade}${d.section ? ' / ' + d.section : ''}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Subject</span><br>${d.subject}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Severity</span><br>${d.severity}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Status</span><br>${d.status}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Visibility</span><br>${d.visibility}</div>`;
+      html += `</div>`;
+      html += `<div style="margin-bottom:12px;"><span style="color:var(--att-text-muted);font-size:0.72rem;">Reason</span><br>${d.reason || '—'}</div>`;
+      html += `<div style="margin-bottom:12px;"><span style="color:var(--att-text-muted);font-size:0.72rem;">Note</span><br>${d.note || '—'}</div>`;
+      if (d.edit_logs && d.edit_logs.length) {
+        html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Edit History</span>`;
+        html += '<div style="border-left:3px solid var(--att-border);padding-left:12px;margin-top:6px;">';
+        d.edit_logs.forEach(l => {
+          html += `<div style="font-size:0.78rem;margin-bottom:4px;"><strong>${l.changed_by}</strong> changed <em>${l.field}</em>: "${l.old_value}" → "${l.new_value}" <span style="color:var(--att-text-muted);">(${l.changed_at})</span></div>`;
+        });
+        html += '</div></div>';
+      }
+      html += '</div>';
+      document.getElementById('remarkModalBody').innerHTML = html;
+      document.getElementById('remarkStudentLink').href = d.student_url;
+      document.getElementById('remarkConvertLink').href = d.convert_url;
+      // Show convert button as a POST form
+      const convertLink = document.getElementById('remarkConvertLink');
+      convertLink.onclick = function(e) {
+        e.preventDefault();
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = d.convert_url;
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden'; csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+        document.body.appendChild(form);
+        form.submit();
+      };
+      new bootstrap.Modal(document.getElementById('remarkModal')).show();
+    });
+}
+</script>
+{% endblock %}

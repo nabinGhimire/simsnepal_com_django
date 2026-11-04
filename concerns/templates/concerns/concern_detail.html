@@ -1,0 +1,99 @@
+{% extends 'concerns/base.html' %}
+
+{% block concerns_content %}
+<div style="padding:1.25rem;">
+
+  <div style="margin-bottom:1rem;">
+    <a href="{% url 'concerns:concern_list' %}" class="att-btn"><i class="fa-solid fa-arrow-left"></i> All Concerns</a>
+  </div>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;">
+    <div>
+      <!-- Concern card -->
+      <div class="att-card" style="padding:18px 20px;margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 style="font-size:1.1rem;font-weight:700;color:var(--att-text-dark);margin:0;">{{ concern.title }}</h3>
+          <span class="stat-pill" style="background:{% if concern.status == 'open' %}#e8f7ed{% elif concern.status == 'resolved' or concern.status == 'closed' %}#e8eefc{% elif concern.status == 'dismissed' %}#f0f0f0{% else %}#fff4e6{% endif %};color:{% if concern.status == 'open' %}#2fb344{% elif concern.status == 'resolved' or concern.status == 'closed' %}#4299e1{% elif concern.status == 'dismissed' %}#999{% else %}#f76707{% endif %};">{{ concern.status|title }}</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:0.8rem;margin-bottom:14px;">
+          <div><span style="color:var(--att-text-muted);">Student:</span> <a href="{% url 'concerns:student_concerns' concern.student.reg_no %}" style="color:var(--att-primary);font-weight:600;text-decoration:none;">{{ concern.student.name }}</a></div>
+          <div><span style="color:var(--att-text-muted);">Category:</span> <span style="text-transform:capitalize;">{{ concern.category }}</span></div>
+          <div><span style="color:var(--att-text-muted);">Assigned:</span> {{ concern.assigned_to|default:'Unassigned' }}</div>
+          <div><span style="color:var(--att-text-muted);">Created:</span> {{ concern.created_at|date:'Y-m-d H:i' }}</div>
+          <div><span style="color:var(--att-text-muted);">Source:</span> {% if concern.source_remark %}Remark #{{ concern.source_remark.pk }}{% else %}Direct{% endif %}</div>
+        </div>
+        {% if concern.description %}
+        <div style="font-size:0.85rem;line-height:1.6;color:var(--att-text-dark);border-top:1px solid var(--att-border);padding-top:10px;">{{ concern.description }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Status update -->
+      <div class="att-card" style="padding:14px 18px;margin-bottom:1rem;">
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--att-text-muted);margin-bottom:8px;">Update Status</div>
+        <form method="POST" action="{% url 'concerns:concern_status' concern.pk %}" style="display:flex;gap:8px;align-items:center;">
+          {% csrf_token %}
+          <select name="status" class="att-input">
+            {% for val, label in concern.CONCERN_STATUS_CHOICES %}
+            <option value="{{ val }}" {% if concern.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="att-btn att-btn-primary">Update</button>
+        </form>
+      </div>
+
+      <!-- Communication log -->
+      <div class="att-card" style="padding:14px 18px;">
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--att-text-muted);margin-bottom:10px;">Communication Log</div>
+        {% if comms %}
+        {% for comm in comms %}
+        <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--att-border);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span class="stat-pill" style="background:{% if comm.direction == 'outbound' %}#e8eefc{% else %}#e8f7ed{% endif %};color:{% if comm.direction == 'outbound' %}#4299e1{% else %}#2fb344{% endif %};">{{ comm.direction|title }}</span>
+            <span style="font-size:0.72rem;color:var(--att-text-muted);">{{ comm.channel }}</span>
+            <span style="font-size:0.72rem;color:var(--att-text-muted);">{{ comm.author|default:'—' }}</span>
+            <span style="font-size:0.72rem;color:var(--att-text-muted);margin-left:auto;">{{ comm.created_at|date:'Y-m-d H:i' }}</span>
+          </div>
+          <div style="font-size:0.85rem;color:var(--att-text-dark);padding-left:12px;border-left:2px solid var(--att-border);">{{ comm.message }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="color:var(--att-text-muted);font-size:0.85rem;">No communications logged.</p>
+        {% endif %}
+        <hr style="border:none;border-top:1px solid var(--att-border);margin:12px 0;">
+        <form method="POST" action="{% url 'concerns:concern_add_comm' concern.pk %}">
+          {% csrf_token %}
+          <textarea name="message" class="att-input" rows="2" style="width:100%;margin-bottom:8px;" placeholder="Log a phone call, message, meeting note..." required></textarea>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select name="channel" class="att-input">
+              <option value="app">App</option>
+              <option value="sms">SMS</option>
+              <option value="phone">Phone Call</option>
+              <option value="email">Email</option>
+              <option value="in_person">In Person</option>
+              <option value="other">Other</option>
+            </select>
+            <button type="submit" class="att-btn att-btn-primary"><i class="fa-solid fa-plus"></i> Log</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sidebar: source remark -->
+    <div>
+      {% if concern.source_remark %}
+      <div class="att-card" style="padding:14px 18px;">
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--att-text-muted);margin-bottom:10px;">Source Remark</div>
+        <div style="font-size:0.8rem;line-height:1.6;">
+          <div style="margin-bottom:6px;"><span style="color:var(--att-text-muted);">Category:</span> <span style="text-transform:capitalize;">{{ concern.source_remark.category }}</span></div>
+          <div style="margin-bottom:6px;"><span style="color:var(--att-text-muted);">Reason:</span> {{ concern.source_remark.reason|default:'—' }}</div>
+          <div style="margin-bottom:6px;"><span style="color:var(--att-text-muted);">Note:</span> {{ concern.source_remark.note|default:'—' }}</div>
+          <div style="margin-bottom:6px;"><span style="color:var(--att-text-muted);">Severity:</span> {{ concern.source_remark.severity|title }}</div>
+          <div><span style="color:var(--att-text-muted);">Teacher:</span> {{ concern.source_remark.teacher|default:'—' }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

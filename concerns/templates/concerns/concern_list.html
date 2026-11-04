@@ -1,0 +1,199 @@
+{% extends 'concerns/base.html' %}
+
+{% block concerns_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <h2 style="font-size:1.4rem;font-weight:700;color:var(--att-text-dark);margin:0;">All Concerns</h2>
+    <div style="display:flex;gap:8px;">
+      <a href="{% url 'concerns:concern_add' %}" class="att-btn att-btn-primary"><i class="fa-solid fa-plus"></i> Add Concern</a>
+      <a href="{% url 'concerns:dashboard' %}" class="att-btn"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Count cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:1rem;">
+    <a href="{% url 'concerns:concern_list' %}" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Total</div>
+      <div style="font-size:1.3rem;font-weight:700;color:var(--att-text-dark);">{{ counts.total }}</div>
+    </a>
+    <a href="{% url 'concerns:concern_list' %}?status=open" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Open</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#2fb344;">{{ counts.open }}</div>
+    </a>
+    <a href="{% url 'concerns:concern_list' %}?status=in_progress" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">In Progress</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#f76707;">{{ counts.in_progress }}</div>
+    </a>
+    <a href="{% url 'concerns:concern_list' %}?status=awaiting_parent" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Awaiting</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#f76707;">{{ counts.awaiting_parent }}</div>
+    </a>
+    <a href="{% url 'concerns:concern_list' %}?status=resolved" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Resolved</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#4299e1;">{{ counts.resolved }}</div>
+    </a>
+    <a href="{% url 'concerns:concern_list' %}?status=closed" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Closed</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#6c757d;">{{ counts.closed }}</div>
+    </a>
+    <a href="{% url 'concerns:concern_list' %}?status=dismissed" class="att-card" style="padding:8px 12px;text-decoration:none;color:inherit;text-align:center;">
+      <div style="font-size:0.65rem;text-transform:uppercase;color:var(--att-text-muted);font-weight:700;">Dismissed</div>
+      <div style="font-size:1.3rem;font-weight:700;color:#999;">{{ counts.dismissed }}</div>
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="att-card" style="padding:14px 18px;margin-bottom:1rem;">
+    <form method="GET" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Search</label>
+        <input type="text" name="q" class="att-input" value="{{ search_q }}" placeholder="Name, reg_no, title" style="width:160px;">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Status</label>
+        <select name="status" class="att-input">
+          <option value="">All</option>
+          <option value="open"            {% if selected_status == 'open' %}selected{% endif %}>Open</option>
+          <option value="in_progress"     {% if selected_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+          <option value="awaiting_parent" {% if selected_status == 'awaiting_parent' %}selected{% endif %}>Awaiting Parent</option>
+          <option value="resolved"        {% if selected_status == 'resolved' %}selected{% endif %}>Resolved</option>
+          <option value="closed"          {% if selected_status == 'closed' %}selected{% endif %}>Closed</option>
+          <option value="dismissed"       {% if selected_status == 'dismissed' %}selected{% endif %}>Dismissed</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Category</label>
+        <select name="category" class="att-input">
+          <option value="">All</option>
+          <option value="homework"    {% if selected_category == 'homework' %}selected{% endif %}>Homework</option>
+          <option value="behavior"    {% if selected_category == 'behavior' %}selected{% endif %}>Behavior</option>
+          <option value="cleanliness" {% if selected_category == 'cleanliness' %}selected{% endif %}>Cleanliness</option>
+          <option value="regularity"  {% if selected_category == 'regularity' %}selected{% endif %}>Regularity</option>
+          <option value="other"       {% if selected_category == 'other' %}selected{% endif %}>Other</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Created By</label>
+        <select name="teacher" class="att-input">
+          <option value="">All</option>
+          {% for t in teachers %}
+          <option value="{{ t.id }}" {% if selected_teacher == t.id|stringformat:"s" %}selected{% endif %}>{{ t.get_full_name|default:t.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">From (AD)</label>
+        <input type="date" name="date_from" class="att-input" value="{{ date_from }}">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">To (AD)</label>
+        <input type="date" name="date_to" class="att-input" value="{{ date_to }}">
+      </div>
+      <button type="submit" class="att-btn att-btn-primary"><i class="fa-solid fa-filter"></i> Filter</button>
+      <a href="{% url 'concerns:concern_list' %}" class="att-btn">Clear</a>
+      <a href="?{{ query_string }}&export=csv" class="att-btn"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="att-card" style="overflow:hidden;">
+    <table class="att-table">
+      <thead>
+        <tr><th>Student</th><th>Category</th><th>Title</th><th>Status</th><th>Assigned</th><th>Source</th><th>Created By</th><th>Created</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for c in concerns %}
+        <tr>
+          <td>
+            <a href="{% url 'concerns:student_concerns' c.student.reg_no %}" style="color:var(--att-primary);text-decoration:none;font-weight:600;">{{ c.student.name }}</a>
+            <div style="font-size:0.7rem;color:var(--att-text-muted);">{{ c.student.reg_no }}</div>
+          </td>
+          <td style="text-transform:capitalize;">{{ c.category }}</td>
+          <td>{{ c.title }}</td>
+          <td><span class="stat-pill" style="background:{% if c.status == 'open' %}#e8f7ed{% elif c.status == 'resolved' or c.status == 'closed' %}#e8eefc{% elif c.status == 'dismissed' %}#f0f0f0{% else %}#fff4e6{% endif %};color:{% if c.status == 'open' %}#2fb344{% elif c.status == 'resolved' or c.status == 'closed' %}#4299e1{% elif c.status == 'dismissed' %}#999{% else %}#f76707{% endif %};">{{ c.status|title }}</span></td>
+          <td>{{ c.assigned_to|default:'—' }}</td>
+          <td>{% if c.source_remark %}<span class="stat-pill" style="background:#fff4e6;color:#f76707;">Remark</span>{% else %}<span style="color:var(--att-text-muted);">Direct</span>{% endif %}</td>
+          <td>{{ c.created_by|default:'—' }}</td>
+          <td style="color:var(--att-text-muted);white-space:nowrap;">{{ c.created_at|date:'Y-m-d H:i' }}</td>
+          <td style="white-space:nowrap;">
+            <div style="display:flex;gap:4px;">
+              <button onclick="openConcernModal({{ c.pk }})" class="att-btn" style="padding:3px 7px;font-size:0.72rem;" title="View detail"><i class="fa-solid fa-eye"></i></button>
+              <a href="{% url 'concerns:concern_detail' c.pk %}" class="att-btn" style="padding:3px 7px;font-size:0.72rem;" title="Open detail page"><i class="fa-solid fa-up-right-from-square"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;color:var(--att-text-muted);padding:24px;">No concerns found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:1rem;">
+    {% if page_obj.has_previous %}
+    <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}" class="att-btn"><i class="fa-solid fa-chevron-left"></i> Prev</a>
+    {% endif %}
+    <span style="font-size:0.8rem;color:var(--att-text-muted);">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}" class="att-btn">Next <i class="fa-solid fa-chevron-right"></i></a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Concern Detail Modal -->
+<div class="modal fade" id="concernModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:var(--att-danger);color:#fff;">
+        <h5 class="modal-title text-white"><i class="fa-solid fa-triangle-exclamation me-2"></i>Concern Detail</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="concernModalBody">
+        <div class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm"></div> Loading...</div>
+      </div>
+      <div class="modal-footer">
+        <a href="#" id="concernStudentLink" class="att-btn" target="_blank"><i class="fa-solid fa-user"></i> View All for Student</a>
+        <a href="#" id="concernDetailLink" class="att-btn att-btn-primary"><i class="fa-solid fa-up-right-from-square"></i> Open Full Page</a>
+        <button type="button" class="att-btn" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openConcernModal(pk) {
+  fetch(`/concerns/concerns/${pk}/detail/`)
+    .then(r => r.json())
+    .then(d => {
+      let html = '<div style="font-size:0.88rem;line-height:1.7;">';
+      html += `<h4 style="font-weight:700;margin-bottom:8px;">${d.title}</h4>`;
+      html += `<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Student</span><br><strong>${d.student_name}</strong> (${d.student_regno})</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Category</span><br><span class="text-capitalize">${d.category}</span></div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Status</span><br>${d.status}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Assigned</span><br>${d.assigned_to}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Created By</span><br>${d.created_by}</div>`;
+      html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Created</span><br>${d.created_at}</div>`;
+      html += `</div>`;
+      if (d.description) html += `<div style="margin-bottom:12px;padding:10px;background:#f8f9fa;border-radius:6px;"><span style="color:var(--att-text-muted);font-size:0.72rem;">Description</span><br>${d.description}</div>`;
+      if (d.communications && d.communications.length) {
+        html += `<div><span style="color:var(--att-text-muted);font-size:0.72rem;">Communication Log</span>`;
+        html += '<div style="border-left:3px solid var(--att-border);padding-left:12px;margin-top:6px;">';
+        d.communications.forEach(c => {
+          html += `<div style="font-size:0.8rem;margin-bottom:8px;"><span class="stat-pill" style="font-size:0.62rem;">${c.direction} · ${c.channel}</span> <strong>${c.author}</strong> <span style="color:var(--att-text-muted);font-size:0.7rem;">${c.created_at}</span><br>${c.message}</div>`;
+        });
+        html += '</div></div>';
+      }
+      html += '</div>';
+      document.getElementById('concernModalBody').innerHTML = html;
+      document.getElementById('concernStudentLink').href = d.student_url;
+      document.getElementById('concernDetailLink').href = d.detail_url;
+      new bootstrap.Modal(document.getElementById('concernModal')).show();
+    });
+}
+</script>
+{% endblock %}

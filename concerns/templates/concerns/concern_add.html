@@ -1,0 +1,60 @@
+{% extends 'concerns/base.html' %}
+
+{% block concerns_content %}
+<div style="padding:1.25rem; max-width:700px;">
+  <div style="margin-bottom:1rem;">
+    <a href="{% url 'concerns:concern_list' %}" class="att-btn"><i class="fa-solid fa-arrow-left"></i> Concerns</a>
+  </div>
+  <h2 style="font-size:1.3rem;font-weight:700;color:var(--att-text-dark);margin-bottom:1.5rem;">Add Concern</h2>
+
+  <div class="att-card" style="padding:20px;">
+    <form method="POST">
+      {% csrf_token %}
+
+      <div style="margin-bottom:14px;">
+        <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Student</label>
+        <select name="student" class="att-input" required style="width:100%;">
+          <option value="">— Select student —</option>
+          {% for s in students %}
+          <option value="{{ s.reg_no }}">{{ s.name }} ({{ s.reg_no }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:150px;">
+          <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Category</label>
+          <select name="category" class="att-input" style="width:100%;">
+            <option value="homework">Homework</option>
+            <option value="behavior">Behavior</option>
+            <option value="cleanliness">Cleanliness</option>
+            <option value="regularity">Regularity</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:150px;">
+          <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Grade</label>
+          <select name="grade" class="att-input" style="width:100%;">
+            {% for g in grades %}
+            <option value="{{ g.id }}">{{ g.grade_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Title</label>
+        <input type="text" name="title" class="att-input" style="width:100%;" placeholder="e.g. Homework concern — Repeated non-completion" required>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Description</label>
+        <textarea name="description" class="att-input" rows="4" style="width:100%;resize:vertical;" placeholder="Detailed description of the concern..."></textarea>
+      </div>
+
+      <button type="submit" class="att-btn att-btn-primary"><i class="fa-solid fa-floppy-disk"></i> Create Concern</button>
+      <a href="{% url 'concerns:concern_list' %}" class="att-btn">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

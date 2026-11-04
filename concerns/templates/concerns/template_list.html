@@ -1,0 +1,105 @@
+{% extends 'concerns/base.html' %}
+
+{% block concerns_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <h2 style="font-size:1.4rem;font-weight:700;color:var(--att-text-dark);margin:0;">Remark Templates</h2>
+    <a href="{% url 'concerns:dashboard' %}" class="att-btn"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+  </div>
+
+  <!-- Add template form -->
+  <div class="att-card" style="padding:16px 20px;margin-bottom:1.5rem;">
+    <div style="font-size:0.8rem;font-weight:700;color:var(--att-text-dark);margin-bottom:10px;">Add New Template</div>
+    <form method="POST" action="{% url 'concerns:template_add' %}" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+      {% csrf_token %}
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Category</label>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <select name="category" class="att-input" id="catSelect">
+            <option value="homework">Homework</option>
+            <option value="behavior">Behavior</option>
+            <option value="cleanliness">Cleanliness</option>
+            <option value="regularity">Regularity</option>
+            <option value="other">Other</option>
+            {% for cat in custom_categories %}
+            <option value="{{ cat }}">{{ cat|title }}</option>
+            {% endfor %}
+            <option value="__custom__">+ New category...</option>
+          </select>
+          <input type="text" name="category_custom" class="att-input" id="catCustom" placeholder="Type category name" style="display:none;width:140px;">
+        </div>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Text</label>
+        <input type="text" name="text" class="att-input" style="width:100%;" placeholder="e.g. Not done" required>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:3px;">Order</label>
+        <input type="number" name="sort_order" class="att-input" value="0" style="width:60px;">
+      </div>
+      <button type="submit" class="att-btn att-btn-primary"><i class="fa-solid fa-plus"></i> Add</button>
+    </form>
+  </div>
+
+  <!-- Templates grouped by category -->
+  {% if templates %}
+  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+    {% regroup templates by category as cat_list %}
+    {% for cat_group in cat_list %}
+    <div class="att-card" style="overflow:hidden;">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--att-border);display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:0.85rem;font-weight:700;color:var(--att-text-dark);text-transform:capitalize;">{{ cat_group.grouper }}</span>
+        <span class="stat-pill">{{ cat_group.list|length }} template{{ cat_group.list|length|pluralize }}</span>
+      </div>
+      <table class="att-table">
+        <thead><tr><th>Text</th><th>Order</th><th>Active</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for t in cat_group.list %}
+          <tr>
+            <td>{{ t.text }}</td>
+            <td>{{ t.sort_order }}</td>
+            <td>{% if t.active %}<i class="fa-solid fa-check" style="color:var(--att-success);"></i>{% else %}<i class="fa-solid fa-xmark" style="color:var(--att-danger);"></i>{% endif %}</td>
+            <td>
+              <form method="POST" action="{% url 'concerns:template_delete' t.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="att-btn att-btn-danger" style="padding:3px 7px;font-size:0.72rem;" onclick="return confirm('Deactivate this template?')">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="att-card" style="padding:24px;text-align:center;color:var(--att-text-muted);">
+    No templates yet. Use the form above to add one.
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const catSelect = document.getElementById('catSelect');
+const catCustom = document.getElementById('catCustom');
+catSelect.addEventListener('change', function() {
+  if (this.value === '__custom__') {
+    catCustom.style.display = 'block';
+    catCustom.focus();
+  } else {
+    catCustom.style.display = 'none';
+    catCustom.value = '';
+  }
+});
+// On submit, replace category with custom value if needed
+document.querySelector('form[action="{% url "concerns:template_add" %}"]').addEventListener('submit', function(e) {
+  if (catSelect.value === '__custom__') {
+    if (!catCustom.value.trim()) { e.preventDefault(); catCustom.focus(); return; }
+    catSelect.value = catCustom.value.trim();
+  }
+});
+</script>
+{% endblock %}

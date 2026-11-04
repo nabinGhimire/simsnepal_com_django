@@ -1,0 +1,220 @@
+{% extends 'concerns/base.html' %}
+{% load static %}
+
+{% block concerns_content %}
+<div style="padding:1.25rem; max-width:700px;">
+  <div style="margin-bottom:1rem;">
+    <a href="{% url 'concerns:remark_list' %}" class="att-btn"><i class="fa-solid fa-arrow-left"></i> Remarks</a>
+  </div>
+  <h2 style="font-size:1.3rem;font-weight:700;color:var(--att-text-dark);margin-bottom:1.5rem;">Add Remark</h2>
+
+  <div class="att-card" style="padding:20px;">
+    <form method="POST" id="remarkForm">
+      {% csrf_token %}
+
+      <!-- Student search -->
+      <div style="margin-bottom:14px;">
+        <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Student</label>
+        <input type="text" id="studentSearch" class="att-input" placeholder="Type student name or reg no (min 2 chars)..." autocomplete="off" style="width:100%;">
+        <div id="studentResults" style="display:none;position:absolute;z-index:1050;background:var(--att-card-bg);border:1px solid var(--att-border);border-radius:6px;max-height:250px;overflow-y:auto;box-shadow:var(--att-shadow-hover);width:96%;"></div>
+        <input type="hidden" name="student" id="studentRegNo" required>
+        <div id="studentSelected" style="display:none;margin-top:6px;padding:8px 10px;background:var(--att-border);border-radius:6px;font-size:0.82rem;">
+          <strong id="selStudentName"></strong> <span style="color:var(--att-text-muted);" id="selStudentInfo"></span>
+          <button type="button" onclick="clearStudent()" style="float:right;border:none;background:none;cursor:pointer;color:var(--att-danger);font-size:0.8rem;">✕</button>
+        </div>
+      </div>
+
+      <!-- Grade + Section (auto-filled, read-only display) -->
+      <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:150px;">
+          <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Grade</label>
+          <select name="grade" class="att-input" id="gradeSelect" required style="width:100%;">
+            <option value="">— Auto-filled on student select —</option>
+            {% for g in grades %}
+            <option value="{{ g.id }}">{{ g.grade_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:150px;">
+          <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Section</label>
+          <input type="text" class="att-input" id="sectionDisplay" readonly placeholder="Auto-filled" style="width:100%;background:var(--att-border);">
+          <input type="hidden" name="section" id="sectionInput">
+        </div>
+      </div>
+
+      <!-- Category + Severity + Date -->
+      <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:150px;">
+          <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Category</label>
+          <select name="category" class="att-input" id="categorySelect" style="width:100%;">
+            <option value="homework">Homework</option>
+            <option value="behavior">Behavior</option>
+            <option value="cleanliness">Cleanliness</option>
+            <option value="regularity">Regularity</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:120px;">
+          <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Severity</label>
+          <select name="severity" class="att-input" style="width:100%;">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:120px;">
+          <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">BS Date</label>
+          <input type="text" name="remark_date" class="att-input" value="{{ today_bs }}" placeholder="YYYY-MM-DD" style="width:100%;">
+        </div>
+      </div>
+
+      <!-- Subject (filtered by student's grade) -->
+      <div style="margin-bottom:14px;">
+        <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Subject (optional)</label>
+        <select name="subject" class="att-input" id="subjectSelect" style="width:100%;">
+          <option value="">— Select student first —</option>
+        </select>
+      </div>
+
+      <!-- Quick-pick from templates (filtered by category) -->
+      <div style="margin-bottom:8px;">
+        <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Quick-pick Reason</label>
+        <div id="templateButtons" style="display:flex;flex-wrap:wrap;gap:5px;">
+          {% for t in templates %}
+          <button type="button" class="att-btn template-btn" data-text="{{ t.text }}" data-cat="{{ t.category }}"
+            style="padding:3px 10px;font-size:0.75rem;">{{ t.text }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Reason</label>
+        <input type="text" name="reason" class="att-input" id="reasonInput" style="width:100%;" placeholder="e.g. Not done">
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <label style="font-size:0.78rem;font-weight:700;color:var(--att-text-muted);display:block;margin-bottom:4px;">Note</label>
+        <textarea name="note" class="att-input" rows="3" style="width:100%;resize:vertical;" placeholder="Detailed observation..."></textarea>
+      </div>
+
+      <button type="submit" class="att-btn att-btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Remark</button>
+      <a href="{% url 'concerns:remark_list' %}" class="att-btn">Cancel</a>
+    </form>
+  </div>
+</div>
+
+<script>
+const searchInput = document.getElementById('studentSearch');
+const resultsDiv = document.getElementById('studentResults');
+const regNoInput = document.getElementById('studentRegNo');
+const selectedDiv = document.getElementById('studentSelected');
+const selName = document.getElementById('selStudentName');
+const selInfo = document.getElementById('selStudentInfo');
+const gradeSelect = document.getElementById('gradeSelect');
+const sectionDisplay = document.getElementById('sectionDisplay');
+const sectionInput = document.getElementById('sectionInput');
+const subjectSelect = document.getElementById('subjectSelect');
+const categorySelect = document.getElementById('categorySelect');
+let searchTimer;
+
+// ── Student search ───────────────────────────────────────────────────
+searchInput.addEventListener('input', function() {
+  clearTimeout(searchTimer);
+  const q = this.value.trim();
+  if (q.length < 2) {
+    resultsDiv.style.display = 'none';
+    return;
+  }
+  searchTimer = setTimeout(() => {
+    fetch(`{% url 'concerns:student_search_api' %}?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.results || data.results.length === 0) {
+          resultsDiv.innerHTML = '<div style="padding:10px;color:var(--att-text-muted);font-size:0.82rem;">No students found.</div>';
+          resultsDiv.style.display = 'block';
+          return;
+        }
+        resultsDiv.innerHTML = data.results.map(s =>
+          `<div onclick="selectStudent('${s.reg_no}','${s.name.replace(/'/g,"\\'")}','${s.grade_id}','${s.grade_name}','${s.section_id||''}','${s.section_name||''}','${s.roll_no}')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--att-border);font-size:0.82rem;" onmouseover="this.style.background='var(--att-border)'" onmouseout="this.style.background=''"><strong>${s.name}</strong> · ${s.reg_no} · ${s.grade_name}${s.section_name ? ' / ' + s.section_name : ''} · Roll ${s.roll_no}</div>`
+        ).join('');
+        resultsDiv.style.display = 'block';
+      });
+  }, 250);
+});
+
+document.addEventListener('click', e => {
+  if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target))
+    resultsDiv.style.display = 'none';
+});
+
+function selectStudent(regno, name, gradeId, gradeName, sectionId, sectionName, rollNo) {
+  regNoInput.value = regno;
+  selName.textContent = name + ' (' + regno + ')';
+  selInfo.textContent = gradeName + (sectionName ? ' / ' + sectionName : '') + ' · Roll ' + rollNo;
+  selectedDiv.style.display = 'block';
+  searchInput.value = '';
+  searchInput.placeholder = name + ' selected';
+  resultsDiv.style.display = 'none';
+
+  // Auto-select grade
+  for (let opt of gradeSelect.options) {
+    if (opt.value === gradeId) { opt.selected = true; break; }
+  }
+
+  // Auto-fill section
+  sectionDisplay.value = sectionName || '';
+  sectionInput.value = sectionId || '';
+
+  // Fetch and populate subjects for this student's grade
+  fetch(`{% url 'concerns:student_detail_api' %}?regno=${regno}`)
+    .then(r => r.json())
+    .then(data => {
+      subjectSelect.innerHTML = '<option value="">— None —</option>';
+      if (data.subjects && data.subjects.length) {
+        data.subjects.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id; opt.textContent = s.name;
+          subjectSelect.appendChild(opt);
+        });
+      } else {
+        subjectSelect.innerHTML = '<option value="">— No subjects for this grade —</option>';
+      }
+    })
+    .catch(() => {
+      subjectSelect.innerHTML = '<option value="">— Error loading subjects —</option>';
+    });
+}
+
+function clearStudent() {
+  regNoInput.value = '';
+  selectedDiv.style.display = 'none';
+  searchInput.value = '';
+  searchInput.placeholder = 'Type student name or reg no (min 2 chars)...';
+  sectionDisplay.value = '';
+  sectionInput.value = '';
+  subjectSelect.innerHTML = '<option value="">— Select student first —</option>';
+  gradeSelect.selectedIndex = 0;
+}
+
+// ── Filter quick-pick buttons by category ──────────────────────────────
+function filterTemplateButtons() {
+  const cat = categorySelect.value;
+  document.querySelectorAll('.template-btn').forEach(btn => {
+    if (btn.dataset.cat === cat) {
+      btn.style.display = 'inline-flex';
+    } else {
+      btn.style.display = 'none';
+    }
+  });
+}
+categorySelect.addEventListener('change', filterTemplateButtons);
+filterTemplateButtons(); // run once on load
+
+// ── Template button → reason input ─────────────────────────────────────
+document.querySelectorAll('.template-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.getElementById('reasonInput').value = this.dataset.text;
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends 'panel/panel-main.html' %}
+{% load static %}
+
+{% block title %}ConcernMS | SIMSnepal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<style>
+  :root {
+    --att-bg: #f7f9fc;
+    --att-card-bg: #ffffff;
+    --att-border: #e9ecef;
+    --att-text-muted: #6c757d;
+    --att-text-dark: #212529;
+    --att-primary: #e93a6e;
+    --att-primary-dark: #c92a55;
+    --att-success: #2fb344;
+    --att-warning: #ffb703;
+    --att-danger: #e63946;
+    --att-radius: 10px;
+    --att-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --att-shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  [data-theme="dark"] {
+    --att-bg: #1a1b26;
+    --att-card-bg: #232934;
+    --att-border: #3a3d49;
+    --att-text-muted: #a0a5b3;
+    --att-text-dark: #e4e7eb;
+    --att-primary: #f4689f;
+    --att-primary-dark: #e93a6e;
+    --att-success: #34d399;
+    --att-warning: #fbbf24;
+    --att-danger: #f87171;
+    --att-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --att-shadow-hover: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  html, body {
+    background: var(--att-bg);
+    color: var(--att-text-dark);
+  }
+  .att-card {
+    background: var(--att-card-bg); border: 1px solid var(--att-border);
+    border-radius: var(--att-radius); box-shadow: var(--att-shadow);
+  }
+  .att-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0.45rem 0.9rem; font-size: 0.85rem; font-weight: 600;
+    border: 1px solid var(--att-border); border-radius: 6px;
+    background: var(--att-card-bg); color: var(--att-text-dark);
+    text-decoration: none; cursor: pointer; transition: all 0.15s;
+  }
+  .att-btn:hover { background: var(--att-border); }
+  .att-btn-primary {
+    background: var(--att-primary); color: #fff; border-color: var(--att-primary);
+  }
+  .att-btn-primary:hover { background: var(--att-primary-dark); }
+  .att-btn-ghost { background: transparent; }
+  .att-btn-danger { background: var(--att-danger); color: #fff; border-color: var(--att-danger); }
+  .att-input {
+    padding: 0.4rem 0.7rem; font-size: 0.85rem;
+    border: 1px solid var(--att-border); border-radius: 6px;
+    background: var(--att-card-bg); color: var(--att-text-dark);
+  }
+  .att-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; font-size: 0.68rem; font-weight: 600;
+    border-radius: 4px; text-decoration: none;
+  }
+  .att-table { width: 100%; font-size: 0.85rem; }
+  .att-table th {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--att-text-muted); padding: 8px 12px; border-bottom: 1px solid var(--att-border);
+    text-align: left; white-space: nowrap;
+  }
+  .att-table td { padding: 10px 12px; border-bottom: 1px solid var(--att-border); }
+  .att-table tr:last-child td { border-bottom: none; }
+  .att-table tr:hover td { background: rgba(0,0,0,0.02); }
+
+  .stat-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; font-size: 0.75rem; font-weight: 600;
+    border-radius: 20px; background: var(--att-border); color: var(--att-text-muted);
+  }
+</style>
+{% endblock extra_css %}
+
+{% block navbar %}
+<!-- ConcernMS Sub-Navbar -->
+<div class="navbar-expand-md">
+  <div class="collapse navbar-collapse" id="navbar-menu">
+    <div class="navbar navbar-light bg-white border-bottom shadow-xs">
+      <div class="container-xl">
+        <ul class="navbar-nav">
+          <li class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'concerns:dashboard' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <i class="fa-solid fa-gauge text-pink"></i>
+              </span>
+              <span class="nav-link-title">Dashboard</span>
+            </a>
+          </li>
+          <li class="nav-item {% if request.resolver_match.url_name == 'remark_list' %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'concerns:remark_list' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <i class="fa-solid fa-flag text-warning"></i>
+              </span>
+              <span class="nav-link-title">Remarks</span>
+            </a>
+          </li>
+          <li class="nav-item {% if request.resolver_match.url_name == 'concern_list' or request.resolver_match.url_name == 'concern_detail' %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'concerns:concern_list' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+              </span>
+              <span class="nav-link-title">Concerns</span>
+            </a>
+          </li>
+          <li class="nav-item {% if request.resolver_match.url_name == 'template_list' %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'concerns:template_list' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <i class="fa-solid fa-list text-secondary"></i>
+              </span>
+              <span class="nav-link-title">Templates</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock navbar %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <div class="row">
+    <div class="col-12">
+      {% block concerns_content %}
+      {% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

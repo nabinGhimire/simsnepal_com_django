@@ -1,0 +1,110 @@
+{% extends 'concerns/base.html' %}
+{% load static %}
+
+{% block concerns_content %}
+<div style="padding:1.25rem;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--att-text-dark);margin:0;">ConcernMS Dashboard</h2>
+      <p style="font-size:0.85rem;color:var(--att-text-muted);margin:2px 0 0 0;">Student Observation &amp; Concern Management</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="{% url 'concerns:remark_list' %}" class="att-btn"><i class="fa-solid fa-flag"></i> Remarks</a>
+      <a href="{% url 'concerns:concern_list' %}" class="att-btn att-btn-primary"><i class="fa-solid fa-triangle-exclamation"></i> Concerns</a>
+    </div>
+  </div>
+
+  <!-- Summary cards — condensed to 4 key metrics -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;">
+    <a href="{% url 'concerns:remark_list' %}" class="att-card" style="padding:14px 16px;text-decoration:none;color:inherit;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--att-text-muted);font-weight:700;">Total Remarks</div>
+      <div style="font-size:1.8rem;font-weight:700;color:var(--att-text-dark);margin-top:2px;">{{ total_remarks }}</div>
+      <div style="font-size:0.7rem;color:#2fb344;margin-top:2px;">{{ open_remark_count }} open</div>
+    </a>
+    <a href="{% url 'concerns:remark_list' %}?status=escalated" class="att-card" style="padding:14px 16px;text-decoration:none;color:inherit;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--att-text-muted);font-weight:700;">Escalated Remarks</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#d63939;margin-top:2px;">{{ escalated_remark_count }}</div>
+      <div style="font-size:0.7rem;color:#d63939;margin-top:2px;">{{ high_severity_count }} high severity</div>
+    </a>
+    <a href="{% url 'concerns:concern_list' %}" class="att-card" style="padding:14px 16px;text-decoration:none;color:inherit;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--att-text-muted);font-weight:700;">Open Concerns</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#f76707;margin-top:2px;">{{ open_concern_count }}</div>
+      <div style="font-size:0.7rem;color:var(--att-text-muted);margin-top:2px;">of {{ total_concerns }} total</div>
+    </a>
+    <a href="{% url 'concerns:concern_list' %}?status=resolved" class="att-card" style="padding:14px 16px;text-decoration:none;color:inherit;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--att-text-muted);font-weight:700;">Resolved Concerns</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#4299e1;margin-top:2px;">{{ resolved_concern_count }}</div>
+      <div style="font-size:0.7rem;color:#6c757d;margin-top:2px;">{{ closed_concern_count }} closed</div>
+    </a>
+  </div>
+
+  <!-- Category breakdown -->
+  {% if category_counts %}
+  <div class="att-card" style="padding:14px 18px;margin-bottom:1.5rem;">
+    <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--att-text-muted);margin-bottom:10px;">Remarks by Category</div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;">
+      {% for cat, count in category_counts.items %}
+      <a href="{% url 'concerns:remark_list' %}?category={{ cat }}" style="text-align:center;text-decoration:none;color:inherit;transition:opacity 0.15s;" onmouseover="this.style.opacity=0.7" onmouseout="this.style.opacity=1">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--att-primary);">{{ count }}</div>
+        <div style="font-size:0.72rem;color:var(--att-text-muted);text-transform:capitalize;">{{ cat }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Recent open concerns -->
+  <div class="att-card" style="margin-bottom:1.5rem;overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--att-border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--att-text-dark);">Open Concerns</span>
+      <a href="{% url 'concerns:concern_list' %}" style="font-size:0.75rem;color:var(--att-primary);text-decoration:none;">View all →</a>
+    </div>
+    <table class="att-table">
+      <thead><tr><th>Student</th><th>Category</th><th>Status</th><th>Assigned</th><th>Created</th></tr></thead>
+      <tbody>
+        {% for c in open_concerns %}
+        <tr>
+          <td><a href="{% url 'concerns:student_concerns' c.student.reg_no %}" style="color:var(--att-primary);text-decoration:none;font-weight:600;">{{ c.student.name }}</a></td>
+          <td style="text-transform:capitalize;">{{ c.category }}</td>
+          <td><span class="stat-pill">{{ c.status|title }}</span></td>
+          <td>{{ c.assigned_to|default:'—' }}</td>
+          <td style="color:var(--att-text-muted);">{{ c.created_at|date:'Y-m-d' }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:var(--att-text-muted);padding:24px;">No open concerns.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Recent open remarks -->
+  <div class="att-card" style="overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--att-border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--att-text-dark);">Recent Open Remarks</span>
+      <a href="{% url 'concerns:remark_list' %}" style="font-size:0.75rem;color:var(--att-primary);text-decoration:none;">View all →</a>
+    </div>
+    <table class="att-table">
+      <thead><tr><th>Student</th><th>Category</th><th>Reason</th><th>Severity</th><th>Teacher</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for r in open_remarks %}
+        <tr>
+          <td><a href="{% url 'concerns:student_concerns' r.student.reg_no %}" style="color:var(--att-primary);text-decoration:none;font-weight:600;">{{ r.student.name }}</a></td>
+          <td style="text-transform:capitalize;">{{ r.category }}</td>
+          <td>{{ r.reason|default:'—' }}</td>
+          <td>
+            <span class="stat-pill" style="background:{% if r.severity == 'high' %}#fde8e8{% elif r.severity == 'medium' %}#fff4e6{% else %}#e8f7ed{% endif %};color:{% if r.severity == 'high' %}#d63939{% elif r.severity == 'medium' %}#f76707{% else %}#2fb344{% endif %};">{{ r.severity|title }}</span>
+          </td>
+          <td>{{ r.teacher|default:'—' }}</td>
+          <td style="color:var(--att-text-muted);">{{ r.remark_date }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:var(--att-text-muted);padding:24px;">No open remarks.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}
