@@ -2,25 +2,25 @@
 {% block title %}Weighted Result Calculation{% endblock %}
 
 {% block exam_content %}
-<div class="mb-2 py-2 px-3 bg-white d-flex justify-content-between align-items-center" style="border:1px solid #e9ecef;border-radius:8px;">
+<div class="mb-2 py-2 px-3 bg-white d-flex justify-content-between align-items-center" style="border:1px solid var(--exam-border);border-radius:8px;">
   <div>
-    <h6 class="m-0" style="font-weight:700;color:#212529;">Weighted Result Calculation</h6>
-    <span style="font-size:0.75rem;color:#6c757d;">Configure how previous terms contribute to the final result</span>
+    <h6 class="m-0" style="font-weight:700;color:var(--exam-text-dark);">Weighted Result Calculation</h6>
+    <span style="font-size:0.75rem;color:var(--exam-text-muted);">Configure how previous terms contribute to the final result</span>
   </div>
   <!-- Weighted mode toggle -->
   <form action="{% url 'panel:activate_weighted_calculation' %}" method="POST" class="m-0" id="activationForm">
     {% csrf_token %}
     <div class="d-flex align-items-center gap-2">
-      <span style="font-size:0.78rem;color:#6c757d;">Weighted Mode:</span>
-      <div class="form-check form-switch m-0">
+      <span style="font-size:0.78rem;color:var(--exam-text-muted);">Weighted Mode:</span>
+        <div class="form-switch m-0">
         <input class="form-check-input" type="checkbox" id="calcToggle"
                {% if live_calc_type == 'weighted' %}checked{% endif %}
                onchange="updateCalcType(this)">
       </div>
       {% if live_calc_type == 'weighted' %}
-        <span class="badge-status" style="background:#ebfbee;color:#2fb344;">Active</span>
+        <span class="badge-status" style="background:#ebfbee;color:var(--exam-success);">Active</span>
       {% else %}
-        <span class="badge-status" style="background:#f1f3f5;color:#6c757d;">Inactive</span>
+        <span class="badge-status" style="background:#f1f3f5;color:var(--exam-text-muted);">Inactive</span>
       {% endif %}
       <input type="hidden" name="calculation_type" id="id_calculation_type" value="{{ live_calc_type }}">
     </div>
@@ -41,16 +41,16 @@
     <span class="term-badge">Configure weights</span>
   </div>
 
-  <div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;">
+  <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
     <div class="card-body">
       <form action="{% url 'panel:weighted_term_calculation' %}" method="POST">
         {% csrf_token %}
         <input type="hidden" name="term_id" value="{{ term.id }}">
 
         <!-- Strategy -->
-        <div class="row g-3 mb-3 p-3 bg-light" style="border-radius:6px;">
+        <div class="row g-3 mb-3 p-3 bg-white" style="border-radius:6px;border:1px solid var(--exam-border);">
           <div class="col-md-4">
-            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Calculation Plan</label>
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Calculation Plan</label>
             <select class="form-select form-select-sm" name="global_plan" id="global_plan_{{ term.id }}"
                     onchange="toggleGlobalFm(this, {{ term.id }})">
               <option value="direct">Direct % (Obtained × Weight)</option>
@@ -58,13 +58,13 @@
             </select>
           </div>
           <div class="col-md-4">
-            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">TH Target FM</label>
-            <input type="number" step="0.1" class="form-control form-control-sm"
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">TH Target FM</label>
+            <input type="number" step="0.1" class="exam-input exam-input-sm"
                    id="global_target_fm_th_{{ term.id }}" name="global_target_fm_th" value="100" disabled>
           </div>
           <div class="col-md-4">
-            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">PR Target FM</label>
-            <input type="number" step="0.1" class="form-control form-control-sm"
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">PR Target FM</label>
+            <input type="number" step="0.1" class="exam-input exam-input-sm"
                    id="global_target_fm_pr_{{ term.id }}" name="global_target_fm_pr" value="100" disabled>
           </div>
         </div>
@@ -96,10 +96,10 @@
                     <span class="badge-status ms-2" style="background:#e3f0fb;color:#1976d2;">Current</span>
                   {% endif %}
                 </td>
-                <td><input type="number" step="0.01" class="form-control form-control-sm" name="th_th_{{ exam.id }}" value="{% if exam.id == term.id %}100{% else %}0{% endif %}"></td>
-                <td><input type="number" step="0.01" class="form-control form-control-sm" name="th_pr_{{ exam.id }}" value="0"></td>
-                <td><input type="number" step="0.01" class="form-control form-control-sm" name="pr_th_{{ exam.id }}" value="0"></td>
-                <td><input type="number" step="0.01" class="form-control form-control-sm" name="pr_pr_{{ exam.id }}" value="{% if exam.id == term.id %}100{% else %}0{% endif %}"></td>
+                <td><input type="number" step="0.01" class="exam-input exam-input-sm" name="th_th_{{ exam.id }}" value="{% if exam.id == term.id %}100{% else %}0{% endif %}"></td>
+                <td><input type="number" step="0.01" class="exam-input exam-input-sm" name="th_pr_{{ exam.id }}" value="0"></td>
+                <td><input type="number" step="0.01" class="exam-input exam-input-sm" name="pr_th_{{ exam.id }}" value="0"></td>
+                <td><input type="number" step="0.01" class="exam-input exam-input-sm" name="pr_pr_{{ exam.id }}" value="{% if exam.id == term.id %}100{% else %}0{% endif %}"></td>
               </tr>
               {% endif %}
               {% endfor %}
@@ -108,7 +108,7 @@
         </div>
 
         <div class="mt-3 text-end">
-          <button type="submit" class="btn btn-sm btn-primary px-4">
+          <button type="submit" class="exam-btn exam-btn-primary px-4">
             <i class="fa-solid fa-floppy-disk me-1"></i> Save — {{ term.term_name }}
           </button>
         </div>

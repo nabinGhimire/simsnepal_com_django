@@ -4,46 +4,50 @@
 
 {% block exam_content %}
 <div class="mb-2">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3 bg-white" style="border:1px solid #e9ecef;border-radius:8px;">
+  <div class="exam-level-header">
+    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:var(--exam-text-muted);margin-bottom:0;">
+      <i class="fa-solid fa-chart-pie" style="color:var(--exam-primary);margin-right:4px;"></i> Exam Dashboard
+    </div>
+    <div class="exam-level-line"></div>
+    <div class="exam-level-badge">{{ current_session.year|default:"—" }}</div>
+  </div>
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mt-2 py-2 px-3 bg-white" style="border:1px solid var(--exam-border);border-radius:8px;">
     <div>
-      <h6 class="m-0" style="font-weight:700;color:#212529;">Exam Management Dashboard</h6>
-      <span style="font-size:0.75rem;color:#6c757d;">
+      <h6 class="m-0" style="font-weight:700;color:var(--exam-text-dark);font-size:0.95rem;">Exam Management Dashboard</h6>
+      <span style="font-size:0.75rem;color:var(--exam-text-muted);">
         Session: <strong class="text-primary">{{ current_session.year|default:"—" }}</strong>
         &nbsp;·&nbsp; School: <strong>{{ school.name|default:"—" }}</strong>
       </span>
     </div>
     <div class="d-flex gap-2">
-      <a href="{% url 'exam:terms' %}" class="btn btn-sm btn-outline-primary px-3" style="font-size:0.78rem;">Manage Terms</a>
-      <a href="{% url 'exam:fullmarks' %}" class="btn btn-sm btn-primary px-3" style="font-size:0.78rem;">Full Marks Setup</a>
+      <a href="{% url 'exam:terms' %}" class="exam-btn exam-btn-ghost px-3" style="font-size:0.78rem;">Manage Terms</a>
+      <a href="{% url 'exam:fullmarks' %}" class="exam-btn exam-btn-primary px-3" style="font-size:0.78rem;">Full Marks Setup</a>
     </div>
   </div>
 </div>
 
 {% if exam_terms %}
 <!-- Term stats grid -->
-<div class="row g-2 mb-3">
+<div class="exam-summary-grid">
   {% for stat in term_stats %}
-  <div class="col-sm-6 col-md-4 col-xl-3">
-    <div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;margin-bottom:0;">
-      <div class="card-body" style="padding:12px 14px!important;">
-        <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:#6c757d;margin-bottom:6px;">
-          <i class="fa-solid fa-calendar-check" style="color:#206bc4;margin-right:4px;"></i>
-          {{ stat.term.term_name }}
-        </div>
-        <div class="d-flex align-items-baseline gap-2 mb-1">
-          <span style="font-size:1.4rem;font-weight:800;color:#212529;">{{ stat.grades_configured }}</span>
-          <span style="font-size:0.72rem;color:#6c757d;">/ {{ stat.total_grades }} grades configured</span>
-        </div>
-        <div style="height:4px;background:#e9ecef;border-radius:2px;overflow:hidden;margin-bottom:8px;">
-          {% if stat.total_grades > 0 %}
-          <div style="width:{% widthratio stat.grades_configured stat.total_grades 100 %}%;height:100%;background:{% if stat.grades_configured == stat.total_grades %}#2fb344{% else %}#f59f00{% endif %};border-radius:2px;"></div>
-          {% endif %}
-        </div>
-        <div class="d-flex gap-1">
-          <a href="{% url 'exam:fullmarks' %}" class="btn btn-xs btn-outline-primary" style="font-size:0.7rem;padding:2px 8px;">Full Marks</a>
-          <a href="{% url 'exam:subjectwisemarks' %}" class="btn btn-xs btn-outline-secondary" style="font-size:0.7rem;padding:2px 8px;">Enter Marks</a>
-        </div>
+  <div class="exam-cell stat-card">
+    <div class="d-flex align-items-start justify-content-between mb-2">
+      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:var(--exam-text-muted);margin-bottom:0;">
+        <i class="fa-solid fa-calendar-check" style="color:var(--exam-primary);margin-right:4px;"></i>
+        {{ stat.term.term_name }}
       </div>
+      <div class="term-badge" style="background:rgba(0,136,119,0.1);color:var(--exam-primary);">
+        {{ stat.grades_configured }}/{{ stat.total_grades }}
+      </div>
+    </div>
+    <div class="stat-value">{{ stat.grades_configured }}</div>
+    <div class="stat-label">{{ stat.total_grades }} grades configured</div>
+    <div class="stat-progress mt-3">
+      <div class="stat-progress-bar" style="width:{% widthratio stat.grades_configured stat.total_grades 100 %}%;height:100%;background:{% if stat.grades_configured == stat.total_grades %}var(--exam-success){% else %}var(--exam-warning){% endif %};border-radius:2px;"></div>
+    </div>
+    <div class="mt-3 d-flex gap-1">
+      <a href="{% url 'exam:fullmarks' %}" class="exam-btn exam-btn-ghost flex-1" style="font-size:0.7rem;padding:2px 8px;">Full Marks</a>
+      <a href="{% url 'exam:subjectwisemarks' %}" class="exam-btn exam-btn-ghost flex-1" style="font-size:0.7rem;padding:2px 8px;">Enter Marks</a>
     </div>
   </div>
   {% endfor %}
@@ -52,56 +56,56 @@
 <!-- Quick action cards -->
 <div class="row g-2">
   <div class="col-md-4">
-    <div class="card shadow-sm h-100" style="border:1px solid #e9ecef;border-radius:8px;">
-      <div class="card-body" style="padding:14px 16px!important;">
-        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:#6c757d;margin-bottom:8px;">
-          <i class="fa-solid fa-clipboard-list" style="color:#206bc4;"></i> Marks Entry
+    <div class="stat-card shadow-sm h-100">
+      <div class="d-flex align-items-start justify-content-between mb-3">
+        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:var(--exam-text-muted);margin-bottom:0;">
+          <i class="fa-solid fa-clipboard-list" style="color:var(--exam-primary);margin-right:4px;"></i> Marks Entry
         </div>
-        <div class="d-flex flex-column gap-2">
-          <a href="{% url 'exam:fullmarks' %}" class="btn btn-sm btn-outline-primary" style="font-size:0.78rem;text-align:left;">
-            <i class="fa-solid fa-circle-plus me-2"></i> Full Marks Setup
-          </a>
-          <a href="{% url 'exam:subjectwisemarks' %}" class="btn btn-sm btn-outline-secondary" style="font-size:0.78rem;text-align:left;">
-            <i class="fa-solid fa-table-cells me-2"></i> Subject-wise Entry
-          </a>
-        </div>
+      </div>
+      <div class="d-flex flex-column gap-2">
+        <a href="{% url 'exam:fullmarks' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+          <i class="fa-solid fa-circle-plus me-2"></i> Full Marks Setup
+        </a>
+        <a href="{% url 'exam:subjectwisemarks' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+          <i class="fa-solid fa-table-cells me-2"></i> Subject-wise Entry
+        </a>
       </div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card shadow-sm h-100" style="border:1px solid #e9ecef;border-radius:8px;">
-      <div class="card-body" style="padding:14px 16px!important;">
-        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:#6c757d;margin-bottom:8px;">
-          <i class="fa-solid fa-chart-bar" style="color:#2fb344;"></i> Results
+    <div class="stat-card shadow-sm h-100">
+      <div class="d-flex align-items-start justify-content-between mb-3">
+        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:var(--exam-text-muted);margin-bottom:0;">
+          <i class="fa-solid fa-chart-bar" style="color:var(--exam-success);margin-right:4px;"></i> Results
         </div>
-        <div class="d-flex flex-column gap-2">
-          <a href="{% url 'exam:resultmanagement' %}" class="btn btn-sm btn-outline-success" style="font-size:0.78rem;text-align:left;">
-            <i class="fa-solid fa-gear me-2"></i> Result Management
-          </a>
-          <a href="{% url 'exam:weighted_result_calculation' %}" class="btn btn-sm btn-outline-secondary" style="font-size:0.78rem;text-align:left;">
-            <i class="fa-solid fa-scale-balanced me-2"></i> Weighted Calculation
-          </a>
-        </div>
+      </div>
+      <div class="d-flex flex-column gap-2">
+        <a href="{% url 'exam:resultmanagement' %}" class="exam-btn exam-btn-success w-100" style="font-size:0.78rem;text-align:left;">
+          <i class="fa-solid fa-gear me-2"></i> Result Management
+        </a>
+        <a href="{% url 'exam:weighted_result_calculation' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+          <i class="fa-solid fa-scale-balanced me-2"></i> Weighted Calculation
+        </a>
       </div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card shadow-sm h-100" style="border:1px solid #e9ecef;border-radius:8px;">
-      <div class="card-body" style="padding:14px 16px!important;">
-        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:#6c757d;margin-bottom:8px;">
-          <i class="fa-solid fa-print" style="color:#7c3aed;"></i> Print
+    <div class="stat-card shadow-sm h-100">
+      <div class="d-flex align-items-start justify-content-between mb-3">
+        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:var(--exam-text-muted);margin-bottom:0;">
+          <i class="fa-solid fa-print" style="color:#7c3aed;margin-right:4px;"></i> Print
         </div>
-        <div class="d-flex flex-column gap-2">
-          <a href="{% url 'exam:printmarksform' %}" class="btn btn-sm btn-outline-secondary" style="font-size:0.78rem;text-align:left;">
-            <i class="fa-solid fa-file-lines me-2"></i> Marks Input Form
-          </a>
-          <a href="{% url 'exam:marksgradesheet' %}" class="btn btn-sm btn-outline-secondary" style="font-size:0.78rem;text-align:left;">
-            <i class="fa-solid fa-table me-2"></i> Grade Sheet
-          </a>
-          <a href="{% url 'exam:print_grade_ledger' %}" class="btn btn-sm btn-outline-secondary" style="font-size:0.78rem;text-align:left;">
-            <i class="fa-solid fa-book me-2"></i> Grade Ledger
-          </a>
-        </div>
+      </div>
+      <div class="d-flex flex-column gap-2">
+        <a href="{% url 'exam:printmarksform' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+          <i class="fa-solid fa-file-lines me-2"></i> Marks Input Form
+        </a>
+        <a href="{% url 'exam:marksgradesheet' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+          <i class="fa-solid fa-table me-2"></i> Grade Sheet
+        </a>
+        <a href="{% url 'exam:print_grade_ledger' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+          <i class="fa-solid fa-book me-2"></i> Grade Ledger
+        </a>
       </div>
     </div>
   </div>
@@ -113,7 +117,7 @@
     <i class="fa-solid fa-calendar-xmark" style="font-size:3rem;opacity:0.3;"></i>
     <p class="mt-3 mb-1" style="font-size:0.9rem;font-weight:600;">No exam terms found</p>
     <p class="mb-3" style="font-size:0.8rem;">Create exam terms to start managing exams for this session.</p>
-    <a href="{% url 'exam:terms' %}" class="btn btn-primary btn-sm px-4">Manage Terms</a>
+    <a href="{% url 'exam:terms' %}" class="exam-btn exam-btn-primary btn-sm px-4">Manage Terms</a>
   </div>
 </div>
 {% endif %}

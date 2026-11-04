@@ -92,21 +92,36 @@ def terms_list(request):
     current_session = get_current_session()
 
     action = request.GET.get('action', 'listterm')
+    term_status = SchoolTermStatus.objects.all()
+
+    change_name = False
+    term_name = None
+
+    if request.method == 'GET' and 'cn' in request.GET:
+        cn = request.GET['cn']
+        try:
+            term_name = SchoolTerm.objects.get(id=cn)
+            if term_name.school == school:
+                change_name = True
+            else:
+                term_name = None
+        except SchoolTerm.DoesNotExist:
+            term_name = None
 
     if action == 'addterm':
         if request.method == 'POST':
-            term_name = request.POST.get('term_name', '').strip()
+            term_name_post = request.POST.get('term_name', '').strip()
             name_in_short = request.POST.get('name_in_short', '').strip() or None
             year_id = request.POST.get('year_id')
             grade_id = request.POST.get('grade_id')
             final_term = request.POST.get('final_term') == 'on'
             status_id = request.POST.get('status', '1')
 
-            if term_name and year_id:
+            if term_name_post and year_id:
                 SchoolTerm.objects.create(
                     school=school,
                     year_id=year_id,
-                    term_name=term_name,
+                    term_name=term_name_post,
                     name_in_short=name_in_short,
                     status_id=status_id,
                     final_term=final_term,
@@ -124,6 +139,74 @@ def terms_list(request):
             'is_terms': True,
             'action': 'addterm',
             'grades': grades,
+            'term_status': term_status,
+        })
+        return render(request, 'exam/terms_list.html', ctx)
+
+    if action == 'changeterm' and request.method == 'POST':
+        term_id = request.POST.get('term_id')
+        new_name = request.POST.get('term_name', '').strip()
+        new_short = request.POST.get('term_name_in_short', '').strip() or None
+        new_active = request.POST.get('activeStatus') == '1'
+        new_status_id = request.POST.get('termStatus', '1')
+        new_final = request.POST.get('final_term') == 'yes'
+        new_final_name = request.POST.get('final_term_name', '').strip() or None
+
+        try:
+            term = SchoolTerm.objects.get(id=term_id, school=school)
+            term.term_name = new_name
+            term.name_in_short = new_short
+            term.active = new_active
+            term.status_id = new_status_id
+            term.final_term = new_final
+            term.final_term_name = new_final_name
+            term.save()
+            messages.success(request, 'Term updated.')
+        except SchoolTerm.DoesNotExist:
+            messages.error(request, 'Term not found.')
+        return redirect('exam:terms')
+
+    if action == 'result_calc' and request.method == 'POST':
+        term_id = request.POST.get('term_id')
+        try:
+            term = SchoolTerm.objects.get(id=term_id, school=school)
+        except SchoolTerm.DoesNotExist:
+            messages.error(request, 'Term not found.')
+            return redirect('exam:terms')
+
+        # Build calculation dict for active terms up to and including this one
+        calc_terms = SchoolTerm.objects.filter(
+            school=school, year=current_session, active=True, id__lte=term_id
+        ).order_by('id')
+
+        term_mgmt = {}
+        for t in calc_terms:
+            val = request.POST.get(str(t.id), '100')
+            try:
+                term_mgmt[str(t.id)] = int(val)
+            except (ValueError, TypeError):
+                term_mgmt[str(t.id)] = 100
+
+        import json as _json
+        from sms.models import ResultManagement
+        rm, created = ResultManagement.objects.update_or_create(
+            school=school, year=current_session, school_term=term,
+            defaults={'term_calculation': _json.dumps(term_mgmt)}
+        )
+        messages.success(request, 'Result calculation updated for ' + term.term_name + '.')
+        return redirect('exam:terms')
+
+    if change_name and term_name:
+        ctx = _nav_context(request)
+        ctx.update({
+            'school': school,
+            'branchuser': branchuser,
+            'current_session': current_session,
+            'is_terms': True,
+            'action': action,
+            'change_name': True,
+            'term_name': term_name,
+            'term_status': term_status,
         })
         return render(request, 'exam/terms_list.html', ctx)
 
@@ -135,7 +218,8 @@ def terms_list(request):
         'branchuser': branchuser,
         'current_session': current_session,
         'is_terms': True,
-        'action': 'listterm',
+        'action': action,
+        'term_status': term_status,
     })
     return render(request, 'exam/terms_list.html', ctx)
 

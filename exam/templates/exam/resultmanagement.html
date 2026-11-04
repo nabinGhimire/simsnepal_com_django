@@ -2,63 +2,50 @@
 {% block title %}Result Management{% endblock %}
 
 {% block exam_content %}
-<div class="mb-2 py-2 px-3 bg-white d-flex justify-content-between align-items-center" style="border:1px solid #e9ecef;border-radius:8px;">
-  <div>
-    <h6 class="m-0" style="font-weight:700;color:#212529;">Result Management</h6>
-    <span style="font-size:0.75rem;color:#6c757d;">Configure result type and publish results for students</span>
-  </div>
-  <a href="{% url 'exam:weighted_result_calculation' %}" class="btn btn-sm btn-outline-primary px-3" style="font-size:0.78rem;">Weighted Setup →</a>
-</div>
-
-{% if messages %}
-{% for msg in messages %}
-<div class="alert alert-success py-2 px-3 mb-2" style="font-size:0.8rem;border-radius:8px;">{{ msg }}</div>
-{% endfor %}
-{% endif %}
-
-<div class="row g-3">
+<div class="row g-4">
   <!-- Result Type -->
   <div class="col-lg-6">
-    <div class="card shadow-sm h-100" style="border:1px solid #e9ecef;border-radius:8px;">
-      <div class="card-header bg-white exam-card-header">
-        <h6 class="m-0" style="font-weight:700;font-size:0.85rem;">Result Format</h6>
-      </div>
+    <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
       <div class="card-body">
+        <h3 class="card-title">Result Type</h3>
+        <p class="text-secondary mb-3">
+          Choose your result format for the session. Once selected, it should remain the same for the year.
+        </p>
         {% if schoolresulttype %}
-          <div class="alert alert-info py-2 px-3" style="font-size:0.82rem;border-radius:6px;">
-            Current format: <strong>{% if sr.result_type == 1 %}Percentage{% else %}Grading{% endif %}</strong>
+          <div class="alert alert-info py-2 px-3" style="font-size:0.8rem;border-radius:6px;">
+            You have selected
+            <strong>{% if sr.result_type == 1 %}Percentage{% else %}Grading{% endif %}</strong>
+            system.
           </div>
         {% else %}
           <form action="" method="POST">
             {% csrf_token %}
             <input type="hidden" name="submittype" value="resulttype">
             <div class="mb-3">
-              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Select Format</label>
-              <select class="form-select form-select-sm" name="percentorgrade">
+              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Result Format</label>
+              <select class="exam-select" name="percentorgrade">
                 <option value="percent">Percentage</option>
                 <option value="grade">Grade</option>
               </select>
             </div>
-            <button type="submit" class="btn btn-sm btn-primary px-4">Save Format</button>
+            <button type="submit" class="exam-btn exam-btn-primary btn-sm">Save</button>
           </form>
         {% endif %}
       </div>
     </div>
   </div>
 
-  <!-- Publish Result -->
+  <!-- Result Publication -->
   <div class="col-lg-6">
-    <div class="card shadow-sm h-100" style="border:1px solid #e9ecef;border-radius:8px;">
-      <div class="card-header bg-white exam-card-header">
-        <h6 class="m-0" style="font-weight:700;font-size:0.85rem;">Publish Results</h6>
-      </div>
+    <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
       <div class="card-body">
+        <h3 class="card-title">Result Publication</h3>
         <form action="" method="POST">
           {% csrf_token %}
           <input type="hidden" name="submittype" value="termandgrades">
 
           <div class="mb-3">
-            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Publish Result</label>
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Publish Result</label>
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" id="publishresultswitch" name="publishresultswitch" {% if live_result_status %}checked{% endif %}>
               <label class="form-check-label" style="font-size:0.82rem;" for="publishresultswitch">Enable / Disable</label>
@@ -66,8 +53,8 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Exam Term</label>
-            <select class="form-select form-select-sm" name="examtype">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Exam Term</label>
+            <select class="exam-select" name="examtype">
               {% for exam in exam_types %}
               <option value="{{ exam.id }}">{{ exam.term_name|upper }}</option>
               {% endfor %}
@@ -75,16 +62,16 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Calculation Type</label>
-            <select class="form-select form-select-sm" name="calculation_type">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Calculation Type</label>
+            <select class="exam-select" name="calculation_type">
               <option value="legacy" {% if live_calc_type == 'legacy' %}selected{% endif %}>Legacy</option>
               <option value="weighted" {% if live_calc_type == 'weighted' %}selected{% endif %}>Weighted</option>
             </select>
           </div>
 
           <div class="mb-3">
-            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Publish for Grades</label>
-            <div class="row g-1">
+            <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Publish for Grades</label>
+            <div class="row g-2">
               {% for grade in grades %}
               <div class="col-6">
                 <label class="form-check" style="font-size:0.8rem;">
@@ -96,23 +83,26 @@
             </div>
           </div>
 
-          <button type="submit" class="btn btn-sm btn-primary px-4">Publish</button>
+          <button type="submit" class="exam-btn exam-btn-primary btn-sm">Publish</button>
         </form>
       </div>
     </div>
   </div>
 
+  <!-- Legacy Calculation -->
   {% if resultmanagement %}
-  <!-- Legacy calculation info -->
   <div class="col-12">
-    <div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;">
-      <div class="card-header bg-white exam-card-header">
-        <h6 class="m-0" style="font-weight:700;font-size:0.85rem;">Result Calculation (Legacy)</h6>
-      </div>
-      <div class="card-body p-0">
+    <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
+      <div class="card-body">
+        <h3 class="card-title">Result Calculation (Legacy)</h3>
         <div class="table-responsive">
           <table class="table table-vcenter exam-table mb-0">
-            <thead><tr><th>Term</th><th>Calculation</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Term</th>
+                <th>Calculation</th>
+              </tr>
+            </thead>
             <tbody>
               {% for value in rm %}
               <tr>
@@ -123,6 +113,9 @@
             </tbody>
           </table>
         </div>
+        <p class="text-secondary mt-2 small">
+          Use weighted calculation from the new weighted setup page if you need TH/PR mixing.
+        </p>
       </div>
     </div>
   </div>

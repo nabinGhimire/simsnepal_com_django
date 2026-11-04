@@ -1,77 +1,327 @@
 {% extends 'panel/panel-main.html' %}
 
+{% load static %}
+
 {% block title %}Exam Management | SIMSnepal{% endblock %}
 
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 <style>
-  /* ── Exam table ── */
+  /* ═══════ Theme Variables (Light / Dark) ═══════ */
+  :root {
+    --exam-bg: #f7f9fc;
+    --exam-card-bg: #ffffff;
+    --exam-border: #e9ecef;
+    --exam-text-muted: #6c757d;
+    --exam-text-dark: #212529;
+    --exam-primary: #008877;
+    --exam-primary-dark: #006c5e;
+    --exam-success: #2fb344;
+    --exam-warning: #ffb703;
+    --exam-danger: #e63946;
+    --exam-radius: 10px;
+    --exam-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --exam-shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
+    --exam-input-bg: #ffffff;
+    --exam-input-border: #dee2e6;
+  }
+
+  [data-theme="dark"] {
+    --exam-bg: #1a1b26;
+    --exam-card-bg: #232934;
+    --exam-border: #3a3d49;
+    --exam-text-muted: #a0a5b3;
+    --exam-text-dark: #e4e7eb;
+    --exam-primary: #3b82f6;
+    --exam-primary-dark: #2563eb;
+    --exam-success: #34d399;
+    --exam-warning: #fbbf24;
+    --exam-danger: #f87171;
+    --exam-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --exam-shadow-hover: 0 4px 12px rgba(0,0,0,0.4);
+    --exam-input-bg: #2d333f;
+    --exam-input-border: #4b5563;
+  }
+
+  html, body {
+    background: var(--exam-bg);
+    color: var(--exam-text-dark);
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  /* ═══════ Stat Cards ═══════ */
+  .stat-card {
+    border: 1px solid var(--exam-border);
+    border-radius: var(--exam-radius);
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    background: var(--exam-card-bg);
+    padding: 12px 14px;
+  }
+  .stat-card:hover {
+    box-shadow: var(--exam-shadow-hover);
+    border-color: rgba(0,0,0,0.1);
+  }
+  .stat-card .stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .stat-card .stat-icon svg { width: 20px; height: 20px; }
+  .stat-card .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--exam-text-dark);
+  }
+  .stat-card .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--exam-text-muted);
+  }
+  .stat-card .stat-sub {
+    font-size: 0.75rem;
+    color: var(--exam-text-muted);
+  }
+
+  /* Stat progress bar */
+  .stat-progress {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--exam-border);
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .stat-progress .stat-progress-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+  }
+
+  /* ═══════ Summary Grid (like attendance) ═══════ */
+  .exam-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  .exam-cell {
+    width: 100%;
+  }
+
+  /* ═══════ Buttons (like attendance) ═══════ */
+  .exam-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+  }
+  .exam-btn-primary {
+    background: var(--exam-primary);
+    color: #fff;
+  }
+  .exam-btn-primary:hover {
+    background: var(--exam-primary-dark);
+  }
+  .exam-btn-ghost {
+    background: transparent;
+    color: var(--exam-text-dark);
+    border: 1px solid var(--exam-border);
+  }
+  .exam-btn-ghost:hover {
+    background: var(--exam-border);
+    color: var(--exam-text-dark);
+  }
+  .exam-btn-success {
+    background: var(--exam-success);
+    color: #fff;
+  }
+  .exam-btn-success:hover {
+    background: #249036;
+  }
+
+  /* ═══════ Form controls (like attendance) ═══════ */
+  .exam-input {
+    background: var(--exam-input-bg);
+    border: 1px solid var(--exam-input-border);
+    color: var(--exam-text-dark);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+  }
+  .exam-input:focus {
+    border-color: var(--exam-primary);
+    box-shadow: 0 0 0 3px rgba(0,136,119,0.12);
+    outline: none;
+  }
+  .exam-select {
+    background: var(--exam-input-bg);
+    border: 1px solid var(--exam-input-border);
+    color: var(--exam-text-dark);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    width: 100%;
+  }
+  .exam-input-sm {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  /* ═══════ Level / Section header (like attendance level-header) ═══════ */
+  .exam-level-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .exam-level-header .exam-level-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--exam-text-muted);
+    white-space: nowrap;
+  }
+  .exam-level-header .exam-level-line {
+    flex: 1;
+    height: 1px;
+    background: var(--exam-border);
+  }
+  .exam-level-header .exam-level-badge {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--exam-border);
+    color: var(--exam-text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ═══════ Term / Level Header ═══════ */
+  .term-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .term-header .term-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--exam-text-muted);
+    white-space: nowrap;
+  }
+  .term-header .term-line {
+    flex: 1;
+    height: 1px;
+    background: var(--exam-border);
+  }
+  .term-header .term-badge {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--exam-border);
+    color: var(--exam-text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ═══════ Exam table ═══════ */
   .exam-table thead th {
-    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
-    font-weight: 600; color: #6c757d; border-bottom: 1px solid #e9ecef;
-    padding: 8px 12px; background: #f8f9fa;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--exam-text-muted);
+    border-bottom: 1px solid var(--exam-border);
+    padding: 8px 12px;
+    background: var(--exam-card-bg);
   }
   .exam-table tbody tr { transition: background 0.1s ease; }
-  .exam-table tbody tr:hover { background: #f8f9fa; }
-  .exam-table tbody td { padding: 10px 12px; vertical-align: middle; border-bottom: 1px solid #f1f3f5; }
+  .exam-table tbody tr:hover { background: var(--exam-border); }
+  .exam-table tbody td {
+    padding: 10px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--exam-border);
+    color: var(--exam-text-dark);
+  }
 
-  /* ── Card header override (Tabler adds too much padding) ── */
+  /* ═══════ Card header override ═══════ */
   .exam-card-header {
     padding: 8px 14px !important;
-    border-bottom: 1px solid #e9ecef;
-    background: #fff;
+    border-bottom: 1px solid var(--exam-border);
+    background: var(--exam-card-bg);
   }
   .exam-filter-bar {
     padding: 6px 14px;
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--exam-border);
     background: #f8f9fa;
   }
 
-  /* ── Badge ── */
+  /* ═══════ Badge ═══════ */
   .badge-status {
-    display: inline-flex; align-items: center;
-    padding: 3px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
   }
 
-  /* ── Sticky save footer ── */
+  /* ═══════ Sticky save footer ═══════ */
   .exam-save-footer {
-    position: sticky; bottom: 0;
-    border-top: 1px solid #e9ecef;
+    position: sticky;
+    bottom: 0;
+    border-top: 1px solid var(--exam-border);
     background: rgba(255,255,255,0.97);
     padding: 10px 14px;
     z-index: 10;
   }
 
-  /* ── Stat cards ── */
-  .stat-card {
-    border: 1px solid rgba(0,0,0,0.06); border-radius: 10px;
-    transition: box-shadow 0.15s ease; background: #fff;
-  }
-  .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-  .stat-card .stat-icon {
-    width: 40px; height: 40px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.01em; }
-  .stat-card .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: #6c757d; }
-
-  /* ── Term group header (like level-header in attendance) ── */
-  .term-header {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
-  }
-  .term-header .term-name {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.06em; color: #6c757d; white-space: nowrap;
-  }
-  .term-header .term-line { flex: 1; height: 1px; background: #e9ecef; }
-  .term-header .term-badge {
-    font-size: 0.68rem; padding: 2px 8px; border-radius: 10px;
-    background: #f1f3f5; color: #495057; font-weight: 600; white-space: nowrap;
-  }
-
-  /* ── Row kill Tabler card margin inside grids ── */
+  /* ═══════ Row kill Tabler card margin inside grids ═══════ */
   .row.g-2 .card, .row.g-3 .card { margin-bottom: 0 !important; }
+
+  /* ═══════ Sidebar menu (terms list) ═══════ */
+  .panel-sidebar { height: 100%; padding-top: 5px; }
+  .exam-sidebar-menu {
+    list-style: none; padding: 0; margin: 0;
+  }
+  .exam-sidebar-menu li a {
+    display: flex; align-items: center; padding: 10px 14px;
+    color: var(--exam-text-dark); text-decoration: none; transition: all 0.2s;
+    border-radius: 4px;
+  }
+  .exam-sidebar-menu li a:hover,
+  .exam-sidebar-menu li.active a {
+    color: var(--exam-primary);
+    background: rgba(0,136,119,0.06);
+  }
+  .exam-sidebar-menu li a i {
+    font-size: 1.25rem; margin-right: 12px; width: 24px; text-align: center;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .stat-card .stat-value { font-size: 1.25rem; }
+    .stat-card .stat-icon { width: 36px; height: 36px; }
+  }
 </style>
 {% endblock %}
 
@@ -199,7 +449,6 @@
             <a class="nav-link font-weight-bold" href="{% url 'exam:settings' %}">
               <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon text-secondary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                   <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>

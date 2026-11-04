@@ -2,41 +2,54 @@
 {% block title %}Full Marks Setup{% endblock %}
 
 {% block exam_content %}
-<div class="mb-2 d-flex justify-content-between align-items-center py-2 px-3 bg-white" style="border:1px solid #e9ecef;border-radius:8px;">
-  <div>
-    <h6 class="m-0" style="font-weight:700;color:#212529;">Full Marks Setup</h6>
-    <span style="font-size:0.75rem;color:#6c757d;">
-      {{ school.name }} &nbsp;·&nbsp; {{ edusession.year|default:"—" }}
-    </span>
-  </div>
-</div>
-
-<div class="card shadow-sm" style="border:1px solid #e9ecef;border-radius:8px;">
+<div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;max-width:700px;">
   <div class="card-body">
-    <form action="/exam/inputfullmarksredirector/" method="POST" target="_blank">
+    <form action="/exam/inputfullmarksredirector/" method="POST" target="_blank" class="form-horizontal">
       {% csrf_token %}
-      <div class="row g-3">
-        <div class="col-md-5">
-          <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Exam Term</label>
-          <select name="term" class="form-select form-select-sm">
+
+      <div class="mb-3 row">
+        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">School</label>
+        <div class="col">
+          <div class="form-control-plaintext font-weight-bold">{{ school.name }}</div>
+        </div>
+      </div>
+      <div class="mb-3 row">
+        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Location</label>
+        <div class="col">
+          <div class="form-control-plaintext">{{ school.location|default:"—" }}</div>
+        </div>
+      </div>
+      <div class="mb-3 row">
+        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Academic Year</label>
+        <div class="col">
+          <div class="form-control-plaintext">{{ edusession.year|default:"—" }}</div>
+        </div>
+      </div>
+      <hr class="my-3">
+      <div class="mb-3 row">
+        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Exam Term</label>
+        <div class="col">
+          <select name="term" id="term" class="exam-select">
             {% for exam_type in exam_types %}
             <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-5">
-          <label class="form-label" style="font-size:0.78rem;font-weight:600;color:#6c757d;">Grade</label>
-          <select name="grade" class="form-select form-select-sm">
+      </div>
+      <div class="mb-3 row">
+        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Grade</label>
+        <div class="col">
+          <select name="grade" id="grade" class="exam-select">
             {% for grade in grades %}
             <option value="{{ grade.id }}">{{ grade|upper }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-2 d-flex align-items-end">
-          <button type="submit" class="btn btn-primary btn-sm w-100">
-            <i class="fa-solid fa-arrow-right me-1"></i> Go
-          </button>
-        </div>
+      </div>
+      <div class="form-footer text-end mt-4">
+        <button type="submit" name="submit" class="exam-btn exam-btn-primary px-4">
+          <i class="fa-solid fa-arrow-right me-1"></i> Next Step
+        </button>
       </div>
     </form>
   </div>
