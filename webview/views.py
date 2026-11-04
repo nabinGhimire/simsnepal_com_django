@@ -12,6 +12,7 @@ from django.urls import reverse
 import logging
 from types import SimpleNamespace
 from sms.models import EduSession, SchoolBranch, SchoolGrade, Section, Subject, Student, StudentSession, Homework, MarkObtained, SchoolTerm, TeacherSubjectAccess, BranchUser
+from grihakarya.models import HomeworkEntry, HomeworkEntryAuditLog
 
 
 User = get_user_model()
@@ -262,8 +263,47 @@ def parent_homework(request):
             'student': student,
             'grade': grade,
             'section': section,
-            'homeworks': hw_list
+            'homeworks': hw_list,
         })
+
+        # ---- Vacation / long-term homework still active today ----
+        vacation_hw_qs = Homework.objects.filter(
+            session=current_session,
+            grade=grade,
+            section=section,
+            due_date__gte=selected_date,
+        ).exclude(nepali_date=selected_date)  # don't double-show today's HW
+
+        vacation_list = []
+        for vhw in vacation_hw_qs.order_by('due_date'):
+            vhw_dict = {}
+            try:
+                vhw_dict = json.loads(vhw.homework or '{}')
+            except Exception:
+                pass
+            v_hw_list = []
+            for sub in subjects:
+                content_data = vhw_dict.get(str(sub.id))
+                if not content_data:
+                    continue
+                if isinstance(content_data, str):
+                    v_hw_list.append({'subject': sub.subject, 'entries': [{'teacher_name': None, 'text': content_data}]})
+                elif isinstance(content_data, dict):
+                    entries = []
+                    for t_id, t_data in content_data.items():
+                        if isinstance(t_data, dict) and t_data.get('text'):
+                            entries.append({'teacher_name': t_data.get('teacher_name'), 'text': t_data.get('text')})
+                    if entries:
+                        v_hw_list.append({'subject': sub.subject, 'entries': entries})
+            if v_hw_list:
+                vacation_list.append({
+                    'assigned_date': str(vhw.nepali_date),
+                    'due_date': str(vhw.due_date),
+                    'homeworks': v_hw_list,
+                })
+
+        # Attach vacation homework to the student record
+        student_homeworks[-1]['vacation_homeworks'] = vacation_list
         
         logger.debug("Total student_homeworks entries built: %d", len(student_homeworks))
     context = {
@@ -969,6 +1009,43 @@ def teacher_homework(request):
                                     hw_dict.pop(sub_id_str, None)
                     homework_obj.homework = json.dumps(hw_dict)
                     homework_obj.save()
+
+                    # Sync HomeworkEntry records and write audit logs for changed subjects.
+                    teacher_display = user.get_full_name() or user.username
+                    for sub_id_str, text in subjects_data.items():
+                        try:
+                            subject_obj = Subject.objects.get(id=int(sub_id_str), session=current_session)
+                        except (Subject.DoesNotExist, ValueError):
+                            continue
+                        if text:
+                            existing_entry = HomeworkEntry.objects.filter(
+                                homework=homework_obj, subject=subject_obj
+                            ).first()
+                            old_text = existing_entry.homework_text if existing_entry else ''
+                            hw_entry, _ = HomeworkEntry.objects.update_or_create(
+                                homework=homework_obj,
+                                subject=subject_obj,
+                                defaults={
+                                    'homework_text': text,
+                                    'added_by': user,
+                                    'teacher_name': teacher_display,
+                                    'is_impersonated': False,
+                                },
+                            )
+                            # Record audit log if text actually changed.
+                            if old_text and old_text != text:
+                                HomeworkEntryAuditLog.objects.create(
+                                    entry=hw_entry,
+                                    changed_by=user,
+                                    old_text=old_text,
+                                    new_text=text,
+                                    source='webview',
+                                )
+                        else:
+                            # Empty text — remove entry if it exists.
+                            HomeworkEntry.objects.filter(
+                                homework=homework_obj, subject=subject_obj
+                            ).delete()
                 message = "All homework entries saved successfully!"
 
             # Build existing homework dictionary for UI

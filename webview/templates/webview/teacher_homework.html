@@ -130,7 +130,8 @@
                           <label class="form-label fw-bold text-dark mb-1">
                             <i class="ti ti-book me-1 text-teal" style="color: #008877;"></i> {{ item.subject.subject }}
                           </label>
-                          <textarea name="{{ item.input_name }}" class="form-control" rows="3" placeholder="Write homework details here...">{{ item.value }}</textarea>
+                          <div class="md-toolbar-webview" id="mdt-{{ item.input_name }}"></div>
+                          <textarea name="{{ item.input_name }}" id="ta-{{ item.input_name }}" class="form-control" rows="3" placeholder="Write homework details here...">{{ item.value }}</textarea>
                         </div>
                       {% endfor %}
                     </div>
@@ -161,8 +162,72 @@
     </form>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.hamro.com/hamro/js/nepali.datepicker.v4.0.1.min.js" type="text/javascript"></script>
   <script type="text/javascript">
+    // ── Markdown toolbar for teacher webview ─────────────────────────────
+    (function () {
+      const BTNS = [
+        { label: 'B',   title: 'Bold',        tag: '**',  wrap: true },
+        { label: 'I',   title: 'Italic',      tag: '_',   wrap: true },
+        { label: '•',   title: 'Bullet',      tag: '- ',  linePrefix: true },
+        { label: '1.',  title: 'Numbered',    tag: '1. ', linePrefix: true },
+        { label: '—',   title: 'Divider',     tag: '\n---\n', plain: true },
+        { label: '👁',  title: 'Preview',     special: 'preview' },
+      ];
+
+      function insertMd(ta, btn) {
+        if (btn.special === 'preview') { togglePreview(ta); return; }
+        const start = ta.selectionStart, end = ta.selectionEnd;
+        const sel = ta.value.slice(start, end);
+        let insert;
+        if (btn.wrap)        insert = sel ? btn.tag + sel + btn.tag : btn.tag + btn.tag;
+        else if (btn.linePrefix) insert = sel ? sel.split('\n').map(l => btn.tag + l).join('\n') : btn.tag;
+        else                 insert = btn.tag;
+        ta.focus();
+        document.execCommand('insertText', false, insert);
+        if (btn.wrap && !sel) { const p = start + btn.tag.length; ta.setSelectionRange(p, p); }
+        ta.dispatchEvent(new Event('input'));
+      }
+
+      function togglePreview(ta) {
+        if (!ta._mdP) {
+          const p = document.createElement('div');
+          p.style.cssText = 'display:none;padding:8px 10px;font-size:0.85rem;line-height:1.65;' +
+            'border:1px solid #ccc;border-radius:6px;background:#fff;margin-top:4px;';
+          ta.insertAdjacentElement('afterend', p);
+          ta._mdP = p;
+        }
+        const opening = ta._mdP.style.display === 'none';
+        ta._mdP.style.display = opening ? 'block' : 'none';
+        if (opening && typeof marked !== 'undefined')
+          ta._mdP.innerHTML = marked.parse(ta.value || '');
+      }
+
+      function buildBar(slot, ta) {
+        const bar = document.createElement('div');
+        bar.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;';
+        BTNS.forEach(btn => {
+          const b = document.createElement('button');
+          b.type = 'button'; b.textContent = btn.label; b.title = btn.title;
+          b.style.cssText = 'padding:4px 10px;font-size:0.78rem;font-weight:700;' +
+            'border:1px solid #ccc;border-radius:5px;background:#fff;color:#333;cursor:pointer;';
+          b.addEventListener('mousedown', e => e.preventDefault()); // keep textarea focus + selection
+          b.addEventListener('click', () => insertMd(ta, btn));
+          bar.appendChild(b);
+        });
+        slot.replaceWith(bar);
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[id^="mdt-"]').forEach(slot => {
+          const ta = document.getElementById('ta-' + slot.id.slice(4));
+          if (ta) buildBar(slot, ta);
+        });
+      });
+    })();
+
+    // ── Nepali datepicker ─────────────────────────────────────────────────
     window.onload = function() {
       const pickerElement = document.getElementById("nepali-datepicker");
       if (pickerElement) {
@@ -183,7 +248,7 @@
       if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
         setTimeout(function() {
           e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 400); // 400ms delay to allow the keyboard to finish animating up
+        }, 400);
       }
     });
   </script>
