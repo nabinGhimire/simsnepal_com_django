@@ -139,10 +139,21 @@
             </tr>
           </thead>
           <tbody>
-            {% for subject_name, homework_text in homework.hw.items %}
+            {% for subject_name, hw_entry in homework.hw.items %}
             <tr>
               <td class="fw-semibold">{{ subject_name }}</td>
-              <td>{{ homework_text }}</td>
+              <td>
+                {% if hw_entry.text %}{{ hw_entry.text }}{% else %}{{ hw_entry }}{% endif %}
+                {% if hw_entry.teachers %}
+                <div class="mt-1">
+                  {% for t in hw_entry.teachers %}
+                  <span class="badge bg-blue-lt text-blue" style="font-size:0.7rem;">
+                    <i class="ti ti-user me-1"></i>{{ t.teacher_name }}
+                  </span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>

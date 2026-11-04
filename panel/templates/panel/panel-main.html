@@ -7,6 +7,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>{% block title %}Hamro Panel | SIMSnepal.com{% endblock %}</title>
+  <!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
   <!-- Tabler CSS -->
   <link href="{% static 'tabler/css/tabler.min.css' %}" rel="stylesheet" />
@@ -471,16 +473,16 @@
     {% block navbar %}
     {# Only the Student (panel) module shows the school-management sub-navbar. #}
     {# Other modules render their own navbar or none. #}
-    {% if active_module.key == 'student' %}
-    {% if branchuser %}
-    {% if branchuser.admin_status %}
-    {% include 'snippets/nav_admin.html' %}
-    {% else %}
-    {% include 'snippets/nav_teacher.html' %}
-    {% endif %}
+    {% if active_module.key == 'student' or active_module.key == 'exam' %}
+      {% if branchuser %}
+        {% if branchuser.admin_status %}
+        {% include 'snippets/nav_admin.html' %}
+        {% else %}
+        {% include 'snippets/nav_teacher.html' %}
+        {% endif %}
+      {% endif %}
     {% elif user.is_authenticated %}
     {% include 'snippets/nav.html' %}
-    {% endif %}
     {% endif %}
     {% endblock navbar %}
 

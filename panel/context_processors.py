@@ -14,8 +14,9 @@ this_year = 2083
 # `url_name` is the optional Django URL name used for the tile link ('#' when not wired yet).
 PANEL_MODULES = [
     {'key': 'student', 'label': 'Student', 'color': 'blue', 'icon': 'school', 'prefix': '/panel/', 'url_name': 'panel:index'},
-    {'key': 'grihakarya', 'label': 'Grihakarya', 'color': 'green', 'icon': 'pencil', 'prefix': '/grihakarya/', 'url_name': 'grihakarya'},
+    {'key': 'grihakarya', 'label': 'Grihakarya', 'color': 'green', 'icon': 'pencil', 'prefix': '/grihakarya/', 'url_name': 'grihakarya:dashboard'},
     {'key': 'attendance', 'label': 'Attendance', 'color': 'purple', 'icon': 'clipboard-check', 'prefix': '/attendance/', 'url_name': 'attendance:dashboard'},
+    {'key': 'concerns', 'label': 'ConcernMS', 'color': 'pink', 'icon': 'alert-triangle', 'prefix': '/concerns/', 'url_name': 'concerns:dashboard'},
     {'key': 'exam', 'label': 'Exam', 'color': 'red', 'icon': 'fa-regular fa-calendar', 'prefix': '/exam/', 'url_name': 'exam:dashboard'},
     {'key': 'cas', 'label': 'CAS', 'color': 'orange', 'icon': 'clipboard-list', 'prefix': '/cas/', 'url_name': 'cas'},
     {'key': 'billing', 'label': 'Billing', 'color': 'cyan', 'icon': 'receipt', 'prefix': '/billing/', 'url_name': 'billing'},
@@ -25,7 +26,7 @@ PANEL_MODULES = [
 DEFAULT_MODULE = PANEL_MODULES[0]
 
 # Modules every school always has, regardless of subscription (cannot be unsubscribed).
-CORE_MODULE_KEYS = {'student'}
+CORE_MODULE_KEYS = {'student', 'exam', 'concerns'}
 
 # Match longer prefixes first so e.g. /panel/calendar/ wins over /panel/.
 MODULES_BY_PREFIX = sorted(PANEL_MODULES, key=lambda m: len(m['prefix']), reverse=True)

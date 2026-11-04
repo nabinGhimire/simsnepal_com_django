@@ -1219,7 +1219,11 @@ def listgradeitems(request, gradelevel):
     subjects = Subject.objects.filter(branch=branchuser.school, grade=grade_obj.id)
     # Use grade_obj for further logic
     gradelevel = grade_obj
-    students = Student.objects.filter(school=branchuser.school, grade=gradelevel.id)
+    students = Student.objects.filter(
+        school=branchuser.school,
+        studentsession__grade=gradelevel.id,
+        status=True
+    ).distinct()
 
     # Determine parent registration status for each student and build a lookup dict
     from sms.hamro import user_exists_in_hamro, lookup_hamro_users_batch
@@ -5690,7 +5694,12 @@ def marksgradesheet(request):
 
         print("TERM", this_term, " GRADE: ", this_grade)
         this_session = EduSession.objects.get(id=submitted_session)
-        students = Student.objects.filter(school=school, grade=this_grade, status=True)
+        students = Student.objects.filter(
+            school=school,
+            studentsession__grade=this_grade,
+            studentsession__session=this_session,
+            status=True
+        ).distinct()
         subjects = Subject.objects.filter(
             branch=schoolbranch, grade=this_grade, status=True
         )
@@ -9783,7 +9792,30 @@ def print_homeworks(request):
 
         hw_items = json.loads(item.homework)
         for key, value in hw_items.items():
-            hw_data["hw"][str(gs[key])] = value
+            subject_name = gs.get(key)
+            if subject_name is None:
+                subject_name = f"Subject #{key}"
+            # Handle all JSON formats: flat str, direct {teacher_name,text}, nested by teacher/section
+            if isinstance(value, str):
+                hw_data["hw"][subject_name] = {'text': value, 'teachers': []}
+            elif isinstance(value, dict):
+                if 'text' in value:
+                    # Direct leaf
+                    hw_data["hw"][subject_name] = {
+                        'text': value['text'],
+                        'teachers': [{'teacher_name': value.get('teacher_name', ''), 'user_id': ''}],
+                    }
+                else:
+                    # Nested by teacher_user_id (current webview) or section_id (old)
+                    texts, teacher_entries = [], []
+                    for sub_key, sub_val in value.items():
+                        if isinstance(sub_val, dict) and sub_val.get('text'):
+                            texts.append(sub_val['text'])
+                            teacher_entries.append({'teacher_name': sub_val.get('teacher_name', ''), 'user_id': sub_key})
+                    hw_data["hw"][subject_name] = {
+                        'text': texts[0] if texts else '',
+                        'teachers': teacher_entries,
+                    }
 
         home_works_by_date[date_key].append(hw_data)
 
