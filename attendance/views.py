@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.db.models import Q, F
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.utils import timezone
 from datetime import date, datetime, timedelta
 from itertools import groupby
 
@@ -53,8 +54,9 @@ def get_nepali_month_ad_range(year_bs, month_bs):
 
 def parse_bs_or_ad_date(date_str):
     if not date_str:
-        bs_today = nepali_datetime.date.today()
-        return bs_today.to_datetime_date(), bs_today, f"{bs_today.year}-{bs_today.month:02d}-{bs_today.day:02d}"
+        today_ad = timezone.localtime(timezone.now()).date()
+        bs_today = nepali_datetime.date.from_datetime_date(today_ad)
+        return today_ad, bs_today, f"{bs_today.year}-{bs_today.month:02d}-{bs_today.day:02d}"
     try:
         parts = [int(p) for p in date_str.split('-')]
         if len(parts) == 3:
@@ -64,13 +66,14 @@ def parse_bs_or_ad_date(date_str):
                 return ad_obj, bs_obj, f"{bs_obj.year}-{bs_obj.month:02d}-{bs_obj.day:02d}"
             else:
                 ad_obj = date(parts[0], parts[1], parts[2])
-                bs_obj = nepali_datetime.date.from_datetime(ad_obj)
+                bs_obj = nepali_datetime.date.from_datetime_date(ad_obj)
                 return ad_obj, bs_obj, f"{bs_obj.year}-{bs_obj.month:02d}-{bs_obj.day:02d}"
     except Exception:
         pass
 
-    bs_today = nepali_datetime.date.today()
-    return bs_today.to_datetime_date(), bs_today, f"{bs_today.year}-{bs_today.month:02d}-{bs_today.day:02d}"
+    today_ad = timezone.localtime(timezone.now()).date()
+    bs_today = nepali_datetime.date.from_datetime_date(today_ad)
+    return today_ad, bs_today, f"{bs_today.year}-{bs_today.month:02d}-{bs_today.day:02d}"
 
 
 def get_current_school(request):

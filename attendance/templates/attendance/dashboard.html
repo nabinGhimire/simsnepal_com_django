@@ -4,82 +4,254 @@
 {% block extra_css %}
 {{ block.super }}
 <style>
-.att-summary-grid {
-  display: grid;
-  grid-template-columns: 220px 1fr 1fr 1fr;
-  grid-template-rows: auto auto;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.att-cell {
-  display: flex;
-}
-.att-box {
-  width: 100%;
-  background: #fff;
-  border: 1px solid #e3e8ef;
-  border-radius: 8px;
-  padding: 12px 18px;
-}
-.att-enrollment-cell {
-  grid-row: span 2;
-  display: flex;
-}
-.att-enrollment-cell .att-box {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  padding: 12px 14px;
-}
-.att-icon-box {
-  width: 36px; height: 36px;
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.att-section-title {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 700;
-  color: #6c757d;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.att-stat-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 6px;
-}
-.att-stat-row:last-child { margin-bottom: 0; }
-.att-stat-icon { width: 14px; text-align: center; font-size: 0.75rem; flex-shrink: 0; }
-.att-stat-label { font-size: 0.72rem; color: #6c757d; flex: 1; }
-.att-stat-value { font-size: 1.05rem; font-weight: 700; line-height: 1; }
-.att-stat-pct { font-size: 0.68rem; font-weight: 600; min-width: 36px; text-align: right; }
-.att-divider { height: 1px; background: #e9ecef; margin: 4px 0; }
+  /* ═══════ Attendance Dashboard ═══════ */
 
-/* Chart cards — remove Tabler's extra card-body padding */
-.chart-card > .card-body {
-  padding-top: 6px !important;
-  padding-bottom: 6px !important;
-}
+  :root {
+    --att-header-bg: var(--att-card-bg);
+    --att-header-border: var(--att-border);
+    --att-header-text: var(--att-text-dark);
+    --att-header-sub: var(--att-text-muted);
+    --att-grid-gap: 12px;
+    --att-box-padding: 16px;
+    --att-box-radius: 10px;
+  }
 
-/* Grade class cards — kill Tabler's card bottom margin */
-.grade-class-card > .card-body,
-.grade-class-card .card-body {
-  padding: 0 !important;
-}
-/* Kill Tabler's default bottom margin on all .card inside the class grid */
-.row.g-2 .card {
-  margin-bottom: 0 !important;
-}
-/* Grade view card header — override Tabler's large padding */
-.grade-view-card > .card-header {
-  padding: 8px 14px !important;
-}
+  [data-theme="dark"] {
+    --att-header-bg: var(--att-card-bg);
+    --att-header-border: var(--att-border);
+  }
+
+  /* Date & BS Selector Header */
+  .att-date-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .att-date-selector .selector-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--att-header-bg);
+    border: 1px solid var(--att-header-border);
+    border-radius: var(--att-box-radius);
+    padding: 14px 20px;
+    box-shadow: var(--att-shadow);
+    min-height: 70px;
+  }
+  .att-date-selector .selector-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 200px;
+  }
+  .att-date-selector .selector-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--att-header-text);
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+  .att-date-selector .selector-sub {
+    font-size: 0.8rem;
+    color: var(--att-header-sub);
+    margin: 0;
+    line-height: 1.4;
+  }
+  .att-date-selector .selector-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    min-width: 220px;
+  }
+  .att-date-selector .date-picker-wrap {
+    width: 170px;
+    min-width: 150px;
+  }
+  .att-date-selector .att-input {
+    width: 100%;
+    cursor: pointer;
+    background: var(--att-input-bg);
+    border: 1px solid var(--att-input-border);
+    color: var(--att-text-dark);
+    padding: 0.55rem 0.75rem 0.55rem 2.2rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .att-btn-go {
+    padding: 0.55rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: var(--att-primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .att-btn-go:hover {
+    background: var(--att-primary-dark);
+    box-shadow: var(--att-shadow);
+  }
+
+  /* Summary Grid */
+  .att-summary-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: var(--att-grid-gap);
+    margin-bottom: 1.25rem;
+  }
+  .att-cell {
+    display: flex;
+  }
+  .att-box {
+    width: 100%;
+    background: var(--att-card-bg);
+    border: 1px solid var(--att-header-border);
+    border-radius: var(--att-box-radius);
+    padding: var(--att-box-padding);
+    box-shadow: var(--att-shadow);
+  }
+  .att-enrollment-cell {
+    grid-row: span 2;
+    display: flex;
+  }
+  .att-enrollment-cell .att-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    padding: 14px 16px;
+  }
+  .att-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .att-section-title {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: var(--att-text-muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .att-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .att-stat-row:last-child { margin-bottom: 0; }
+  .att-stat-icon { width: 14px; text-align: center; font-size: 0.75rem; flex-shrink: 0; }
+  .att-stat-label { font-size: 0.72rem; color: var(--att-text-muted); flex: 1; }
+  .att-stat-value { font-size: 1.05rem; font-weight: 700; line-height: 1; color: var(--att-text-dark); }
+  .att-stat-pct { font-size: 0.68rem; font-weight: 600; min-width: 36px; text-align: right; }
+  .att-divider { height: 1px; background: var(--att-border); margin: 6px 0; }
+
+  /* Enrollment stat row */
+  .att-enroll-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+  }
+  .att-enroll-row:not(:last-child) { border-bottom: 1px solid var(--att-border); }
+  .att-enroll-label { font-size: 0.72rem; color: var(--att-text-muted); font-weight: 500; }
+  .att-enroll-value { font-size: 1.5rem; font-weight: 800; color: var(--att-text-dark); line-height: 1.1; }
+
+  /* Chart cards */
+  .chart-card > .card-body {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+  .grade-class-card > .card-body,
+  .grade-class-card .card-body {
+    padding: 0 !important;
+  }
+  .row.g-2 .card {
+    margin-bottom: 0 !important;
+  }
+  .grade-view-card > .card-header {
+    padding: 8px 14px !important;
+  }
+
+  /* Grade Class Cards */
+  .grade-class-card {
+    border: 1px solid var(--att-border);
+    border-radius: var(--att-radius);
+    background: var(--att-card-bg);
+    box-shadow: var(--att-shadow);
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition: box-shadow 0.15s ease;
+  }
+  .grade-class-card:hover {
+    box-shadow: var(--att-shadow-hover);
+  }
+  .grade-class-card .card-header {
+    background: var(--att-card-bg);
+    border-bottom: 1px solid var(--att-border);
+    padding: 10px 14px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--att-text-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .grade-class-card .class-stats {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    background: var(--att-card-bg);
+  }
+  .grade-class-card .stat-item {
+    text-align: center;
+    flex: 1;
+  }
+  .grade-class-card .stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--att-text-dark);
+    display: block;
+  }
+  .grade-class-card .stat-label {
+    font-size: 0.7rem;
+    color: var(--att-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .att-summary-grid {
+      grid-template-columns: 1fr;
+    }
+    .att-date-selector .selector-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .att-date-selector .date-picker-wrap {
+      width: 100%;
+    }
+    .att-date-selector .selector-form {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -89,18 +261,20 @@
 <!-- HOME OVERVIEW MODE WITH APEXCHARTS GRAPHS -->
 
 <!-- Date & BS Selector Header -->
-<div class="mb-2">
-  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3 bg-white" style="border:1px solid #e9ecef;border-radius:8px;">
-    <div>
-      <h6 class="m-0" style="font-weight:700;color:#212529;">Daily Attendance Dashboard</h6>
-      <span style="font-size:0.75rem;color:#6c757d;">
+<div class="att-date-selector">
+  <div class="selector-row">
+    <div class="selector-info">
+      <h6 class="selector-title">Daily Attendance Dashboard</h6>
+      <p class="selector-sub">
         BS: <strong class="text-primary">{{ selected_bs_date_str }}</strong>
         <span class="ms-1" style="opacity:0.5;">({{ selected_date }})</span>
-      </span>
+      </p>
     </div>
-    <form method="GET" class="d-flex align-items-center gap-2 m-0">
-      <input type="text" id="nepali-datepicker" name="date" class="form-control form-control-sm text-primary" style="cursor:pointer;font-size:0.82rem;font-weight:600;width:130px;" value="{{ selected_bs_date_str }}" readonly placeholder="YYYY-MM-DD">
-      <button type="submit" class="btn btn-sm btn-primary px-3">Go</button>
+    <form method="GET" class="selector-form">
+      <div class="date-picker-wrap">
+        <input type="text" id="nepali-datepicker" name="date" class="att-input" style="cursor:pointer;font-weight:600;" value="{{ selected_bs_date_str }}" readonly placeholder="YYYY-MM-DD">
+      </div>
+      <button type="submit" class="att-btn-go">Go</button>
     </form>
   </div>
 </div>
@@ -112,31 +286,31 @@
   <div class="att-enrollment-cell">
     <div class="att-box">
       <div class="att-section-title">Enrollment</div>
-      <div class="d-flex align-items-center gap-3 py-2">
+      <div class="att-enroll-row">
         <div class="att-icon-box" style="background:#e3f0fb;">
           <i class="fa-solid fa-mars" style="color:#1976d2;font-size:1.1rem;"></i>
         </div>
         <div>
-          <div style="font-size:0.72rem;color:#6c757d;font-weight:500;">Boys</div>
-          <div style="font-size:1.5rem;font-weight:800;color:#212529;line-height:1.1;">{{ overall_summary.total_boys }}</div>
+          <div class="att-enroll-label">Boys</div>
+          <div class="att-enroll-value">{{ overall_summary.total_boys }}</div>
         </div>
       </div>
-      <div class="d-flex align-items-center gap-3 py-2">
+      <div class="att-enroll-row">
         <div class="att-icon-box" style="background:#fce4ec;">
           <i class="fa-solid fa-venus" style="color:#c2185b;font-size:1.1rem;"></i>
         </div>
         <div>
-          <div style="font-size:0.72rem;color:#6c757d;font-weight:500;">Girls</div>
-          <div style="font-size:1.5rem;font-weight:800;color:#212529;line-height:1.1;">{{ overall_summary.total_girls }}</div>
+          <div class="att-enroll-label">Girls</div>
+          <div class="att-enroll-value">{{ overall_summary.total_girls }}</div>
         </div>
       </div>
-      <div class="d-flex align-items-center gap-3 py-2" style="border-top:1px solid #e9ecef;">
+      <div class="att-enroll-row">
         <div class="att-icon-box" style="background:#f1f3f5;">
           <i class="fa-solid fa-users" style="color:#495057;font-size:1.1rem;"></i>
         </div>
         <div>
-          <div style="font-size:0.72rem;color:#6c757d;font-weight:500;">Total</div>
-          <div style="font-size:1.5rem;font-weight:800;color:#212529;line-height:1.1;">{{ overall_summary.total_enrolled }}</div>
+          <div class="att-enroll-label">Total</div>
+          <div class="att-enroll-value">{{ overall_summary.total_enrolled }}</div>
         </div>
       </div>
     </div>
@@ -350,13 +524,13 @@
     <div class="col-sm-6 col-md-4 col-xl-3">
       <a href="?grade={{ card.grade.id }}{% if card.section %}&section={{ card.section.id }}{% endif %}&date={{ selected_bs_date_str }}&mode={% if card.is_taken %}view{% else %}edit{% endif %}"
          class="text-decoration-none">
-      <div class="card shadow-sm" style="cursor:pointer;border:{% if card.is_taken %}1px solid rgba(47,179,68,0.2){% else %}1px solid #e0e0e0{% endif %};border-radius:8px;overflow:hidden;margin-bottom:0;">
+      <div class="card shadow-sm class-card" style="cursor:pointer;border:{% if card.is_taken %}1px solid rgba(47,179,68,0.2){% else %}1px solid var(--att-border){% endif %};border-radius:var(--att-radius);overflow:hidden;">
         <!-- Header bar -->
-        <div style="padding:6px 10px;background:{% if card.is_taken %}linear-gradient(135deg,#e8f5e9,#f1f8e9){% else %}linear-gradient(135deg,#fff8e1,#fff3e0){% endif %};display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid {% if card.is_taken %}rgba(47,179,68,0.15){% else %}rgba(0,0,0,0.06){% endif %};">
+        <div style="padding:8px 12px;background:{% if card.is_taken %}linear-gradient(135deg,#e8f5e9,#f1f8e9){% else %}linear-gradient(135deg,#fff8e1,#fff3e0){% endif %};display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid {% if card.is_taken %}rgba(47,179,68,0.15){% else %}var(--att-border){% endif %};">
           <div>
-            <span style="font-size:0.85rem;font-weight:700;color:#212529;">{{ card.grade.grade_name }}</span>
+            <span style="font-size:0.85rem;font-weight:700;color:var(--att-text-dark);">{{ card.grade.grade_name }}</span>
             {% if card.section %}
-              <span style="font-size:0.5rem;padding:1px 4px;border-radius:3px;background:{% if card.is_taken %}rgba(47,179,68,0.15){% else %}rgba(0,0,0,0.06){% endif %};font-weight:600;color:{% if card.is_taken %}#2e7d32{% else %}#757575{% endif %};margin-left:3px;">{{ card.section.section }}</span>
+              <span style="font-size:0.5rem;padding:1px 4px;border-radius:3px;background:{% if card.is_taken %}rgba(47,179,68,0.15){% else %}var(--att-border){% endif %};font-weight:600;color:{% if card.is_taken %}#2e7d32{% else %}var(--att-text-muted){% endif %};margin-left:3px;">{{ card.section.section }}</span>
             {% endif %}
           </div>
           {% if card.is_taken %}
@@ -367,29 +541,29 @@
         </div>
 
         <!-- Body -->
-        <div style="padding:6px 10px;background:{% if card.is_taken %}#fafdf8{% else %}#fffefb{% endif %};">
+        <div style="padding:8px 12px;background:{% if card.is_taken %}#fafdf8{% else %}#fffefb{% endif %};">
           <!-- Stats row -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
             <div style="display:flex;align-items:center;gap:3px;font-size:0.68rem;">
-              <i class="fa-solid fa-mars" style="color:{% if card.is_taken %}#1976d2{% else %}#9e9e9e{% endif %};font-size:0.5rem;"></i>
-              <span style="color:#616161;">{% if card.is_taken %}<strong style="color:#2e7d32;">{{ card.present_boys }}</strong>/{% endif %}<strong>{{ card.total_boys }}</strong></span>
+              <i class="fa-solid fa-mars" style="color:{% if card.is_taken %}#1976d2{% else %}var(--att-text-muted){% endif %};font-size:0.5rem;"></i>
+              <span style="color:var(--att-text-muted);">{% if card.is_taken %}<strong style="color:#2e7d32;">{{ card.present_boys }}</strong>/{% endif %}<strong>{{ card.total_boys }}</strong></span>
             </div>
             <div style="display:flex;align-items:center;gap:3px;font-size:0.68rem;">
-              <i class="fa-solid fa-venus" style="color:{% if card.is_taken %}#c2185b{% else %}#9e9e9e{% endif %};font-size:0.5rem;"></i>
-              <span style="color:#616161;">{% if card.is_taken %}<strong style="color:#2e7d32;">{{ card.present_girls }}</strong>/{% endif %}<strong>{{ card.total_girls }}</strong></span>
+              <i class="fa-solid fa-venus" style="color:{% if card.is_taken %}#c2185b{% else %}var(--att-text-muted){% endif %};font-size:0.5rem;"></i>
+              <span style="color:var(--att-text-muted);">{% if card.is_taken %}<strong style="color:#2e7d32;">{{ card.present_girls }}</strong>/{% endif %}<strong>{{ card.total_girls }}</strong></span>
             </div>
-            <span style="font-size:0.68rem;color:#616161;">
+            <span style="font-size:0.68rem;color:var(--att-text-muted);">
               {% if card.is_taken %}<strong style="color:#2e7d32;">{{ card.present_boys|add:card.present_girls }}</strong>/{% endif %}<strong>{{ card.total_students }}</strong>
             </span>
           </div>
 
           <!-- Progress bar -->
           {% if card.is_taken %}
-          <div style="height:4px;background:#e8e8e8;border-radius:2px;overflow:hidden;">
+          <div style="height:4px;background:var(--att-border);border-radius:2px;overflow:hidden;">
             <div style="width:{{ card.percentage }}%;height:100%;background:{% if card.percentage >= 80 %}#43a047{% elif card.percentage >= 60 %}#f9a825{% else %}#e53935{% endif %};border-radius:2px;transition:width 0.6s;"></div>
           </div>
           {% else %}
-          <div style="height:4px;background:repeating-linear-gradient(90deg,#e0e0e0 0,#e0e0e0 4px,transparent 4px,transparent 8px);border-radius:2px;"></div>
+          <div style="height:4px;background:repeating-linear-gradient(90deg,var(--att-border) 0,var(--att-border) 4px,transparent 4px,transparent 8px);border-radius:2px;"></div>
           {% endif %}
         </div>
       </div>
@@ -399,10 +573,10 @@
   </div>
 </div>
 {% empty %}
-<div class="card border-0 shadow-sm text-center py-5" style="border-radius:12px;">
+<div class="card border-0 shadow-sm text-center py-5" style="border-radius:var(--att-radius);">
   <div class="text-muted">
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-info-circle mb-3" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none"><circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12.01" y2="8" /><polyline points="11 12 12 12 12 16 13 16" /></svg>
-    <p class="m-0" style="font-size:0.9rem;">No active classes or student sessions found for the current school session.</p>
+    <p class="m-0" style="font-size:0.9rem;color:var(--att-text-muted);">No active classes or student sessions found for the current school session.</p>
   </div>
 </div>
 {% endfor %}
@@ -475,26 +649,26 @@ document.addEventListener("DOMContentLoaded", function() {
 {% else %}
 <!-- SPECIFIC GRADE VIEW / EDIT MODE -->
 
-<div class="card shadow-sm mb-2" style="border:1px solid #e9ecef;border-radius:8px;">
+<div class="card shadow-sm mb-2" style="border:1px solid var(--att-border);border-radius:var(--att-radius);">
   <!-- Grade Header -->
-  <div class="card-header bg-white" style="border-bottom:1px solid #e9ecef;padding:8px 14px;">
+  <div class="card-header bg-white" style="border-bottom:1px solid var(--att-border);padding:10px 16px;">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 w-100">
       <div>
         <div class="d-flex align-items-center gap-2">
-          <h6 class="m-0" style="font-weight:700;color:#212529;font-size:0.92rem;">
+          <h6 class="m-0" style="font-weight:700;color:var(--att-text-dark);font-size:0.92rem;">
             Grade {{ selected_grade.grade_name }} Attendance
-            {% if selected_section %}<span style="font-size:0.7rem;padding:1px 6px;border-radius:4px;background:#f1f3f5;font-weight:600;color:#6c757d;margin-left:4px;">Sec {{ selected_section.section }}</span>{% endif %}
+            {% if selected_section %}<span style="font-size:0.7rem;padding:2px 6px;border-radius:4px;background:var(--att-border);font-weight:600;color:var(--att-text-muted);margin-left:4px;">Sec {{ selected_section.section }}</span>{% endif %}
           </h6>
           {% if is_already_taken %}
-            <span class="badge-status" style="background:#ebfbee;color:#2fb344;font-size:0.68rem;">Recorded</span>
+            <span class="badge-status" style="background:#ebfbee;color:#2fb344;font-size:0.68rem;padding:4px 10px;">Recorded</span>
           {% else %}
-            <span class="badge-status" style="background:#fff9db;color:#e67700;font-size:0.68rem;">New Entry</span>
+            <span class="badge-status" style="background:#fff9db;color:#e67700;font-size:0.68rem;padding:4px 10px;">New Entry</span>
           {% endif %}
         </div>
-        <div style="font-size:0.72rem;color:#6c757d;margin-top:1px;">
+        <div style="font-size:0.72rem;color:var(--att-text-muted);margin-top:1px;">
           BS {{ selected_bs_date_str }} (AD {{ selected_date }})
           {% if taken_by_user %}
-            <span class="ms-1">by <strong style="color:#212529;">{{ taken_by_user.get_full_name|default:taken_by_user.username }}</strong></span>
+            <span class="ms-1">by <strong style="color:var(--att-text-dark);">{{ taken_by_user.get_full_name|default:taken_by_user.username }}</strong></span>
           {% endif %}
         </div>
       </div>
@@ -502,21 +676,21 @@ document.addEventListener("DOMContentLoaded", function() {
       <div class="d-flex gap-1">
         {% if is_already_taken and mode != 'edit' %}
           <a href="?grade={{ selected_grade.id }}{% if selected_section %}&section={{ selected_section.id }}{% endif %}&date={{ selected_bs_date_str }}&mode=edit"
-             class="btn btn-sm btn-primary px-3" style="font-size:0.78rem;font-weight:600;">
+             class="att-btn att-btn-primary">
             Edit
           </a>
         {% elif is_already_taken and mode == 'edit' %}
           <a href="?grade={{ selected_grade.id }}{% if selected_section %}&section={{ selected_section.id }}{% endif %}&date={{ selected_bs_date_str }}&mode=view"
-             class="btn btn-sm btn-outline-secondary px-3" style="font-size:0.78rem;font-weight:600;">
+             class="att-btn att-btn-ghost">
             View Mode
           </a>
         {% endif %}
         {% if audit_logs %}
-          <button type="button" class="btn btn-sm btn-outline-secondary px-3" style="font-size:0.78rem;font-weight:600;" data-bs-toggle="modal" data-bs-target="#auditLogModal">
+          <button type="button" class="att-btn att-btn-ghost" data-bs-toggle="modal" data-bs-target="#auditLogModal">
             Audit ({{ audit_logs|length }})
           </button>
         {% endif %}
-        <a href="{% url 'attendance:dashboard' %}?date={{ selected_bs_date_str }}" class="btn btn-sm btn-outline-secondary px-3" style="font-size:0.78rem;font-weight:600;">
+        <a href="{% url 'attendance:dashboard' %}?date={{ selected_bs_date_str }}" class="att-btn att-btn-ghost">
           Back
         </a>
       </div>
@@ -524,15 +698,15 @@ document.addEventListener("DOMContentLoaded", function() {
   </div>
 
   <!-- Filter Toolbar -->
-  <div class="bg-light" style="border-bottom:1px solid #e9ecef;padding:6px 14px;">
+  <div style="background:var(--att-card-bg);border-bottom:1px solid var(--att-border);padding:10px 16px;">
     <form method="GET" action="" class="d-flex align-items-center gap-2 flex-wrap">
       <input type="hidden" name="grade" value="{{ selected_grade.id }}">
       <input type="hidden" name="mode" value="{{ mode }}">
 
       {% if sections %}
       <div class="d-flex align-items-center gap-1">
-        <label class="m-0" style="font-size:0.72rem;font-weight:600;color:#6c757d;">Section:</label>
-        <select name="section" class="form-select form-select-sm" style="width:100px;font-size:0.78rem;" onchange="this.form.submit()">
+        <label class="m-0" style="font-size:0.72rem;font-weight:600;color:var(--att-text-muted);">Section:</label>
+        <select name="section" class="att-select" style="width:100px;" onchange="this.form.submit()">
           <option value="">All</option>
           {% for sec in sections %}
           <option value="{{ sec.id }}" {% if selected_section.id == sec.id %}selected{% endif %}>Sec {{ sec.section }}</option>
@@ -543,8 +717,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
       {% if subjects %}
       <div class="d-flex align-items-center gap-1">
-        <label class="m-0" style="font-size:0.72rem;font-weight:600;color:#6c757d;">Subject:</label>
-        <select name="subject" class="form-select form-select-sm" style="width:110px;font-size:0.78rem;" onchange="this.form.submit()">
+        <label class="m-0" style="font-size:0.72rem;font-weight:600;color:var(--att-text-muted);">Subject:</label>
+        <select name="subject" class="att-select" style="width:110px;" onchange="this.form.submit()">
           <option value="">General</option>
           {% for subj in subjects %}
           <option value="{{ subj.id }}" {% if selected_subject.id == subj.id %}selected{% endif %}>{{ subj.subject }}</option>
@@ -554,8 +728,10 @@ document.addEventListener("DOMContentLoaded", function() {
       {% endif %}
 
       <div class="d-flex align-items-center gap-1 ms-auto">
-        <label class="m-0" style="font-size:0.72rem;font-weight:600;color:#6c757d;">Date:</label>
-        <input type="text" id="nepali-datepicker" name="date" class="form-control form-control-sm text-primary" style="cursor:pointer;font-size:0.78rem;font-weight:600;width:120px;" value="{{ selected_bs_date_str }}" readonly placeholder="YYYY-MM-DD">
+        <label class="m-0" style="font-size:0.72rem;font-weight:600;color:var(--att-text-muted);">Date:</label>
+        <div class="date-picker-wrap" style="width:auto;">
+          <input type="text" id="nepali-datepicker" name="date" class="att-input" style="cursor:pointer;font-weight:600;width:120px;" value="{{ selected_bs_date_str }}" readonly placeholder="YYYY-MM-DD">
+        </div>
       </div>
     </form>
   </div>
@@ -563,18 +739,18 @@ document.addEventListener("DOMContentLoaded", function() {
   {% if is_already_taken and mode != 'edit' %}
   <!-- Attendance Summary -->
   {% if grade_summary %}
-  <div class="att-summary-row py-2 px-3">
-    <div class="d-flex align-items-center gap-4 flex-wrap" style="font-size:0.8rem;">
-      <span style="color:#6c757d;">Total: <strong style="color:#212529;">{{ grade_summary.total }}</strong></span>
-      <span style="color:#6c757d;">Present: <strong style="color:#2fb344;">{{ grade_summary.present }}</strong></span>
-      <span style="color:#6c757d;">Absent: <strong style="color:#d63939;">{{ grade_summary.absent }}</strong></span>
+  <div class="att-summary-row">
+    <div class="d-flex align-items-center gap-4 flex-wrap" style="font-size:0.8rem;padding:10px 16px;">
+      <span style="color:var(--att-text-muted);">Total: <strong style="color:var(--att-text-dark);">{{ grade_summary.total }}</strong></span>
+      <span style="color:var(--att-text-muted);">Present: <strong style="color:#2fb344;">{{ grade_summary.present }}</strong></span>
+      <span style="color:var(--att-text-muted);">Absent: <strong style="color:#d63939;">{{ grade_summary.absent }}</strong></span>
       {% if grade_summary.informed_absent %}
-      <span style="color:#6c757d;">Informed: <strong style="color:#e67700;">{{ grade_summary.informed_absent }}</strong></span>
+      <span style="color:var(--att-text-muted);">Informed: <strong style="color:#e67700;">{{ grade_summary.informed_absent }}</strong></span>
       {% endif %}
       {% if grade_summary.uninformed_absent %}
-      <span style="color:#6c757d;">Uninformed: <strong style="color:#d63939;">{{ grade_summary.uninformed_absent }}</strong></span>
+      <span style="color:var(--att-text-muted);">Uninformed: <strong style="color:#d63939;">{{ grade_summary.uninformed_absent }}</strong></span>
       {% endif %}
-      <span style="color:#6c757d;">Rate: <strong style="color:#2fb344;">{{ grade_summary.percentage }}%</strong></span>
+      <span style="color:var(--att-text-muted);">Rate: <strong style="color:#2fb344;">{{ grade_summary.percentage }}%</strong></span>
     </div>
   </div>
   {% endif %}
@@ -597,14 +773,14 @@ document.addEventListener("DOMContentLoaded", function() {
           {% for ss in student_sessions %}
           {% with record=attendance_map|default:''|get_item:ss.student.reg_no %}
           <tr>
-            <td class="font-weight-bold" style="color:#1a1a2e;">{{ ss.roll_no }}</td>
-            <td><code style="font-size:0.78rem;background:rgba(0,0,0,0.04);padding:2px 6px;border-radius:4px;">{{ ss.student.reg_no }}</code></td>
+            <td class="font-weight-bold" style="color:var(--att-text-dark);">{{ ss.roll_no }}</td>
+            <td><code style="font-size:0.78rem;background:var(--att-border);padding:2px 6px;border-radius:4px;color:var(--att-text-dark);">{{ ss.student.reg_no }}</code></td>
             <td>
-              <a href="{% url 'attendance:student_profile' reg_no=ss.student.reg_no %}" class="font-weight-bold text-decoration-none" style="color:#008877;font-size:0.9rem;">
+              <a href="{% url 'attendance:student_profile' reg_no=ss.student.reg_no %}" class="font-weight-bold text-decoration-none" style="color:var(--att-primary);font-size:0.9rem;">
                 {{ ss.student.name }}
               </a>
               {% if ss.section and not selected_section %}
-                <span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,0.05);font-weight:600;color:#6c757d;margin-left:4px;">Sec {{ ss.section.section }}</span>
+                <span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:var(--att-border);font-weight:600;color:var(--att-text-muted);margin-left:4px;">Sec {{ ss.section.section }}</span>
               {% endif %}
             </td>
             <td>
@@ -622,17 +798,17 @@ document.addEventListener("DOMContentLoaded", function() {
                   <span class="badge-status" style="background:#fff5f5;color:#d63939;">ABSENT</span>
                 {% endif %}
               {% else %}
-                <span style="font-size:0.8rem;color:#adb5bd;">-</span>
+                <span style="font-size:0.8rem;color:var(--att-text-muted);">-</span>
               {% endif %}
             </td>
             <td>
               {% if record and record.absent_informed %}
                 <span class="badge-status" style="background:#fff9db;color:#e67700;">Informed</span>
               {% else %}
-                <span style="font-size:0.8rem;color:#adb5bd;">-</span>
+                <span style="font-size:0.8rem;color:var(--att-text-muted);">-</span>
               {% endif %}
             </td>
-            <td style="font-size:0.82rem;color:#6c757d;">{{ record.remarks|default:'-' }}</td>
+            <td style="font-size:0.82rem;color:var(--att-text-muted);">{{ record.remarks|default:'-' }}</td>
           </tr>
           {% endwith %}
           {% empty %}
@@ -654,9 +830,9 @@ document.addEventListener("DOMContentLoaded", function() {
       <!-- Batch Action Controls -->
       <div class="batch-bar p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
-          <span style="font-size:0.78rem;font-weight:600;color:#6c757d;">Batch:</span>
-          <button type="button" class="btn btn-sm btn-outline-success px-3" style="font-weight:600;font-size:0.78rem;" onclick="markAll(true)">Mark All Present</button>
-          <button type="button" class="btn btn-sm btn-outline-danger px-3" style="font-weight:600;font-size:0.78rem;" onclick="markAll(false)">Mark All Absent</button>
+          <span style="font-size:0.78rem;font-weight:600;color:var(--att-text-muted);">Batch:</span>
+          <button type="button" class="att-btn att-btn-ghost" style="color:#2fb344;border-color:#2fb344;" onclick="markAll(true)">Mark All Present</button>
+          <button type="button" class="att-btn att-btn-ghost" style="color:#d63939;border-color:#d63939;" onclick="markAll(false)">Mark All Absent</button>
         </div>
         <div class="d-flex align-items-center gap-2">
           <span class="badge-status" style="background:#ebfbee;color:#2fb344;font-size:0.82rem;padding:5px 12px;" id="present-count-badge">Present: 0</span>
@@ -681,14 +857,14 @@ document.addEventListener("DOMContentLoaded", function() {
             {% for ss in student_sessions %}
             {% with record=attendance_map|default:''|get_item:ss.student.reg_no %}
             <tr>
-              <td class="font-weight-bold" style="color:#1a1a2e;">{{ ss.roll_no }}</td>
-              <td><code style="font-size:0.78rem;background:rgba(0,0,0,0.04);padding:2px 6px;border-radius:4px;">{{ ss.student.reg_no }}</code></td>
+              <td class="font-weight-bold" style="color:var(--att-text-dark);">{{ ss.roll_no }}</td>
+              <td><code style="font-size:0.78rem;background:var(--att-border);padding:2px 6px;border-radius:4px;color:var(--att-text-dark);">{{ ss.student.reg_no }}</code></td>
               <td>
-                <a href="{% url 'attendance:student_profile' reg_no=ss.student.reg_no %}" class="font-weight-bold text-decoration-none" style="color:#008877;font-size:0.9rem;" target="_blank">
+                <a href="{% url 'attendance:student_profile' reg_no=ss.student.reg_no %}" class="font-weight-bold text-decoration-none" style="color:var(--att-primary);font-size:0.9rem;" target="_blank">
                   {{ ss.student.name }}
                 </a>
                 {% if ss.section and not selected_section %}
-                  <span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,0.05);font-weight:600;color:#6c757d;margin-left:4px;">Sec {{ ss.section.section }}</span>
+                  <span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:var(--att-border);font-weight:600;color:var(--att-text-muted);margin-left:4px;">Sec {{ ss.section.section }}</span>
                 {% endif %}
               </td>
               <td>
@@ -724,7 +900,7 @@ document.addEventListener("DOMContentLoaded", function() {
                          value="yes"
                          {% if record and record.absent_informed %}checked{% endif %}
                          style="margin-top:0;">
-                  <span style="font-size:0.78rem;color:#6c757d;font-weight:500;">Informed</span>
+                  <span style="font-size:0.78rem;color:var(--att-text-muted);font-weight:500;">Informed</span>
                 </label>
               </td>
               <td>
@@ -732,7 +908,7 @@ document.addEventListener("DOMContentLoaded", function() {
                           name="remarks_{{ ss.student.reg_no }}"
                           placeholder="Add note..."
                           rows="1"
-                          style="height: 34px; min-height: 34px; transition: height 0.2s ease-in-out; resize: vertical; border-radius: 8px; font-size: 0.82rem;"
+                          style="height: 34px; min-height: 34px; transition: height 0.2s ease-in-out; resize: vertical; border-radius: 8px; font-size: 0.82rem;background:var(--att-input-bg);border:1px solid var(--att-input-border);color:var(--att-text-dark);"
                           onfocus="this.style.height='70px'"
                           onblur="if(!this.value.trim()) this.style.height='34px'">{{ record.remarks|default:'' }}</textarea>
               </td>
@@ -751,7 +927,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
       {% if student_sessions %}
       <div class="save-footer text-end py-3 px-3 sticky-bottom">
-        <button type="submit" class="btn btn-primary px-4 py-2" style="border-radius:10px;font-weight:600;">
+        <button type="submit" class="att-btn att-btn-primary" style="border-radius:10px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           {% if is_already_taken %}Update Attendance{% else %}Save Attendance{% endif %}
         </button>
@@ -767,8 +943,8 @@ document.addEventListener("DOMContentLoaded", function() {
 <div class="modal fade" id="auditLogModal" tabindex="-1" aria-labelledby="auditLogModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content" style="border-radius:10px;overflow:hidden;">
-      <div class="modal-header py-3 bg-white" style="border-bottom:1px solid #e9ecef;">
-        <h5 class="modal-title m-0" style="font-size:0.95rem;font-weight:700;color:#212529;" id="auditLogModalLabel">
+      <div class="modal-header py-3 bg-white" style="border-bottom:1px solid var(--att-border);">
+        <h5 class="modal-title m-0" style="font-size:0.95rem;font-weight:700;color:var(--att-text-dark);" id="auditLogModalLabel">
           Attendance Modification Logs
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -788,19 +964,19 @@ document.addEventListener("DOMContentLoaded", function() {
             <tbody>
               {% for log in audit_logs %}
               <tr>
-                <td style="font-size:0.78rem;color:#6c757d;">{{ log.created_at|date:"Y-m-d H:i" }}</td>
-                <td style="font-weight:600;color:#212529;">{{ log.attendance.reg_no.name }}</td>
-                <td><span style="padding:2px 8px;border-radius:4px;background:#f1f3f5;font-weight:600;font-size:0.78rem;">{{ log.updated_by.username }}</span></td>
+                <td style="font-size:0.78rem;color:var(--att-text-muted);">{{ log.created_at|date:"Y-m-d H:i" }}</td>
+                <td style="font-weight:600;color:var(--att-text-dark);">{{ log.attendance.reg_no.name }}</td>
+                <td><span style="padding:2px 8px;border-radius:4px;background:var(--att-border);font-weight:600;font-size:0.78rem;color:var(--att-text-dark);">{{ log.updated_by.username }}</span></td>
                 <td>
                   {% if log.previous_status != log.new_status %}
                     <span class="badge-status" style="background:#fff5f5;color:#d63939;">{% if log.previous_status %}Present{% else %}Absent{% endif %}</span>
                     &rarr;
                     <span class="badge-status" style="background:#ebfbee;color:#2fb344;">{% if log.new_status %}Present{% else %}Absent{% endif %}</span>
                   {% else %}
-                    <span style="font-size:0.8rem;color:#adb5bd;">Unchanged</span>
+                    <span style="font-size:0.8rem;color:var(--att-text-muted);">Unchanged</span>
                   {% endif %}
                 </td>
-                <td style="font-size:0.8rem;color:#6c757d;">{{ log.new_remarks|default:log.previous_remarks|default:'-' }}</td>
+                <td style="font-size:0.8rem;color:var(--att-text-muted);">{{ log.new_remarks|default:log.previous_remarks|default:'-' }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -808,7 +984,7 @@ document.addEventListener("DOMContentLoaded", function() {
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="att-btn att-btn-ghost" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

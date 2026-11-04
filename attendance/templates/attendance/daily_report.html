@@ -4,125 +4,128 @@
 <div class="card border-0 shadow-sm mb-3">
   <div class="card-header bg-white py-2 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
-      <h6 class="card-title m-0 text-primary font-weight-bold">
-        Daily Attendance Summary
-      </h6>
+      <h6 class="card-title m-0 text-primary font-weight-bold">Daily Attendance Summary</h6>
       <div class="text-muted" style="font-size:0.75rem;">
-        BS {{ selected_bs_date_str }} (AD {{ selected_date }}) | 
+        BS {{ selected_bs_date_str }} (AD {{ selected_date }}) |
         {% if selected_grade %}Grade {{ selected_grade.grade_name }}{% else %}All Grades{% endif %}
       </div>
     </div>
 
     <div class="d-flex gap-2">
-      <a href="{% url 'attendance:export_daily_excel' %}?date={{ selected_bs_date_str }}{% if selected_grade %}&grade={{ selected_grade.id }}{% endif %}{% if selected_section %}&section={{ selected_section.id }}{% endif %}" 
-         class="btn btn-success btn-sm px-3 font-weight-bold">
+      <a href="{% url 'attendance:export_daily_excel' %}?date={{ selected_bs_date_str }}{% if selected_grade %}&grade={{ selected_grade.id }}{% endif %}{% if selected_section %}&section={{ selected_section.id }}{% endif %}"
+         class="att-btn att-btn-ghost" style="color:var(--att-success);border-color:var(--att-success);padding:0.5rem 1rem;">
         Export Excel
       </a>
-      <a href="{% url 'attendance:dashboard' %}?date={{ selected_bs_date_str }}" class="btn btn-outline-secondary btn-sm">
+      <a href="{% url 'attendance:dashboard' %}?date={{ selected_bs_date_str }}" class="att-btn att-btn-ghost">
         Back
       </a>
     </div>
   </div>
 
-  <div class="card-body bg-light py-2">
-    <form method="GET" action="" class="d-flex align-items-center gap-2 flex-wrap">
-      <div class="d-flex align-items-center gap-1">
-        <label class="text-muted font-weight-bold m-0" style="font-size:0.78rem;">Date:</label>
-        <input type="text" id="daily_report_date" name="date" value="{{ selected_bs_date_str }}" 
-               class="form-control form-control-sm nepali-datepicker bg-white border" style="width:130px;font-size:0.82rem;" placeholder="YYYY-MM-DD" autocomplete="off" />
+  <!-- Filter Form -->
+  <div class="card-body py-2">
+    <form method="GET" action="" class="row g-2 align-items-center">
+      <div class="col-auto">
+        <label class="form-label small text-muted font-weight-bold m-0 me-1">Date (BS):</label>
+        <div class="date-picker-wrap" style="width:auto;">
+          <input type="text" id="daily_report_date" name="date" value="{{ selected_bs_date_str }}"
+                 class="att-input" style="cursor:pointer;font-weight:600;width:150px;" placeholder="YYYY-MM-DD" autocomplete="off" />
+        </div>
       </div>
-      <div class="d-flex align-items-center gap-1">
-        <label class="text-muted font-weight-bold m-0" style="font-size:0.78rem;">Grade:</label>
-        <select name="grade" class="form-select form-select-sm border" style="width:130px;font-size:0.82rem;" onchange="this.form.submit()">
+      <div class="col-auto">
+        <label class="form-label small text-muted font-weight-bold m-0 me-1">Grade:</label>
+        <select name="grade" class="att-select" style="width:140px;" onchange="this.form.submit()">
           <option value="">All</option>
           {% for g in grades %}
           <option value="{{ g.id }}" {% if selected_grade.id == g.id %}selected{% endif %}>Grade {{ g.grade_name }}</option>
           {% endfor %}
         </select>
       </div>
-      <button type="submit" class="btn btn-primary btn-sm px-3" style="font-size:0.82rem;">
-        Filter
-      </button>
+      <div class="col-auto ms-auto">
+        <button type="submit" class="att-btn att-btn-primary" style="white-space:nowrap;">
+          Filter
+        </button>
+      </div>
     </form>
   </div>
 </div>
 
 <!-- Summary Stats -->
-<div class="row g-2 mb-3">
+<div class="att-summary-grid" style="grid-template-columns: repeat(5, 1fr);">
   <!-- Total -->
-  <div class="col">
-    <div class="card border-0 shadow-sm py-2 px-3 bg-white">
-      <div class="d-flex justify-content-between align-items-center">
+  <div class="att-cell">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div style="font-size:0.68rem;text-transform:uppercase;font-weight:600;color:#6c757d;">Total</div>
-          <div class="font-weight-bold" style="font-size:1.25rem;color:#212529;">{{ total_stds }}</div>
+          <div class="stat-label">Total</div>
+          <div class="stat-value">{{ total_stds }}</div>
         </div>
-        <div class="text-end" style="font-size:0.72rem;color:#6c757d;">
-          <div>B: <strong style="color:#212529;">{{ total_boys }}</strong> / G: <strong style="color:#212529;">{{ total_girls }}</strong></div>
-          <div style="color:#008877;font-weight:600;">{{ percentage }}% <small style="font-weight:400;">rate</small></div>
+        <div class="text-end" style="min-width:80px;">
+          <div style="font-size:0.72rem;color:var(--att-text-muted);">B: <strong style="color:var(--att-text-dark);">{{ total_boys }}</strong> / G: <strong style="color:var(--att-text-dark);">{{ total_girls }}</strong></div>
+          <div style="font-size:0.72rem;color:var(--att-primary);font-weight:600;">{{ percentage }}% <small style="font-weight:400;">rate</small></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Pending -->
-  <div class="col">
-    <div class="card border-0 shadow-sm py-2 px-3 bg-white">
-      <div class="d-flex justify-content-between align-items-center">
+  <div class="att-cell">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div style="font-size:0.68rem;text-transform:uppercase;font-weight:600;color:#6c757d;">Pending</div>
-          <div class="font-weight-bold" style="font-size:1.25rem;color:#e67700;">{{ total_pending }}</div>
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" style="color:#e67700;">{{ total_pending }}</div>
         </div>
-        <div class="text-end" style="font-size:0.72rem;color:#6c757d;">
-          <div>B: <strong style="color:#212529;">{{ pending_boys }}</strong> / G: <strong style="color:#212529;">{{ pending_girls }}</strong></div>
+        <div class="text-end" style="min-width:80px;">
+          <div style="font-size:0.72rem;color:var(--att-text-muted);">B: <strong style="color:var(--att-text-dark);">{{ pending_boys }}</strong> / G: <strong style="color:var(--att-text-dark);">{{ pending_girls }}</strong></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Recorded -->
-  <div class="col">
-    <div class="card border-0 shadow-sm py-2 px-3 bg-white">
-      <div class="d-flex justify-content-between align-items-center">
+  <div class="att-cell">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div style="font-size:0.68rem;text-transform:uppercase;font-weight:600;color:#6c757d;">Recorded</div>
-          <div class="font-weight-bold" style="font-size:1.25rem;color:#2fb344;">{{ total_recorded }}</div>
+          <div class="stat-label">Recorded</div>
+          <div class="stat-value" style="color:#2fb344;">{{ total_recorded }}</div>
         </div>
-        <div class="text-end" style="font-size:0.72rem;color:#6c757d;">
-          <div>B: <strong style="color:#212529;">{{ recorded_boys }}</strong> / G: <strong style="color:#212529;">{{ recorded_girls }}</strong></div>
+        <div class="text-end" style="min-width:80px;">
+          <div style="font-size:0.72rem;color:var(--att-text-muted);">B: <strong style="color:var(--att-text-dark);">{{ recorded_boys }}</strong> / G: <strong style="color:var(--att-text-dark);">{{ recorded_girls }}</strong></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Present -->
-  <div class="col">
-    <div class="card border-0 shadow-sm py-2 px-3 bg-white">
-      <div class="d-flex justify-content-between align-items-center">
+  <div class="att-cell">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div style="font-size:0.68rem;text-transform:uppercase;font-weight:600;color:#6c757d;">Present</div>
-          <div class="font-weight-bold" style="font-size:1.25rem;color:#2fb344;">{{ total_present }}</div>
+          <div class="stat-label">Present</div>
+          <div class="stat-value" style="color:#2fb344;">{{ total_present }}</div>
         </div>
-        <div class="text-end" style="font-size:0.72rem;color:#6c757d;">
-          <div>B: <strong style="color:#212529;">{{ present_boys }}</strong></div>
-          <div>G: <strong style="color:#212529;">{{ present_girls }}</strong></div>
+        <div class="text-end" style="min-width:80px;">
+          <div style="font-size:0.72rem;color:var(--att-text-muted);">B: <strong style="color:var(--att-text-dark);">{{ present_boys }}</strong></div>
+          <div style="font-size:0.72rem;color:var(--att-text-muted);">G: <strong style="color:var(--att-text-dark);">{{ present_girls }}</strong></div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Absent + Rate -->
-  <div class="col">
-    <div class="card border-0 shadow-sm py-2 px-3 bg-white">
-      <div class="d-flex justify-content-between align-items-center">
+  <div class="att-cell">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div style="font-size:0.68rem;text-transform:uppercase;font-weight:600;color:#6c757d;">Absent</div>
-          <div class="font-weight-bold" style="font-size:1.25rem;color:#d63939;">{{ total_absent }}</div>
+          <div class="stat-label">Absent</div>
+          <div class="stat-value" style="color:#d63939;">{{ total_absent }}</div>
         </div>
-        <div class="text-end" style="font-size:0.72rem;color:#6c757d;">
-          <div>B: <strong style="color:#212529;">{{ absent_boys }}</strong> / G: <strong style="color:#212529;">{{ absent_girls }}</strong></div>
-          <div>Informed: <strong style="color:#e67700;">{{ total_informed_absent }}</strong> <small>(B:{{ informed_absent_boys }} / G:{{ informed_absent_girls }})</small></div>
-          <div>Uninformed: <strong style="color:#d63939;">{{ total_uninformed_absent }}</strong> <small>(B:{{ uninformed_absent_boys }} / G:{{ uninformed_absent_girls }})</small></div>
+        <div class="text-end" style="min-width:80px;">
+          <div style="font-size:0.72rem;color:var(--att-text-muted);">B: <strong style="color:var(--att-text-dark);">{{ absent_boys }}</strong> / G: <strong style="color:var(--att-text-dark);">{{ absent_girls }}</strong></div>
+          <div style="font-size:0.72rem;color:var(--att-text-muted);">Informed: <strong style="color:#e67700;">{{ total_informed_absent }}</strong></div>
+          <div style="font-size:0.72rem;color:var(--att-text-muted);">Uninformed: <strong style="color:#d63939;">{{ total_uninformed_absent }}</strong></div>
         </div>
       </div>
     </div>
@@ -130,16 +133,14 @@
 </div>
 
 <!-- Class-by-Class Attendance Table -->
-<div class="card border-0 shadow-sm">
-  <div class="card-header bg-white py-2">
-    <h6 class="card-title m-0 text-dark font-weight-bold">
-      Class-wise Attendance — {{ selected_bs_date_str }}
-    </h6>
+<div class="card shadow-sm mb-2" style="border:1px solid var(--att-border);border-radius:var(--att-radius);overflow:hidden;">
+  <div style="background:var(--att-card-bg);border-bottom:1px solid var(--att-border);padding:10px 16px;">
+    <h6 class="m-0" style="font-weight:700;color:var(--att-text-dark);font-size:0.875rem;">Class-wise Attendance — {{ selected_bs_date_str }}</h6>
   </div>
 
   <div class="table-responsive">
-    <table class="table table-vcenter table-hover table-sm card-table border-0 m-0" style="font-size:0.82rem;">
-      <thead class="bg-light">
+    <table class="table table-vcenter table-hover attendance-table" style="margin-bottom:0;">
+      <thead>
         <tr>
           <th>Class</th>
           <th class="text-center">Total</th>
@@ -154,46 +155,44 @@
         {% for c in class_summaries %}
         <tr>
           <td>
-            <strong class="text-primary">
-              {{ c.grade.grade_name }}{% if c.section %}-{{ c.section.section }}{% endif %}
-            </strong>
+            <strong style="color:var(--att-primary);">{{ c.grade.grade_name }}{% if c.section %}-{{ c.section.section }}{% endif %}</strong>
           </td>
           <td class="text-center font-weight-bold">{{ c.total_students }}</td>
           <td class="text-center">
             {% if c.is_taken %}
-              <span class="text-success font-weight-bold">{{ c.present_total }}</span>
-              <small class="text-muted">({{ c.present_boys }}B / {{ c.present_girls }}G)</small>
+              <span style="color:#2fb344;font-weight:600;">{{ c.present_total }}</span>
+              <br><small style="color:var(--att-text-muted);">({{ c.present_boys }}B / {{ c.present_girls }}G)</small>
             {% else %}
-              <span class="text-muted">-</span>
+              <span style="color:var(--att-text-muted);">-</span>
             {% endif %}
           </td>
           <td class="text-center">
             {% if c.is_taken %}
-              <span class="text-danger font-weight-bold">{{ c.absent_total }}</span>
-              <small class="text-muted">({{ c.absent_boys }}B / {{ c.absent_girls }}G)</small>
+              <span style="color:#d63939;font-weight:600;">{{ c.absent_total }}</span>
+              <br><small style="color:var(--att-text-muted);">({{ c.absent_boys }}B / {{ c.absent_girls }}G)</small>
             {% else %}
-              <span class="text-muted">-</span>
+              <span style="color:var(--att-text-muted);">-</span>
             {% endif %}
           </td>
           <td class="text-center">
             {% if c.is_taken %}
-              <span class="font-weight-bold {% if c.percentage >= 80 %}text-success{% elif c.percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+              <span style="font-weight:600; {% if c.percentage >= 80 %}color:#2fb344;{% elif c.percentage >= 60 %}color:#ffb703;{% else %}color:#d63939;{% endif %};">
                 {{ c.percentage }}%
               </span>
             {% else %}
-              <span class="text-muted">-</span>
+              <span style="color:var(--att-text-muted);">-</span>
             {% endif %}
           </td>
           <td class="text-center">
             {% if c.is_taken %}
-              <span class="badge bg-success-lt text-success">Taken</span>
+              <span class="badge-status" style="background:#ebfbee;color:#2fb344;">Taken</span>
             {% else %}
-              <span class="badge bg-warning-lt text-warning">Pending</span>
+              <span class="badge-status" style="background:#fff9db;color:#e67700;">Pending</span>
             {% endif %}
           </td>
           <td class="text-end d-print-none">
-            <a href="{% url 'attendance:dashboard' %}?grade={{ c.grade.id }}{% if c.section %}&section={{ c.section.id }}{% endif %}&date={{ selected_bs_date_str }}" 
-               class="btn btn-outline-primary btn-sm" style="font-size:0.72rem;padding:0.15rem 0.5rem;">
+            <a href="{% url 'attendance:dashboard' %}?grade={{ c.grade.id }}{% if c.section %}&section={{ c.section.id }}{% endif %}&date={{ selected_bs_date_str }}"
+               class="att-btn att-btn-ghost" style="font-size:0.78rem;padding:0.4rem 0.8rem;">
               {% if c.is_taken %}View{% else %}Take{% endif %}
             </a>
           </td>

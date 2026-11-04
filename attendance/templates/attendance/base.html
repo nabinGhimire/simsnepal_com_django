@@ -1,5 +1,7 @@
 {% extends 'panel/panel-main.html' %}
 
+{% load static %}
+
 {% block title %}Attendance Management | SIMSnepal{% endblock %}
 
 {% block extra_css %}
@@ -10,29 +12,101 @@
 <!-- ApexCharts CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@latest/dist/apexcharts.css"/>
 <style>
+  /* ═══════ Theme Variables (Light / Dark) ═══════ */
+  :root {
+    --att-bg: #f7f9fc;
+    --att-card-bg: #ffffff;
+    --att-border: #e9ecef;
+    --att-text-muted: #6c757d;
+    --att-text-dark: #212529;
+    --att-primary: #008877;
+    --att-primary-dark: #006c5e;
+    --att-success: #2fb344;
+    --att-warning: #ffb703;
+    --att-danger: #e63946;
+    --att-radius: 10px;
+    --att-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --att-shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
+    --att-input-bg: #ffffff;
+    --att-input-border: #dee2e6;
+    --att-btn-padding: 0.5rem 1rem;
+    --att-btn-font-size: 0.85rem;
+    --att-btn-font-weight: 600;
+  }
+
+  [data-theme="dark"] {
+    --att-bg: #1a1b26;
+    --att-card-bg: #232934;
+    --att-border: #3a3d49;
+    --att-text-muted: #a0a5b3;
+    --att-text-dark: #e4e7eb;
+    --att-primary: #3b82f6;
+    --att-primary-dark: #2563eb;
+    --att-success: #34d399;
+    --att-warning: #fbbf24;
+    --att-danger: #f87171;
+    --att-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --att-shadow-hover: 0 4px 12px rgba(0,0,0,0.4);
+    --att-input-bg: #2d333f;
+    --att-input-border: #4b5563;
+  }
+
+  html, body {
+    background: var(--att-bg);
+    color: var(--att-text-dark);
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  /* ═══════ Date Picker Fix (Compact, No Overflow) ═══════ */
   .nepali-datepicker-container { font-family: inherit !important; }
-  .card-compact { margin-bottom: 0.75rem; }
-  .card-compact .card-body { padding: 0.75rem 1rem; }
-  .card-compact .card-header { padding: 0.5rem 1rem; }
-  .remarks-textarea:focus { height: 70px !important; }
-
-  /* ═══════ Dashboard UI ═══════ */
-
-  /* Fix nepali datepicker overflow */
+  .date-picker-wrap {
+    position: relative !important;
+    z-index: 100 !important;
+    display: inline-block;
+    width: 100%;
+    overflow: visible !important;
+  }
   .nepali-datepicker-container {
     position: absolute !important;
-    z-index: 1050 !important;
+    z-index: 1060 !important;
+    overflow: visible !important;
+    display: block !important;
+    max-width: none !important;
+    transform: none !important;
+  }
+  .nepali-datepicker-container * {
+    box-sizing: border-box !important;
+  }
+  .nepali-datepicker-container .ndp-calendar-container {
+    overflow: visible !important;
+  }
+  .nepali-datepicker-container .ndp-calendar-table,
+  .nepali-datepicker-container .ndp-year-month-container,
+  .nepali-datepicker-container .ndp-nav-container {
+    overflow: visible !important;
+  }
+  div#ndp-nepali-box,
+  div.ndp-nepali-box {
+    width: auto !important;
+    max-width: none !important;
+  }
+  #currentMonth #ndp-month-select,
+  #currentMonth #ndp-year-select {
+    height: 30px !important;
+    width: 80px !important;
   }
 
-  /* Stat cards */
+  /* ═══════ Base Component Styles ═══════ */
   .stat-card {
-    border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 10px;
-    transition: box-shadow 0.15s ease;
-    background: #fff;
+    border: 1px solid var(--att-border);
+    border-radius: var(--att-radius);
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    background: var(--att-card-bg);
+    padding: 12px 14px;
   }
   .stat-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    box-shadow: var(--att-shadow-hover);
+    border-color: rgba(0,0,0,0.1);
   }
   .stat-card .stat-icon {
     width: 40px;
@@ -49,24 +123,34 @@
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.01em;
+    color: var(--att-text-dark);
   }
   .stat-card .stat-label {
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 600;
-    color: #6c757d;
+    color: var(--att-text-muted);
   }
   .stat-card .stat-sub {
     font-size: 0.75rem;
-    color: #6c757d;
+    color: var(--att-text-muted);
   }
 
-  /* Progress bar in stat cards */
+  /* Summary Grid (daily report) */
+  .att-summary-grid {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  .att-cell {
+    width: 100%;
+  }
+
   .stat-progress {
     height: 3px;
     border-radius: 2px;
-    background: #f1f3f5;
+    background: var(--att-border);
     margin-top: 8px;
     overflow: hidden;
   }
@@ -76,37 +160,36 @@
     transition: width 0.8s ease;
   }
 
-  /* Gender cards */
   .gender-card {
-    border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 10px;
-    background: #fff;
+    border: 1px solid var(--att-border);
+    border-radius: var(--att-radius);
+    background: var(--att-card-bg);
     transition: box-shadow 0.15s ease;
   }
   .gender-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    box-shadow: var(--att-shadow-hover);
   }
   .gender-card .gender-stat-val {
     font-size: 1.4rem;
     font-weight: 700;
     line-height: 1.1;
+    color: var(--att-text-dark);
   }
 
-  /* Class cards */
   .class-card {
-    border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 10px;
-    background: #fff;
+    border: 1px solid var(--att-border);
+    border-radius: var(--att-radius);
+    background: var(--att-card-bg);
     transition: box-shadow 0.15s ease, border-color 0.15s ease;
   }
   .class-card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    box-shadow: var(--att-shadow-hover);
     border-color: rgba(0,0,0,0.1);
   }
   .class-card .attendance-bar {
     height: 4px;
     border-radius: 2px;
-    background: #f1f3f5;
+    background: var(--att-border);
     overflow: hidden;
   }
   .class-card .attendance-bar-fill {
@@ -115,7 +198,6 @@
     transition: width 0.6s ease;
   }
 
-  /* Level group header */
   .level-header {
     display: flex;
     align-items: center;
@@ -127,48 +209,47 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #6c757d;
+    color: var(--att-text-muted);
     white-space: nowrap;
   }
   .level-header .level-line {
     flex: 1;
     height: 1px;
-    background: #e9ecef;
+    background: var(--att-border);
   }
   .level-header .level-badge {
     font-size: 0.68rem;
     padding: 2px 8px;
     border-radius: 10px;
-    background: #f1f3f5;
-    color: #495057;
+    background: var(--att-border);
+    color: var(--att-text-muted);
     font-weight: 600;
     white-space: nowrap;
   }
 
-  /* Table enhancements */
   .attendance-table thead th {
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-weight: 600;
-    color: #6c757d;
-    border-bottom: 1px solid #e9ecef;
-    padding: 8px 12px;
-    background: #f8f9fa;
+    color: var(--att-text-muted);
+    border-bottom: 1px solid var(--att-border);
+    padding: 8px 12px !important;
+    background: var(--att-card-bg);
   }
   .attendance-table tbody tr {
     transition: background 0.1s ease;
   }
   .attendance-table tbody tr:hover {
-    background: #f8f9fa;
+    background: var(--att-border);
   }
   .attendance-table tbody td {
-    padding: 10px 12px;
+    padding: 10px 12px !important;
     vertical-align: middle;
-    border-bottom: 1px solid #f1f3f5;
+    border-bottom: 1px solid var(--att-border);
+    color: var(--att-text-dark);
   }
 
-  /* Badge */
   .badge-status {
     display: inline-flex;
     align-items: center;
@@ -178,22 +259,70 @@
     font-weight: 600;
   }
 
-  /* Sticky save footer */
   .save-footer {
-    border-top: 1px solid #e9ecef;
-    background: rgba(255,255,255,0.97);
+    border-top: 1px solid var(--att-border);
+    background: var(--att-card-bg);
   }
 
-  /* Batch action bar */
   .batch-bar {
-    background: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
+    background: var(--att-card-bg);
+    border-bottom: 1px solid var(--att-border);
   }
 
-  /* Summary row for grade view */
   .att-summary-row {
-    border-bottom: 1px solid #e9ecef;
-    background: #fff;
+    border-bottom: 1px solid var(--att-border);
+    background: var(--att-card-bg);
+  }
+
+  /* Buttons */
+  .att-btn {
+    padding: var(--att-btn-padding);
+    font-size: var(--att-btn-font-size);
+    font-weight: var(--att-btn-font-weight);
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .att-btn-primary {
+    background: var(--att-primary);
+    color: #fff;
+  }
+  .att-btn-primary:hover {
+    background: var(--att-primary-dark);
+  }
+  .att-btn-ghost {
+    background: transparent;
+    color: var(--att-text-dark);
+    border: 1px solid var(--att-border);
+  }
+  .att-btn-ghost:hover {
+    background: var(--att-border);
+    color: var(--att-text-dark);
+  }
+
+  /* Form controls */
+  .att-input {
+    background: var(--att-input-bg);
+    border: 1px solid var(--att-input-border);
+    color: var(--att-text-dark);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .att-input:focus {
+    border-color: var(--att-primary);
+    box-shadow: 0 0 0 3px rgba(0,136,119,0.12);
+    outline: none;
+  }
+  .att-select {
+    background: var(--att-input-bg);
+    border: 1px solid var(--att-input-border);
+    color: var(--att-text-dark);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
   }
 
   /* Responsive */
@@ -201,6 +330,7 @@
     .stat-card .stat-value { font-size: 1.25rem; }
     .stat-card .stat-icon { width: 36px; height: 36px; }
     .gender-card .gender-stat-val { font-size: 1.15rem; }
+    .att-btn { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
   }
 </style>
 {% endblock %}
@@ -439,7 +569,7 @@
 </div>
 
 <!-- Nepali Datepicker & ApexCharts Scripts -->
-<script src="https://cdn.hamro.com/hamro/js/nepali.datepicker.v4.0.1.min.js" type="text/javascript"></script>
+<script src="{% static 'js/nepali.datepicker.fixed.js' %}" type="text/javascript"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function() {

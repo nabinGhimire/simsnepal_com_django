@@ -13,20 +13,20 @@
       </div>
     </div>
     <div>
-      <a href="{% url 'attendance:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+      <a href="{% url 'attendance:dashboard' %}" class="att-btn att-btn-ghost">
         Back to Dashboard
       </a>
     </div>
   </div>
 
   <!-- Filter & Working Days Selector Form -->
-  <div class="card-body bg-light py-3">
+  <div class="card-body py-2">
     <form method="GET" action="" id="matrix-filter-form">
       <div class="row g-2 align-items-center mb-3">
         <!-- Grade Filter -->
         <div class="col-auto">
           <label class="form-label small text-muted font-weight-bold m-0 me-1">Grade:</label>
-          <select name="grade" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          <select name="grade" class="att-select" style="width:140px;" onchange="this.form.submit()">
             <option value="">Select Grade</option>
             {% for g in grades %}
             <option value="{{ g.id }}" {% if selected_grade.id == g.id %}selected{% endif %}>
@@ -40,7 +40,7 @@
         {% if sections %}
         <div class="col-auto">
           <label class="form-label small text-muted font-weight-bold m-0 me-1">Section:</label>
-          <select name="section" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          <select name="section" class="att-select" style="width:140px;" onchange="this.form.submit()">
             <option value="">All Sections</option>
             {% for sec in sections %}
             <option value="{{ sec.id }}" {% if selected_section.id == sec.id %}selected{% endif %}>
@@ -54,7 +54,7 @@
         <!-- Year Filter -->
         <div class="col-auto">
           <label class="form-label small text-muted font-weight-bold m-0 me-1">BS Year:</label>
-          <select name="year" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          <select name="year" class="att-select" style="width:140px;" onchange="this.form.submit()">
             {% for y in years_list %}
             <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }} BS</option>
             {% endfor %}
@@ -64,7 +64,7 @@
         <!-- Month Filter -->
         <div class="col-auto">
           <label class="form-label small text-muted font-weight-bold m-0 me-1">BS Month:</label>
-          <select name="month" class="form-select form-select-sm w-auto d-inline-block" onchange="this.form.submit()">
+          <select name="month" class="att-select" style="width:140px;" onchange="this.form.submit()">
             {% for m_num, m_name in nepali_months %}
             <option value="{{ m_num }}" {% if selected_month == m_num %}selected{% endif %}>{{ m_name }}</option>
             {% endfor %}
@@ -72,9 +72,9 @@
         </div>
 
         <div class="col-auto">
-          <button type="submit" class="btn btn-primary btn-sm px-3 font-weight-bold">
-            🔍 Load Matrix Grid
-          </button>
+        <button type="submit" class="att-btn att-btn-primary" style="white-space:nowrap;">
+          🔍 Load Matrix Grid
+        </button>
         </div>
       </div>
 
