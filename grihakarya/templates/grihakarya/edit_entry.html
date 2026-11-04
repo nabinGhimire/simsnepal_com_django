@@ -1,0 +1,150 @@
+{% extends 'grihakarya/base.html' %}
+{% load static %}
+
+{% block title %}Edit Homework | SIMSnepal{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .edit-card {
+    background: var(--att-card-bg); border: 1px solid var(--att-border);
+    border-radius: var(--att-radius); box-shadow: var(--att-shadow);
+    padding: 20px 24px; margin-bottom: 1.25rem;
+  }
+  .edit-meta { font-size: 0.8rem; color: var(--att-text-muted); margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 10px; }
+  .edit-meta strong { color: var(--att-text-dark); }
+  .edit-textarea {
+    width: 100%; min-height: 120px; padding: 10px 12px;
+    border: 1px solid var(--att-border); border-radius: 6px;
+    font-size: 0.9rem; line-height: 1.6; resize: vertical;
+    background: var(--att-card-bg); color: var(--att-text-dark);
+  }
+  .edit-textarea:focus { outline: none; border-color: var(--att-primary); box-shadow: 0 0 0 3px rgba(var(--att-primary-rgb),0.12); }
+  .edit-actions { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .btn-save {
+    padding: 0.5rem 1.4rem; font-size: 0.88rem; font-weight: 600;
+    background: var(--att-primary); color: #fff; border: none;
+    border-radius: 6px; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-save:hover { background: var(--att-primary-dark); }
+  .btn-cancel {
+    padding: 0.5rem 1.1rem; font-size: 0.88rem; font-weight: 600;
+    background: transparent; color: var(--att-text-muted);
+    border: 1px solid var(--att-border); border-radius: 6px;
+    text-decoration: none; transition: all 0.15s;
+  }
+  .btn-cancel:hover { background: var(--att-border); color: var(--att-text-dark); }
+
+  /* Audit log table */
+  .audit-card {
+    background: var(--att-card-bg); border: 1px solid var(--att-border);
+    border-radius: var(--att-radius); box-shadow: var(--att-shadow); overflow: hidden;
+  }
+  .audit-header {
+    padding: 9px 16px; border-bottom: 1px solid var(--att-border);
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--att-text-muted);
+  }
+  .audit-row {
+    display: grid; grid-template-columns: 140px 1fr 1fr 110px;
+    gap: 0; padding: 10px 16px; border-bottom: 1px solid var(--att-border);
+    font-size: 0.82rem; align-items: start;
+  }
+  .audit-row:last-child { border-bottom: none; }
+  .audit-row:hover { background: rgba(0,0,0,0.02); }
+  .audit-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--att-text-muted); margin-bottom: 2px; }
+  .audit-old { color: #c0392b; background: #fff5f5; border-radius: 4px; padding: 4px 8px; white-space: pre-wrap; }
+  .audit-new { color: #27ae60; background: #f0fff4; border-radius: 4px; padding: 4px 8px; white-space: pre-wrap; }
+  .audit-source { display: inline-flex; align-items: center; }
+</style>
+{% endblock extra_css %}
+
+{% block grihakarya_content %}
+
+<div style="margin-bottom: 1rem;">
+  <a href="{{ back_url }}" class="att-btn att-btn-ghost" style="font-size:0.82rem;">
+    <i class="fa-solid fa-arrow-left me-1"></i> Back
+  </a>
+</div>
+
+<!-- Edit form -->
+<div class="edit-card">
+  <div style="font-size:1rem; font-weight:700; color:var(--att-text-dark); margin-bottom:10px;">
+    Edit Homework
+  </div>
+  <div class="edit-meta">
+    <span><strong>Grade:</strong> {{ hw.grade.grade_name }}</span>
+    {% if hw.section %}<span><strong>Section:</strong> {{ hw.section.section }}</span>{% endif %}
+    <span><strong>Subject:</strong> {{ entry.subject.subject }}</span>
+    <span><strong>Date:</strong> {{ hw.nepali_date }}</span>
+    {% if entry.added_by %}
+    <span><strong>Originally added by:</strong> {{ entry.teacher_name|default:entry.added_by.get_full_name }}</span>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+  <div style="margin-bottom:10px;">
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} py-2" style="font-size:0.85rem;">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="POST">
+    {% csrf_token %}
+    <div class="md-toolbar" data-for="edit-hw-textarea"></div>
+    <textarea name="homework_text" id="edit-hw-textarea" class="edit-textarea" rows="6">{{ entry.homework_text }}</textarea>
+    <div class="edit-actions">
+      <button type="submit" class="btn-save">
+        <i class="fa-solid fa-floppy-disk me-1"></i> Save Changes
+      </button>
+      <a href="{{ back_url }}" class="btn-cancel">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<!-- Audit log -->
+{% if audit_logs %}
+<div class="audit-card">
+  <div class="audit-header">Edit History (last 20)</div>
+  <div class="audit-row" style="background:var(--att-card-bg);font-size:0.72rem;font-weight:700;color:var(--att-text-muted);text-transform:uppercase;letter-spacing:0.04em;">
+    <div>When</div><div>Old Text</div><div>New Text</div><div>Changed By</div>
+  </div>
+  {% for log in audit_logs %}
+  <div class="audit-row">
+    <div>
+      <div style="font-size:0.78rem;color:var(--att-text-dark);font-weight:600;">{{ log.changed_at|date:"Y-m-d" }}</div>
+      <div style="font-size:0.7rem;color:var(--att-text-muted);">{{ log.changed_at|date:"H:i" }}</div>
+      <span class="audit-source mt-1">
+        {% if log.source == 'webview' %}
+        <span class="badge bg-blue-lt text-blue" style="font-size:0.62rem;">webview</span>
+        {% else %}
+        <span class="badge bg-orange-lt text-orange" style="font-size:0.62rem;">admin</span>
+        {% endif %}
+      </span>
+    </div>
+    <div class="audit-old">{{ log.old_text }}</div>
+    <div class="audit-new">{{ log.new_text }}</div>
+    <div style="font-size:0.78rem;color:var(--att-text-dark);">
+      {{ log.changed_by.get_full_name|default:log.changed_by.username }}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="font-size:0.82rem;color:var(--att-text-muted);padding:10px 0;">No edit history yet.</div>
+{% endif %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof marked === 'undefined') return;
+    // Render markdown in audit log old/new text cells
+    document.querySelectorAll('.audit-old, .audit-new').forEach(function (el) {
+      el.innerHTML = marked.parse(el.textContent || '');
+    });
+  });
+</script>
+{% endblock %}
+{% endblock grihakarya_content %}

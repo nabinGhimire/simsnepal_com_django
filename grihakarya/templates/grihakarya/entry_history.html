@@ -1,0 +1,54 @@
+{% extends 'grihakarya/base.html' %}
+
+{% block title %}Edit History | SIMSnepal{% endblock %}
+
+{% block grihakarya_content %}
+
+<div style="margin-bottom: 1rem;">
+  <a href="{{ back_url }}" class="att-btn att-btn-ghost" style="font-size:0.82rem;">
+    <i class="fa-solid fa-arrow-left me-1"></i> Back
+  </a>
+</div>
+
+<div style="background:var(--att-card-bg);border:1px solid var(--att-border);border-radius:var(--att-radius);box-shadow:var(--att-shadow);overflow:hidden;">
+  <div style="padding:12px 18px;border-bottom:1px solid var(--att-border);">
+    <div style="font-size:0.95rem;font-weight:700;color:var(--att-text-dark);">
+      Full Edit History
+    </div>
+    <div style="font-size:0.8rem;color:var(--att-text-muted);margin-top:3px;">
+      {{ entry.homework.grade.grade_name }}
+      {% if entry.homework.section %}· {{ entry.homework.section.section }}{% endif %}
+      · {{ entry.subject.subject }} · {{ entry.homework.nepali_date }}
+    </div>
+  </div>
+
+  {% if audit_logs %}
+  {% for log in audit_logs %}
+  <div style="padding:12px 18px;border-bottom:1px solid var(--att-border);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-size:0.82rem;font-weight:600;color:var(--att-text-dark);">{{ log.changed_at|date:"Y-m-d H:i" }}</span>
+      <span style="font-size:0.8rem;color:var(--att-text-muted);">by {{ log.changed_by.get_full_name|default:log.changed_by.username }}</span>
+      {% if log.source == 'webview' %}
+      <span class="badge bg-blue-lt text-blue" style="font-size:0.65rem;">webview</span>
+      {% else %}
+      <span class="badge bg-orange-lt text-orange" style="font-size:0.65rem;">admin</span>
+      {% endif %}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:#c0392b;margin-bottom:4px;">Before</div>
+        <div style="background:#fff5f5;border:1px solid #fcc;border-radius:5px;padding:8px 10px;font-size:0.83rem;white-space:pre-wrap;color:#922b21;">{{ log.old_text }}</div>
+      </div>
+      <div>
+        <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:#27ae60;margin-bottom:4px;">After</div>
+        <div style="background:#f0fff4;border:1px solid #c3e6cb;border-radius:5px;padding:8px 10px;font-size:0.83rem;white-space:pre-wrap;color:#1e8449;">{{ log.new_text }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div style="padding:24px;text-align:center;color:var(--att-text-muted);font-size:0.88rem;">No edit history for this entry.</div>
+  {% endif %}
+</div>
+
+{% endblock grihakarya_content %}

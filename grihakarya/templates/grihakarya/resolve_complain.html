@@ -1,0 +1,70 @@
+{% extends 'grihakarya/base.html' %}
+{% load static %}
+
+{% block title %}Resolve Complaint | SIMSnepal{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .complain-detail {
+    border-left: 4px solid #f76707;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+    color: var(--att-text-dark);
+  }
+</style>
+{% endblock extra_css %}
+
+{% block grihakarya_content %}
+  <div class="mb-3">
+    <a href="{% url 'grihakarya:complains' %}" class="att-btn att-btn-ghost" style="font-size:0.8rem;padding:0.35rem 0.8rem;margin-bottom:0.75rem;display:inline-flex;align-items:center;gap:4px;">
+      <i class="fa-solid fa-arrow-left"></i> Back to Complaints
+    </a>
+    <h4 style="margin:0;font-size:1.1rem;font-weight:700;color:var(--att-text-dark);">Resolve Complaint</h4>
+  </div>
+
+  <div class="card" style="border-radius:var(--att-radius);border:1px solid var(--att-border);background:var(--att-card-bg);box-shadow:var(--att-shadow);">
+    <div class="card-header" style="background:var(--att-card-bg);border-bottom:1px solid var(--att-border);padding:10px 16px;">
+      <span style="font-weight:600;font-size:0.88rem;color:var(--att-text-dark);">Complaint Details</span>
+    </div>
+    <div class="card-body">
+      <div class="complain-detail">
+        <p><strong>Teacher:</strong> {{ complain.teacher.username }}</p>
+        <p><strong>Grade:</strong> {{ complain.grade.grade_name }}
+        {% if complain.section %}<span class="ms-2">· Section: {{ complain.section.section }}</span>{% endif %}
+        {% if complain.subject %}<span class="ms-2">· Subject: {{ complain.subject.subject }}</span>{% endif %}
+        </p>
+        <p><strong>Complaint:</strong> {{ complain.complaint_text }}</p>
+        {% if complain.homework %}
+        <p><strong>Related Homework:</strong> {{ complain.homework.nepali_date }} · {{ complain.homework.grade.grade_name }}</p>
+        {% endif %}
+        <p style="color:var(--att-text-muted);"><strong>Submitted:</strong> {{ complain.created_at }}</p>
+      </div>
+
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+      {% endif %}
+
+      <form method="POST" action="{% url 'grihakarya:resolve_complain' complain.pk %}">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.82rem;font-weight:600;color:var(--att-text-muted);">Action</label>
+          <select name="action" class="att-select w-100" required>
+            <option value="resolve">Mark as Resolved</option>
+            <option value="dismiss">Mark as Dismissed</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.82rem;font-weight:600;color:var(--att-text-muted);">Admin Response</label>
+          <textarea name="admin_response" class="att-input w-100" rows="3" placeholder="Enter your response to the teacher..." required style="resize:vertical;"></textarea>
+        </div>
+        <div class="d-flex gap-2 justify-content-end">
+          <a href="{% url 'grihakarya:complains' %}" class="att-btn att-btn-ghost">Cancel</a>
+          <button type="submit" class="att-btn att-btn-primary">Update Status</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock grihakarya_content %}

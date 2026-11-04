@@ -1,0 +1,86 @@
+{% extends 'grihakarya/base.html' %}
+{% load static %}
+
+{% block title %}Add Homework Complaint | SIMSnepal{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+</style>
+{% endblock extra_css %}
+
+{% block grihakarya_content %}
+  <div class="mb-3">
+    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;color:var(--att-text-muted);">Grihakarya</div>
+    <h4 style="margin:0;font-size:1.1rem;font-weight:700;color:var(--att-text-dark);">Add Complaint</h4>
+  </div>
+
+  <div class="card" style="border-radius:var(--att-radius);border:1px solid var(--att-border);background:var(--att-card-bg);box-shadow:var(--att-shadow);">
+    <div class="card-header" style="background:var(--att-card-bg);border-bottom:1px solid var(--att-border);padding:10px 16px;">
+      <span style="font-weight:600;font-size:0.88rem;color:var(--att-text-dark);">Submit Homework Complaint</span>
+    </div>
+    <div class="card-body">
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-danger">{{ message }}</div>
+      {% endfor %}
+      {% endif %}
+      <form method="POST" action="{% url 'grihakarya:add_complain' %}">
+        {% csrf_token %}
+        <div class="form-grid mb-3">
+          <div>
+            <label class="form-label" style="font-size:0.82rem;font-weight:600;color:var(--att-text-muted);">Grade</label>
+            <select name="grade" id="ccGrade" class="att-select w-100" required>
+              <option value="">Select grade</option>
+              {% for g in grades %}
+              <option value="{{ g.id }}">{{ g.grade_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:0.82rem;font-weight:600;color:var(--att-text-muted);">Section</label>
+            <select name="section" id="ccSection" class="att-select w-100">
+              <option value="">All sections</option>
+              {% for s in sections %}
+              <option value="{{ s.id }}" data-grade="{{ s.grade_id }}">{{ s.section }} ({{ s.grade.grade_name }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:0.82rem;font-weight:600;color:var(--att-text-muted);">Subject</label>
+            <select name="subject" id="ccSubject" class="att-select w-100">
+              <option value="">All subjects</option>
+              {% for s in subjects %}
+              <option value="{{ s.id }}" data-grade="{{ s.grade_id }}">{{ s.subject }} ({{ s.grade.grade_name }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:0.82rem;font-weight:600;color:var(--att-text-muted);">Related Homework (recent)</label>
+            <select name="homework" id="ccHomework" class="att-select w-100">
+              <option value="">None</option>
+              {% for hw in homeworks %}
+              <option value="{{ hw.id }}">{{ hw.nepali_date }} · {{ hw.grade.grade_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.82rem;font-weight:600;color:var(--att-text-muted);">Complaint Details</label>
+          <textarea name="complaint_text" id="ccComplaint" class="att-input w-100" rows="4" placeholder="Describe the issue with the homework..." required style="resize:vertical;"></textarea>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+          <a href="{% url 'grihakarya:complains' %}" class="att-btn att-btn-ghost">Cancel</a>
+          <button type="submit" class="att-btn att-btn-primary">Submit Complaint</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock grihakarya_content %}

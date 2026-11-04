@@ -1,0 +1,357 @@
+{% extends 'grihakarya/base.html' %}
+{% load static %}
+
+{% block title %}All Homeworks | SIMSnepal{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+  /* Date selector row */
+  .att-date-selector { margin-bottom: 1.25rem; }
+  .att-date-selector .selector-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    background: var(--att-card-bg); border: 1px solid var(--att-border);
+    border-radius: var(--att-radius); padding: 14px 20px;
+    box-shadow: var(--att-shadow); min-height: 70px;
+  }
+  .att-date-selector .selector-info { display: flex; flex-direction: column; gap: 4px; }
+  .att-date-selector .selector-title { font-size: 0.95rem; font-weight: 700; color: var(--att-text-dark); margin: 0; }
+  .att-date-selector .selector-sub { font-size: 0.8rem; color: var(--att-text-muted); margin: 0; }
+
+  /* Prev / datepicker / next controls */
+  .selector-controls {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  }
+  .sel-nav-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; flex-shrink: 0;
+    border: 1px solid var(--att-border); border-radius: 6px;
+    background: var(--att-card-bg); color: var(--att-text-dark);
+    text-decoration: none; font-size: 0.8rem;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .sel-nav-btn:hover { background: var(--att-border); }
+  .sel-nav-disabled { opacity: 0.3; pointer-events: none; cursor: default; }
+  .sel-form { margin: 0; padding: 0; }
+  .sel-date-input { width: 150px; text-align: center; cursor: pointer; }
+  /* HW detail card */
+  .hw-class-card {
+    border: 1px solid var(--att-border); border-radius: var(--att-radius);
+    background: var(--att-card-bg); box-shadow: var(--att-shadow);
+    margin-bottom: 0; overflow: hidden;
+  }
+  .hw-class-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 14px; border-bottom: 1px solid var(--att-border);
+    background: var(--att-card-bg);
+  }
+  .hw-subject-row {
+    display: flex; gap: 12px; padding: 10px 14px;
+    border-bottom: 1px solid var(--att-border);
+    align-items: flex-start;
+  }
+  .hw-subject-row:last-child { border-bottom: none; }
+  .hw-subject-name {
+    width: 130px; flex-shrink: 0; font-size: 0.82rem;
+    font-weight: 600; color: var(--att-text-dark); padding-top: 1px;
+  }
+  .hw-subject-text {
+    flex: 1; font-size: 0.85rem; color: var(--att-text-dark); line-height: 1.5;
+  }
+  /* Markdown rendered output in list */
+  .hw-subject-text p { margin: 0 0 3px; }
+  .hw-subject-text ul, .hw-subject-text ol { padding-left: 16px; margin: 2px 0; }
+  .hw-subject-text li { margin-bottom: 2px; }
+  .hw-subject-text strong { font-weight: 700; }
+  .hw-subject-text em { font-style: italic; }
+  .hw-subject-text hr { border: none; border-top: 1px solid var(--att-border); margin: 4px 0; }
+  .hw-subject-text code { background: rgba(0,0,0,0.06); border-radius: 3px; padding: 1px 4px; font-size: 0.8rem; }
+  .hw-added-by {
+    font-size: 0.68rem; color: var(--att-text-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px;
+  }
+  .hw-edit-btn, .hw-hist-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 5px; font-size: 0.7rem;
+    border: 1px solid var(--att-border); text-decoration: none;
+    color: var(--att-text-muted); background: transparent; transition: all 0.12s;
+  }
+  .hw-edit-btn:hover { background: var(--att-primary); color: #fff; border-color: var(--att-primary); }
+  .hw-hist-btn:hover { background: var(--att-border); color: var(--att-text-dark); }
+</style>
+{% endblock extra_css %}
+
+{% block grihakarya_content %}
+
+<!-- Date Selector -->
+<div class="att-date-selector">
+  <div class="selector-row">
+    <div class="selector-info">
+      <h6 class="selector-title">All Homeworks</h6>
+      <p class="selector-sub">
+        BS: <strong class="text-primary">{{ selected_bs }}</strong>
+        <span class="ms-1" style="opacity:0.5;">({{ selected_gs }})</span>
+        {% if total_classes %}<span class="ms-2 badge bg-teal-lt text-teal">{{ total_classes }} class{{ total_classes|pluralize:"es" }}</span>{% endif %}
+      </p>
+    </div>
+    <div class="selector-controls">
+      {% if prev_date %}
+      <a href="?date={{ prev_date }}" class="sel-nav-btn" title="Previous date">
+        <i class="fa-solid fa-chevron-left"></i>
+      </a>
+      {% else %}
+      <span class="sel-nav-btn sel-nav-disabled"><i class="fa-solid fa-chevron-left"></i></span>
+      {% endif %}
+
+      <form method="GET" class="sel-form">
+        <input type="text" id="hw-nepali-datepicker" name="date" class="sel-date-input att-input" value="{{ selected_bs }}" readonly placeholder="YYYY-MM-DD">
+      </form>
+
+      {% if next_date %}
+      <a href="?date={{ next_date }}" class="sel-nav-btn" title="Next date">
+        <i class="fa-solid fa-chevron-right"></i>
+      </a>
+      {% else %}
+      <span class="sel-nav-btn sel-nav-disabled"><i class="fa-solid fa-chevron-right"></i></span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if rows_by_level %}
+  {% for lvl_group in rows_by_level %}
+  <!-- Grade level header -->
+  <div class="level-header">
+    <span class="level-name">{{ lvl_group.level.name }}</span>
+    <div class="level-line"></div>
+    <span class="level-badge">{{ lvl_group.rows|length }} class{{ lvl_group.rows|length|pluralize:"es" }}</span>
+  </div>
+
+  <div class="row g-2 mb-4">
+    {% for row in lvl_group.rows %}
+    <div class="col-12 col-md-6">
+      <div class="hw-class-card">
+        <!-- Class header -->
+        <div class="hw-class-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:0.88rem;font-weight:700;color:var(--att-text-dark);">{{ row.grade.grade_name }}</span>
+            {% if row.section %}
+            <span style="font-size:0.72rem;padding:1px 7px;border-radius:4px;background:var(--att-border);color:var(--att-text-muted);font-weight:600;">{{ row.section.section }}</span>
+            {% endif %}
+            <span class="badge {% if row.entry_count > 0 %}bg-teal{% else %}bg-secondary{% endif %}" style="font-size:0.65rem;">{{ row.entry_count }} subj</span>
+          </div>
+          <span style="font-size:0.72rem;color:var(--att-text-muted);">{{ row.nepali_date }}</span>
+        </div>
+
+        <!-- Subject rows -->
+        {% if row.entries %}
+          {% for entry in row.entries %}
+          <div class="hw-subject-row">
+            <div class="hw-subject-name">{{ entry.subject.subject }}</div>
+            <div style="flex:1;">
+              <div class="hw-subject-text"><pre class="md-raw" style="display:none">{{ entry.homework_text }}</pre></div>
+              <div class="hw-added-by">
+                {% if entry.teachers %}
+                  <i class="fa-solid fa-user" style="font-size:0.6rem;"></i>
+                  {% for t in entry.teachers %}{{ t.teacher_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                  {% if entry.is_impersonated %}
+                  <span class="badge bg-orange-lt text-orange" style="font-size:0.6rem;">via admin</span>
+                  {% endif %}
+                {% else %}—{% endif %}
+              </div>
+            </div>
+            {% if is_admin %}
+            <div style="flex-shrink:0;display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+              <a href="{% url 'grihakarya:edit_entry' entry.entry_pk %}" class="hw-edit-btn" title="Edit homework">
+                <i class="fa-solid fa-pencil"></i>
+              </a>
+              <a href="{% url 'grihakarya:entry_history' entry.entry_pk %}" class="hw-hist-btn" title="View edit history">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+              </a>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:12px 14px;font-size:0.82rem;color:var(--att-text-muted);font-style:italic;">No homework entries for this class.</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+{% elif class_rows %}
+<!-- Fallback: no level grouping, flat list -->
+<div class="row g-2 mb-4">
+  {% for row in class_rows %}
+  <div class="col-12 col-md-6">
+    <div class="hw-class-card">
+      <div class="hw-class-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.88rem;font-weight:700;color:var(--att-text-dark);">{{ row.grade.grade_name }}</span>
+          {% if row.section %}<span style="font-size:0.72rem;padding:1px 7px;border-radius:4px;background:var(--att-border);color:var(--att-text-muted);font-weight:600;">{{ row.section.section }}</span>{% endif %}
+          <span class="badge {% if row.entry_count > 0 %}bg-teal{% else %}bg-secondary{% endif %}" style="font-size:0.65rem;">{{ row.entry_count }} subj</span>
+        </div>
+        <span style="font-size:0.72rem;color:var(--att-text-muted);">{{ row.nepali_date }}</span>
+      </div>
+      {% if row.entries %}
+        {% for entry in row.entries %}
+        <div class="hw-subject-row">
+          <div class="hw-subject-name">{{ entry.subject.subject }}</div>
+          <div style="flex:1;">
+            <div class="hw-subject-text"><pre class="md-raw" style="display:none">{{ entry.homework_text }}</pre></div>
+            <div class="hw-added-by">
+              {% if entry.teachers %}
+                <i class="fa-solid fa-user" style="font-size:0.6rem;"></i>
+                {% for t in entry.teachers %}{{ t.teacher_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                {% if entry.is_impersonated %}
+                <span class="badge bg-orange-lt text-orange" style="font-size:0.6rem;">via admin</span>
+                {% endif %}
+              {% else %}—{% endif %}
+            </div>
+          </div>
+          {% if is_admin %}
+          <div style="flex-shrink:0;display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+            <a href="{% url 'grihakarya:edit_entry' entry.entry_pk %}" class="hw-edit-btn" title="Edit homework">
+              <i class="fa-solid fa-pencil"></i>
+            </a>
+            <a href="{% url 'grihakarya:entry_history' entry.entry_pk %}" class="hw-hist-btn" title="View edit history">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </a>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="padding:12px 14px;font-size:0.82rem;color:var(--att-text-muted);font-style:italic;">No entries.</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card border-0 text-center py-5" style="border-radius:var(--att-radius);background:var(--att-card-bg);border:1px solid var(--att-border);">
+  <div style="color:var(--att-text-muted);">
+    <i class="fa-solid fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:0.75rem;"></i>
+    <p class="m-0" style="font-size:0.9rem;font-weight:600;">No homeworks found</p>
+    <p class="m-0" style="font-size:0.8rem;">No records exist for <strong>{{ selected_bs }}</strong>.</p>
+    {% if all_dates %}
+    <a href="?date={{ all_dates.0 }}" class="att-btn att-btn-primary mt-3 d-inline-block">Go to latest ({{ all_dates.0 }})</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Quick date jump — month tabs -->
+{% if dates_by_month %}
+<div class="date-jump-card mt-3">
+  <!-- Month tab strip -->
+  <div class="dj-month-tabs" id="dj-tabs">
+    {% for grp in dates_by_month %}
+    <button
+      class="dj-tab {% if grp.year == active_month_year and grp.month == active_month_num %}dj-tab-active{% endif %}"
+      data-target="dj-panel-{{ grp.year }}-{{ grp.month }}"
+      onclick="djActivate(this)">
+      {{ grp.month_name }}<span class="dj-tab-count">{{ grp.hw_days|length }}</span>
+    </button>
+    {% endfor %}
+  </div>
+  <!-- Date panels, one per month -->
+  {% for grp in dates_by_month %}
+  <div class="dj-panel {% if grp.year == active_month_year and grp.month == active_month_num %}dj-panel-active{% endif %}"
+       id="dj-panel-{{ grp.year }}-{{ grp.month }}">
+    {% for cell in grp.day_grid %}
+      {% if cell.has_hw %}
+        <a href="?date={{ cell.date_str }}"
+           class="dj-day {% if cell.is_active %}dj-day-active{% endif %}"
+           title="{{ cell.date_str }}">{{ cell.day }}</a>
+      {% else %}
+        <span class="dj-day dj-day-empty">{{ cell.day }}</span>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+
+<style>
+  .date-jump-card {
+    border: 1px solid var(--att-border); border-radius: var(--att-radius);
+    background: var(--att-card-bg); box-shadow: var(--att-shadow); overflow: hidden;
+  }
+  .dj-month-tabs {
+    display: flex; flex-wrap: wrap; gap: 2px;
+    padding: 8px 10px; border-bottom: 1px solid var(--att-border);
+    background: var(--att-card-bg);
+  }
+  .dj-tab {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 0.3rem 0.75rem; font-size: 0.78rem; font-weight: 600;
+    border: 1px solid var(--att-border); border-radius: 5px;
+    background: transparent; color: var(--att-text-muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .dj-tab:hover { background: var(--att-border); color: var(--att-text-dark); }
+  .dj-tab-active {
+    background: var(--att-primary) !important; color: #fff !important;
+    border-color: var(--att-primary) !important;
+  }
+  .dj-tab-count {
+    background: rgba(0,0,0,0.12); border-radius: 10px;
+    padding: 0 5px; font-size: 0.68rem; font-weight: 700;
+  }
+  .dj-tab-active .dj-tab-count { background: rgba(255,255,255,0.25); }
+
+  /* Day grid */
+  .dj-panel {
+    display: none; flex-wrap: wrap; gap: 4px;
+    padding: 10px 12px; align-items: center;
+  }
+  .dj-panel-active { display: flex; }
+  .dj-day {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; font-size: 0.8rem; font-weight: 500;
+    border-radius: 6px; border: 1px solid transparent;
+    text-decoration: none; transition: all 0.12s;
+  }
+  /* has homework — clickable */
+  a.dj-day {
+    border-color: var(--att-border);
+    background: var(--att-card-bg); color: var(--att-text-dark);
+    font-weight: 600;
+  }
+  a.dj-day:hover { background: var(--att-primary); color: #fff; border-color: var(--att-primary); }
+  .dj-day-active {
+    background: var(--att-primary) !important; color: #fff !important;
+    border-color: var(--att-primary) !important;
+  }
+  /* no homework — muted, not clickable */
+  span.dj-day.dj-day-empty {
+    color: var(--att-text-muted); opacity: 0.35; cursor: default;
+  }
+</style>
+
+<script>
+  function djActivate(btn) {
+    document.querySelectorAll('.dj-tab').forEach(t => t.classList.remove('dj-tab-active'));
+    document.querySelectorAll('.dj-panel').forEach(p => p.classList.remove('dj-panel-active'));
+    btn.classList.add('dj-tab-active');
+    document.getElementById(btn.dataset.target).classList.add('dj-panel-active');
+  }
+</script>
+{% endif %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof marked === 'undefined') return;
+    document.querySelectorAll('.hw-subject-text').forEach(function (el) {
+      var raw = el.querySelector('.md-raw');
+      if (raw) el.innerHTML = marked.parse(raw.textContent || '');
+    });
+  });
+</script>
+{% endblock %}
+
+{% endblock grihakarya_content %}
