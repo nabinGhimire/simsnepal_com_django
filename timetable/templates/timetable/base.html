@@ -1,0 +1,43 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>{% block title %}Timetable{% endblock %}</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <!-- Tabler CSS -->
+  <link href="{% static 'tabler/css/tabler.min.css' %}" rel="stylesheet" />
+  <link href="{% static 'tabler/css/tabler-themes.min.css' %}" rel="stylesheet" />
+  <link href="{% static 'tabler/css/tabler-vendors.min.css' %}" rel="stylesheet" />
+  <link href="{% static 'tabler/css/tabler-compat.css' %}" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <!-- SIMS CSS -->
+  <link href="{% static 'css/colors.css' %}" rel="stylesheet" />
+  <style>
+    @import url("https://rsms.me/inter/inter.css");
+    :root { font-family: 'Inter', sans-serif; }
+    @supports (font-variation-settings: normal) {
+      :root { font-family: 'Inter var', sans-serif; }
+    }
+    .page, .page-wrapper { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+    .page-body { margin-top: 0 !important; padding-top: 0.25rem !important; }
+    body { background-color: #f4f6f8; }
+  </style>
+</head>
+<body class="body">
+  <div class="page">
+    <div class="page-wrapper">
+      <div class="page-body">
+        <div class="container">
+          <main class="page-body">
+            {% block content %}{% endblock %}
+          </main>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
