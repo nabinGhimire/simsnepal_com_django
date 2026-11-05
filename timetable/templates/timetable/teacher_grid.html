@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Timetable — {{ teacher.username }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 13px; }
+    .grid-table { border: 1px solid #000; border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; }
+    .grid-table th, .grid-table td { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; text-align: center; }
+    .grid-table th { background-color: #eef2f7; font-weight: bold; }
+    .period-col { background-color: #f8f9fa; font-weight: bold; width: 90px; text-align: left; }
+    .day-header { background-color: #eef2f7; font-weight: bold; }
+    .weekend { background-color: #f1f3f5; }
+    .cell-base { background-color: #ffffff; }
+    .cell-exception { background-color: #fff3cd; border-left: 4px solid #ffc107; }
+    .cell-cancelled { background-color: #f8d7da; color: #721c24; font-style: italic; }
+    .cell-empty { background-color: #e9ecef; color: #6c757d; }
+    .subject-name { font-weight: bold; display: block; font-size: 12px; }
+    .teacher-name { font-size: 11px; color: #495057; display: block; }
+    .reason-badge { font-size: 10px; }
+    .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .section-card { border: 1px solid #dee2e6; border-radius: 0.375rem; margin-bottom: 1.5rem; padding: 1rem; }
+    .section-card h6 { margin-bottom: 0.75rem; border-bottom: 1px solid #dee2e6; padding-bottom: 0.5rem; }
+  </style>
+</head>
+<body class="p-4">
+
+  <nav class="no-print mb-4">
+    <a href="#" class="text-decoration-none">&larr; Back to Dashboard</a>
+  </nav>
+
+  <div class="nav-bar">
+    <div>
+      <h2 class="h5 mb-0">Teacher Timetable — {{ teacher.username }}</h2>
+      <p class="mb-0 text-muted small">
+        Week {{ week_start_bs }} to {{ week_end_bs }} (BS)
+        {% if section_grids %} &bull; {{ section_grids|length }} section(s){% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'timetable:teacher_grid' teacher_id=teacher.id %}?week={{ prev_week_bs }}" class="btn btn-outline-secondary btn-sm">&#9664; Prev Week</a>
+      <a href="{% url 'timetable:teacher_grid' teacher_id=teacher.id %}?week={{ next_week_bs }}" class="btn btn-outline-secondary btn-sm">Next Week &#9654;</a>
+    </div>
+  </div>
+
+  {% if section_grids %}
+    {% for sg in section_grids %}
+      <div class="section-card">
+        <h6>
+          {{ sg.section.section }}
+          <span class="badge bg-secondary ms-2">School {{ sg.school_id }}</span>
+        </h6>
+        <table class="grid-table table mb-0">
+          <thead>
+            <tr>
+              <th class="period-col">Period</th>
+              {% for d in days %}
+                <th class="day-header{% if d.is_weekend %} weekend{% endif %}">
+                  {{ d.name }}<br><span class="small">{{ d.bs }}</span>
+                </th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in sg.period_list %}
+              <tr>
+                <td class="period-col">
+                  {{ row.period.label }} ({{ row.period.start_time }}&ndash;{{ row.period.end_time }})
+                </td>
+                {% for cell in row.cells %}
+                  {% if not cell %}
+                    <td class="cell-empty">{{ row.period.label }}</td>
+                  {% elif cell.is_span_continued %}
+                    <!-- Hidden: covered by rowspan of the start cell -->
+                  {% elif cell.source == 'cancelled' %}
+                    <td class="cell-cancelled" title="{{ cell.reason|default:'Cancelled' }}" {% if cell.rowspan > 1 %}rowspan="{{ cell.rowspan }}"{% endif %}>
+                      <span class="subject-name">Cancelled</span>
+                      {% if cell.reason %}<span class="teacher-name">{{ cell.reason }}</span>{% endif %}
+                    </td>
+                  {% elif cell.source == 'exception' %}
+                    <td class="cell-exception" title="{{ cell.reason|default:'' }}" {% if cell.rowspan > 1 %}rowspan="{{ cell.rowspan }}"{% endif %}>
+                      <span class="subject-name">{{ cell.subject_name }}</span>
+                      <span class="teacher-name">{{ cell.teacher_name }}</span>
+                      {% if cell.reason %}<span class="reason-badge bg-warning text-dark">{{ cell.reason }}</span>{% endif %}
+                    </td>
+                  {% else %}
+                    <td class="cell-base" {% if cell.rowspan > 1 %}rowspan="{{ cell.rowspan }}"{% endif %}>
+                      <span class="subject-name">{{ cell.subject_name }}</span>
+                      <span class="teacher-name">{{ cell.teacher_name }}</span>
+                    </td>
+                  {% endif %}
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-info">
+      No sections found for teacher {{ teacher.username }} this week.
+    </div>
+  {% endif %}
+
+</body>
+</html>

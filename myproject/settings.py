@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'exam',
     'grihakarya',
     'concerns',
+    'timetable',
 ]
 
 MIDDLEWARE = [

@@ -58,3 +58,6 @@ populate_*.py
 commit_msg.txt
 panel_views_diff.txt
 logs/
+
+
+check*.py
