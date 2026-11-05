@@ -47,6 +47,15 @@ def _user_school_id(user) -> int | None:
     return None
 
 
+def timetable_dashboard(request):
+    """
+    Timetable dashboard - entry point for the Timetable module.
+    Shows a summary and links to section/teacher views.
+    """
+    from django.shortcuts import render
+    return render(request, 'timetable/dashboard.html')
+
+
 def section_grid(request, section_id: int):
     """
     Week-view grid for a section.

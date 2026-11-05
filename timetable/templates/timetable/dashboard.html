@@ -1,0 +1,135 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Timetable - {{ school.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="ti ti-calendar me-2"></i>Timetable Overview
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row row-cols-md-3 row-cols-sm-2 row-cols-1 g-3">
+          <div class="col">
+            <div class="card bg-primary text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <div class="text-opacity-75">Total Versions</div>
+                    <div class="h4">{{ version_count }}</div>
+                  </div>
+                  <div class="badge bg-opacity-25 rounded-circle">
+                    <i class="ti ti-calendar"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card bg-success text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <div class="text-opacity-75">Active Entries</div>
+                    <div class="h4">{{ entry_count }}</div>
+                  </div>
+                  <div class="badge bg-opacity-25 rounded-circle">
+                    <i class="ti ti-clock"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card bg-warning text-white">
+              <div class="card-body">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <div class="text-opacity-75">Exceptions</div>
+                    <div class="h4">{{ exception_count }}</div>
+                  </div>
+                  <div class="badge bg-opacity-25 rounded-circle">
+                    <i class="ti ti-alert-triangle"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="ti ti-calendar-range me-2"></i>Quick Access
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row row-cols-md-3 row-cols-sm-2 row-cols-1 g-3">
+          <div class="col">
+            <a href="{% url 'timetable:section_grid' section_id=1 %}" class="card card-body text-center border-primary text-primary">
+              <i class="ti ti-school fs-4 mb-2 d-block"></i>
+              <div class="fw-bold">Section A</div>
+              <small class="text-muted">View timetable</small>
+            </div>
+          </div>
+          <div class="col">
+            <a href="#" class="card card-body text-center border-info text-info">
+              <i class="ti ti-user fs-4 mb-2 d-block"></i>
+              <div class="fw-bold">Teacher View</div>
+              <small class="text-muted">Teacher timetable</small>
+            </div>
+          </div>
+          <div class="col">
+            <a href="#" class="card card-body text-center border-success text-success">
+              <i class="ti ti-settings fs-4 mb-2 d-block"></div>
+              <div class="fw-bold">Manage Versions</div>
+              <small class="text-muted">Publish versions</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="ti ti-info-circle me-2"></i>About Timetable
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="text-small">
+          The Timetable module allows you to manage school timetables, create
+          published versions, and apply exceptions such as cancellations,
+          replacements, and whole-day holidays.
+        </p>
+        <hr>
+        <h6 class="fw-bold mb-3">Quick Actions</h6>
+        <ul class="list-unstyled">
+          <li class="mb-2">
+            <a href="#" class="text-decoration-none text-primary fw-medium">
+              <i class="ti ti-play me-2 text-primary"></i>Publish New Version
+            </a>
+          </li>
+          <li class="mb-2">
+            <a href="#" class="text-decoration-none text-primary fw-medium">
+              <i class="ti ti-calendar-check me-2 text-primary"></i>Apply Exception
+            </a>
+          </li>
+          <li class="mb-2">
+            <a href="#" class="text-decoration-none text-primary fw-medium">
+              <i class="ti ti-clock me-2 text-primary"></i>View Weekly Grid
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

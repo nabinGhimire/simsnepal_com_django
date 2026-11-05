@@ -18,6 +18,7 @@ urlpatterns = [
     path('exam/', include(('exam.urls', 'exam'), namespace='exam')),
     path('calendar/', include(('patro.urls', 'patro'), namespace='patro')),
     path('timetable/', include(('timetable.urls', 'timetable'), namespace='timetable')),
+    path('timetable/', include(('timetable.urls', 'timetable'), namespace='timetable')),
     path('grihakarya/', include(('grihakarya.urls', 'grihakarya'), namespace='grihakarya')),
     path('concerns/', include(('concerns.urls', 'concerns'), namespace='concerns')),
     path('cas/', panel_views.coming_soon, name='cas'),
