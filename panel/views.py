@@ -904,7 +904,7 @@ def get_current_session():
                 pass
     try:
         # Hardcoded for now as per original logic, but wrapped in a function
-        return EduSession.objects.get(year=this_year)
+        return EduSession.objects.filter(year=this_year).first()
     except EduSession.DoesNotExist:
         return EduSession.objects.filter(status=True).order_by('-year').first()
 

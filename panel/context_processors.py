@@ -108,9 +108,8 @@ def nav_context(request):
             pass
 
     if not current_session:
-        try:
-            current_session = EduSession.objects.get(year=this_year)
-        except EduSession.DoesNotExist:
+        current_session = EduSession.objects.filter(year=this_year).first()
+        if not current_session:
             current_session = EduSession.objects.filter(status=True).order_by('-year').first()
 
     all_sessions = EduSession.objects.all().order_by('-year')
