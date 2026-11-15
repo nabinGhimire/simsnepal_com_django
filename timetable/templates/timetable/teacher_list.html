@@ -1,0 +1,42 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Teachers{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Teachers</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">Select a teacher to view their weekly timetable grid.</p>
+    </div>
+    <a href="{% url 'timetable:dashboard' %}" class="tt-btn tt-btn-primary"><i class="ti ti-arrow-left me-1"></i> Back to Dashboard</a>
+  </div>
+
+  {% if teachers %}
+  <div class="tt-card" style="overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--tt-border);">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--tt-text-dark);">Available Teachers ({{ teachers|length }})</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:14px 16px;">
+      {% for teacher in teachers %}
+      <a href="{% url 'timetable:teacher_grid' teacher_id=teacher.id %}" class="tt-card" style="padding:14px 16px;text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:space-between;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='var(--tt-shadow-hover)'" onmouseout="this.style.boxShadow='var(--tt-shadow)'">
+        <div>
+          <div style="font-size:1rem;font-weight:600;color:var(--tt-text-dark);">{{ teacher.teacher.get_full_name|default:teacher.teacher.username }}</div>
+          <div style="font-size:0.75rem;color:var(--tt-text-muted);">{{ teacher.teacher.username }} &bull; ID {{ teacher.id }}</div>
+        </div>
+        <span style="font-size:0.75rem;color:var(--tt-primary);font-weight:600;">View Timetable <i class="ti ti-chevron-right ms-1"></i></span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="tt-card" style="text-align:center;padding:48px 24px;">
+    <i class="ti ti-user fs-1 text-muted mb-3 d-block"></i>
+    <h5 style="color:var(--tt-text-dark);font-weight:600;margin-bottom:8px;">No teachers found</h5>
+    <p style="color:var(--tt-text-muted);margin-bottom:0;">No teachers with timetable entries are available.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -399,7 +399,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="TimetableEntry",
             constraint=models.CheckConstraint(
-                check=(
+                condition=(
                     (
                         models.Q(days_of_week__isnull=False)
                         & models.Q(day_of_month__isnull=True)
@@ -420,7 +420,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="TimetableEntry",
             constraint=models.CheckConstraint(
-                check=models.Q(period_span__gte=1),
+                condition=models.Q(period_span__gte=1),
                 name="tt_entry_period_span_gte_1",
             ),
         ),
@@ -516,7 +516,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="TimetableException",
             constraint=models.CheckConstraint(
-                check=models.Q(date_to__gte=models.F("date_from")),
+                condition=models.Q(date_to__gte=models.F("date_from")),
                 name="tt_exc_date_to_gte_date_from",
             ),
         ),

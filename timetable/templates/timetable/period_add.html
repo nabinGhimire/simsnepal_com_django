@@ -1,0 +1,71 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Add Period — {{ profile.name }}{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Add Period</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">
+        Profile: <strong>{{ profile.name }}</strong> &bull; School {{ profile.school_id }}
+      </p>
+    </div>
+    <a href="{% url 'timetable:profile_periods' profile_id=profile.id %}" class="tt-btn tt-btn-primary"><i class="ti ti-arrow-left me-1"></i> Back to Periods</a>
+  </div>
+
+  <div class="tt-card" style="max-width:600px;">
+    <form method="POST" style="padding:20px;">
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Period Label</label>
+        <input type="text" name="label" class="tt-input" placeholder="e.g. Period 1, Recess, Assembly" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Sequence</label>
+          <input type="number" name="sequence" class="tt-input" value="1" min="0" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+        </div>
+        <div class="col-6">
+          <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Shift</label>
+          <select name="shift" class="tt-input" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+            <option value="morning">Morning</option>
+            <option value="day">Day</option>
+            <option value="evening">Evening</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Start Time</label>
+          <input type="time" name="start_time" class="tt-input" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+        </div>
+        <div class="col-6">
+          <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">End Time</label>
+          <input type="time" name="end_time" class="tt-input" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Period Type</label>
+        <select name="period_type" class="tt-input" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          <option value="class">Class</option>
+          <option value="break">Break</option>
+          <option value="assembly">Assembly</option>
+          <option value="lunch">Lunch</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;">
+        <a href="{% url 'timetable:profile_periods' profile_id=profile.id %}" class="tt-btn tt-btn-ghost" style="font-size:0.85rem;">Cancel</a>
+        <button type="submit" class="tt-btn tt-btn-primary" style="font-size:0.85rem;">Add Period</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

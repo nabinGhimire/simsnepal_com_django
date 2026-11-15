@@ -1,0 +1,55 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Periods — {{ profile.name }}{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Periods: {{ profile.name }}</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">Define time slots for this schedule profile.</p>
+    </div>
+    <a href="{% url 'timetable:profile_list' %}" class="tt-btn tt-btn-primary"><i class="ti ti-arrow-left me-1"></i> Back to Profiles</a>
+  </div>
+
+  {% if periods %}
+  <div class="tt-card" style="overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--tt-border);">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--tt-text-dark);">Periods ({{ periods|length }})</span>
+    </div>
+    <div style="padding:14px 16px;">
+      <table class="tt-table">
+        <thead>
+          <tr>
+            <th style="width:60px;">#</th>
+            <th>Label</th>
+            <th style="width:140px;">Shift</th>
+            <th style="width:160px;">Time</th>
+            <th style="width:120px;">Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for period in periods %}
+          <tr>
+            <td style="font-weight:600;color:var(--tt-text-dark);">{{ period.sequence }}</td>
+            <td style="color:var(--tt-text-dark);">{{ period.label|default:"Period "|add:period.sequence }}</td>
+            <td><span style="font-size:0.75rem;color:var(--tt-text-muted);">{{ period.shift }}</span></td>
+            <td><span style="font-weight:600;color:var(--tt-primary);">{{ period.start_time }} – {{ period.end_time }}</span></td>
+            <td><span style="font-size:0.75rem;color:var(--tt-text-muted);text-transform:uppercase;">{{ period.period_type }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="tt-card" style="text-align:center;padding:48px 24px;">
+    <i class="ti ti-clock fs-1 text-muted mb-3 d-block"></i>
+    <h5 style="color:var(--tt-text-dark);font-weight:600;margin-bottom:8px;">No periods defined</h5>
+    <p style="color:var(--tt-text-muted);margin-bottom:0;">Add time slots to this profile.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

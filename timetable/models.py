@@ -27,7 +27,7 @@ from django.db import models
 
 import nepali_datetime
 
-from sms.models import EduSession, SchoolBranch, Section, Subject
+from sms.models import EduSession, SchoolBranch, SchoolGrade, Section, Subject
 
 from .exceptions import LockedError, OverlapError
 
@@ -129,6 +129,100 @@ class ScheduleProfilePeriod(models.Model):
 
     def __str__(self):
         return f"{self.profile_id} · {self.sequence} · {self.label or self.period_type}"
+
+
+class GradeStructure(models.Model):
+    """
+    Standard daily schedule structure for a grade within a shift.
+
+    Defines the template schedule (e.g., "Class 10 Morning Regular",
+    "PG Day 1-hour periods") that TimetableVersion entries instantiate.
+    """
+    SHIFT_CHOICES = [
+        ("morning", "Morning"),
+        ("day",     "Day"),
+        ("evening", "Evening"),
+    ]
+
+    school      = models.ForeignKey(
+        SchoolBranch, on_delete=models.CASCADE, db_column="school_id",
+        related_name="grade_structures",
+    )
+    grade       = models.ForeignKey(
+        SchoolGrade, on_delete=models.CASCADE, db_column="grade_id",
+        related_name="grade_structures",
+    )
+    section     = models.ForeignKey(
+        Section, on_delete=models.CASCADE, db_column="section_id",
+        related_name="grade_structures", null=True, blank=True,
+        help_text="Leave empty for grade-level default; set for section-specific override",
+    )
+    shift       = models.CharField(max_length=10, choices=SHIFT_CHOICES)
+    name        = models.CharField(max_length=120, blank=True,
+        help_text="e.g. 'Regular Day', 'Morning Extra', 'Morning Tuition'")
+    period_duration = models.PositiveSmallIntegerField(
+        default=40, help_text="Default period length in minutes (40, 60, etc.)"
+    )
+    break_after_periods = models.PositiveSmallIntegerField(
+        default=4, help_text="Insert a break after this many periods (4 or 5)"
+    )
+    is_active   = models.BooleanField(default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "timetable_grade_structure"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school", "grade", "shift", "name", "section"],
+                name="tt_grade_structure_unique",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["school", "grade"], name="tt_gs_school_grade_idx"),
+            models.Index(fields=["school", "section"], name="tt_gs_school_section_idx"),
+        ]
+
+    def __str__(self):
+        section_part = f" · {self.section.section}" if self.section else ""
+        return f"{self.grade.grade_name}{section_part} · {self.shift} · {self.name or self.shift}"
+
+
+class GradeStructurePeriod(models.Model):
+    """
+    One period slot within a GradeStructure.
+    """
+    structure     = models.ForeignKey(
+        GradeStructure, on_delete=models.CASCADE, db_column="structure_id",
+        related_name="structure_periods",
+    )
+    sequence      = models.PositiveSmallIntegerField()
+    period_type   = models.CharField(max_length=10, choices=[
+        ("class",    "Class"),
+        ("break",    "Break"),
+        ("assembly", "Assembly"),
+        ("lunch",    "Lunch"),
+    ], default="class")
+    label         = models.CharField(max_length=120, blank=True,
+        help_text="e.g. 'Nepali', 'Math', 'Break', 'Assembly'")
+    duration_minutes = models.PositiveSmallIntegerField(
+        help_text="Duration in minutes (overrides structure default)"
+    )
+    days_of_week  = models.SmallIntegerField(null=True, blank=True,
+        help_text="Bitmask: Mon=1..Sun=64. NULL = every day")
+    is_active     = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "timetable_grade_structure_period"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["structure", "sequence"],
+                name="tt_gsp_structure_seq_uniq",
+            ),
+        ]
+        ordering = ["structure", "sequence"]
+
+    def __str__(self):
+        return f"{self.structure} · {self.sequence} · {self.label or self.period_type}"
 
 
 # ── 3. TimetableVersion ───────────────────────────────────────────────────────
@@ -341,7 +435,7 @@ class TimetableEntry(models.Model):
         constraints = [
             # Exactly one of (days_of_week, day_of_month, specific_date) non-null
             models.CheckConstraint(
-                check=(
+                condition=(
                     (
                         models.Q(days_of_week__isnull=False)
                         & models.Q(day_of_month__isnull=True)
@@ -359,7 +453,7 @@ class TimetableEntry(models.Model):
                 name="tt_entry_exactly_one_strategy",
             ),
             models.CheckConstraint(
-                check=models.Q(period_span__gte=1),
+                condition=models.Q(period_span__gte=1),
                 name="tt_entry_period_span_gte_1",
             ),
         ]
@@ -511,7 +605,7 @@ class TimetableException(models.Model):
         constraints = [
             # date_to >= date_from (YYYY-MM-DD lexicographic ≡ chronological)
             models.CheckConstraint(
-                check=models.Q(date_to__gte=models.F("date_from")),
+                condition=models.Q(date_to__gte=models.F("date_from")),
                 name="tt_exc_date_to_gte_date_from",
             ),
         ]
@@ -616,3 +710,70 @@ class TimetableException(models.Model):
                 f"Exception {self.pk} is locked and cannot be deleted."
             )
         super().delete(*args, **kwargs)
+
+
+# ── School-Level Timetable Settings ──────────────────────────────────────────
+
+class TimetableSchoolSettings(models.Model):
+    """
+    Global per-school timetable settings.
+
+    Defines the school-wide shift times, default class duration, weekend
+    configuration, and break rules that apply across all grades.
+    """
+    SHIFT_CHOICES = [
+        ("morning", "Morning"),
+        ("day",     "Day"),
+        ("evening", "Evening"),
+    ]
+
+    school      = models.OneToOneField(
+        SchoolBranch, on_delete=models.CASCADE, db_column="school_id",
+        related_name="timetable_settings",
+    )
+
+    # Shift time ranges (defines when each shift starts/ends)
+    shift_morning_start = models.TimeField(null=True, blank=True,
+        help_text="Morning shift start time")
+    shift_morning_end   = models.TimeField(null=True, blank=True,
+        help_text="Morning shift end time")
+    shift_day_start     = models.TimeField(null=True, blank=True,
+        help_text="Day shift start time")
+    shift_day_end       = models.TimeField(null=True, blank=True,
+        help_text="Day shift end time")
+    shift_evening_start = models.TimeField(null=True, blank=True,
+        help_text="Evening shift start time")
+    shift_evening_end   = models.TimeField(null=True, blank=True,
+        help_text="Evening shift end time")
+
+    # Default period duration in minutes (overridable per grade structure)
+    default_period_duration = models.PositiveSmallIntegerField(
+        default=40, help_text="Default period length in minutes"
+    )
+
+    # Weekend configuration (bitmask: Mon=1..Sun=64)
+    # Days with these bits set are weekends (no regular classes)
+    weekend_days = models.SmallIntegerField(
+        default=64,  # Sunday only by default
+        help_text="Weekend days bitmask (Mon=1, Tue=2, Wed=4, Thu=8, Fri=16, Sat=32, Sun=64)"
+    )
+
+    # Break rules
+    break_after_periods = models.PositiveSmallIntegerField(
+        default=4, help_text="Insert break after this many periods"
+    )
+    break_duration_minutes = models.PositiveSmallIntegerField(
+        default=15, help_text="Break duration in minutes"
+    )
+
+    is_active = models.BooleanField(default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "timetable_school_settings"
+        verbose_name = "Timetable School Settings"
+        verbose_name_plural = "Timetable School Settings"
+
+    def __str__(self):
+        return f"Timetable Settings — {self.school.name}"

@@ -1,0 +1,82 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Edit School Timetable Settings{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Edit School Timetable Settings</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">
+        Configure shifts, class times, and weekend rules for {{ school.name }}
+      </p>
+    </div>
+    <a href="{% url 'timetable:school_settings' %}" class="tt-btn tt-btn-primary"><i class="ti ti-arrow-left me-1"></i> Back</a>
+  </div>
+
+  <div class="tt-card" style="max-width:700px;">
+    <form method="POST" style="padding:20px;">
+      {% csrf_token %}
+
+      <div style="margin-bottom:24px;">
+        <h3 style="font-size:1rem;font-weight:600;color:var(--tt-text-dark);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.04em;">Shift Times</h3>
+
+        <div class="row g-3">
+          <div class="col-4">
+            <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Morning Start</label>
+            <input type="time" name="shift_morning_start" class="tt-input" value="{{ settings.shift_morning_start }}" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          </div>
+          <div class="col-4">
+            <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Morning End</label>
+            <input type="time" name="shift_morning_end" class="tt-input" value="{{ settings.shift_morning_end }}" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          </div>
+          <div class="col-4">
+            <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Day Start</label>
+            <input type="time" name="shift_day_start" class="tt-input" value="{{ settings.shift_day_start }}" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          </div>
+          <div class="col-4">
+            <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Day End</label>
+            <input type="time" name="shift_day_end" class="tt-input" value="{{ settings.shift_day_end }}" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          </div>
+          <div class="col-4">
+            <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Evening Start</label>
+            <input type="time" name="shift_evening_start" class="tt-input" value="{{ settings.shift_evening_start }}" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          </div>
+          <div class="col-4">
+            <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Evening End</label>
+            <input type="time" name="shift_evening_end" class="tt-input" value="{{ settings.shift_evening_end }}" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Default Period Duration (min)</label>
+          <input type="number" name="default_period_duration" class="tt-input" value="{{ settings.default_period_duration }}" min="1" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+        </div>
+        <div class="col-6">
+          <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Break After Periods</label>
+          <input type="number" name="break_after_periods" class="tt-input" value="{{ settings.break_after_periods }}" min="1" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+        </div>
+        <div class="col-6">
+          <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Break Duration (min)</label>
+          <input type="number" name="break_duration_minutes" class="tt-input" value="{{ settings.break_duration_minutes }}" min="1" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Weekend Days (Bitmask)</label>
+        <input type="number" name="weekend_days" class="tt-input" value="{{ settings.weekend_days }}" min="0" max="127" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+        <p class="text-muted small" style="margin-top:4px;">Mon=1, Tue=2, Wed=4, Thu=8, Fri=16, Sat=32, Sun=64. Use 64 for Sunday only, 32 for Saturday only, 96 for both.</p>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;">
+        <a href="{% url 'timetable:school_settings' %}" class="tt-btn tt-btn-ghost" style="font-size:0.85rem;">Cancel</a>
+        <button type="submit" class="tt-btn tt-btn-primary" style="font-size:0.85rem;">Save Settings</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

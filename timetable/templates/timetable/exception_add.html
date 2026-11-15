@@ -1,0 +1,96 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Add Exception{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Add Timetable Exception</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">Cancel, replace, or add periods for specific date ranges.</p>
+    </div>
+    <a href="{% url 'timetable:exception_list' %}" class="tt-btn tt-btn-primary"><i class="ti ti-arrow-left me-1"></i> Back</a>
+  </div>
+
+  <div class="tt-card" style="max-width:700px;">
+    <form method="POST" style="padding:20px;">
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Exception Kind</label>
+        <select name="kind" class="tt-input" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          <option value="cancel">Cancel Period</option>
+          <option value="replace">Replace Period</option>
+          <option value="whole_day">Whole Day (Holiday)</option>
+          <option value="add">Add Special Class</option>
+        </select>
+      </div>
+
+      <div style="background:var(--tt-border);padding:12px;border-radius:6px;margin-top:1rem;font-size:0.8rem;color:var(--tt-text-muted);">
+        <strong style="color:var(--tt-text-dark);">Special classes on holidays:</strong> Choose "Add Special Class" on a holiday date to schedule classes that run even when the school is closed.<br>
+        <strong>Weekend holidays:</strong> Create a whole-day exception on any Sunday or Saturday for weekend closure.
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Scope</label>
+        <select name="scope" class="tt-input" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          <option value="section">Section</option>
+          <option value="class">Class (Grade)</option>
+          <option value="school">School</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Scope ID</label>
+        <select name="scope_id" class="tt-input" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          {% for s in sections %}
+          <option value="{{ s.id }}">{{ s.grade.grade_name }} {{ s.section }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Date From (BS)</label>
+        <input type="text" name="date_from" class="tt-input" placeholder="2083-01-01" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Date To (BS)</label>
+        <input type="text" name="date_to" class="tt-input" placeholder="2083-01-01" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Period ID</label>
+        <input type="number" name="period_id" class="tt-input" placeholder="Optional period ID" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Subject ID</label>
+        <input type="number" name="subject_id" class="tt-input" placeholder="Optional subject ID" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Teacher ID</label>
+        <input type="number" name="teacher_id" class="tt-input" placeholder="Optional teacher ID" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Days of Week (bitmask)</label>
+        <input type="text" name="days_of_week" class="tt-input" placeholder="Optional bitmask (Mon=1..Sat=32)" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Reason</label>
+        <textarea name="reason" class="tt-input" placeholder="Reason for this exception..." rows="2" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;"></textarea>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;">
+        <a href="{% url 'timetable:exception_list' %}" class="tt-btn tt-btn-ghost" style="font-size:0.85rem;">Cancel</a>
+        <button type="submit" class="tt-btn tt-btn-primary" style="font-size:0.85rem;">Create Exception</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

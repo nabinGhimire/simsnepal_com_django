@@ -1,0 +1,65 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Periods — {{ structure }}{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Periods: {{ structure }}</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">
+        {{ structure.grade.grade_name }} &bull; {{ structure.shift|title }} &bull; {{ structure.period_duration }}min default &bull; Break after {{ structure.break_after_periods }}
+      </p>
+    </div>
+    <a href="{% url 'timetable:grade_structure_period_add' structure_id=structure.id %}" class="tt-btn tt-btn-primary"><i class="ti ti-plus me-1"></i> Add Period</a>
+    <a href="{% url 'timetable:grade_structure_list' %}" class="tt-btn tt-btn-ghost"><i class="ti ti-arrow-left me-1"></i> Back</a>
+  </div>
+
+  {% if periods %}
+  <div class="tt-card" style="overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--tt-border);">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--tt-text-dark);">Periods ({{ periods|length }})</span>
+    </div>
+    <div style="padding:14px 16px;">
+      <table class="tt-table">
+        <thead>
+          <tr>
+            <th style="width:60px;">#</th>
+            <th>Label / Type</th>
+            <th style="width:120px;">Duration</th>
+            <th style="width:140px;">Days</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in periods %}
+          <tr>
+            <td style="font-weight:600;color:var(--tt-text-dark);">{{ p.sequence }}</td>
+            <td>
+              <span style="font-weight:600;color:var(--tt-text-dark);">{{ p.label|default:p.period_type|title }}</span><br>
+              <span style="font-size:0.72rem;color:var(--tt-text-muted);text-transform:uppercase;">{{ p.period_type }}</span>
+            </td>
+            <td><span style="font-weight:600;color:var(--tt-primary);">{{ p.duration_minutes }} min</span></td>
+            <td>
+              {% if p.days_of_week %}
+              <span style="font-size:0.75rem;color:var(--tt-text-muted);">{{ p.days_of_week }}</span>
+              {% else %}
+              <span style="font-size:0.75rem;color:var(--tt-text-muted);">Every day</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="tt-card" style="text-align:center;padding:48px 24px;">
+    <i class="ti ti-clock fs-1 text-muted mb-3 d-block"></i>
+    <h5 style="color:var(--tt-text-dark);font-weight:600;margin-bottom:8px;">No periods yet</h5>
+    <p style="color:var(--tt-text-muted);margin-bottom:0;">Add time slots to this class structure.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

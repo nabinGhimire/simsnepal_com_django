@@ -1,167 +1,143 @@
+{% extends 'panel/panel-main.html' %}
 {% load static %}
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  <title>{% block title %}Timetable{% endblock %}</title>
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
-  <!-- Tabler CSS -->
-  <link href="{% static 'tabler/css/tabler.min.css' %}" rel="stylesheet" />
-  <link href="{% static 'tabler/css/tabler-themes.min.css' %}" rel="stylesheet" />
-  <link href="{% static 'tabler/css/tabler-vendors.min.css' %}" rel="stylesheet" />
-  <link href="{% static 'tabler/css/tabler-compat.css' %}" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-  <!-- SIMS Styles -->
-  <link href="{% static 'css/colors.css' %}" rel="stylesheet" />
-  <style>
-    @import url("https://rsms.me/inter/inter.css");
-    :root { font-family: 'Inter', sans-serif; }
-    @supports (font-variation-settings: normal) { :root { font-family: 'Inter var', sans-serif; } }
-    body { background-color: #f4f6f8; font-family: 'Inter', sans-serif; }
-    .page, .page-wrapper { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-    .page-body { margin-top: 0 !important; padding-top: 0.25rem !important; }
-    .navbar-premium { background: linear-gradient(to right, rgba(0,136,119,0.05) 0%, rgba(0,168,144,0.1) 100%) !important; border-bottom: 1px solid rgba(0,136,119,0.1) !important; box-shadow: 0 4px 20px -10px rgba(0,136,119,0.1); }
-    .navbar-premium .navbar-brand { font-weight: 700; font-size: 1.25rem; color: var(--tt-primary) !important; }
-    .navbar-premium .navbar-brand img { width: 32px; height: 32px; margin-right: 0.5rem; border-radius: 6px; }
-    .navbar-brand { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 1.25rem; color: var(--tt-primary) !important; }
-    .navbar-premium .navbar-nav .nav-link { color: var(--tt-text-muted) !important; font-size: 0.85rem; font-weight: 500; }
-    .navbar-premium .navbar-nav .nav-link:hover, .navbar-premium .navbar-nav .nav-link.active { color: var(--tt-primary) !important; background: rgba(0,136,119,0.08); border-radius: 6px; }
-    .navbar-premium .dropdown-menu { border: 1px solid rgba(0,136,119,0.1); box-shadow: 0 8px 24px -10px rgba(0,136,119,0.15); border-radius: 10px; }
-    .navbar-premium .dropdown-item { color: var(--tt-text-dark) !important; font-size: 0.85rem; padding: 0.5rem 1rem; }
-    .navbar-premium .dropdown-item:hover { background: rgba(0,136,119,0.08); color: var(--tt-primary) !important; }
-    .navbar-premium .dropdown-menu .dropdown-divider { border-color: rgba(0,136,119,0.08); margin: 0.5rem 1rem; }
-    .app-tile { text-decoration: none; display: block; text-align: center; padding: 1rem 0.75rem; border-radius: 10px; border: 1px solid rgba(0,136,119,0.1); background: #fff; transition: all 0.2s ease; color: inherit !important; }
-    .app-tile:hover { background: #f8fafb; border-color: var(--tt-primary); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,136,119,0.15); color: inherit !important; }
-    .app-tile.active { background: var(--tt-primary); color: #fff !important; border-color: var(--tt-primary); box-shadow: 0 4px 12px rgba(0,136,119,0.3); }
-    .app-tile.active .app-tile-icon { background: rgba(255,255,255,0.2); color: #fff !important; }
-    .app-tile.active .app-tile-label { color: #fff !important; }
-    .app-tile-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; font-size: 1.25rem; background: #f4f6f8; color: var(--tt-primary); transition: all 0.2s ease; }
-    .app-tile-label { font-size: 0.8rem; font-weight: 600; color: var(--tt-text-dark); display: block; margin-top: 0.25rem; transition: color 0.2s ease; }
-    .apps-card { border: 1px solid rgba(0,136,119,0.1); border-radius: 10px !important; overflow: hidden; }
-    .apps-card .card-header { background: #fff !important; border-bottom: 1px solid rgba(0,136,119,0.1); padding: 0.75rem 1rem; }
-    .apps-card .card-header .card-title { font-size: 0.85rem; font-weight: 700; color: var(--tt-text-dark); margin: 0; }
-    .apps-card .card-body { padding: 0.75rem; }
-    .breadcrumb { background: transparent; padding: 0.5rem 1rem; margin-bottom: 1rem; border-radius: 8px; background: rgba(0,136,119,0.04); }
-    .breadcrumb-item { font-size: 0.8rem; color: var(--tt-text-muted); }
-    .breadcrumb-item.active { color: var(--tt-primary) !important; font-weight: 600; }
-    .breadcrumb-item .breadcrumb-item.active a { color: var(--tt-primary) !important; }
-    .breadcrumb-item.active a .breadcrumb-item { color: var(--tt-primary) !important; }
-    .tt-card { border: 1px solid rgba(0,136,119,0.1); border-radius: 12px; box-shadow: 0 4px 20px -10px rgba(0,0,0,0.05); background: #fff; overflow: hidden; }
-    .tt-card .card-header { background: #fff; border-bottom: 1px solid rgba(0,0,0,0.05); padding: 0.875rem 1.25rem; font-weight: 700; font-size: 0.95rem; color: var(--tt-text-dark); }
-    .tt-card .card-body { padding: 1.25rem; }
-    .btn-tt { background: var(--tt-primary) !important; color: #fff !important; border: none !important; border-radius: 8px !important; font-weight: 600 !important; font-size: 0.85rem !important; padding: 0.625rem 1.25rem !important; }
-    .btn-tt:hover { background: #007462 !important; color: #fff !important; }
-    .btn-tt-ghost { background: transparent !important; color: var(--tt-primary) !important; border: 1px solid var(--tt-primary) !important; border-radius: 8px !important; font-weight: 600 !important; font-size: 0.85rem !important; padding: 0.625rem 1.25rem !important; }
-    .btn-tt-ghost:hover { background: rgba(0,136,119,0.1) !important; color: var(--tt-primary) !important; }
-    .badge-tt { background: rgba(0,136,119,0.1); color: var(--tt-primary); border-radius: 6px; font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.75rem; }
-    .badge-tt-success { background: #ebfbee; color: #2fb344; border-radius: 6px; font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.75rem; }
-    .badge-tt-warning { background: #fff5f5; color: #d63939; border-radius: 6px; font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.75rem; }
-    .badge-tt-info { background: #e3f2fd; color: #1976d2; border-radius: 6px; font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.75rem; }
-    .tt-grid-table { border: 1px solid rgba(0,0,0,0.06); border-collapse: collapse; width: 100%; background: #fff; border-radius: 8px; overflow: hidden; }
-    .tt-grid-table th, .tt-grid-table td { border: 1px solid rgba(0,0,0,0.06); padding: 0.625rem 0.75rem; vertical-align: middle; text-align: center; font-size: 0.82rem; }
-    .tt-grid-table th { background: #f8f9fa; font-weight: 700; color: var(--tt-text-dark); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
-    .tt-grid-table td { background: #fff; }
-    .tt-grid-table tr:nth-child(even) td { background: #fafbfc; }
-    .tt-cell-base { background: #ffffff !important; }
-    .tt-cell-exception { background: #fff3cd !important; border-left: 4px solid #ffc107 !important; }
-    .tt-cell-cancelled { background: #f8d7da !important; color: #d63939 !important; font-style: italic !important; }
-    .tt-cell-empty { background: #f1f3f5 !important; color: #6c757d !important; font-style: italic !important; }
-    .tt-cell-span-continued { display: none !important; }
-    .tt-subject-name { font-weight: bold; display: block; font-size: 0.85rem; color: var(--tt-text-dark); }
-    .tt-teacher-name { font-size: 0.75rem; color: var(--tt-text-muted); display: block; margin-top: 2px; }
-    .tt-badge-reason { font-size: 0.7rem; font-weight: 600; border-radius: 4px; padding: 0.2rem 0.5rem; }
-    .tt-badge-reason.bg-warning { background: #fff3cd !important; color: #8a6d00 !important; }
-    .tt-badge-reason.bg-warning.text-dark { color: #8a6d00 !important; }
-    .tt-badge-reason.bg-success { background: #d4edda !important; color: #155724 !important; font-size: 0.7rem; font-weight: 600; padding: 0.35rem 0.75rem; }
-    .tt-badge-reason.bg-info { background: #d1ecf1; color: #0c5460; border-radius: 6px; font-size: 0.7rem; font-weight: 600; padding: 0.35rem 0.75rem; }
-    .tt-badge-reason.bg-secondary { background: #e2e3e5; color: #383d41; border-radius: 6px; font-size: 0.7rem; font-weight: 600; padding: 0.35rem 0.75rem; }
-    .tt-section-card { border: 1px solid rgba(0,136,119,0.1); border-radius: 10px; margin-bottom: 1rem; overflow: hidden; background: #fff; }
-    .tt-section-card .card-header { background: #f8f9fa; border-bottom: 1px solid rgba(0,0,0,0.06); padding: 0.75rem 1rem; font-weight: 600; color: var(--tt-text-dark); font-size: 0.85rem; }
-    .tt-section-card .card-body { padding: 1rem; }
-    .tt-table-responsive { overflow-x: auto; border-radius: 8px; }
-    .tt-btn-primary { background: var(--tt-primary) !important; color: #fff !important; border: none !important; border-radius: 8px !important; font-weight: 600 !important; font-size: 0.85rem !important; padding: 0.5rem 1rem !important; }
-    .tt-btn-primary:hover { background: #007462 !important; color: #fff !important; }
-    .tt-btn-secondary { background: #fff !important; color: var(--tt-text-dark) !important; border: 1px solid #dee2e6 !important; border-radius: 8px !important; font-weight: 600 !important; font-size: 0.85rem !important; padding: 0.5rem 1rem !important; }
-    .tt-btn-secondary:hover { background: #f8f9fa !important; border-color: #adb5bd !important; color: var(--tt-text-dark) !important; }
-    .tt-page-header { margin-bottom: 1.5rem; }
-    .tt-page-header .breadcrumb { margin-bottom: 0.5rem; }
-    .tt-page-header .page-title { margin-bottom: 0.25rem; font-weight: 700; font-size: 1.25rem; color: var(--tt-text-dark); }
-    .tt-page-header .page-subtitle { font-size: 0.85rem; color: var(--tt-text-muted); margin-top: 0.25rem; }
-    .tt-actions-bar { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
-    .tt-empty-state { text-align: center; padding: 3rem 1rem; border-radius: 12px; background: #fafbfc; border: 2px dashed #dee2e6; }
-    .tt-empty-state .empty-icon { font-size: 3rem; color: #adb5bd; margin-bottom: 1rem; }
-    .tt-empty-state h5 { font-weight: 600; color: var(--tt-text-dark); margin-bottom: 0.5rem; }
-    .tt-empty-state p { color: var(--tt-text-muted); font-size: 0.9rem; margin-bottom: 1rem; }
-    @media (max-width: 768px) {
-      .tt-grid-table { font-size: 0.75rem; }
-      .tt-grid-table th, .tt-grid-table td { padding: 0.4rem 0.5rem; font-size: 0.75rem; }
-      .tt-card { border-radius: 8px; }
-    }
-  </style>
-</head>
-<body class="body">
-  <div class="page">
-    <div class="page-wrapper">
-      <div class="page-body">
-        <nav class="navbar navbar-expand-lg navbar-light navbar-premium">
-          <div class="container-fluid px-3 px-md-4">
-            <a class="navbar-brand" href="/timetable/">
-              <img src="{% static 'tabler/assets/img/logo.svg' %}" alt="Timetable" width="32" height="32" />
-              Timetable
+
+{% block title %}Timetable | SIMSnepal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<style>
+  :root {
+    --tt-bg: #f7f9fc;
+    --tt-card-bg: #ffffff;
+    --tt-border: #e9ecef;
+    --tt-text-muted: #6c757d;
+    --tt-text-dark: #212529;
+    --tt-primary: #6366f1;
+    --tt-primary-dark: #4f46e5;
+    --tt-success: #2fb344;
+    --tt-warning: #ffb703;
+    --tt-danger: #e63946;
+    --tt-radius: 10px;
+    --tt-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --tt-shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  [data-theme="dark"] {
+    --tt-bg: #1a1b26;
+    --tt-card-bg: #232934;
+    --tt-border: #3a3d49;
+    --tt-text-muted: #a0a5b3;
+    --tt-text-dark: #e4e7eb;
+    --tt-primary: #818cf8;
+    --tt-primary-dark: #6366f1;
+    --tt-success: #34d399;
+    --tt-warning: #fbbf24;
+    --tt-danger: #f87171;
+    --tt-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --tt-shadow-hover: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  html, body {
+    background: var(--tt-bg);
+    color: var(--tt-text-dark);
+  }
+  .tt-card {
+    background: var(--tt-card-bg); border: 1px solid var(--tt-border);
+    border-radius: var(--tt-radius); box-shadow: var(--tt-shadow);
+  }
+  .tt-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0.45rem 0.9rem; font-size: 0.85rem; font-weight: 600;
+    border: 1px solid var(--tt-border); border-radius: 6px;
+    background: var(--tt-card-bg); color: var(--tt-text-dark);
+    text-decoration: none; cursor: pointer; transition: all 0.15s;
+  }
+  .tt-btn:hover { background: var(--tt-border); }
+  .tt-btn-primary {
+    background: var(--tt-primary); color: #fff; border-color: var(--tt-primary);
+  }
+  .tt-btn-primary:hover { background: var(--tt-primary-dark); }
+  .tt-btn-ghost { background: transparent; }
+  .tt-btn-danger { background: var(--tt-danger); color: #fff; border-color: var(--tt-danger); }
+  .tt-input {
+    padding: 0.4rem 0.7rem; font-size: 0.85rem;
+    border: 1px solid var(--tt-border); border-radius: 6px;
+    background: var(--tt-card-bg); color: var(--tt-text-dark);
+  }
+  .tt-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; font-size: 0.68rem; font-weight: 600;
+    border-radius: 4px; text-decoration: none;
+  }
+  .tt-table { width: 100%; font-size: 0.85rem; }
+  .tt-table th {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--tt-text-muted); padding: 8px 12px; border-bottom: 1px solid var(--tt-border);
+    text-align: left; white-space: nowrap;
+  }
+  .tt-table td { padding: 10px 12px; border-bottom: 1px solid var(--tt-border); }
+  .tt-table tr:last-child td { border-bottom: none; }
+  .tt-table tr:hover td { background: rgba(0,0,0,0.02); }
+
+  .stat-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; font-size: 0.75rem; font-weight: 600;
+    border-radius: 20px; background: var(--tt-border); color: var(--tt-text-muted);
+  }
+</style>
+{% endblock extra_css %}
+
+{% block navbar %}
+<!-- Timetable Sub-Navbar -->
+<div class="navbar-expand-md">
+  <div class="collapse navbar-collapse" id="navbar-menu">
+    <div class="navbar navbar-light bg-white border-bottom shadow-xs">
+      <div class="container-xl">
+        <ul class="navbar-nav">
+          <li class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'timetable:dashboard' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <i class="fa-solid fa-gauge text-primary"></i>
+              </span>
+              <span class="nav-link-title">Dashboard</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarMain">
-              <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                {% block navbar %}
-                {% for module in panel_modules %}
-                <li class="nav-item">
-                  <a class="nav-link {% if module.url == request.path %}active{% endif %}" href="{{ module.url }}">{{ module.name }}</a>
-                </li>
-                {% endfor %}
-                {% endblock %}
-              </ul>
-              <div class="dropdown ms-3">
-                <a class="nav-link d-flex align-items-center" href="#" data-bs-toggle="dropdown" aria-label="Open user menu">
-                  <span class="avatar avatar-sm" style="background-image: url('{{ school_logo_url|default:"#" }}')"></span>
-                  <div class="d-none d-sm-block ps-2">
-                    <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
-                    <div class="text-muted small">{{ branchuser.admin_status|yesno:"Administrator,Teacher" }}</div>
-                  </div>
-                </a>
-                <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                  <a href="/panel/profile/" class="dropdown-item">Profile</a>
-                  <a href="/panel/settings/" class="dropdown-item">Settings</a>
-                  <div class="dropdown-divider"></div>
-                  <a href="/accounts/logout/?next=/" class="dropdown-item">Sign out</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </nav>
-        <div class="page-body">
-          <div class="container">
-            <main class="page-body">
-              <nav style="--bs-breadcrumb-divider: '&gt;';" style="margin-bottom: 1rem;">
-                <ol class="breadcrumb">
-                  {% block breadcrumb %}
-                  <li class="breadcrumb-item"><a href="{% url 'timetable:dashboard' %}">Timetable</a></li>
-                  <li class="breadcrumb-item active" aria-current="page">{{ section.section }}</li>
-                  {% endblock %}
-                </ol>
-              </nav>
-              <div class="page-content">
-                {% block content %}{% endblock %}
-              </div>
-            </div>
-          </div>
-        </div>
+          </li>
+          <li class="nav-item {% if request.resolver_match.url_name == 'section_list' or request.resolver_match.url_name == 'section_grid' %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'timetable:section_list' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <i class="fa-solid fa-school text-primary"></i>
+              </span>
+              <span class="nav-link-title">Sections</span>
+            </a>
+          </li>
+          <li class="nav-item {% if request.resolver_match.url_name == 'teacher_list' or request.resolver_match.url_name == 'teacher_grid' %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'timetable:teacher_list' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <i class="fa-solid fa-user text-primary"></i>
+              </span>
+              <span class="nav-link-title">Teachers</span>
+            </a>
+          </li>
+          <li class="nav-item {% if request.resolver_match.url_name == 'grade_structure_list' or request.resolver_match.url_name == 'grade_structure_add' or request.resolver_match.url_name == 'grade_structure_periods' or request.resolver_match.url_name == 'grade_structure_period_add' %}active{% endif %}">
+            <a class="nav-link font-weight-bold" href="{% url 'timetable:grade_structure_list' %}">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <i class="fa-solid fa-layout text-primary"></i>
+              </span>
+              <span class="nav-link-title">Class Structures</span>
+            </a>
+          </li>
+        </ul>
       </div>
     </div>
   </div>
-</body>
-</html>
+</div>
+{% endblock navbar %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <div class="row">
+    <div class="col-12">
+      {% block tt_content %}
+      {% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

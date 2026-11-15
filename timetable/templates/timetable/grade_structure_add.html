@@ -1,0 +1,79 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Add Class Structure{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Add Class Structure</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">
+        Create a standard daily schedule template for a grade and shift.
+      </p>
+    </div>
+    <a href="{% url 'timetable:grade_structure_list' %}" class="tt-btn tt-btn-primary"><i class="ti ti-arrow-left me-1"></i> Back</a>
+  </div>
+
+  <div class="tt-card" style="max-width:600px;">
+    <form method="POST" style="padding:20px;">
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Grade</label>
+        <select name="grade" class="tt-input" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          {% for g in grades %}
+          <option value="{{ g.id }}">{{ g.grade_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Section (optional)</label>
+        <select name="section" class="tt-input" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          <option value="">-- Grade-level default (all sections) --</option>
+          {% for s in sections %}
+          <option value="{{ s.id }}">{{ s.grade.grade_name }} {{ s.section }}</option>
+          {% endfor %}
+        </select>
+        <p class="text-muted small" style="margin-top:4px;">Leave empty for grade-level default. Select a section for section-specific schedule override.</p>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Shift</label>
+        <select name="shift" class="tt-input" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          <option value="morning">Morning</option>
+          <option value="day">Day</option>
+          <option value="evening">Evening</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Structure Name</label>
+        <input type="text" name="name" class="tt-input" placeholder="e.g. Regular Day, Morning Tuition, Evening Extra" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Default Period Duration (min)</label>
+          <input type="number" name="period_duration" class="tt-input" value="40" min="1" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+          <p style="font-size:0.75rem;color:var(--tt-text-muted);margin-top:0.25rem;">PG = 60, others = 40 typically.</p>
+        </div>
+        <div class="col-6">
+          <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Break After Periods</label>
+          <select name="break_after_periods" class="tt-input" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+            <option value="4">After 4 periods</option>
+            <option value="5">After 5 periods</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;">
+        <a href="{% url 'timetable:grade_structure_list' %}" class="tt-btn tt-btn-ghost" style="font-size:0.85rem;">Cancel</a>
+        <button type="submit" class="tt-btn tt-btn-primary" style="font-size:0.85rem;">Create Structure</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

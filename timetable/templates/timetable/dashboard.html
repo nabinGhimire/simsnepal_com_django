@@ -1,135 +1,129 @@
 {% extends "timetable/base.html" %}
 
-{% block title %}Timetable - {{ school.name }}{% endblock %}
+{% block title %}Timetable Dashboard{% if school %} · {{ school.name }}{% endif %}{% endblock %}
 
-{% block content %}
-<div class="row">
-  <div class="col-12 col-lg-8">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <i class="ti ti-calendar me-2"></i>Timetable Overview
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="row row-cols-md-3 row-cols-sm-2 row-cols-1 g-3">
-          <div class="col">
-            <div class="card bg-primary text-white">
-              <div class="card-body">
-                <div class="d-flex justify-content-between">
-                  <div>
-                    <div class="text-opacity-75">Total Versions</div>
-                    <div class="h4">{{ version_count }}</div>
-                  </div>
-                  <div class="badge bg-opacity-25 rounded-circle">
-                    <i class="ti ti-calendar"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col">
-            <div class="card bg-success text-white">
-              <div class="card-body">
-                <div class="d-flex justify-content-between">
-                  <div>
-                    <div class="text-opacity-75">Active Entries</div>
-                    <div class="h4">{{ entry_count }}</div>
-                  </div>
-                  <div class="badge bg-opacity-25 rounded-circle">
-                    <i class="ti ti-clock"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col">
-            <div class="card bg-warning text-white">
-              <div class="card-body">
-                <div class="d-flex justify-content-between">
-                  <div>
-                    <div class="text-opacity-75">Exceptions</div>
-                    <div class="h4">{{ exception_count }}</div>
-                  </div>
-                  <div class="badge bg-opacity-25 rounded-circle">
-                    <i class="ti ti-alert-triangle"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Timetable Dashboard</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">Manage school timetables, versions, and exceptions</p>
     </div>
-
-    <div class="card mt-4">
-      <div class="card-header">
-        <div class="card-title">
-          <i class="ti ti-calendar-range me-2"></i>Quick Access
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="row row-cols-md-3 row-cols-sm-2 row-cols-1 g-3">
-          <div class="col">
-            <a href="{% url 'timetable:section_grid' section_id=1 %}" class="card card-body text-center border-primary text-primary">
-              <i class="ti ti-school fs-4 mb-2 d-block"></i>
-              <div class="fw-bold">Section A</div>
-              <small class="text-muted">View timetable</small>
-            </div>
-          </div>
-          <div class="col">
-            <a href="#" class="card card-body text-center border-info text-info">
-              <i class="ti ti-user fs-4 mb-2 d-block"></i>
-              <div class="fw-bold">Teacher View</div>
-              <small class="text-muted">Teacher timetable</small>
-            </div>
-          </div>
-          <div class="col">
-            <a href="#" class="card card-body text-center border-success text-success">
-              <i class="ti ti-settings fs-4 mb-2 d-block"></div>
-              <div class="fw-bold">Manage Versions</div>
-              <small class="text-muted">Publish versions</small>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div style="display:flex;gap:8px;">
+      {% if sections %}
+      <a href="{% url 'timetable:section_grid' section_id=sections.first.id %}" class="tt-btn tt-btn-primary"><i class="fa-solid fa-school"></i> Open Section Timetable</a>
+      {% endif %}
     </div>
   </div>
 
-  <div class="col-12 col-lg-4">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <i class="ti ti-info-circle me-2"></i>About Timetable
+  <!-- Summary cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;">
+    <a href="{% url 'timetable:dashboard' %}" class="tt-card" style="padding:14px 16px;text-decoration:none;color:inherit;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--tt-text-muted);font-weight:700;">Total Versions</div>
+      <div style="font-size:1.8rem;font-weight:700;color:var(--tt-text-dark);margin-top:2px;">{{ version_count }}</div>
+      <div style="font-size:0.7rem;color:var(--tt-text-muted);margin-top:2px;">Published timetable versions</div>
+    </a>
+    <a href="{% url 'timetable:dashboard' %}" class="tt-card" style="padding:14px 16px;text-decoration:none;color:inherit;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--tt-text-muted);font-weight:700;">Active Entries</div>
+      <div style="font-size:1.8rem;font-weight:700;color:var(--tt-text-dark);margin-top:2px;">{{ entry_count }}</div>
+      <div style="font-size:0.7rem;color:var(--tt-text-muted);margin-top:2px;">Timetable entries</div>
+    </a>
+    <a href="{% url 'timetable:dashboard' %}" class="tt-card" style="padding:14px 16px;text-decoration:none;color:inherit;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--tt-text-muted);font-weight:700;">Exceptions</div>
+      <div style="font-size:1.8rem;font-weight:700;color:#f76707;margin-top:2px;">{{ exception_count }}</div>
+      <div style="font-size:0.7rem;color:var(--tt-text-muted);margin-top:2px;">Active date-range overrides</div>
+    </a>
+    <a href="{% url 'timetable:dashboard' %}" class="tt-card" style="padding:14px 16px;text-decoration:none;color:inherit;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--tt-text-muted);font-weight:700;">Sections</div>
+      <div style="font-size:1.8rem;font-weight:700;color:var(--tt-text-dark);margin-top:2px;">{{ sections|length }}</div>
+      <div style="font-size:0.7rem;color:var(--tt-text-muted);margin-top:2px;">With timetable access</div>
+    </a>
+  </div>
+
+  <!-- Quick Access -->
+  <div class="tt-card" style="margin-bottom:1.5rem;overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--tt-border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--tt-text-dark);">Quick Access</span>
+      <a href="{% url 'timetable:dashboard' %}" style="font-size:0.75rem;color:var(--tt-primary);text-decoration:none;">View all →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 16px;">
+      {% if sections %}
+      {% for section in sections %}
+      <a href="{% url 'timetable:section_grid' section_id=section.id %}" class="tt-card" style="padding:12px 14px;text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(99,102,241,0.1);color:var(--tt-primary);display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;">
+          <i class="fa-solid fa-school"></i>
         </div>
-      </div>
-      <div class="card-body">
-        <p class="text-small">
-          The Timetable module allows you to manage school timetables, create
-          published versions, and apply exceptions such as cancellations,
-          replacements, and whole-day holidays.
-        </p>
-        <hr>
-        <h6 class="fw-bold mb-3">Quick Actions</h6>
-        <ul class="list-unstyled">
-          <li class="mb-2">
-            <a href="#" class="text-decoration-none text-primary fw-medium">
-              <i class="ti ti-play me-2 text-primary"></i>Publish New Version
-            </a>
-          </li>
-          <li class="mb-2">
-            <a href="#" class="text-decoration-none text-primary fw-medium">
-              <i class="ti ti-calendar-check me-2 text-primary"></i>Apply Exception
-            </a>
-          </li>
-          <li class="mb-2">
-            <a href="#" class="text-decoration-none text-primary fw-medium">
-              <i class="ti ti-clock me-2 text-primary"></i>View Weekly Grid
-            </a>
-          </li>
-        </ul>
-      </div>
+        <div>
+          <div style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">{{ section.grade.grade_name }} {{ section.section }}</div>
+          <div style="font-size:0.72rem;color:var(--tt-text-muted);">School {{ section.school_id }}</div>
+        </div>
+      </a>
+      {% endfor %}
+      {% else %}
+      <div style="text-align:center;color:var(--tt-text-muted);padding:24px;">No sections found for your school.</div>
+      {% endif %}
     </div>
   </div>
+
+  <!-- Teacher Timetables -->
+  <div class="tt-card" style="overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--tt-border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--tt-text-dark);">Teacher Timetables</span>
+      <a href="{% url 'timetable:dashboard' %}" style="font-size:0.75rem;color:var(--tt-primary);text-decoration:none;">View all →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 16px;">
+      {% if teachers %}
+      {% for teacher in teachers %}
+      <a href="{% url 'timetable:teacher_grid' teacher_id=teacher.id %}" class="tt-card" style="padding:12px 14px;text-decoration:none;color:inherit;display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(99,102,241,0.1);color:var(--tt-primary);display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div>
+          <div style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">{{ teacher.get_full_name|default:teacher.username }}</div>
+          <div style="font-size:0.72rem;color:var(--tt-text-muted);">Teacher timetable</div>
+        </div>
+      </a>
+      {% endfor %}
+      {% else %}
+      <div style="text-align:center;color:var(--tt-text-muted);padding:24px;">No teachers with timetable entries found.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Today's Timetable -->
+  <div class="tt-card" style="overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--tt-border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--tt-text-dark);">Today's Timetable ({{ today_bs_str }})</span>
+      <a href="{% url 'timetable:section_grid' section_id=sections.first.id %}" style="font-size:0.75rem;color:var(--tt-primary);text-decoration:none;">View all →</a>
+    </div>
+    {% if today_timetables %}
+    <div style="padding:14px 16px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;">
+        {% for tt in today_timetables %}
+        <div class="tt-card" style="padding:12px 14px;">
+          <div style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);margin-bottom:8px;">{{ tt.section.grade.grade_name }} {{ tt.section.section }}</div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            {% if tt.cells %}
+            {% for cell in tt.cells %}
+            <div style="display:flex;align-items:center;gap:8px;background:var(--tt-border);border-radius:6px;padding:6px 8px;font-size:0.8rem;">
+              <span style="font-weight:600;color:var(--tt-text-dark);font-size:0.75rem;">{{ cell.subject_name|default:'—' }}</span>
+              <span style="font-size:0.7rem;color:var(--tt-text-muted);background:rgba(0,0,0,0.05);padding:2px 6px;border-radius:4px;">{{ cell.teacher_name|default:'—' }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div style="font-size:0.75rem;color:var(--tt-text-muted);">No classes today</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div style="text-align:center;color:var(--tt-text-muted);padding:24px;">No sections found for today's timetable.</div>
+    {% endif %}
+  </div>
+
 </div>
 {% endblock %}

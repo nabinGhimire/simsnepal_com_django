@@ -1,0 +1,102 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}School Timetable Settings{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">School Timetable Settings</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">
+        Configure shifts, class times, and weekend rules for {{ school.name }}
+      </p>
+    </div>
+    <a href="{% url 'timetable:school_settings_edit' %}" class="tt-btn tt-btn-primary"><i class="ti ti-pencil me-1"></i> Edit Settings</a>
+    <a href="{% url 'timetable:management' %}" class="tt-btn tt-btn-ghost"><i class="ti ti-arrow-left me-1"></i> Back</a>
+  </div>
+
+  <div class="tt-card" style="max-width:800px;">
+    <div style="padding:20px;">
+
+      <!-- Shift Times -->
+      <div style="margin-bottom:24px;">
+        <h3 style="font-size:1rem;font-weight:600;color:var(--tt-text-dark);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.04em;">Shift Times</h3>
+        <table class="tt-table">
+          <thead>
+            <tr>
+              <th style="width:120px;">Shift</th>
+              <th style="width:140px;">Start Time</th>
+              <th style="width:140px;">End Time</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Morning</strong></td>
+              <td>{{ settings.shift_morning_start|default:"06:00" }}</td>
+              <td>{{ settings.shift_morning_end|default:"09:00" }}</td>
+              <td class="text-muted small">Regular morning classes</td>
+            </tr>
+            <tr>
+              <td><strong>Day</strong></td>
+              <td>{{ settings.shift_day_start|default:"10:00" }}</td>
+              <td>{{ settings.shift_day_end|default:"15:20" }}</td>
+              <td class="text-muted small">Regular day classes</td>
+            </tr>
+            <tr>
+              <td><strong>Evening</strong></td>
+              <td>{{ settings.shift_evening_start|default:"17:00" }}</td>
+              <td>{{ settings.shift_evening_end|default:"19:00" }}</td>
+              <td class="text-muted small">Evening extra/tuition classes</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Class Duration & Breaks -->
+      <div style="margin-bottom:24px;">
+        <h3 style="font-size:1rem;font-weight:600;color:var(--tt-text-dark);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.04em;">Period &amp; Break Rules</h3>
+        <div class="row g-3">
+          <div class="col-6">
+            <div style="background:var(--tt-card-bg);border:1px solid var(--tt-border);border-radius:8px;padding:16px;">
+              <div style="font-size:0.75rem;font-weight:600;color:var(--tt-text-muted);text-transform:uppercase;">Default Period Duration</div>
+              <div style="font-size:1.25rem;font-weight:700;color:var(--tt-text-dark);">{{ settings.default_period_duration }} min</div>
+              <div class="text-muted small" style="margin-top:4px;">PG = 60 min, others = 40 min typically</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div style="background:var(--tt-card-bg);border:1px solid var(--tt-border);border-radius:8px;padding:16px;">
+              <div style="font-size:0.75rem;font-weight:600;color:var(--tt-text-muted);text-transform:uppercase;">Break After Periods</div>
+              <div style="font-size:1.25rem;font-weight:700;color:var(--tt-text-dark);">{{ settings.break_after_periods }}</div>
+              <div class="text-muted small" style="margin-top:4px;">Break inserted after N periods</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div style="background:var(--tt-card-bg);border:1px solid var(--tt-border);border-radius:8px;padding:16px;">
+              <div style="font-size:0.75rem;font-weight:600;color:var(--tt-text-muted);text-transform:uppercase;">Break Duration</div>
+              <div style="font-size:1.25rem;font-weight:700;color:var(--tt-text-dark);">{{ settings.break_duration_minutes }} min</div>
+              <div class="text-muted small" style="margin-top:4px;">Duration of each break</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekend Configuration -->
+      <div style="margin-bottom:24px;">
+        <h3 style="font-size:1rem;font-weight:600;color:var(--tt-text-dark);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.04em;">Weekend Days</h3>
+        <div style="background:var(--tt-card-bg);border:1px solid var(--tt-border);border-radius:8px;padding:16px;">
+          <div style="font-size:0.75rem;font-weight:600;color:var(--tt-text-muted);margin-bottom:8px;">Weekend Days Bitmask</div>
+          <div style="font-size:1.25rem;font-weight:700;color:var(--tt-text-dark);">{{ settings.weekend_days }}</div>
+          <div class="text-muted small" style="margin-top:4px;">
+            Mon=1, Tue=2, Wed=4, Thu=8, Fri=16, Sat=32, Sun=64.
+            Current: {% if settings.weekend_days == 64 %}Sunday only{% elif settings.weekend_days == 32 %}Saturday only{% elif settings.weekend_days == 96 %}Saturday & Sunday{% else %}Custom{% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

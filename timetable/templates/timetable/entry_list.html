@@ -1,0 +1,61 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Entries — {{ section.grade.grade_name }} {{ section.section }}{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Timetable Entries</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">{{ section.grade.grade_name }} {{ section.section }} — School {{ section.school_id }}</p>
+    </div>
+    <a href="{% url 'timetable:entry_add' section_id=section.id %}" class="tt-btn tt-btn-primary"><i class="ti ti-plus me-1"></i> Add Entry</a>
+    <a href="{% url 'timetable:section_grid' section_id=section.id %}" class="tt-btn tt-btn-secondary"><i class="ti ti-calendar me-1"></i> View Grid</a>
+    <a href="{% url 'timetable:management' %}" class="tt-btn tt-btn-ghost"><i class="ti ti-arrow-left me-1"></i> Back</a>
+  </div>
+
+  {% if entries %}
+  <div class="tt-card" style="overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--tt-border);">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--tt-text-dark);">Entries ({{ entries|length }})</span>
+    </div>
+    <div style="padding:14px 16px;">
+      <table class="tt-table">
+        <thead>
+          <tr>
+            <th style="width:100px;">Version</th>
+            <th style="width:120px;">Period</th>
+            <th>Subject</th>
+            <th style="width:140px;">Teacher</th>
+            <th style="width:140px;">Recurrence</th>
+            <th style="width:100px;">Days</th>
+            <th style="width:100px;">Span</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+          <tr>
+            <td style="font-size:0.75rem;color:var(--tt-text-muted);">v{{ entry.version.version_no }}</td>
+            <td style="font-size:0.75rem;color:var(--tt-text-dark);">{{ entry.period.label }}</td>
+            <td style="color:var(--tt-text-dark);">{{ entry.subject.subject }}</td>
+            <td style="font-size:0.75rem;color:var(--tt-text-muted);">{{ entry.teacher.get_full_name|default:entry.teacher.username }}</td>
+            <td style="font-size:0.75rem;color:var(--tt-text-muted);">{{ entry.recurrence }}</td>
+            <td style="font-size:0.75rem;color:var(--tt-text-muted);">{{ entry.days_of_week|default:"—" }}</td>
+            <td style="font-size:0.75rem;color:var(--tt-text-muted);">{{ entry.period_span }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="tt-card" style="text-align:center;padding:48px 24px;">
+    <i class="ti ti-school fs-1 text-muted mb-3 d-block"></i>
+    <h5 style="color:var(--tt-text-dark);font-weight:600;margin-bottom:8px;">No entries yet</h5>
+    <p style="color:var(--tt-text-muted);margin-bottom:0;">Add timetable entries to assign subjects and teachers to periods.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Class Structures{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Class Structures</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">
+        Standard daily schedule templates per grade and shift.
+      </p>
+    </div>
+    <a href="{% url 'timetable:grade_structure_add' %}" class="tt-btn tt-btn-primary"><i class="ti ti-plus me-1"></i> Add Structure</a>
+    <a href="{% url 'timetable:management' %}" class="tt-btn tt-btn-ghost"><i class="ti ti-arrow-left me-1"></i> Back</a>
+  </div>
+
+  {% if grade_structures %}
+  {% for gid, data in grade_structures.items %}
+  <div class="tt-card" style="margin-bottom:1.5rem;overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--tt-border);">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--tt-text-dark);">{{ data.grade.grade_name }} — Structures ({{ data.structures|length }})</span>
+    </div>
+    <div style="padding:14px 16px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;">
+        {% for s in data.structures %}
+        <a href="{% url 'timetable:grade_structure_periods' structure_id=s.id %}" class="tt-card" style="padding:14px 16px;text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:space-between;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow='var(--tt-shadow-hover)'" onmouseout="this.style.boxShadow='var(--tt-shadow)'">
+          <div>
+            <div style="font-size:0.95rem;font-weight:600;color:var(--tt-text-dark);">{{ s.name|default:s.shift|title }}</div>
+            <div style="font-size:0.75rem;color:var(--tt-text-muted);">{{ s.shift|title }} &bull; {{ s.period_duration }}min periods &bull; Break after {{ s.break_after_periods }}</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <span style="font-size:0.75rem;color:var(--tt-primary);font-weight:600;">Periods <i class="ti ti-chevron-right ms-1"></i></span>
+          </div>
+        </a>
+        {% empty %}
+        <div class="tt-card" style="text-align:center;padding:24px;color:var(--tt-text-muted);">
+          No structures for this grade yet.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="tt-card" style="text-align:center;padding:48px 24px;">
+    <i class="ti ti-layout fs-1 text-muted mb-3 d-block"></i>
+    <h5 style="color:var(--tt-text-dark);font-weight:600;margin-bottom:8px;">No class structures</h5>
+    <p style="color:var(--tt-text-muted);margin-bottom:0;">Create standard daily schedule templates for each grade and shift.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

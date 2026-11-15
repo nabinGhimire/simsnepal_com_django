@@ -1,0 +1,47 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Schedule Profiles{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Schedule Profiles</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">Define period grids (shifts) for your school.</p>
+    </div>
+    <a href="{% url 'timetable:profile_add' %}" class="tt-btn tt-btn-primary"><i class="ti ti-plus me-1"></i> Add Profile</a>
+    <a href="{% url 'timetable:management' %}" class="tt-btn tt-btn-ghost"><i class="ti ti-arrow-left me-1"></i> Back</a>
+  </div>
+
+  {% if profiles %}
+  <div class="tt-card" style="overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--tt-border);">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--tt-text-dark);">Profiles ({{ profiles|length }})</span>
+    </div>
+    <div style="padding:14px 16px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;">
+        {% for profile in profiles %}
+        <div class="tt-card" style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:0.95rem;font-weight:600;color:var(--tt-text-dark);">{{ profile.name }}</div>
+            <div style="font-size:0.75rem;color:var(--tt-text-muted);">Periods: {{ profile.periods.count }} &bull; School {{ profile.school_id }}</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <a href="{% url 'timetable:profile_periods' profile_id=profile.id %}" class="tt-btn tt-btn-secondary" style="font-size:0.75rem;padding:0.35rem 0.8rem;">Periods</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="tt-card" style="text-align:center;padding:48px 24px;">
+    <i class="ti ti-clock fs-1 text-muted mb-3 d-block"></i>
+    <h5 style="color:var(--tt-text-dark);font-weight:600;margin-bottom:8px;">No schedule profiles</h5>
+    <p style="color:var(--tt-text-muted);margin-bottom:0;">Create a profile to define your school's periods and shifts.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

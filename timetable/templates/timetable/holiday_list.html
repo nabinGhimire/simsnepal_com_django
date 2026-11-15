@@ -1,0 +1,56 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}School Holidays{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">School Holidays</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">Whole-day closures for your school.</p>
+    </div>
+    <a href="{% url 'timetable:holiday_add' %}" class="tt-btn tt-btn-primary"><i class="ti ti-plus me-1"></i> Add Holiday</a>
+    <a href="{% url 'timetable:management' %}" class="tt-btn tt-btn-ghost"><i class="ti ti-arrow-left me-1"></i> Back</a>
+  </div>
+
+  {% if holidays %}
+  <div class="tt-card" style="overflow:hidden;">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--tt-border);">
+      <span style="font-size:0.8rem;font-weight:700;color:var(--tt-text-dark);">Holidays ({{ holidays|length }})</span>
+    </div>
+    <div style="padding:14px 16px;">
+      <table class="tt-table">
+        <thead>
+          <tr>
+            <th style="width:140px;">Date From</th>
+            <th style="width:120px;">Date To</th>
+            <th>Reason</th>
+            <th style="width:120px;">Scope</th>
+            <th style="width:120px;">Created By</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in holidays %}
+          <tr>
+            <td style="font-size:0.75rem;color:var(--tt-text-muted);">{{ h.date_from }}</td>
+            <td style="font-size:0.75rem;color:var(--tt-text-muted);">{{ h.date_to }}</td>
+            <td style="color:var(--tt-text-dark);">{{ h.reason }}</td>
+            <td style="font-size:0.75rem;color:var(--tt-text-muted);">{{ h.scope|title }}</td>
+            <td style="font-size:0.75rem;color:var(--tt-text-muted);">{{ h.created_by.username|default:h.created_by_id }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="tt-card" style="text-align:center;padding:48px 24px;">
+    <i class="ti ti-calendar-check fs-1 text-muted mb-3 d-block"></i>
+    <h5 style="color:var(--tt-text-dark);font-weight:600;margin-bottom:8px;">No holidays defined</h5>
+    <p style="color:var(--tt-text-muted);margin-bottom:0;">Add whole-day holidays to close the school on specific dates.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "timetable/base.html" %}
+
+{% block title %}Add Schedule Profile{% endblock %}
+
+{% block tt_content %}
+<div style="padding:1.25rem;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px;">
+    <div>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--tt-text-dark);margin:0;">Add Schedule Profile</h2>
+      <p style="font-size:0.85rem;color:var(--tt-text-muted);margin:2px 0 0 0;">Create a new period grid (shift) for your school.</p>
+    </div>
+    <a href="{% url 'timetable:profile_list' %}" class="tt-btn tt-btn-primary"><i class="ti ti-arrow-left me-1"></i> Back</a>
+  </div>
+
+  <div class="tt-card" style="max-width:500px;">
+    <form method="POST" style="padding:20px;">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label" style="font-size:0.85rem;font-weight:600;color:var(--tt-text-dark);">Profile Name</label>
+        <input type="text" name="name" class="tt-input" placeholder="e.g. Morning Shift" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--tt-border);border-radius:6px;background:var(--tt-card-bg);color:var(--tt-text-dark);font-size:0.85rem;">
+      </div>
+      <p style="font-size:0.75rem;color:var(--tt-text-muted);margin-top:0.5rem;">After creating the profile, you can add periods (time slots) to it.</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;">
+        <a href="{% url 'timetable:profile_list' %}" class="tt-btn tt-btn-ghost" style="font-size:0.85rem;">Cancel</a>
+        <button type="submit" class="tt-btn tt-btn-primary" style="font-size:0.85rem;">Create Profile</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}
