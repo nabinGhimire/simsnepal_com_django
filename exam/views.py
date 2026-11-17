@@ -427,7 +427,10 @@ def subject_wise_marks_entry(request):
 @login_required
 def resultmanagement(request):
     from sms.models import SchoolGrade, GradeLevel
-    from exam.models import SchoolTerm, SchoolResultType, LiveResult, ResultManagement
+    from exam.models import (
+        SchoolTerm, SchoolResultType, LiveResult, ResultManagement,
+        GradeResultConfig,
+    )
 
     branchuser, error = get_branch_info(request.user)
     if error:
@@ -459,6 +462,27 @@ def resultmanagement(request):
                 defaults={'term': examtype, 'grade_list': checks, 'status': livestatus, 'calculation_type': calculation_type}
             )
             live_result_status = livestatus
+        elif submittype == 'gradeconfig':
+            grade_id = request.POST.get('grade_id')
+            assessment_source = request.POST.get('assessment_source', 'exam')
+            grading_type = int(request.POST.get('grading_type', 0))
+            ledger_type = int(request.POST.get('ledger_type', 1))
+            calculation_type = request.POST.get('calculation_type', 'legacy')
+            is_published = request.POST.get('is_published') == 'on'
+            if grade_id:
+                GradeResultConfig.objects.update_or_create(
+                    school=school,
+                    year=current_session,
+                    grade_id=grade_id,
+                    defaults={
+                        'assessment_source': assessment_source,
+                        'grading_type': grading_type,
+                        'ledger_type': ledger_type,
+                        'calculation_type': calculation_type,
+                        'is_published': is_published,
+                    },
+                )
+                messages.success(request, 'Grade result configuration updated.')
         return redirect('exam:resultmanagement')
 
     schoolresulttype = SchoolResultType.objects.filter(school=school, session=current_session).first()
@@ -474,6 +498,21 @@ def resultmanagement(request):
         except Exception:
             gradelist = []
 
+    # Per-grade result configurations for this session
+    grade_configs = GradeResultConfig.objects.filter(
+        school=school, year=current_session
+    ).select_related('grade')
+    grade_config_map = {gc.grade_id: gc for gc in grade_configs}
+
+    # Build a list of (grade, config_or_none) for the template
+    grade_config_rows = []
+    for grade in grades:
+        gc = grade_config_map.get(grade.id)
+        grade_config_rows.append({
+            'grade': grade,
+            'config': gc,
+        })
+
     ctx = _nav_context(request)
     ctx.update({
         'grades': grades, 'gradelist': gradelist, 'branchuser': branchuser,
@@ -483,6 +522,8 @@ def resultmanagement(request):
         'rm': rm_qs, 'school': school, 'live_calc_type': live_calc_type,
         'current_session': current_session,
         'is_exam_result': 'manage',
+        'grade_configs': grade_configs,
+        'grade_config_rows': grade_config_rows,
     })
     return render(request, 'exam/resultmanagement.html', ctx)
 

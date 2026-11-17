@@ -366,6 +366,14 @@ def parent_result(request):
             
         ss = ss_qs.first()
         
+        # Read per-grade result config (falls back to school-wide defaults if none)
+        from sms.models import GradeResultConfig
+        grade_config = GradeResultConfig.objects.filter(
+            school=student.school,
+            year=current_session,
+            grade=ss.grade,
+        ).first()
+
         # Get distinct terms for this student (from marks entered)
         term_ids = MarkObtained.objects.filter(
             student=student,
@@ -378,9 +386,19 @@ def parent_result(request):
         
         terms_list = []
         for term in terms:
+            # A term is visible to parents if: grade config says published (or no config),
+            # and the term status is published (status_id == 3)
+            term_published = term.status_id == 3
+            if grade_config and not grade_config.is_published:
+                term_published = False
+            
             terms_list.append({
                 'term': term,
-                'is_published': term.status_id == 3,
+                'is_published': term_published,
+                'assessment_source': grade_config.assessment_source if grade_config else 'exam',
+                'grading_type': grade_config.grading_type if grade_config else 0,
+                'ledger_type': grade_config.ledger_type if grade_config else 1,
+                'calculation_type': grade_config.calculation_type if grade_config else 'legacy',
                 'detail_url': f"/webview/parent/result/detail/?token={token}&student={student.reg_no}&term={term.id}"
             })
         
@@ -389,6 +407,11 @@ def parent_result(request):
             'grade': ss.grade,
             'section': ss.section,
             'roll_no': ss.roll_no,
+            'assessment_source': grade_config.assessment_source if grade_config else 'exam',
+            'grading_type': grade_config.grading_type if grade_config else 0,
+            'ledger_type': grade_config.ledger_type if grade_config else 1,
+            'calculation_type': grade_config.calculation_type if grade_config else 'legacy',
+            'is_published': grade_config.is_published if grade_config else False,
             'terms': terms_list,
         })
         
@@ -480,6 +503,19 @@ def parent_result_detail(request):
             "error_title": "Enrollment Not Found",
             "error_message": "Student is not enrolled in the current session."
         })
+
+    # Read per-grade result config (falls back to school-wide defaults if none)
+    from sms.models import GradeResultConfig
+    grade_config = GradeResultConfig.objects.filter(
+        school=student.school,
+        year=current_session,
+        grade=ss.grade,
+    ).first()
+
+    grading_type = grade_config.grading_type if grade_config else 0
+    ledger_type = grade_config.ledger_type if grade_config else 1
+    calculation_type = grade_config.calculation_type if grade_config else 'legacy'
+    assessment_source = grade_config.assessment_source if grade_config else 'exam'
 
     # Get marks obtained
     marks = MarkObtained.objects.filter(
@@ -750,6 +786,10 @@ def parent_result_detail(request):
         'th_short': terminology.theory_short if terminology else 'TH',
         'pr_short': terminology.practical_short if terminology else 'PR',
         'current_session': current_session,
+        'grading_type': grading_type,
+        'ledger_type': ledger_type,
+        'calculation_type': calculation_type,
+        'assessment_source': assessment_source,
     }
 
     # Always use Non-Graded template for parents (simplified view with attendance)
