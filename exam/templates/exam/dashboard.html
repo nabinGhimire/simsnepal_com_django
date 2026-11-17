@@ -53,6 +53,60 @@
   {% endfor %}
 </div>
 
+<!-- Subject Completion Status -->
+<div class="mt-4">
+  <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
+    <div class="card-header bg-white exam-card-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h6 class="m-0 fw-bold" style="font-size:0.85rem;">
+          <i class="fa-solid fa-table-list" style="color:var(--exam-primary);margin-right:4px;"></i> Subject Completion by Grade
+        </h6>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-vcenter exam-table mb-0">
+          <thead>
+            <tr>
+              <th style="width:200px;">Grade</th>
+              <th style="width:100px;">Total Subjects</th>
+              <th style="width:140px;">Marks Entered</th>
+              <th style="width:140px;">Missing Marks</th>
+              <th style="width:120px;">Completion</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for gs in grade_stats %}
+            <tr>
+              <td>
+                <span style="font-weight:600;color:var(--exam-text-dark);">{{ g.grade_name|upper }}</span>
+              </td>
+              <td class="text-center">{{ gs.total_subjects }}</td>
+              <td class="text-center">
+                <span class="badge" style="background:rgba(0,136,119,0.1);color:var(--exam-primary);font-size:0.78rem;">
+                  {{ gs.subjects_with_marks }}
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="badge" style="{% if gs.missing_subjects > 0 %}background:#fee2e2;color:#dc2626;{% else %}background:#d1fae5;color:#059669;{% endif %}font-size:0.78rem;">
+                  {{ gs.missing_subjects }}
+                </span>
+              </td>
+              <td class="text-center">
+                <div style="width:100%;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;">
+                  <div style="width:{{ gs.completion_pct }}%;height:100%;background:{% if gs.completion_pct == 100 %}var(--exam-success){% elif gs.completion_pct > 0 %}var(--exam-warning){% else %}var(--exam-text-muted);{% endif %};"></div>
+                </div>
+                <span class="text-muted small" style="font-size:0.7rem;">{{ gs.completion_pct }}%</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Quick action cards -->
 <div class="row g-2">
   <div class="col-md-4">

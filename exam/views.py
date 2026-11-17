@@ -42,7 +42,7 @@ def _nav_context(request):
 
 @login_required
 def dashboard(request):
-    from sms.models import SchoolGrade, GradeLevel, Subject
+    from sms.models import SchoolGrade, GradeLevel, Subject, MarkObtained
     from exam.models import SchoolTerm, GradeFullMarks, LiveResult
 
     branchuser, error = get_branch_info(request.user)
@@ -64,12 +64,38 @@ def dashboard(request):
         fm_count = GradeFullMarks.objects.filter(school=school, session=current_session, term=term).values('grade').distinct().count()
         term_stats.append({'term': term, 'grades_configured': fm_count, 'total_grades': grade_count})
 
+    # Per-grade subject completion stats
+    grade_stats = []
+    for grade in grades:
+        total_subjects = Subject.objects.filter(
+            school=school, session=current_session, grade=grade, status=True
+        ).count()
+
+        # Subjects that have at least one MarkObtained entry for this grade/session
+        subjects_with_marks = Subject.objects.filter(
+            school=school, session=current_session, grade=grade, status=True,
+            markobtained__session=current_session,
+            markobtained__school=school,
+            markobtained__grade=grade
+        ).distinct().count()
+
+        missing_subjects = total_subjects - subjects_with_marks
+
+        grade_stats.append({
+            'grade': grade,
+            'total_subjects': total_subjects,
+            'subjects_with_marks': subjects_with_marks,
+            'missing_subjects': missing_subjects,
+            'completion_pct': round((subjects_with_marks / total_subjects * 100), 1) if total_subjects > 0 else 0,
+        })
+
     live_result = LiveResult.objects.filter(school=school).first()
 
     context = {
         'current_session': current_session,
         'exam_terms': exam_terms,
         'term_stats': term_stats,
+        'grade_stats': grade_stats,
         'school': school,
         'branchuser': branchuser,
         'nav_grades': grades,
