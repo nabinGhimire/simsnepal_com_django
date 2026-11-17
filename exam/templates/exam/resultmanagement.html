@@ -134,6 +134,56 @@
           Leave a grade unset to use the school-wide defaults (old way).
           <br><strong>Note:</strong> CAS grading rules are fixed by the government and cannot be changed here.
         </p>
+
+        <!-- Bulk Update Form -->
+        <div class="card bg-light border border-secondary mb-3">
+          <div class="card-body p-3">
+            <form action="" method="POST" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="submittype" value="bulkgradeconfig">
+              <h6 class="mb-3">Bulk Update All Grades (excludes CAS)</h6>
+              <div class="row g-2 align-items-end">
+                <div class="col-auto">
+                  <label class="form-label small">Grading Type</label>
+                  <select name="bulk_grading_type" class="exam-select exam-select-sm">
+                    <option value="0">LEGACY</option>
+                    <option value="1">NON GRADE</option>
+                    <option value="2">NEW GRADING</option>
+                  </select>
+                </div>
+                <div class="col-auto">
+                  <label class="form-label small">Ledger Type</label>
+                  <select name="bulk_ledger_type" class="exam-select exam-select-sm">
+                    <option value="1">MARKS</option>
+                    <option value="2">GRADE</option>
+                  </select>
+                </div>
+                <div class="col-auto">
+                  <label class="form-label small">Calculation Type</label>
+                  <select name="bulk_calculation_type" class="exam-select exam-select-sm">
+                    <option value="legacy">LEGACY</option>
+                    <option value="weighted">WEIGHTED</option>
+                  </select>
+                </div>
+                <div class="col-auto">
+                  <label class="form-label small">Apply to grades</label>
+                  <div style="max-height: 100px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 4px;">
+                    {% for g in grades %}
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="bulk_grade_ids[]" value="{{ g.id }}" id="bulk_grade_{{ g.id }}" checked>
+                      <label class="form-check-label small" for="bulk_grade_{{ g.id }}">{{ g.grade_name|upper }}</label>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <button type="submit" class="exam-btn exam-btn-warning px-3">Apply to Selected</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
         <div class="table-responsive">
           <table class="table table-vcenter exam-table mb-0">
             <thead>
@@ -143,7 +193,6 @@
                 <th style="width:140px;">Grading Type</th>
                 <th style="width:130px;">Ledger Type</th>
                 <th style="width:140px;">Calculation Type</th>
-                <th style="width:100px;">Publish</th>
                 <th style="width:120px;">Status</th>
               </tr>
             </thead>
@@ -208,17 +257,6 @@
                       </select>
                     </form>
                   {% endif %}
-                </td>
-                <td>
-                  <form action="" method="POST" style="display:inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="submittype" value="gradeconfig">
-                    <input type="hidden" name="grade_id" value="{{ g.id }}">
-                    <input type="hidden" name="is_published" value="1">
-                    <label class="form-check" style="margin:0;cursor:pointer;">
-                      <input class="form-check-input" type="checkbox" name="is_published_toggle" value="1" {% if cfg and cfg.is_published %}checked{% endif %} onclick="this.form.submit()">
-                    </label>
-                  </form>
                 </td>
                 <td>
                   {% if cfg %}

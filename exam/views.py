@@ -492,7 +492,6 @@ def resultmanagement(request):
             grading_type = int(request.POST.get('grading_type', 0))
             ledger_type = int(request.POST.get('ledger_type', 1))
             calculation_type = request.POST.get('calculation_type', 'legacy')
-            is_published = request.POST.get('is_published') == 'on'
             if grade_id:
                 GradeResultConfig.objects.update_or_create(
                     school=school,
@@ -503,11 +502,43 @@ def resultmanagement(request):
                         'grading_type': grading_type,
                         'ledger_type': ledger_type,
                         'calculation_type': calculation_type,
-                        'is_published': is_published,
                     },
                 )
                 messages.success(request, 'Grade result configuration updated.')
-        return redirect('exam:publish_result')
+        elif submittype == 'bulkgradeconfig':
+            bulk_grading_type = int(request.POST.get('bulk_grading_type', 0))
+            bulk_ledger_type = int(request.POST.get('bulk_ledger_type', 1))
+            bulk_calculation_type = request.POST.get('bulk_calculation_type', 'legacy')
+            grades_to_update = request.POST.getlist('bulk_grade_ids[]')
+            updated_count = 0
+            for grade_id in grades_to_update:
+                try:
+                    grade_id_int = int(grade_id)
+                except (ValueError, TypeError):
+                    continue
+                gc = GradeResultConfig.objects.filter(
+                    school=school, year=current_session, grade_id=grade_id_int
+                ).first()
+                if gc and gc.assessment_source == 'cas':
+                    continue  # Skip CAS grades - fixed by government
+                if gc:
+                    gc.grading_type = bulk_grading_type
+                    gc.ledger_type = bulk_ledger_type
+                    gc.calculation_type = bulk_calculation_type
+                    gc.save()
+                else:
+                    GradeResultConfig.objects.create(
+                        school=school,
+                        year=current_session,
+                        grade_id=grade_id_int,
+                        assessment_source='exam',
+                        grading_type=bulk_grading_type,
+                        ledger_type=bulk_ledger_type,
+                        calculation_type=bulk_calculation_type,
+                    )
+                updated_count += 1
+            messages.success(request, f'Bulk update applied to {updated_count} grade(s).')
+        return redirect('exam:grade_result_config')
 
     schoolresulttype = SchoolResultType.objects.filter(school=school, session=current_session).first()
     sr = schoolresulttype
