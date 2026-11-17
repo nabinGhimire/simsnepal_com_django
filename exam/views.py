@@ -20,7 +20,6 @@ from panel.views import (
     flip_status_result,
     new_private_result_2080,
     new_public_result_2079,
-    inputfullmarksredirector,
 )
 
 
@@ -60,13 +59,28 @@ def dashboard(request):
     # Per-grade subject completion stats per term (grouped by term)
     term_grade_stats = []
 
-    # Only show current term(s) with status='Current'
-    current_terms = SchoolTerm.objects.filter(
-        school=school, active=True, status__value__icontains='current'
-    ).order_by('id') if current_session else []
-
     # Per-grade subject completion stats per term (grouped by term)
     term_grade_stats = []
+
+    # Redirect view for adding full marks
+    @login_required
+    def inputfullmarksredirector(request):
+        if request.method == "POST":
+            user = request.user
+            branchuser, error = get_branch_info(user)
+            if error:
+                return HttpResponse('Sorry! You are not allowed to access this page. Click <a href="/">Here</a> to go the homepage.')
+
+            term = request.POST.get("term")
+            grade = request.POST.get("grade")
+
+            url = "/panel/addfullmarks/" + grade + "/" + term + "/"
+
+            return HttpResponseRedirect(url)
+
+        return HttpResponseRedirect("/")
+
+    for term in current_terms:
     current_term = SchoolTerm.objects.filter(
         school=school, year=current_session, status__value__icontains='Current'
     ).first()
