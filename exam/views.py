@@ -765,6 +765,28 @@ def printgradesheetnow2079(request):
 
 @login_required
 def settings(request):
+    """Settings landing page — links to Terminologies and Result Config."""
+    from exam.models import SchoolTerminology
+
+    branchuser, error = get_branch_info(request.user)
+    if error:
+        return HttpResponse(error)
+
+    school = branchuser.school
+    terminology, _ = SchoolTerminology.objects.get_or_create(school=school)
+
+    ctx = _nav_context(request)
+    ctx.update({
+        'school': school, 'branchuser': branchuser,
+        'terminology': terminology,
+        'is_settings': True,
+    })
+    return render(request, 'exam/settings.html', ctx)
+
+
+@login_required
+def settings_terminologies(request):
+    """Terminology settings — Theory/Practical labels used across the system."""
     from exam.models import SchoolTerminology
 
     branchuser, error = get_branch_info(request.user)
@@ -780,8 +802,8 @@ def settings(request):
         terminology.practical_short = request.POST.get('practical_short', 'PR').strip() or 'PR'
         terminology.practical_long = request.POST.get('practical_long', 'Practical').strip() or 'Practical'
         terminology.save()
-        messages.success(request, 'Settings saved.')
-        return redirect('exam:settings')
+        messages.success(request, 'Terminology settings saved.')
+        return redirect('exam:settings_terminologies')
 
     ctx = _nav_context(request)
     ctx.update({
@@ -789,4 +811,4 @@ def settings(request):
         'terminology': terminology,
         'is_settings': True,
     })
-    return render(request, 'exam/settings.html', ctx)
+    return render(request, 'exam/settings_terminologies.html', ctx)

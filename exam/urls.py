@@ -63,6 +63,7 @@ urlpatterns = [
 
     # ── Settings ─────────────────────────────────────────────────────────────────
     path('settings/', views.settings, name='settings'),
+    path('settings/terminologies/', views.settings_terminologies, name='settings_terminologies'),
     path('settings/result-config/', views.resultmanagement, name='grade_result_config'),
 
     # ── Print / Grade Sheet ──────────────────────────────────────────────────────
