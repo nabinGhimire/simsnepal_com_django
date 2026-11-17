@@ -549,6 +549,7 @@ def resultmanagement(request):
         'rm': rm_qs, 'school': school, 'live_calc_type': live_calc_type,
         'current_session': current_session,
         'is_exam_result': 'manage',
+        'is_grade_config': is_grade_config_page,
         'is_grade_config_page': is_grade_config_page,
         'grade_config_rows': grade_config_rows,
     })
@@ -809,6 +810,6 @@ def settings_terminologies(request):
     ctx.update({
         'school': school, 'branchuser': branchuser,
         'terminology': terminology,
-        'is_settings': True,
+        'is_settings_terminologies': True,
     })
     return render(request, 'exam/settings_terminologies.html', ctx)
