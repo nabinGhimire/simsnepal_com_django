@@ -120,7 +120,7 @@ def _detect_term_action(request):
     return None
 
 @login_required
-def terms_list(request):
+def terms_list(request, term_id=None):
     from sms.models import SchoolGrade
     from exam.models import SchoolTerm, SchoolTermStatus
 
