@@ -15,7 +15,7 @@ def _redirect_terms(request):
 def _redirect_full_marks(request):
     return redirect('exam:full_marks')
 
-def _redirect_marks_input_form(request):
+def _redirect_printmarksform(request):
     return redirect('exam:marks_input_form')
 
 def _redirect_marks_grade_sheet(request):
@@ -53,6 +53,7 @@ urlpatterns = [
     path('full-marks/', views.fullmarks, name='full_marks'),
     path('full-marks/<int:grade>/<int:term>/', views.addfullmarks, name='add_full_marks'),
     path('full-marks/<int:grade>/<int:term>/edit/', views.addfullmarksedit, name='edit_full_marks'),
+    path('inputfullmarksredirector/', views.inputfullmarksredirector, name='inputfullmarksredirector'),
 
     # ── Subject-wise Marks ────────────────────────────────────────────────────────
     path('marks-entry/subject-wise/', views.subjectwisemarks, name='subject_wise_marks'),
