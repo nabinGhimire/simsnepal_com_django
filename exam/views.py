@@ -52,7 +52,7 @@ def dashboard(request):
     school = branchuser.school
     current_session = get_current_session()
 
-    exam_terms = SchoolTerm.objects.filter(school=school, year=current_session, active=True) if current_session else []
+    exam_terms = SchoolTerm.objects.filter(school=school, year=current_session, active=True).order_by('id') if current_session else []
     grades = SchoolGrade.objects.filter(school=school, active=True).select_related('level').order_by('level__id', 'grade_weight', 'grade_name')
     level_ids = grades.values_list('level_id', flat=True).distinct()
     levels = list(GradeLevel.objects.filter(id__in=level_ids).order_by('id'))
@@ -64,34 +64,41 @@ def dashboard(request):
         fm_count = GradeFullMarks.objects.filter(school=school, session=current_session, term=term).values('grade').distinct().count()
         term_stats.append({'term': term, 'grades_configured': fm_count, 'total_grades': grade_count})
 
-    # Per-grade subject completion stats for current term (status="Current")
-    grade_stats = []
+    # Per-grade subject completion stats per term (grouped by term)
+    term_grade_stats = []
     current_term = SchoolTerm.objects.filter(
         school=school, year=current_session, status__value='Current'
     ).first()
 
-    for grade in grades:
-        total_subjects = Subject.objects.filter(
-            branch=school, session=current_session, grade=grade, status=True
-        ).count()
+    for term in exam_terms:
+        grade_stats = []
+        for grade in grades:
+            total_subjects = Subject.objects.filter(
+                branch=school, session=current_session, grade=grade, status=True
+            ).count()
 
-        # Subjects that have at least one MarkObtained entry for this grade/session/current term
-        subjects_with_marks = Subject.objects.filter(
-            branch=school, session=current_session, grade=grade, status=True,
-            markobtained__session=current_session,
-            markobtained__school=school,
-            markobtained__grade=grade,
-            markobtained__term=current_term
-        ).distinct().count()
+            # Subjects that have at least one MarkObtained entry for this grade/session/term
+            subjects_with_marks = Subject.objects.filter(
+                branch=school, session=current_session, grade=grade, status=True,
+                markobtained__session=current_session,
+                markobtained__school=school,
+                markobtained__grade=grade,
+                markobtained__term=term
+            ).distinct().count()
 
-        missing_subjects = total_subjects - subjects_with_marks
+            missing_subjects = total_subjects - subjects_with_marks
 
-        grade_stats.append({
-            'grade': grade,
-            'total_subjects': total_subjects,
-            'subjects_with_marks': subjects_with_marks,
-            'missing_subjects': missing_subjects,
-            'completion_pct': round((subjects_with_marks / total_subjects * 100), 1) if total_subjects > 0 else 0,
+            grade_stats.append({
+                'grade': grade,
+                'total_subjects': total_subjects,
+                'subjects_with_marks': subjects_with_marks,
+                'missing_subjects': missing_subjects,
+                'completion_pct': round((subjects_with_marks / total_subjects * 100), 1) if total_subjects > 0 else 0,
+            })
+
+        term_grade_stats.append({
+            'term': term,
+            'grade_stats': grade_stats,
         })
 
     live_result = LiveResult.objects.filter(school=school).first()
@@ -100,7 +107,8 @@ def dashboard(request):
         'current_session': current_session,
         'exam_terms': exam_terms,
         'term_stats': term_stats,
-        'grade_stats': grade_stats,
+        'term_grade_stats': term_grade_stats,
+        'current_term': current_term,
         'school': school,
         'branchuser': branchuser,
         'nav_grades': grades,
