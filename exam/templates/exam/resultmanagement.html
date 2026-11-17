@@ -145,15 +145,29 @@
                 Select grades that use CAS. CAS grading rules are fixed by the government
                 and cannot be changed here. Remaining grades use Exam calculation.
               </p>
-              <div class="row g-3">
-                <div class="col-12 col-md-6 col-lg-4">
-                  {% for row in grade_config_rows %}
-                  <div class="form-check">
+              <style>
+                .form-check-small {
+                  padding-top: 0.15rem;
+                  padding-bottom: 0.15rem;
+                  margin-bottom: 0.15rem;
+                }
+                .form-check-small .form-check-input {
+                  margin-top: 0.2rem;
+                }
+                .cas-checkboxes .col-4 {
+                  padding-left: 0.5rem;
+                  padding-right: 0.5rem;
+                }
+              </style>
+              <div class="row g-1 cas-checkboxes">
+                {% for row in grade_config_rows %}
+                <div class="col-4 col-md-3">
+                  <div class="form-check form-check-small">
                     <input class="form-check-input" type="checkbox" name="cas_grade_ids[]" value="{{ row.grade.id }}" id="cas_grade_{{ row.grade.id }}" {% if row.config and row.config.assessment_source == 'cas' %}checked{% endif %}>
                     <label class="form-check-label" for="cas_grade_{{ row.grade.id }}">{{ row.grade.grade_name|upper }}</label>
                   </div>
-                  {% endfor %}
                 </div>
+                {% endfor %}
               </div>
               <button type="submit" class="exam-btn exam-btn-warning px-3 mt-2">Update CAS Selection</button>
             </form>
