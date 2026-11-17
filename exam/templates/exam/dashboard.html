@@ -30,7 +30,7 @@
 <!-- Term Cards grouped by term -->
 <div class="row g-3 mb-4">
   {% for tgs in term_grade_stats %}
-  <div class="col-md-6 col-lg-4">
+  <div class="{% if term_grade_stats|length == 1 %}col-12{% else %}col-md-6 col-lg-4{% endif %}">
     <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
       <div class="card-header bg-white exam-card-header">
         <div class="d-flex justify-content-between align-items-center">
