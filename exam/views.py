@@ -59,33 +59,12 @@ def dashboard(request):
     # Per-grade subject completion stats per term (grouped by term)
     term_grade_stats = []
 
-    # Per-grade subject completion stats per term (grouped by term)
-    term_grade_stats = []
-
-    # Redirect view for adding full marks
-    @login_required
-    def inputfullmarksredirector(request):
-        if request.method == "POST":
-            user = request.user
-            branchuser, error = get_branch_info(user)
-            if error:
-                return HttpResponse('Sorry! You are not allowed to access this page. Click <a href="/">Here</a> to go the homepage.')
-
-            term = request.POST.get("term")
-            grade = request.POST.get("grade")
-
-            url = "/panel/addfullmarks/" + grade + "/" + term + "/"
-
-            return HttpResponseRedirect(url)
-
-        return HttpResponseRedirect("/")
-
-    for term in current_terms:
+    # Only show current term(s) with status='Current'
     current_term = SchoolTerm.objects.filter(
         school=school, year=current_session, status__value__icontains='Current'
     ).first()
 
-    for term in current_terms:
+    for term in exam_terms:
         grade_stats = []
         for grade in grades:
             total_subjects = Subject.objects.filter(
@@ -93,7 +72,7 @@ def dashboard(request):
             ).count()
 
             # Subjects that have at least one MarkObtained entry for this grade/session/term
-            subjects_with_marks = Subject.objects.filter(
+            subject_data = Subject.objects.filter(
                 branch=school, session=current_session, grade=grade, status=True,
                 markobtained__session=current_session,
                 markobtained__school=school,
@@ -130,9 +109,6 @@ def dashboard(request):
         'live_result': live_result,
     }
     return render(request, 'exam/dashboard.html', context)
-
-
-# ── Terms ────────────────────────────────────────────────────────────────────
 
 
 def _detect_term_action(request):
