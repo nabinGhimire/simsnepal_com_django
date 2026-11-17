@@ -133,6 +133,7 @@
                 </td>
                 <td>
                   <div class="d-flex gap-1">
+                    <a href="{% url 'exam:terms' %}?action=listterm&cn={{ term.id }}" class="btn btn-xs btn-outline-secondary" style="font-size:0.7rem;padding:2px 8px;" title="Edit term (change name, status, final term)">Edit</a>
                     <a href="{% url 'exam:fullmarks' %}" class="btn btn-xs btn-outline-primary" style="font-size:0.7rem;padding:2px 8px;">Full Marks</a>
                   </div>
                 </td>
