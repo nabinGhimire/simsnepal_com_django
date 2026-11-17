@@ -66,6 +66,7 @@ def dashboard(request):
 
     # Per-grade subject completion stats per term (grouped by term)
     term_grade_stats = []
+    current_term = None
 
     for term in exam_terms:
         grade_stats = []
