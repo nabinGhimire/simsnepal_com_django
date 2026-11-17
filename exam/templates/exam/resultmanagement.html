@@ -223,7 +223,7 @@
                   </div>
                 </div>
                 <div class="col-auto">
-                  <button type="submit" class="exam-btn exam-btn-primary px-4">Submit</button>
+                  <button type="submit" class="exam-btn exam-btn-primary px-4 mt-1">Submit</button>
                 </div>
               </div>
             </form>
@@ -238,7 +238,7 @@
               <thead>
                 <tr>
                   <th style="width:200px;">Grade</th>
-                  <th style="width:140px;">Assessment Source</th>
+                  <th style="width:140px;">Evaluation Source</th>
                   <th style="width:140px;">Grading Type</th>
                   <th style="width:130px;">Ledger Type</th>
                   <th style="width:140px;">Calculation Type</th>
@@ -264,11 +264,13 @@
                   </td>
                   <td>
                     {% if cfg and cfg.assessment_source == 'cas' %}
-                      <span class="text-muted small">Fixed by Govt.</span>
+                      <span class="text-muted small">—</span>
                     {% elif cfg and cfg.ledger_type == 1 %}MARKS{% elif cfg and cfg.ledger_type == 2 %}GRADE{% else %}Default{% endif %}
                   </td>
                   <td>
-                    {% if cfg and cfg.calculation_type == 'legacy' %}LEGACY{% elif cfg and cfg.calculation_type == 'weighted' %}WEIGHTED{% else %}Default{% endif %}
+                    {% if cfg and cfg.assessment_source == 'cas' %}
+                      <span class="text-muted small">—</span>
+                    {% elif cfg and cfg.calculation_type == 'legacy' %}LEGACY{% elif cfg and cfg.calculation_type == 'weighted' %}WEIGHTED{% else %}Default{% endif %}
                   </td>
                   <td>
                     {% if cfg %}
