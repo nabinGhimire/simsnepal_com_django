@@ -39,7 +39,8 @@ def _redirect_public_result(request):
 
 urlpatterns = [
     # ── Dashboard ───────────────────────────────────────────────────────────────
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('', views.dashboard, name='dashboard'),
+    path('dashboard/', _redirect_dashboard, name='dashboard_redirect'),
 
     # ── Terms ───────────────────────────────────────────────────────────────────
     path('terms/', views.terms_list, name='terms'),
