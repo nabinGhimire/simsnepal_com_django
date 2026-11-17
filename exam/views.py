@@ -68,12 +68,12 @@ def dashboard(request):
     grade_stats = []
     for grade in grades:
         total_subjects = Subject.objects.filter(
-            school=school, session=current_session, grade=grade, status=True
+            branch=school, session=current_session, grade=grade, status=True
         ).count()
 
         # Subjects that have at least one MarkObtained entry for this grade/session
         subjects_with_marks = Subject.objects.filter(
-            school=school, session=current_session, grade=grade, status=True,
+            branch=school, session=current_session, grade=grade, status=True,
             markobtained__session=current_session,
             markobtained__school=school,
             markobtained__grade=grade
