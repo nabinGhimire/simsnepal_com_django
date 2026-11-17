@@ -107,7 +107,6 @@ def dashboard(request):
     context = {
         'current_session': current_session,
         'exam_terms': exam_terms,
-        'term_stats': term_stats,
         'term_grade_stats': term_grade_stats,
         'current_term': current_term,
         'school': school,
