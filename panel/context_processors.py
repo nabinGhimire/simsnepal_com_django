@@ -18,9 +18,6 @@ PANEL_MODULES = [
     {'key': 'attendance', 'label': 'Attendance', 'color': 'purple', 'icon': 'clipboard-check', 'prefix': '/attendance/', 'url_name': 'attendance:dashboard'},
     {'key': 'concerns', 'label': 'ConcernMS', 'color': 'pink', 'icon': 'alert-triangle', 'prefix': '/concerns/', 'url_name': 'concerns:dashboard'},
     {'key': 'exam', 'label': 'Exam', 'color': 'red', 'icon': 'fa-regular fa-calendar', 'prefix': '/exam/', 'url_name': 'exam:dashboard'},
-    {'key': 'cas', 'label': 'CAS', 'color': 'orange', 'icon': 'clipboard-list', 'prefix': '/cas/', 'url_name': 'cas'},
-    {'key': 'billing', 'label': 'Billing', 'color': 'cyan', 'icon': 'receipt', 'prefix': '/billing/', 'url_name': 'billing'},
-    {'key': 'calendar', 'label': 'Calendar', 'color': 'emerald', 'icon': 'calendar', 'prefix': '/calendar/', 'url_name': 'patro:calendar'},
     {'key': 'timetable', 'label': 'Timetable', 'color': 'indigo', 'icon': 'calendar-check', 'prefix': '/timetable/', 'url_name': 'timetable:dashboard'},
 ]
 
