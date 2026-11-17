@@ -65,6 +65,12 @@ def dashboard(request):
         school=school, active=True, status__value__icontains='current'
     ).order_by('id') if current_session else []
 
+    # Per-grade subject completion stats per term (grouped by term)
+    term_grade_stats = []
+    current_term = SchoolTerm.objects.filter(
+        school=school, year=current_session, status__value__icontains='Current'
+    ).first()
+
     for term in current_terms:
         grade_stats = []
         for grade in grades:
