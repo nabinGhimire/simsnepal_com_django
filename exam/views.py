@@ -583,6 +583,18 @@ def resultmanagement(request):
                     )
                 updated_count += 1
             messages.success(request, f'Bulk update applied to {updated_count} grade(s).')
+        elif submittype == 'reset_grade_config':
+            grade_id = request.POST.get('grade_id')
+            if grade_id:
+                try:
+                    grade_id_int = int(grade_id)
+                except (ValueError, TypeError):
+                    grade_id_int = None
+                if grade_id_int:
+                    GradeResultConfig.objects.filter(
+                        school=school, year=current_session, grade_id=grade_id_int
+                    ).delete()
+                    messages.success(request, f'Grade {grade_id_int} reset to default.')
         return redirect('exam:grade_result_config')
 
     schoolresulttype = SchoolResultType.objects.filter(school=school, session=current_session).first()

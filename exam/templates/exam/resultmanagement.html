@@ -12,6 +12,9 @@
         <p class="text-secondary mb-3">
           Choose your result format for the session. Once selected, it should remain the same for the year.
         </p>
+        <a href="{% url 'exam:grade_result_config' %}" class="exam-btn exam-btn-ghost btn-sm mb-3">
+          <i class="fa-solid fa-sliders me-1"></i> Configure Per-Grade Settings
+        </a>
         {% if schoolresulttype %}
           <div class="alert alert-info py-2 px-3" style="font-size:0.8rem;border-radius:6px;">
             You have selected
@@ -133,6 +136,10 @@
           Configure how each grade's result is calculated and shown to parents.
           Leave a grade unset to use the school-wide defaults (old way).
         </p>
+        <a href="{% url 'exam:publish_result' %}" class="exam-btn exam-btn-ghost btn-sm mb-3">
+          <i class="fa-solid fa-arrow-right me-1"></i> Go to Result Publication
+        </a>
+        <hr class="my-3">
 
         <!-- Form 1: Enable CAS for classes -->
         <div class="card bg-light border border-warning mb-4">
@@ -278,6 +285,12 @@
                   <td>
                     {% if cfg %}
                       <span class="badge bg-success text-white" style="font-size:0.7rem;">Configured</span>
+                      <form action="" method="POST" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="submittype" value="reset_grade_config">
+                        <input type="hidden" name="grade_id" value="{{ g.id }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Reset</button>
+                      </form>
                     {% else %}
                       <span class="badge bg-secondary text-white" style="font-size:0.7rem;">Default</span>
                     {% endif %}
