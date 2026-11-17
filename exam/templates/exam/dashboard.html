@@ -79,7 +79,7 @@
             {% for gs in grade_stats %}
             <tr>
               <td>
-                <span style="font-weight:600;color:var(--exam-text-dark);">{{ g.grade_name|upper }}</span>
+                <span style="font-weight:600;color:var(--exam-text-dark);">{{ gs.grade.grade_name|upper }}</span>
               </td>
               <td class="text-center">{{ gs.total_subjects }}</td>
               <td class="text-center">

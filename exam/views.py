@@ -64,19 +64,24 @@ def dashboard(request):
         fm_count = GradeFullMarks.objects.filter(school=school, session=current_session, term=term).values('grade').distinct().count()
         term_stats.append({'term': term, 'grades_configured': fm_count, 'total_grades': grade_count})
 
-    # Per-grade subject completion stats
+    # Per-grade subject completion stats for current term (status="Current")
     grade_stats = []
+    current_term = SchoolTerm.objects.filter(
+        school=school, year=current_session, status__value='Current'
+    ).first()
+
     for grade in grades:
         total_subjects = Subject.objects.filter(
             branch=school, session=current_session, grade=grade, status=True
         ).count()
 
-        # Subjects that have at least one MarkObtained entry for this grade/session
+        # Subjects that have at least one MarkObtained entry for this grade/session/current term
         subjects_with_marks = Subject.objects.filter(
             branch=school, session=current_session, grade=grade, status=True,
             markobtained__session=current_session,
             markobtained__school=school,
-            markobtained__grade=grade
+            markobtained__grade=grade,
+            markobtained__term=current_term
         ).distinct().count()
 
         missing_subjects = total_subjects - subjects_with_marks
