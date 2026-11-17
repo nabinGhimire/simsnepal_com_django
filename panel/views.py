@@ -5706,12 +5706,18 @@ def marksgradesheet(request):
         additional_td = 13 - subjects.count()
         print("OOOOOOOOOOOOOOOOOOOOOOOOo", "SUBJECT COUNT", subjects.count())
 
+        # grade/section live on StudentSession, not on Student
+        student_sessions = StudentSession.objects.filter(
+            session=this_session, grade=this_grade, status=True
+        ).in_bulk(field_name="student_id")
+
         std_list = {}
         for student in students:
+            ss = student_sessions.get(student.reg_no)
             std_list[student.reg_no] = {}
             std_list[student.reg_no]["name"] = student.name
-            std_list[student.reg_no]["grade"] = student.grade
-            std_list[student.reg_no]["section"] = student.section
+            std_list[student.reg_no]["grade"] = ss.grade if ss else this_grade
+            std_list[student.reg_no]["section"] = ss.section if ss else None
 
             mo_dict = {}
             count = 1
@@ -13503,5 +13509,3 @@ def student_message_history(request, regno):
             'status': log.status
         })
     return JsonResponse({'history': history})
-
-
