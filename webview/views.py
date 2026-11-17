@@ -11,7 +11,7 @@ import nepali_datetime
 from django.urls import reverse
 import logging
 from types import SimpleNamespace
-from sms.models import EduSession, SchoolBranch, SchoolGrade, Section, Subject, Student, StudentSession, Homework, MarkObtained, SchoolTerm, TeacherSubjectAccess, BranchUser
+from sms.models import EduSession, SchoolBranch, SchoolGrade, Section, Subject, Student, StudentSession, Homework, MarkObtained, SchoolTerm, TeacherSubjectAccess, BranchUser, LiveResult
 from grihakarya.models import HomeworkEntry, HomeworkEntryAuditLog
 
 
@@ -354,6 +354,20 @@ def parent_result(request):
         
     token = request.GET.get("token") or request.POST.get("token")
     student_results = []
+    
+    # Get school-wide live result settings (term + grade_list + status)
+    live_result_obj = LiveResult.objects.filter(school=students.first().school).first() if students.exists() else None
+    live_grade_list = []
+    live_result_status = False
+    live_result_term = None
+    if live_result_obj:
+        try:
+            live_grade_list = json.loads(live_result_obj.grade_list or "[]")
+        except Exception:
+            live_grade_list = []
+        live_result_status = live_result_obj.status
+        live_result_term = live_result_obj.term
+
     for student in students:
         ss_qs = StudentSession.objects.filter(
             student=student,
@@ -386,9 +400,17 @@ def parent_result(request):
         
         terms_list = []
         for term in terms:
-            # A term is visible to parents if: grade config says published (or no config),
-            # and the term status is published (status_id == 3)
-            term_published = term.status_id == 3
+            # A term is visible to parents only if ALL of:
+            # 1. Term status is published (status_id == 3)
+            # 2. LiveResult publishing is enabled for the school
+            # 3. This term matches the LiveResult term (or LiveResult covers all)
+            # 4. Student's grade is in LiveResult.grade_list
+            term_published = (
+                term.status_id == 3
+                and live_result_status
+                and (live_result_term is None or int(term.id) == int(live_result_term))
+                and int(ss.grade.id) in live_grade_list
+            )
             if grade_config and not grade_config.is_published:
                 term_published = False
             
@@ -492,6 +514,29 @@ def parent_result_detail(request):
             "error_title": "Results Not Published",
             "error_message": "Results for this term are not yet published."
         })
+
+    # Verify this grade is included in LiveResult grade_list for this school
+    live_result_obj = LiveResult.objects.filter(school=student.school).first()
+    if live_result_obj:
+        try:
+            live_grade_list = json.loads(live_result_obj.grade_list or "[]")
+        except Exception:
+            live_grade_list = []
+        if not live_result_obj.status:
+            return render(request, "webview/error.html", {
+                "error_title": "Results Not Published",
+                "error_message": "Result publishing is disabled for this school."
+            })
+        if int(live_result_obj.term) != int(term.id):
+            return render(request, "webview/error.html", {
+                "error_title": "Wrong Term",
+                "error_message": f"Results for term '{term.term_name}' are not the currently published term."
+            })
+        if int(ss.grade.id) not in live_grade_list:
+            return render(request, "webview/error.html", {
+                "error_title": "Results Not Published for Your Grade",
+                "error_message": f"Results for {ss.grade.grade_name} are not published for this term."
+            })
 
     # Get student session info
     ss = StudentSession.objects.filter(
