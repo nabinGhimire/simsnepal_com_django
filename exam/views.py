@@ -26,7 +26,7 @@ from panel.views import (
 
 def _nav_context(request):
     """Common context for exam navbar — grades, levels."""
-    from sms.models import SchoolGrade, GradeLevel, BranchUser
+    from sms.models import BranchUser, SchoolGrade, GradeLevel
     try:
         bu = BranchUser.objects.select_related('school').get(user=request.user)
         school = bu.school
@@ -42,7 +42,8 @@ def _nav_context(request):
 
 @login_required
 def dashboard(request):
-    from sms.models import SchoolTerm, SchoolGrade, GradeLevel, GradeFullMarks, Subject, LiveResult
+    from sms.models import SchoolGrade, GradeLevel, Subject
+    from exam.models import SchoolTerm, GradeFullMarks, LiveResult
 
     branchuser, error = get_branch_info(request.user)
     if error:
@@ -82,7 +83,8 @@ def dashboard(request):
 
 @login_required
 def terms_list(request):
-    from sms.models import SchoolTerm, SchoolGrade, SchoolTermStatus
+    from sms.models import SchoolGrade
+    from exam.models import SchoolTerm, SchoolTermStatus
 
     branchuser, error = get_branch_info(request.user)
     if error:
@@ -91,7 +93,13 @@ def terms_list(request):
     school = branchuser.school
     current_session = get_current_session()
 
+    # action comes from GET for navigation, but form submissions (changeterm,
+    # addterm, result_calc) post a hidden <input name="action"> field, so also
+    # read it from POST; otherwise the submitted action is ignored and nothing
+    # is saved.
     action = request.GET.get('action', 'listterm')
+    if request.method == 'POST':
+        action = request.POST.get('action', action)
     term_status = SchoolTermStatus.objects.all()
 
     change_name = False
@@ -188,7 +196,7 @@ def terms_list(request):
                 term_mgmt[str(t.id)] = 100
 
         import json as _json
-        from sms.models import ResultManagement
+        from exam.models import ResultManagement
         rm, created = ResultManagement.objects.update_or_create(
             school=school, year=current_session, school_term=term,
             defaults={'term_calculation': _json.dumps(term_mgmt)}
@@ -228,7 +236,8 @@ def terms_list(request):
 
 @login_required
 def fullmarks(request):
-    from sms.models import SchoolTerm, SchoolGrade
+    from sms.models import SchoolGrade
+    from exam.models import SchoolTerm
 
     branchuser, error = get_branch_info(request.user)
     if error:
@@ -254,7 +263,8 @@ def fullmarks(request):
 
 @login_required
 def addfullmarks(request, grade, term):
-    from sms.models import SchoolTerm, SchoolGrade, Subject, GradeFullMarks
+    from sms.models import SchoolGrade, Subject
+    from exam.models import SchoolTerm, GradeFullMarks
 
     branchuser, error = get_branch_info(request.user)
     if error:
@@ -304,7 +314,8 @@ def addfullmarks(request, grade, term):
 
 @login_required
 def addfullmarksedit(request, grade, term):
-    from sms.models import SchoolTerm, SchoolGrade, Subject, GradeFullMarks
+    from sms.models import SchoolGrade, Subject
+    from exam.models import SchoolTerm, GradeFullMarks
 
     branchuser, error = get_branch_info(request.user)
     if error:
@@ -352,7 +363,8 @@ def addfullmarksedit(request, grade, term):
 @login_required
 def subjectwisemarks(request):
     """Selection form — pick term, grade, section, subject."""
-    from sms.models import SchoolTerm, SchoolGrade, Section
+    from sms.models import SchoolGrade, Section
+    from exam.models import SchoolTerm
     import json as _json
 
     branchuser, error = get_branch_info(request.user)
@@ -414,10 +426,8 @@ def subject_wise_marks_entry(request):
 
 @login_required
 def resultmanagement(request):
-    from sms.models import (
-        SchoolTerm, SchoolGrade, GradeLevel, SchoolResultType,
-        LiveResult, ResultManagement
-    )
+    from sms.models import SchoolGrade, GradeLevel
+    from exam.models import SchoolTerm, SchoolResultType, LiveResult, ResultManagement
 
     branchuser, error = get_branch_info(request.user)
     if error:
@@ -479,7 +489,8 @@ def resultmanagement(request):
 
 @login_required
 def weighted_result_calculation(request):
-    from sms.models import SchoolTerm, SchoolGrade, GradeLevel, LiveResult, WeightedResultManagement
+    from sms.models import SchoolGrade, GradeLevel
+    from exam.models import SchoolTerm, LiveResult, WeightedResultManagement
 
     branchuser, error = get_branch_info(request.user)
     if error:
@@ -550,7 +561,8 @@ def printmarksform(request):
     if request.method == 'POST':
         return _panel_printmarksform(request)
 
-    from sms.models import SchoolTerm, SchoolGrade, Section
+    from sms.models import SchoolGrade, Section
+    from exam.models import SchoolTerm
     import json as _json
 
     branchuser, error = get_branch_info(request.user)
@@ -583,7 +595,8 @@ def marksgradesheet(request):
         from panel.views import marksgradesheet as _panel_mgs
         return _panel_mgs(request)
 
-    from sms.models import SchoolTerm, SchoolGrade, EduSession, Section, LiveResult
+    from sms.models import SchoolGrade, EduSession, Section
+    from exam.models import SchoolTerm, LiveResult
     import json as _json
 
     branchuser, error = get_branch_info(request.user)
@@ -630,7 +643,8 @@ def print_grade_ledger_exam(request):
     if request.method == 'POST':
         return _panel_print_grade_ledger(request)
 
-    from sms.models import SchoolTerm, SchoolGrade, EduSession, Section, LiveResult
+    from sms.models import SchoolGrade, EduSession, Section
+    from exam.models import SchoolTerm, LiveResult
     import json as _json
 
     branchuser, error = get_branch_info(request.user)
@@ -683,7 +697,7 @@ def printgradesheetnow2079(request):
 
 @login_required
 def settings(request):
-    from sms.models import SchoolTerminology
+    from exam.models import SchoolTerminology
 
     branchuser, error = get_branch_info(request.user)
     if error:
