@@ -518,11 +518,10 @@ def resultmanagement(request):
         elif submittype == 'termandgrades':
             examtype = request.POST.get('examtype')
             livestatus = request.POST.get('publishresultswitch') == 'on'
-            calculation_type = request.POST.get('calculation_type', 'legacy')
             checks = json.dumps([int(i) for i in request.POST.getlist('checks[]')])
             LiveResult.objects.update_or_create(
                 school=school,
-                defaults={'term': examtype, 'grade_list': checks, 'status': livestatus, 'calculation_type': calculation_type}
+                defaults={'term': examtype, 'grade_list': checks, 'status': livestatus}
             )
             live_result_status = livestatus
         elif submittype == 'gradeconfig':
