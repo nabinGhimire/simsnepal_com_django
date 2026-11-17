@@ -81,6 +81,18 @@ def dashboard(request):
 
 # ── Terms ────────────────────────────────────────────────────────────────────
 
+
+def _detect_term_action(request):
+    """Detect which term action URL was used and set the appropriate action."""
+    url_name = request.resolver_match.url_name if request.resolver_match else ''
+    if url_name == 'add_term':
+        return 'addterm'
+    elif url_name == 'edit_term':
+        return 'changeterm'
+    elif url_name == 'term_calculation':
+        return 'result_calc'
+    return None
+
 @login_required
 def terms_list(request):
     from sms.models import SchoolGrade
@@ -100,13 +112,25 @@ def terms_list(request):
     action = request.GET.get('action', 'listterm')
     if request.method == 'POST':
         action = request.POST.get('action', action)
+    # URL-based action detection for clean routes
+    if action == 'listterm':
+        url_action = _detect_term_action(request)
+        if url_action:
+            action = url_action
     term_status = SchoolTermStatus.objects.all()
 
     change_name = False
     term_name = None
 
+    # URL-based cn for edit_term route
     if request.method == 'GET' and 'cn' in request.GET:
         cn = request.GET['cn']
+    elif request.resolver_match and request.resolver_match.url_name == 'edit_term':
+        cn = request.resolver_match.kwargs.get('term_id')
+    else:
+        cn = None
+
+    if cn:
         try:
             term_name = SchoolTerm.objects.get(id=cn)
             if term_name.school == school:
@@ -342,7 +366,7 @@ def addfullmarksedit(request, grade, term):
                 }
             )
         messages.success(request, 'Full marks updated.')
-        return redirect(f'/exam/addfullmarks/{grade_obj.id}/{exam_term.id}/')
+        return redirect('exam:edit_full_marks', grade=grade_obj.id, term=exam_term.id)
 
     ctx = _nav_context(request)
     ctx.update({
@@ -483,7 +507,7 @@ def resultmanagement(request):
                     },
                 )
                 messages.success(request, 'Grade result configuration updated.')
-        return redirect('exam:resultmanagement')
+        return redirect('exam:publish_result')
 
     schoolresulttype = SchoolResultType.objects.filter(school=school, session=current_session).first()
     sr = schoolresulttype
@@ -498,20 +522,23 @@ def resultmanagement(request):
         except Exception:
             gradelist = []
 
-    # Per-grade result configurations for this session
-    grade_configs = GradeResultConfig.objects.filter(
-        school=school, year=current_session
-    ).select_related('grade')
-    grade_config_map = {gc.grade_id: gc for gc in grade_configs}
+    # Determine which section is active based on URL name
+    url_name = request.resolver_match.url_name if request.resolver_match else ''
+    is_grade_config_page = url_name == 'grade_result_config'
 
-    # Build a list of (grade, config_or_none) for the template
+    # Per-grade result configurations for this session (only needed on config page)
     grade_config_rows = []
-    for grade in grades:
-        gc = grade_config_map.get(grade.id)
-        grade_config_rows.append({
-            'grade': grade,
-            'config': gc,
-        })
+    if is_grade_config_page:
+        grade_configs = GradeResultConfig.objects.filter(
+            school=school, year=current_session
+        ).select_related('grade')
+        grade_config_map = {gc.grade_id: gc for gc in grade_configs}
+        for grade in grades:
+            gc = grade_config_map.get(grade.id)
+            grade_config_rows.append({
+                'grade': grade,
+                'config': gc,
+            })
 
     ctx = _nav_context(request)
     ctx.update({
@@ -522,7 +549,7 @@ def resultmanagement(request):
         'rm': rm_qs, 'school': school, 'live_calc_type': live_calc_type,
         'current_session': current_session,
         'is_exam_result': 'manage',
-        'grade_configs': grade_configs,
+        'is_grade_config_page': is_grade_config_page,
         'grade_config_rows': grade_config_rows,
     })
     return render(request, 'exam/resultmanagement.html', ctx)

@@ -21,7 +21,7 @@
     </div>
     <div class="d-flex gap-2">
       <a href="{% url 'exam:terms' %}" class="exam-btn exam-btn-ghost px-3" style="font-size:0.78rem;">Manage Terms</a>
-      <a href="{% url 'exam:fullmarks' %}" class="exam-btn exam-btn-primary px-3" style="font-size:0.78rem;">Full Marks Setup</a>
+      <a href="{% url 'exam:full_marks' %}" class="exam-btn exam-btn-primary px-3" style="font-size:0.78rem;">Full Marks Setup</a>
     </div>
   </div>
 </div>
@@ -46,8 +46,8 @@
       <div class="stat-progress-bar" style="width:{% widthratio stat.grades_configured stat.total_grades 100 %}%;height:100%;background:{% if stat.grades_configured == stat.total_grades %}var(--exam-success){% else %}var(--exam-warning){% endif %};border-radius:2px;"></div>
     </div>
     <div class="mt-3 d-flex gap-1">
-      <a href="{% url 'exam:fullmarks' %}" class="exam-btn exam-btn-ghost flex-1" style="font-size:0.7rem;padding:2px 8px;">Full Marks</a>
-      <a href="{% url 'exam:subjectwisemarks' %}" class="exam-btn exam-btn-ghost flex-1" style="font-size:0.7rem;padding:2px 8px;">Enter Marks</a>
+      <a href="{% url 'exam:full_marks' %}" class="exam-btn exam-btn-ghost flex-1" style="font-size:0.7rem;padding:2px 8px;">Full Marks</a>
+      <a href="{% url 'exam:subject_wise_marks' %}" class="exam-btn exam-btn-ghost flex-1" style="font-size:0.7rem;padding:2px 8px;">Enter Marks</a>
     </div>
   </div>
   {% endfor %}
@@ -63,10 +63,10 @@
         </div>
       </div>
       <div class="d-flex flex-column gap-2">
-        <a href="{% url 'exam:fullmarks' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+        <a href="{% url 'exam:full_marks' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
           <i class="fa-solid fa-circle-plus me-2"></i> Full Marks Setup
         </a>
-        <a href="{% url 'exam:subjectwisemarks' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+        <a href="{% url 'exam:subject_wise_marks' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
           <i class="fa-solid fa-table-cells me-2"></i> Subject-wise Entry
         </a>
       </div>
@@ -80,10 +80,10 @@
         </div>
       </div>
       <div class="d-flex flex-column gap-2">
-        <a href="{% url 'exam:resultmanagement' %}" class="exam-btn exam-btn-success w-100" style="font-size:0.78rem;text-align:left;">
+        <a href="{% url 'exam:publish_result' %}" class="exam-btn exam-btn-success w-100" style="font-size:0.78rem;text-align:left;">
           <i class="fa-solid fa-gear me-2"></i> Result Management
         </a>
-        <a href="{% url 'exam:weighted_result_calculation' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+        <a href="{% url 'exam:weighted_calculation' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
           <i class="fa-solid fa-scale-balanced me-2"></i> Weighted Calculation
         </a>
       </div>
@@ -97,13 +97,13 @@
         </div>
       </div>
       <div class="d-flex flex-column gap-2">
-        <a href="{% url 'exam:printmarksform' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+        <a href="{% url 'exam:marks_input_form' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
           <i class="fa-solid fa-file-lines me-2"></i> Marks Input Form
         </a>
-        <a href="{% url 'exam:marksgradesheet' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+        <a href="{% url 'exam:marks_grade_sheet' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
           <i class="fa-solid fa-table me-2"></i> Grade Sheet
         </a>
-        <a href="{% url 'exam:print_grade_ledger' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
+        <a href="{% url 'exam:grade_ledger' %}" class="exam-btn exam-btn-ghost w-100" style="font-size:0.78rem;text-align:left;">
           <i class="fa-solid fa-book me-2"></i> Grade Ledger
         </a>
       </div>

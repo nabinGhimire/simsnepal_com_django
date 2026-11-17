@@ -17,7 +17,7 @@
           <a href="{% url 'exam:terms' %}?action=result_calc"><i class="ti ti-calculator"></i> <span>Result Calculation</span></a>
         </li>
         <li>
-          <a href="{% url 'exam:weighted_result_calculation' %}"><i class="ti ti-adjustments"></i> <span>Weighted Calculation</span></a>
+          <a href="{% url 'exam:weighted_calculation' %}"><i class="ti ti-adjustments"></i> <span>Weighted Calculation</span></a>
         </li>
       </ul>
     </div>
@@ -134,7 +134,7 @@
                 <td>
                   <div class="d-flex gap-1">
                     <a href="{% url 'exam:terms' %}?action=listterm&cn={{ term.id }}" class="btn btn-xs btn-outline-secondary" style="font-size:0.7rem;padding:2px 8px;" title="Edit term (change name, status, final term)">Edit</a>
-                    <a href="{% url 'exam:fullmarks' %}" class="btn btn-xs btn-outline-primary" style="font-size:0.7rem;padding:2px 8px;">Full Marks</a>
+                    <a href="{% url 'exam:full_marks' %}" class="btn btn-xs btn-outline-primary" style="font-size:0.7rem;padding:2px 8px;">Full Marks</a>
                   </div>
                 </td>
               </tr>

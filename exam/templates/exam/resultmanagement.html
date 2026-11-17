@@ -3,6 +3,7 @@
 
 {% block exam_content %}
 <div class="row g-4">
+  {% if not is_grade_config_page %}
   <!-- Result Type -->
   <div class="col-lg-6">
     <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
@@ -120,7 +121,9 @@
     </div>
   </div>
   {% endif %}
+  {% endif %}
 
+  {% if is_grade_config_page %}
   <!-- Per-Grade Result Configuration -->
   <div class="col-12">
     <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
@@ -129,6 +132,7 @@
         <p class="text-secondary mb-3">
           Configure how each grade's result is calculated and shown to parents.
           Leave a grade unset to use the school-wide defaults (old way).
+          <br><strong>Note:</strong> CAS grading rules are fixed by the government and cannot be changed here.
         </p>
         <div class="table-responsive">
           <table class="table table-vcenter exam-table mb-0">
@@ -140,7 +144,7 @@
                 <th style="width:130px;">Ledger Type</th>
                 <th style="width:140px;">Calculation Type</th>
                 <th style="width:100px;">Publish</th>
-                <th style="width:120px;">Save</th>
+                <th style="width:120px;">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -160,38 +164,50 @@
                   </form>
                 </td>
                 <td>
-                  <form action="" method="POST" style="display:inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="submittype" value="gradeconfig">
-                    <input type="hidden" name="grade_id" value="{{ g.id }}">
-                    <select name="grading_type" class="exam-select exam-select-sm" onchange="this.form.submit()">
-                      <option value="0" {% if cfg and cfg.grading_type == 0 %}selected{% endif %}>LEGACY</option>
-                      <option value="1" {% if cfg and cfg.grading_type == 1 %}selected{% endif %}>NON GRADE</option>
-                      <option value="2" {% if cfg and cfg.grading_type == 2 %}selected{% endif %}>NEW GRADING</option>
-                    </select>
-                  </form>
+                  {% if cfg and cfg.assessment_source == 'cas' %}
+                    <span class="badge bg-warning" style="font-size:0.7rem;">Fixed by Govt.</span>
+                  {% else %}
+                    <form action="" method="POST" style="display:inline;">
+                      {% csrf_token %}
+                      <input type="hidden" name="submittype" value="gradeconfig">
+                      <input type="hidden" name="grade_id" value="{{ g.id }}">
+                      <select name="grading_type" class="exam-select exam-select-sm" onchange="this.form.submit()">
+                        <option value="0" {% if cfg and cfg.grading_type == 0 %}selected{% endif %}>LEGACY</option>
+                        <option value="1" {% if cfg and cfg.grading_type == 1 %}selected{% endif %}>NON GRADE</option>
+                        <option value="2" {% if cfg and cfg.grading_type == 2 %}selected{% endif %}>NEW GRADING</option>
+                      </select>
+                    </form>
+                  {% endif %}
                 </td>
                 <td>
-                  <form action="" method="POST" style="display:inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="submittype" value="gradeconfig">
-                    <input type="hidden" name="grade_id" value="{{ g.id }}">
-                    <select name="ledger_type" class="exam-select exam-select-sm" onchange="this.form.submit()">
-                      <option value="1" {% if cfg and cfg.ledger_type == 1 %}selected{% endif %}>MARKS</option>
-                      <option value="2" {% if cfg and cfg.ledger_type == 2 %}selected{% endif %}>GRADE</option>
-                    </select>
-                  </form>
+                  {% if cfg and cfg.assessment_source == 'cas' %}
+                    <span class="badge bg-warning" style="font-size:0.7rem;">Fixed by Govt.</span>
+                  {% else %}
+                    <form action="" method="POST" style="display:inline;">
+                      {% csrf_token %}
+                      <input type="hidden" name="submittype" value="gradeconfig">
+                      <input type="hidden" name="grade_id" value="{{ g.id }}">
+                      <select name="ledger_type" class="exam-select exam-select-sm" onchange="this.form.submit()">
+                        <option value="1" {% if cfg and cfg.ledger_type == 1 %}selected{% endif %}>MARKS</option>
+                        <option value="2" {% if cfg and cfg.ledger_type == 2 %}selected{% endif %}>GRADE</option>
+                      </select>
+                    </form>
+                  {% endif %}
                 </td>
                 <td>
-                  <form action="" method="POST" style="display:inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="submittype" value="gradeconfig">
-                    <input type="hidden" name="grade_id" value="{{ g.id }}">
-                    <select name="calculation_type" class="exam-select exam-select-sm" onchange="this.form.submit()">
-                      <option value="legacy" {% if cfg and cfg.calculation_type == 'legacy' %}selected{% endif %}>LEGACY</option>
-                      <option value="weighted" {% if cfg and cfg.calculation_type == 'weighted' %}selected{% endif %}>WEIGHTED</option>
-                    </select>
-                  </form>
+                  {% if cfg and cfg.assessment_source == 'cas' %}
+                    <span class="badge bg-warning" style="font-size:0.7rem;">Fixed by Govt.</span>
+                  {% else %}
+                    <form action="" method="POST" style="display:inline;">
+                      {% csrf_token %}
+                      <input type="hidden" name="submittype" value="gradeconfig">
+                      <input type="hidden" name="grade_id" value="{{ g.id }}">
+                      <select name="calculation_type" class="exam-select exam-select-sm" onchange="this.form.submit()">
+                        <option value="legacy" {% if cfg and cfg.calculation_type == 'legacy' %}selected{% endif %}>LEGACY</option>
+                        <option value="weighted" {% if cfg and cfg.calculation_type == 'weighted' %}selected{% endif %}>WEIGHTED</option>
+                      </select>
+                    </form>
+                  {% endif %}
                 </td>
                 <td>
                   <form action="" method="POST" style="display:inline;">
@@ -225,5 +241,6 @@
       </div>
     </div>
   </div>
+  {% endif %}
 </div>
 {% endblock %}

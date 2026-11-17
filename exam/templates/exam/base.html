@@ -379,11 +379,11 @@
               <span class="nav-link-title">Marks Entry</span>
             </a>
             <div class="dropdown-menu dropdown-menu-arrow">
-              <a class="dropdown-item {% if is_exam_fullmarks %}active{% endif %}" href="{% url 'exam:fullmarks' %}">
+              <a class="dropdown-item {% if is_exam_fullmarks %}active{% endif %}" href="{% url 'exam:full_marks' %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-blue" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18"/><path d="M12 8v4l3 3"/></svg>
                 Full Marks Setup
               </a>
-              <a class="dropdown-item {% if is_exam_subject %}active{% endif %}" href="{% url 'exam:subjectwisemarks' %}">
+              <a class="dropdown-item {% if is_exam_subject %}active{% endif %}" href="{% url 'exam:subject_wise_marks' %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-teal" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
                 Subject-wise Entry
               </a>
@@ -402,16 +402,16 @@
               <span class="nav-link-title">Results</span>
             </a>
             <div class="dropdown-menu dropdown-menu-arrow">
-              <a class="dropdown-item {% if is_exam_result == 'manage' %}active{% endif %}" href="{% url 'exam:resultmanagement' %}">
+              <a class="dropdown-item {% if is_exam_result == 'manage' %}active{% endif %}" href="{% url 'exam:publish_result' %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-primary" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0-18 0"/><path d="M12 9v4l3 3"/></svg>
                 Result Management
               </a>
-              <a class="dropdown-item {% if is_exam_result == 'weighted' %}active{% endif %}" href="{% url 'exam:weighted_result_calculation' %}">
+              <a class="dropdown-item {% if is_exam_result == 'weighted' %}active{% endif %}" href="{% url 'exam:weighted_calculation' %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-orange" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M3 21l9-9"/><path d="M12 3l9 9-9 9-9-9 9-9"/></svg>
                 Weighted Calculation
               </a>
               <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="{% url 'exam:school_public' %}">
+              <a class="dropdown-item" href="{% url 'exam:public_result' %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-success" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
                 Public Result
               </a>
@@ -432,13 +432,13 @@
               <span class="nav-link-title">Print</span>
             </a>
             <div class="dropdown-menu dropdown-menu-arrow">
-              <a class="dropdown-item {% if is_exam_print == 'marks_form' %}active{% endif %}" href="{% url 'exam:printmarksform' %}">
+              <a class="dropdown-item {% if is_exam_print == 'marks_form' %}active{% endif %}" href="{% url 'exam:marks_input_form' %}">
                 Marks Input Form
               </a>
-              <a class="dropdown-item {% if is_exam_print == 'gradesheet' %}active{% endif %}" href="{% url 'exam:marksgradesheet' %}">
+              <a class="dropdown-item {% if is_exam_print == 'gradesheet' %}active{% endif %}" href="{% url 'exam:marks_grade_sheet' %}">
                 Marks / Grade Sheet
               </a>
-              <a class="dropdown-item {% if is_exam_print == 'ledger' %}active{% endif %}" href="{% url 'exam:print_grade_ledger' %}">
+              <a class="dropdown-item {% if is_exam_print == 'ledger' %}active{% endif %}" href="{% url 'exam:grade_ledger' %}">
                 Grade Ledger
               </a>
             </div>

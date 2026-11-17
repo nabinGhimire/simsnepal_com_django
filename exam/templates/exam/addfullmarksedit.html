@@ -11,7 +11,7 @@
         </h6>
         <span style="font-size:0.72rem;color:var(--exam-text-muted);">{{ school.name }} &nbsp;·&nbsp; {{ edusession.year }}</span>
       </div>
-      <a href="{% url 'exam:addfullmarks' grade=grade.id term=exam_term.id %}" class="exam-btn exam-btn-ghost px-3" style="font-size:0.78rem;">← View</a>
+      <a href="{% url 'exam:add_full_marks' grade=grade.id term=exam_term.id %}" class="exam-btn exam-btn-ghost px-3" style="font-size:0.78rem;">← View</a>
     </div>
   </div>
 

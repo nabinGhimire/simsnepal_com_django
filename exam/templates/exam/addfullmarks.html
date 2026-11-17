@@ -12,7 +12,7 @@
         </h6>
         <span style="font-size:0.72rem;color:var(--exam-text-muted);">{{ school.name }} &nbsp;·&nbsp; {{ edusession.year }}</span>
       </div>
-      <a href="{% url 'exam:fullmarks' %}" class="exam-btn exam-btn-ghost px-3" style="font-size:0.78rem;">← Back</a>
+      <a href="{% url 'exam:full_marks' %}" class="exam-btn exam-btn-ghost px-3" style="font-size:0.78rem;">← Back</a>
     </div>
   </div>
 
@@ -76,7 +76,7 @@
 
     <div class="exam-save-footer d-flex justify-content-end gap-2">
       {% if gs %}
-        <a href="{% url 'exam:addfullmarksedit' grade=grade.id term=exam_term.id %}" class="exam-btn exam-btn-ghost px-4" style="font-weight:600;">
+        <a href="{% url 'exam:edit_full_marks' grade=grade.id term=exam_term.id %}" class="exam-btn exam-btn-ghost px-4" style="font-weight:600;">
           <i class="fa-solid fa-pen me-1"></i> Edit Marks
         </a>
       {% else %}
