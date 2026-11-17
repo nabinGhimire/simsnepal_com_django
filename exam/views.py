@@ -53,8 +53,6 @@ def dashboard(request):
     current_session = get_current_session()
 
     exam_terms = SchoolTerm.objects.filter(school=school, active=True).order_by('id')
-    if current_session:
-        exam_terms = SchoolTerm.objects.filter(school=school, year=current_session, active=True).order_by('id') or SchoolTerm.objects.filter(school=school, active=True).order_by('id')
     grades = SchoolGrade.objects.filter(school=school, active=True).select_related('level').order_by('level__id', 'grade_weight', 'grade_name')
     level_ids = grades.values_list('level_id', flat=True).distinct()
     levels = list(GradeLevel.objects.filter(id__in=level_ids).order_by('id'))
@@ -68,9 +66,6 @@ def dashboard(request):
 
     # Per-grade subject completion stats per term (grouped by term)
     term_grade_stats = []
-    current_term = SchoolTerm.objects.filter(
-        school=school, year=current_session, status__value='Current'
-    ).first()
 
     for term in exam_terms:
         grade_stats = []
