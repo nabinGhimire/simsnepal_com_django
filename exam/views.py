@@ -57,18 +57,15 @@ def dashboard(request):
     level_ids = grades.values_list('level_id', flat=True).distinct()
     levels = list(GradeLevel.objects.filter(id__in=level_ids).order_by('id'))
 
-    # Quick stats per term
-    term_stats = []
-    for term in exam_terms:
-        grade_count = grades.count()
-        fm_count = GradeFullMarks.objects.filter(school=school, session=current_session, term=term).values('grade').distinct().count()
-        term_stats.append({'term': term, 'grades_configured': fm_count, 'total_grades': grade_count})
-
     # Per-grade subject completion stats per term (grouped by term)
     term_grade_stats = []
-    current_term = None
 
-    for term in exam_terms:
+    # Only show current term(s) with status='Current'
+    current_terms = SchoolTerm.objects.filter(
+        school=school, active=True, status__value__icontains='current'
+    ).order_by('id') if current_session else []
+
+    for term in current_terms:
         grade_stats = []
         for grade in grades:
             total_subjects = Subject.objects.filter(
