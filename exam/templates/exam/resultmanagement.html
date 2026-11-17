@@ -132,90 +132,56 @@
         <p class="text-secondary mb-3">
           Configure how each grade's result is calculated and shown to parents.
           Leave a grade unset to use the school-wide defaults (old way).
-          <br><strong>Note:</strong> CAS grading rules are fixed by the government and cannot be changed here.
         </p>
 
-        <!-- Bulk Update Form -->
-        <div class="card bg-light border border-secondary mb-3">
+        <!-- Form 1: Enable CAS for classes -->
+        <div class="card bg-light border border-warning mb-3">
           <div class="card-body p-3">
             <form action="" method="POST" style="display:inline;">
               {% csrf_token %}
-              <input type="hidden" name="submittype" value="bulkgradeconfig">
-              <h6 class="mb-3">Bulk Update All Grades (excludes CAS)</h6>
-              <div class="row g-2 align-items-end">
-                <div class="col-auto">
-                  <label class="form-label small">Grading Type</label>
-                  <select name="bulk_grading_type" class="exam-select exam-select-sm">
-                    <option value="0">LEGACY</option>
-                    <option value="1">NON GRADE</option>
-                    <option value="2">NEW GRADING</option>
-                  </select>
-                </div>
-                <div class="col-auto">
-                  <label class="form-label small">Ledger Type</label>
-                  <select name="bulk_ledger_type" class="exam-select exam-select-sm">
-                    <option value="1">MARKS</option>
-                    <option value="2">GRADE</option>
-                  </select>
-                </div>
-                <div class="col-auto">
-                  <label class="form-label small">Calculation Type</label>
-                  <select name="bulk_calculation_type" class="exam-select exam-select-sm">
-                    <option value="legacy">LEGACY</option>
-                    <option value="weighted">WEIGHTED</option>
-                  </select>
-                </div>
-                <div class="col-auto">
-                  <label class="form-label small">Apply to grades</label>
-                  <div style="max-height: 100px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 4px;">
-                    {% for g in grades %}
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" name="bulk_grade_ids[]" value="{{ g.id }}" id="bulk_grade_{{ g.id }}" checked>
-                      <label class="form-check-label small" for="bulk_grade_{{ g.id }}">{{ g.grade_name|upper }}</label>
-                    </div>
-                    {% endfor %}
+              <input type="hidden" name="submittype" value="enable_cas">
+              <h6 class="mb-3">Enable CAS (Continuous Assessment System)</h6>
+              <p class="small text-muted mb-2">
+                Select grades that use CAS. CAS grading rules are fixed by the government
+                and cannot be changed here. Remaining grades use Exam calculation.
+              </p>
+              <div class="row g-3">
+                <div class="col-12 col-md-6 col-lg-4">
+                  {% for row in grade_config_rows %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="cas_grade_ids[]" value="{{ row.grade.id }}" id="cas_grade_{{ row.grade.id }}" {% if row.config and row.config.assessment_source == 'cas' %}checked{% endif %}>
+                    <label class="form-check-label" for="cas_grade_{{ row.grade.id }}">{{ row.grade.grade_name|upper }}</label>
                   </div>
-                </div>
-                <div class="col-auto">
-                  <button type="submit" class="exam-btn exam-btn-warning px-3">Apply to Selected</button>
+                  {% endfor %}
                 </div>
               </div>
+              <button type="submit" class="exam-btn exam-btn-warning px-3 mt-2">Update CAS Selection</button>
             </form>
           </div>
         </div>
 
-        <div class="table-responsive">
-          <table class="table table-vcenter exam-table mb-0">
-            <thead>
-              <tr>
-                <th style="width:200px;">Grade</th>
-                <th style="width:140px;">Assessment Source</th>
-                <th style="width:140px;">Grading Type</th>
-                <th style="width:130px;">Ledger Type</th>
-                <th style="width:140px;">Calculation Type</th>
-                <th style="width:120px;">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in grade_config_rows %}
-              {% with cfg=row.config g=row.grade %}
-              <tr>
-                <td>{{ g.grade_name|upper }}</td>
-                <td>
-                  <form action="" method="POST" style="display:inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="submittype" value="gradeconfig">
-                    <input type="hidden" name="grade_id" value="{{ g.id }}">
-                    <select name="assessment_source" class="exam-select exam-select-sm" onchange="this.form.submit()">
-                      <option value="exam" {% if cfg and cfg.assessment_source == 'exam' %}selected{% endif %}>Exam</option>
-                      <option value="cas" {% if cfg and cfg.assessment_source == 'cas' %}selected{% endif %}>CAS</option>
-                    </select>
-                  </form>
-                </td>
-                <td>
-                  {% if cfg and cfg.assessment_source == 'cas' %}
-                    <span class="badge bg-warning" style="font-size:0.7rem;">Fixed by Govt.</span>
-                  {% else %}
+        <!-- Form 2: Exam Configuration for non-CAS grades -->
+        {% if exam_grades %}
+        <div class="mt-4">
+          <h6 class="fw-bold">Exam Configuration (non-CAS grades)</h6>
+          <p class="small text-muted mb-3">Configure grading, ledger, and calculation for each exam grade:</p>
+          <div class="table-responsive">
+            <table class="table table-vcenter exam-table mb-0">
+              <thead>
+                <tr>
+                  <th style="width:200px;">Grade</th>
+                  <th style="width:140px;">Grading Type</th>
+                  <th style="width:130px;">Ledger Type</th>
+                  <th style="width:140px;">Calculation Type</th>
+                  <th style="width:120px;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in exam_grades %}
+                {% with cfg=row.config g=row.grade %}
+                <tr>
+                  <td>{{ g.grade_name|upper }}</td>
+                  <td>
                     <form action="" method="POST" style="display:inline;">
                       {% csrf_token %}
                       <input type="hidden" name="submittype" value="gradeconfig">
@@ -226,12 +192,8 @@
                         <option value="2" {% if cfg and cfg.grading_type == 2 %}selected{% endif %}>NEW GRADING</option>
                       </select>
                     </form>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if cfg and cfg.assessment_source == 'cas' %}
-                    <span class="badge bg-warning" style="font-size:0.7rem;">Fixed by Govt.</span>
-                  {% else %}
+                  </td>
+                  <td>
                     <form action="" method="POST" style="display:inline;">
                       {% csrf_token %}
                       <input type="hidden" name="submittype" value="gradeconfig">
@@ -241,12 +203,8 @@
                         <option value="2" {% if cfg and cfg.ledger_type == 2 %}selected{% endif %}>GRADE</option>
                       </select>
                     </form>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if cfg and cfg.assessment_source == 'cas' %}
-                    <span class="badge bg-warning" style="font-size:0.7rem;">Fixed by Govt.</span>
-                  {% else %}
+                  </td>
+                  <td>
                     <form action="" method="POST" style="display:inline;">
                       {% csrf_token %}
                       <input type="hidden" name="submittype" value="gradeconfig">
@@ -256,21 +214,27 @@
                         <option value="weighted" {% if cfg and cfg.calculation_type == 'weighted' %}selected{% endif %}>WEIGHTED</option>
                       </select>
                     </form>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if cfg %}
-                    <span class="badge bg-success" style="font-size:0.7rem;">Configured</span>
-                  {% else %}
-                    <span class="badge bg-secondary" style="font-size:0.7rem;">Default</span>
-                  {% endif %}
-                </td>
-              </tr>
-              {% endwith %}
-              {% endfor %}
-            </tbody>
-          </table>
+                  </td>
+                  <td>
+                    {% if cfg %}
+                      <span class="badge bg-success" style="font-size:0.7rem;">Configured</span>
+                    {% else %}
+                      <span class="badge bg-secondary" style="font-size:0.7rem;">Default</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
+        {% else %}
+        <div class="alert alert-info border-0 shadow-sm mt-3">
+          All grades are configured as CAS. No exam configuration needed.
+        </div>
+        {% endif %}
+
         <p class="text-secondary mt-2 small">
           Changing a setting here only affects the current session. Previous years'
           results are never modified. Grades without a configuration row use the

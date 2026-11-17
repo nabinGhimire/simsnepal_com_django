@@ -488,30 +488,46 @@ def resultmanagement(request):
             live_result_status = livestatus
         elif submittype == 'gradeconfig':
             grade_id = request.POST.get('grade_id')
-            assessment_source = request.POST.get('assessment_source', 'exam')
             grading_type = int(request.POST.get('grading_type', 0))
             ledger_type = int(request.POST.get('ledger_type', 1))
             calculation_type = request.POST.get('calculation_type', 'legacy')
             if grade_id:
-                GradeResultConfig.objects.update_or_create(
-                    school=school,
-                    year=current_session,
-                    grade_id=grade_id,
-                    defaults={
-                        'assessment_source': assessment_source,
-                        'grading_type': grading_type,
-                        'ledger_type': ledger_type,
-                        'calculation_type': calculation_type,
-                    },
-                )
-                messages.success(request, 'Grade result configuration updated.')
-        elif submittype == 'bulkgradeconfig':
-            bulk_grading_type = int(request.POST.get('bulk_grading_type', 0))
-            bulk_ledger_type = int(request.POST.get('bulk_ledger_type', 1))
-            bulk_calculation_type = request.POST.get('bulk_calculation_type', 'legacy')
-            grades_to_update = request.POST.getlist('bulk_grade_ids[]')
+                try:
+                    grade_id_int = int(grade_id)
+                except (ValueError, TypeError):
+                    grade_id_int = None
+                if grade_id_int:
+                    gc = GradeResultConfig.objects.filter(
+                        school=school, year=current_session, grade_id=grade_id_int
+                    ).first()
+                    if gc and gc.assessment_source == 'cas':
+                        messages.warning(request, f'Cannot edit {gc.grade.grade_name}. It uses CAS.')
+                    elif gc:
+                        gc.grading_type = grading_type
+                        gc.ledger_type = ledger_type
+                        gc.calculation_type = calculation_type
+                        gc.save()
+                        messages.success(request, f'{gc.grade.grade_name} updated.')
+                    else:
+                        GradeResultConfig.objects.create(
+                            school=school,
+                            year=current_session,
+                            grade_id=grade_id_int,
+                            assessment_source='exam',
+                            grading_type=grading_type,
+                            ledger_type=ledger_type,
+                            calculation_type=calculation_type,
+                        )
+                        messages.success(request, f'Grade {grade_id_int} configured.')
+        elif submittype == 'enable_cas':
+            cas_grade_ids = request.POST.getlist('cas_grade_ids[]')
+            # First, set all grades to exam (remove CAS)
+            GradeResultConfig.objects.filter(
+                school=school, year=current_session, assessment_source='cas'
+            ).update(assessment_source='exam')
+            # Then set selected grades to CAS
             updated_count = 0
-            for grade_id in grades_to_update:
+            for grade_id in cas_grade_ids:
                 try:
                     grade_id_int = int(grade_id)
                 except (ValueError, TypeError):
@@ -519,25 +535,21 @@ def resultmanagement(request):
                 gc = GradeResultConfig.objects.filter(
                     school=school, year=current_session, grade_id=grade_id_int
                 ).first()
-                if gc and gc.assessment_source == 'cas':
-                    continue  # Skip CAS grades - fixed by government
                 if gc:
-                    gc.grading_type = bulk_grading_type
-                    gc.ledger_type = bulk_ledger_type
-                    gc.calculation_type = bulk_calculation_type
+                    gc.assessment_source = 'cas'
                     gc.save()
                 else:
                     GradeResultConfig.objects.create(
                         school=school,
                         year=current_session,
                         grade_id=grade_id_int,
-                        assessment_source='exam',
-                        grading_type=bulk_grading_type,
-                        ledger_type=bulk_ledger_type,
-                        calculation_type=bulk_calculation_type,
+                        assessment_source='cas',
+                        grading_type=0,
+                        ledger_type=1,
+                        calculation_type='legacy',
                     )
                 updated_count += 1
-            messages.success(request, f'Bulk update applied to {updated_count} grade(s).')
+            messages.success(request, f'CAS enabled for {updated_count} grade(s).')
         return redirect('exam:grade_result_config')
 
     schoolresulttype = SchoolResultType.objects.filter(school=school, session=current_session).first()
@@ -559,6 +571,8 @@ def resultmanagement(request):
 
     # Per-grade result configurations for this session (only needed on config page)
     grade_config_rows = []
+    cas_grades = []
+    exam_grades = []
     if is_grade_config_page:
         grade_configs = GradeResultConfig.objects.filter(
             school=school, year=current_session
@@ -566,10 +580,12 @@ def resultmanagement(request):
         grade_config_map = {gc.grade_id: gc for gc in grade_configs}
         for grade in grades:
             gc = grade_config_map.get(grade.id)
-            grade_config_rows.append({
-                'grade': grade,
-                'config': gc,
-            })
+            row = {'grade': grade, 'config': gc}
+            grade_config_rows.append(row)
+            if gc and gc.assessment_source == 'cas':
+                cas_grades.append(row)
+            else:
+                exam_grades.append(row)
 
     ctx = _nav_context(request)
     ctx.update({
@@ -583,6 +599,8 @@ def resultmanagement(request):
         'is_grade_config': is_grade_config_page,
         'is_grade_config_page': is_grade_config_page,
         'grade_config_rows': grade_config_rows,
+        'cas_grades': cas_grades,
+        'exam_grades': exam_grades,
     })
     return render(request, 'exam/resultmanagement.html', ctx)
 
