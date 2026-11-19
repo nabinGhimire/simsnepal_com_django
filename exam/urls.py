@@ -81,7 +81,7 @@ urlpatterns = [
     path('print/ledger/', views.print_ledger, name='print_ledger'),
     path('print/ledger/preview/', views.print_ledger_preview, name='print_ledger_preview'),
     path('print/ledger/now/', views.print_ledger_now, name='print_ledger_now'),
-    path('print/entrancecard/', views.print_entrance_card, name='print_entrance_card'),
+    path('print/ledger/from-calc/<int:term_id>/', views.print_ledger_from_calc, name='print_ledger_from_calc'),
 
     # ── Result status / public result ─────────────────────────────────────────────
     path('result-status/<str:regno>/', views.result_status, name='result_status'),
