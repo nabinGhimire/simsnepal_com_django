@@ -2085,6 +2085,22 @@ def print_ledger_now(request):
         }
         result = calculate_student_result(school, session, grade, term, student, config)
 
+        # Transform mo_dict to match panel template expected keys
+        # Template expects: theory_raw, prac_raw, theory_mo, theory_mo_s, prac_mo, prac_mo_s, gradepoint, th_fail, pr_fail
+        subjects_for_template = {}
+        for sub_id, m in result['mo_dict'].items():
+            subjects_for_template[sub_id] = {
+                'theory_raw': m.get('th_mo', 0),
+                'prac_raw': m.get('pr_mo', 0),
+                'theory_mo': m.get('th_grade', '-'),
+                'theory_mo_s': m.get('th_symbol', ''),
+                'prac_mo': m.get('pr_grade', '-'),
+                'prac_mo_s': m.get('pr_symbol', ''),
+                'gradepoint': m.get('total_point', 0),
+                'th_fail': m.get('th_fail', False),
+                'pr_fail': m.get('pr_fail', False),
+            }
+
         weighted_subjects_data = []
         for sub in subjects:
             m = result['mo_dict'].get(sub.id, {})
@@ -2108,7 +2124,7 @@ def print_ledger_now(request):
             'mo_pr': result.get('total_pr_mo', 0),
             'total': result.get('total_mo', 0),
             'gp': result.get('cgpa', 0),
-            'subjects': result['mo_dict'],
+            'subjects': subjects_for_template,  # Use transformed dict for template
         })
 
         # Pass/Fail detection - use pre-calculated results from calculate_student_result
