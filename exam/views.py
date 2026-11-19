@@ -1718,7 +1718,8 @@ def print_ledger_preview(request):
     ).order_by('id')
 
     from exam.func import _parse_weighted_term_config
-    from exam.models import WeightedResultManagement, Subject, StudentSession, GradeFullMarks, MarkObtained
+    from exam.models import WeightedResultManagement, StudentSession, GradeFullMarks, MarkObtained
+    from sms.models import Subject
     normalized_wconfig = {}
     source_terms = []
     if ledgermode in ['2', '3']:
@@ -3086,8 +3087,8 @@ def result_status(request, regno):
 @login_required
 def private_result(request, regno):
     """Private result view for a single student."""
-    from sms.models import Student, BranchUser, StudentSession
-    from exam.models import LiveResult, SchoolTerm, ResultManagement, Subject
+    from sms.models import Student, BranchUser, StudentSession, Subject
+    from exam.models import LiveResult, SchoolTerm, ResultManagement
     import json as _json
 
     branchuser, error = get_branch_info(request.user)
@@ -3196,8 +3197,8 @@ def private_result(request, regno):
 @login_required
 def public_result(request):
     """Public result view with pincode verification."""
-    from sms.models import Student, BranchUser, StudentSession
-    from exam.models import LiveResult, SchoolTerm, ResultManagement, Subject, WeightedResultManagement
+    from sms.models import Student, BranchUser, StudentSession, Subject
+    from exam.models import LiveResult, SchoolTerm, ResultManagement, WeightedResultManagement
     from exam.func import _parse_weighted_term_config
     import json as _json
 
