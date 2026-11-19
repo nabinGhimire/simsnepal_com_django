@@ -1857,14 +1857,15 @@ def print_ledger_preview(request):
                 th_max = sum(source_fm_map.get((t.id, sub.id), (0, 0))[0] for t in source_terms)
                 pr_max = sum(source_fm_map.get((t.id, sub.id), (0, 0))[1] for t in source_terms)
             else:
-                first_w = next(iter(normalized_wconfig.values()), {})
-                if first_w.get('plan') == 'scaling':
-                    th_max = first_w.get('th_target_fm', 100)
-                    pr_max = first_w.get('pr_target_fm', 100)
-                else:
-                    for t in source_terms:
-                        w_info = normalized_wconfig.get(str(t.id), {})
-                        s_th_fm, s_pr_fm = source_fm_map.get((t.id, sub.id), (0, 0))
+                th_max = 0
+                pr_max = 0
+                for t in source_terms:
+                    w_info = normalized_wconfig.get(str(t.id), {})
+                    s_th_fm, s_pr_fm = source_fm_map.get((t.id, sub.id), (0, 0))
+                    if w_info.get('plan') == 'scaling':
+                        th_max += s_th_fm * w_info.get('th_target_fm', 100) * w_info.get('th_from_th', 0)
+                        pr_max += s_pr_fm * w_info.get('pr_target_fm', 100) * w_info.get('pr_from_pr', 0)
+                    else:
                         th_max += s_th_fm * w_info.get('th_from_th', 0)
                         pr_max += s_pr_fm * w_info.get('pr_from_pr', 0)
         else:
@@ -1999,14 +2000,13 @@ def print_ledger_now(request):
         else:
             th_max = 0
             pr_max = 0
-            first_w = next(iter(normalized_wconfig.values()), {})
-            if first_w.get('plan') == 'scaling':
-                th_max = first_w.get('th_target_fm', 100)
-                pr_max = first_w.get('pr_target_fm', 100)
-            else:
-                for t in source_terms:
-                    w_info = normalized_wconfig.get(str(t.id), {})
-                    s_th_fm, s_pr_fm = source_fm_map.get((t.id, sub.id), (0, 0))
+            for t in source_terms:
+                w_info = normalized_wconfig.get(str(t.id), {})
+                s_th_fm, s_pr_fm = source_fm_map.get((t.id, sub.id), (0, 0))
+                if w_info.get('plan') == 'scaling':
+                    th_max += s_th_fm * w_info.get('th_target_fm', 100) * w_info.get('th_from_th', 0)
+                    pr_max += s_pr_fm * w_info.get('pr_target_fm', 100) * w_info.get('pr_from_pr', 0)
+                else:
                     th_max += s_th_fm * w_info.get('th_from_th', 0)
                     pr_max += s_pr_fm * w_info.get('pr_from_pr', 0)
         subject_fm_data[sub.id] = {'th_max': th_max, 'pr_max': pr_max}
@@ -2765,14 +2765,15 @@ def ledger_preview(request):
                     th_max = sum(source_fm_map.get((t.id, sub.id), (0, 0))[0] for t in source_terms)
                     pr_max = sum(source_fm_map.get((t.id, sub.id), (0, 0))[1] for t in source_terms)
                 else:  # Weighted (Mode 2)
-                    first_w = next(iter(normalized_wconfig.values()), {})
-                    if first_w.get("plan") == "scaling":
-                        th_max = first_w.get("th_target_fm", 100)
-                        pr_max = first_w.get("pr_target_fm", 100)
-                    else:
-                        for t in source_terms:
-                            w_info = normalized_wconfig.get(str(t.id), {})
-                            s_th_fm, s_pr_fm = source_fm_map.get((t.id, sub.id), (0, 0))
+                    th_max = 0
+                    pr_max = 0
+                    for t in source_terms:
+                        w_info = normalized_wconfig.get(str(t.id), {})
+                        s_th_fm, s_pr_fm = source_fm_map.get((t.id, sub.id), (0, 0))
+                        if w_info.get("plan") == "scaling":
+                            th_max += s_th_fm * w_info.get("th_target_fm", 100) * w_info.get("th_from_th", 0)
+                            pr_max += s_pr_fm * w_info.get("pr_target_fm", 100) * w_info.get("pr_from_pr", 0)
+                        else:
                             th_max += s_th_fm * w_info.get("th_from_th", 0)
                             pr_max += s_pr_fm * w_info.get("pr_from_pr", 0)
             else:
