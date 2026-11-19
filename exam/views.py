@@ -4,7 +4,7 @@ All views render exam/ templates with the attendance-style design system.
 """
 import os
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.template import loader, Context
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import messages
@@ -1608,6 +1608,8 @@ def print_ledger_preview(request):
     section_id = request.POST.get('section')
     ledgermode = request.POST.get('ledgermode', '1')
     order = request.POST.get('order', '1')
+
+    from sms.models import EduSession, SchoolTerm, SchoolGrade, Section, Subject, StudentSession
 
     try:
         session = EduSession.objects.get(id=edusession_id)
