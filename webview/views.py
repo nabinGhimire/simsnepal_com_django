@@ -381,7 +381,7 @@ def parent_result(request):
         ss = ss_qs.first()
         
         # Read per-grade result config (falls back to school-wide defaults if none)
-        from sms.models import GradeResultConfig
+        from exam.models import GradeResultConfig
         grade_config = GradeResultConfig.objects.filter(
             school=student.school,
             year=current_session,
@@ -550,7 +550,7 @@ def parent_result_detail(request):
         })
 
     # Read per-grade result config (falls back to school-wide defaults if none)
-    from sms.models import GradeResultConfig
+    from exam.models import GradeResultConfig
     grade_config = GradeResultConfig.objects.filter(
         school=student.school,
         year=current_session,
