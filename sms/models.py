@@ -719,7 +719,7 @@ class StudentProfile(models.Model):
         ('other_institution', 'Other Institution'),
     ]
 
-    student = models.OneToOneField(Student, to_field='reg_no', on_delete=models.CASCADE, related_name='profile')
+    student = models.OneToOneField(Student, to_field='reg_no', on_delete=models.CASCADE, related_name='profile', db_column='student_id')
 
     mother_tongue = models.CharField(max_length=100, blank=True, null=True)
     other_languages = models.JSONField(default=list, blank=True)
@@ -744,7 +744,7 @@ class StudentProfile(models.Model):
 
 class StudentHealthRecord(models.Model):
     """A single weight/height measurement for a student (repeatable across years/dates)."""
-    student = models.ForeignKey(Student, to_field='reg_no', on_delete=models.CASCADE, related_name='health_records')
+    student = models.ForeignKey(Student, to_field='reg_no', on_delete=models.CASCADE, related_name='health_records', db_column='student_id')
     session = models.ForeignKey(EduSession, on_delete=models.SET_NULL, blank=True, null=True)
     date = NepaliDateField()
     weight_kg = models.DecimalField(max_digits=5, decimal_places=2)

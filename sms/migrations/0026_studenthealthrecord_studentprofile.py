@@ -3,32 +3,20 @@ import django.db.models.deletion
 import nepali_datetime_field.models
 
 
-# ``sms_student.reg_no`` (the primary key this app references) is stored with the
-# utf8mb4_0900_ai_ci collation (matching the database default). MySQL refuses a
-# foreign key when the referencing and referenced columns use different collations,
-# so the new ``student_id`` columns are aligned here before the FK constraint
-# (created by CreateModel) is added at schema_editor exit.
-
-
 def create_tables(apps, schema_editor):
     connection = schema_editor.connection
     HealthRecord = apps.get_model("sms", "StudentHealthRecord")
     Profile = apps.get_model("sms", "StudentProfile")
 
-    student_fields = [
-        (HealthRecord, HealthRecord._meta.get_field("student")),
-        (Profile, Profile._meta.get_field("student")),
-    ]
-
     if connection.vendor == "mysql":
         from django.db.utils import DatabaseError
 
-        # Align the student column collation to match sms_student.reg_no
-        # (utf8mb4_0900_ai_ci). The FK constraint itself is created by the
-        # preceding CreateModel operations (deferred to schema_editor exit),
-        # so we must NOT add it here again — that would produce a duplicate
-        # constraint name at exit. Run the ALTER before exit so the deferred
-        # FK creation sees a column with matching collation.
+        # The FK columns were created as varchar(9) by the model definition
+        # (to_field='reg_no', db_column='student_id'), so just verify/fix collation
+        student_fields = [
+            (HealthRecord, HealthRecord._meta.get_field("student")),
+            (Profile, Profile._meta.get_field("student")),
+        ]
         for model, field in student_fields:
             try:
                 schema_editor.execute(
@@ -39,8 +27,7 @@ def create_tables(apps, schema_editor):
                         schema_editor.quote_name(field.column),
                     )
                 )
-            except DatabaseError:
-                # Column already has the target collation / table absent.
+            except Exception:
                 pass
 
 
@@ -71,7 +58,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('session', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='sms.edusession')),
-                ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='health_records', to='sms.student')),
+                ('student', models.ForeignKey(db_column='student_id', on_delete=django.db.models.deletion.CASCADE, related_name='health_records', to='sms.student', to_field='reg_no')),
             ],
             options={
                 'ordering': ['-date'],
@@ -90,7 +77,7 @@ class Migration(migrations.Migration):
                 ('other_details', models.TextField(blank=True, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('student', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='profile', to='sms.student')),
+                ('student', models.OneToOneField(db_column='student_id', on_delete=django.db.models.deletion.CASCADE, related_name='profile', to='sms.student', to_field='reg_no')),
             ],
         ),
         migrations.RunPython(create_tables, drop_tables),
