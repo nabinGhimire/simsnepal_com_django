@@ -115,6 +115,15 @@
         .grading-system th.biggs { font-weight: bold; }
         .grading-system td.bg-gray { background-color: #f0f0f0; }
 
+        .fail-badge {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
         @media print {
             .no-print { display: none !important; }
             @page {
@@ -178,13 +187,19 @@
                             <td>{{ item.total_fm }}</td>
                             <td>{{ item.total_mo }}</td>
                             <td>{{ item.percentage }}%</td>
-                            <td>{{ item.cgpa }}</td>
+                            <td>
+                                {% if item.fail_count == 0 %}
+                                    {{ item.cgpa }}
+                                {% else %}
+                                    <span class="fail-badge">FAIL</span>
+                                {% endif %}
+                            </td>
                             <td><strong>{{ item.overall_grade }}{{ item.overall_symbol }}</strong></td>
                             <td>
                                 {% if item.fail_count > 0 %}
-                                <span style="color:#c0392b;font-weight:bold;">Fail</span>
+                                    <span style="color:#c0392b;font-weight:bold;">Fail</span>
                                 {% else %}
-                                <span style="color:#27ae60;font-weight:bold;">Pass</span>
+                                    <span style="color:#27ae60;font-weight:bold;">Pass</span>
                                 {% endif %}
                             </td>
                         </tr>

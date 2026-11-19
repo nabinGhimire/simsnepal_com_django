@@ -43,14 +43,14 @@
               {% endif %}
               <th rowspan="2">Rank</th>
               {% for fm in subject_fm_list %}
-                <th colspan="{% if fm.pr_fm > 0 %}2{% else %}1{% endif %}">{{ fm.name }}</th>
+                <th colspan="{% if fm.pr_fm > 0 %}4{% else %}2{% endif %}">{{ fm.name }}</th>
               {% endfor %}
             </tr>
             <tr>
               {% for fm in subject_fm_list %}
-                <th>{{ terminology.theory_short|default:"TH" }}<br><small style="font-weight:normal;">FM: {{ fm.th_fm }}</small></th>
+                <th>{{ terminology.theory_short|default:"TH" }} (MO/FM)<br><small style="font-weight:normal;">FM: {{ fm.th_fm }}</small></th>
                 {% if fm.pr_fm > 0 %}
-                  <th>{{ terminology.practical_short|default:"PR" }}<br><small style="font-weight:normal;">FM: {{ fm.pr_fm }}</small></th>
+                  <th>{{ terminology.practical_short|default:"PR" }} (MO/FM)<br><small style="font-weight:normal;">FM: {{ fm.pr_fm }}</small></th>
                 {% endif %}
               {% endfor %}
             </tr>
@@ -76,9 +76,9 @@
                   {% with outer_index=forloop.counter0 %}
                     {% for fm in subject_fm_list %}
                       {% if forloop.counter0 == outer_index %}
-                        <td>{{ sub_marks.th_val|default:"-" }}</td>
+                        <td>{{ sub_marks.th_val|default:"-" }} / {{ fm.th_fm }}</td>
                          {% if fm.pr_fm > 0 %}
-                           <td>{{ sub_marks.pr_val|default:"-" }}</td>
+                           <td>{{ sub_marks.pr_val|default:"-" }} / {{ fm.pr_fm }}</td>
                          {% endif %}
                       {% endif %}
                     {% endfor %}

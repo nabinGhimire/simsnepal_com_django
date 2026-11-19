@@ -40,7 +40,7 @@
               <th>Name</th>
               <th>Rank</th>
               {% for fm in subject_fm_list %}
-                <th colspan="{% if fm.pr_fm > 0 %}2{% else %}1{% endif %}">{{ fm.name }}</th>
+                <th colspan="{% if fm.pr_fm > 0 %}4{% else %}2{% endif %}">{{ fm.name }}</th>
               {% endfor %}
               <th>Total</th>
               <th>%</th>
@@ -60,20 +60,26 @@
               {% for bt in student.breakdown_terms %}
                 {% if bt.is_total %}
                   {% for sub_marks in bt.subjects %}
-                    <td>{{ sub_marks.th_val|default:"-" }}</td>
+                    <td>{{ sub_marks.th_val|default:"-" }} / {{ sub_marks.th_max|default:"-" }}</td>
                     {% for fm in subject_fm_list %}
                       {% if forloop.counter0 == forloop.parentloop.counter0 and fm.pr_fm > 0 %}
-                        <td>{{ sub_marks.pr_val|default:"-" }}</td>
+                        <td>{{ sub_marks.pr_val|default:"-" }} / {{ sub_marks.pr_max|default:"-" }}</td>
                       {% endif %}
                     {% endfor %}
                   {% endfor %}
                 {% endif %}
               {% endfor %}
-              <td>{{ student.breakdown_terms|last.subjects.0.th_val|add:student.breakdown_terms|last.subjects.0.pr_val|default:"-" }}</td>
-              <td>—</td>
-              <td>—</td>
-              <td>—</td>
-              <td>—</td>
+              <td>{{ student.totals.total_mo|default:"-" }} / {{ student.totals.total_fm|default:"-" }}</td>
+              <td>{{ student.totals.percentage|default:"-" }}%</td>
+              <td>{{ student.totals.cgpa|default:"-" }}</td>
+              <td>{{ student.totals.overall_grade|default:"-" }}{{ student.totals.overall_symbol|default:"" }}</td>
+              <td>
+                {% if student.totals.any_fail %}
+                  <span class="badge bg-danger">Fail</span>
+                {% else %}
+                  <span class="badge bg-success">Pass</span>
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>

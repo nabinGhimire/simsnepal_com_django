@@ -161,6 +161,15 @@
             font-size: 11px;
         }
 
+        .fail-badge {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
         @media print {
             .no-print { display: none !important; }
             @page {
@@ -214,12 +223,12 @@
                     <tr>
                         <td class="nobl">DOB: <span style="font-weight:bold;">{% if item.student.student.dob %}{{ item.student.student.dob }}{% else %}N/A{% endif %}</span></td>
                         <td class="nobl">EMIS: <span style="font-weight:bold;">{{ school.emis_code|default:"" }}</span></td>
-                        <td class="nobr">Contact: <span style="font-weight:bold;">{% if item.student.student.mothers_phone %}{{ item.student.student.mothers_phone }}{% elif item.student.student.fathers_phone %}{{ item.student.student.fathers_phone }}{% elif item.student.student.guardian_phone %}{{ item.student.student.guardian_phone }}{% else %}N/A{% endif %}</span></td>
+                        <td class="nobl">Contact: <span style="font-weight:bold;">{% if item.student.student.mothers_phone %}{{ item.student.student.mothers_phone }}{% elif item.student.student.fathers_phone %}{{ item.student.student.fathers_phone }}{% elif item.student.student.guardian_phone %}{{ item.student.student.guardian_phone }}{% else %}N/A{% endif %}</span></td>
                     </tr>
                     <tr>
                         <td class="nobl">Attendance: <span style="font-weight:bold;">{{ item.attendance.present }}/{{ item.attendance.total }}</span></td>
                         <td class="nobl">EMIS: <span style="font-weight:bold;">{{ school.emis_code|default:"" }}</span></td>
-                        <td class="nobr">Contact: <span style="font-weight:bold;">{% if item.student.student.mothers_phone %}{{ item.student.student.mothers_phone }}{% elif item.student.student.fathers_phone %}{{ item.student.student.fathers_phone }}{% elif item.student.student.guardian_phone %}{{ item.student.student.guardian_phone }}{% else %}N/A{% endif %}</span></td>
+                        <td class="nobl">Contact: <span style="font-weight:bold;">{% if item.student.student.mothers_phone %}{{ item.student.student.mothers_phone }}{% elif item.student.student.fathers_phone %}{{ item.student.student.fathers_phone }}{% elif item.student.student.guardian_phone %}{{ item.student.student.guardian_phone }}{% else %}N/A{% endif %}</span></td>
                     </tr>
                     <tr>
                         <td class="nobl" colspan="2">Father's Name: <span style="font-weight:bold;">{% if item.student.student.fathers_name %}{{ item.student.student.fathers_name|upper }}{% else %}N/A{% endif %}</span></td>
@@ -234,15 +243,16 @@
                         <tr>
                             <th rowspan="3" class="sn">S.N</th>
                             <th rowspan="3" colspan="2">SUBJECTS</th>
-                            <th colspan="{{ no_of_terms_marks_count }}">OBTAINED GRADE</th>
-                            <th rowspan="2">AGGREGATE GRADE</th>
-                            <th rowspan="2">GP</th>
+                            <th colspan="{{ no_of_terms_marks_count }}">OBTAINED MARKS & GRADE</th>
+                            <th rowspan="2">AGGREGATE</th>
                         </tr>
                         <tr>
                             {% if no_of_terms >= 2 %}
                             {% for this_term_code, this_term_name in term_acronym.items %}
                             <th colspan="2">{{ this_term_code }}</th>
                             {% endfor %}
+                            {% else %}
+                            <th colspan="2" style="display: none;"></th>
                             {% endif %}
                         </tr>
                         <tr>
@@ -261,11 +271,10 @@
                             {% for term in term_list %}
                             {% with sub_data=item.mo_dict|get_item:sub.id %}
                             <td style="text-align: center; width: 40px;">
-                                {{ sub_data|get_item:'th_grade'|default:"-" }}
-                                <sup>{{ sub_data|get_item:'th_symbol'|default:"" }}</sup>
+                                {{ sub_data|get_item:'th_mo'|default:"-" }} / {{ sub_data|get_item:'th_fm'|default:"-" }}
                             </td>
                             <td style="text-align: center; width: 40px;">
-                                {{ sub_data|get_item:'th_point'|floatformat:1|default:"-" }}
+                                {{ sub_data|get_item:'pr_mo'|default:"-" }} / {{ sub_data|get_item:'pr_fm'|default:"-" }}
                             </td>
                             {% endwith %}
                             {% endfor %}
@@ -286,11 +295,7 @@
                             {% for term in term_list %}
                             {% with sub_data=item.mo_dict|get_item:sub.id %}
                             <td style="text-align: center; width: 40px;">
-                                {{ sub_data|get_item:'pr_grade'|default:"-" }}
-                                <sup>{{ sub_data|get_item:'pr_symbol'|default:"" }}</sup>
-                            </td>
-                            <td style="text-align: center; width: 40px;">
-                                {{ sub_data|get_item:'pr_point'|floatformat:1|default:"-" }}
+                                {{ sub_data|get_item:'pr_mo'|default:"-" }} / {{ sub_data|get_item:'pr_fm'|default:"-" }}
                             </td>
                             {% endwith %}
                             {% endfor %}
@@ -308,10 +313,12 @@
                         </tr>
                         {% endfor %}
 
+                        {% if item.fail_count == 0 %}
                         <tr>
                             <td colspan="{{ gpa_colspan }}" style="text-align: right; font-weight: bold; padding-right: 10px;">GRADE POINT AVERAGE (GPA)</td>
                             <td style="text-align: center;">{{ item.cgpa|floatformat:2 }}</td>
                         </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
