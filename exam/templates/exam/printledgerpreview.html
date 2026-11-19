@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>Ledger Preview – {{ grade|upper }} – {{ term.term_name|upper }}</title>
+    <link href='https://fonts.googleapis.com/css?family=Poppins' rel='stylesheet'>
+    <style>
+      body { font-family: 'Poppins', sans-serif; font-size: 0.85em; }
+      .school { font-weight: 700; font-size: 1.35rem; margin: 0; }
+      .report-type { font-size: 0.8rem; color: #495057; margin-top: .25rem; }
+      .no-print { display: block; }
+      @media print { .no-print { display: none !important; } }
+      #ledgerTable { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+      #ledgerTable th, #ledgerTable td { border: 1px solid #dee2e6; padding: 2px 4px; text-align: center; vertical-align: middle; }
+      #ledgerTable th { background: #f1f3f5; font-weight: 600; }
+      #ledgerTable .name-col { text-align: left; }
+      .total-row { background: #e9ecef; font-weight: 600; }
+      .grade-wrapper { display: flex; flex-direction: column; align-items: center; }
+      .grade-l { font-weight: 700; line-height: 1.1; }
+      .grade-s { font-size: 0.6em; line-height: 1; }
+      .fm-ref { font-size: 0.7rem; }
+      .fm-ref table { width: auto; }
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid p-3">
+      <div class="row">
+        <div class="col-md-8 mx-auto text-center">
+          <p class="mb-0">{{ school.slogan }}</p>
+          <h1 class="school">{{ school.name }}</h1>
+          <div>{{ school.location }}</div>
+          <div><strong>{{ term.term_name|upper }} – {{ year }}</strong></div>
+          <div class="report-type">
+            {% if ledgermode == "2" %}WEIGHTED{% elif ledgermode == "3" %}CONSOLIDATED RAW{% elif ledgermode == "4" %}RESULT CALC CONFIG{% else %}STANDARD{% endif %} —
+            {% if ledgertype == "2" %}MARKS{% else %}GRADE{% endif %} LEDGER PREVIEW —
+            GRADE {{ grade|upper }}{% if section %} ({{ section|upper }}){% else %} (ALL){% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-2 no-print text-center">
+        <div class="col-12">
+          <button onclick="window.print()" class="btn btn-primary btn-sm">🖨 Print</button>
+          <button onclick="exportToExcel()" class="btn btn-success btn-sm">📊 Export Excel</button>
+        </div>
+      </div>
+
+      <div class="row mt-2">
+        <div class="col-12">
+          <table id="ledgerTable">
+            <thead>
+              <tr>
+                <th rowspan="2">S.N</th>
+                <th rowspan="2">Reg No</th>
+                <th rowspan="2">Roll</th>
+                <th rowspan="2">Name</th>
+                {% if ledgermode in "23" %}
+                  <th rowspan="2">Term</th>
+                {% endif %}
+                {% for fm in subject_fm_list %}
+                  <th colspan="{% if fm.pr_fm > 0 %}2{% else %}1{% endif %}">{{ fm.name }}</th>
+                {% endfor %}
+              </tr>
+              <tr>
+                {% for fm in subject_fm_list %}
+                  <th>{{ terminology.theory_short|default:"TH" }}<br><small style="font-weight:normal;">FM: {{ fm.th_fm }}</small></th>
+                  {% if fm.pr_fm > 0 %}
+                  <th>{{ terminology.practical_short|default:"PR" }}<br><small style="font-weight:normal;">FM: {{ fm.pr_fm }}</small></th>
+                  {% endif %}
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for student in student_data %}
+                {% for bt in student.breakdown_terms %}
+                <tr{% if bt.is_total %} class="total-row"{% endif %}>
+                  {% if forloop.first %}
+                    <td rowspan="{{ student.breakdown_terms|length }}">{{ forloop.parentloop.counter }}</td>
+                    <td rowspan="{{ student.breakdown_terms|length }}">{{ student.reg_no }}</td>
+                    <td rowspan="{{ student.breakdown_terms|length }}">{{ student.roll_no }}</td>
+                    <td rowspan="{{ student.breakdown_terms|length }}" class="name-col">
+                      <strong>{{ student.name }}</strong>
+                    </td>
+                  {% endif %}
+                  {% if ledgermode in "23" %}
+                    <td style="background:#f8f9fa; font-weight:bold; font-size:0.9em;">{{ bt.term_label }}</td>
+                  {% endif %}
+                  
+                  {% for sub_marks in bt.subjects %}
+                    {% with outer_index=forloop.counter0 %}
+                      {% for fm in subject_fm_list %}
+                        {% if forloop.counter0 == outer_index %}
+                          {% if ledgertype == "2" %}
+                            <!-- Marks mode: show raw marks -->
+                            <td{% if sub_marks.th_fail %} style="background:#ffebee; color:#c62828; font-weight:bold;"{% endif %}>
+                              {{ sub_marks.th_val|default:"-" }}
+                              {% if sub_marks.th_gp is not None %}
+                                <br><small>GP: {{ sub_marks.th_gp }}</small>
+                              {% endif %}
+                            </td>
+                            {% if fm.pr_fm > 0 %}
+                              <td{% if sub_marks.pr_fail %} style="background:#ffebee; color:#c62828; font-weight:bold;"{% endif %}>
+                                {{ sub_marks.pr_val|default:"-" }}
+                                {% if sub_marks.pr_gp is not None %}
+                                  <br><small>GP: {{ sub_marks.pr_gp }}</small>
+                                {% endif %}
+                              </td>
+                            {% endif %}
+                          {% else %}
+                            <!-- Grade mode: show grade letter/symbol + GP -->
+                            <td{% if sub_marks.th_fail %} style="background:#ffebee; color:#c62828; font-weight:bold;"{% endif %}>
+                              <div class="grade-wrapper">
+                                <span class="grade-l">{{ sub_marks.th_grade|default:"-" }}</span>
+                                <span class="grade-s">{{ sub_marks.th_symbol|default:"" }}</span>
+                              </div>
+                              {% if sub_marks.th_gp is not None %}
+                                <br><small>GP: {{ sub_marks.th_gp }}</small>
+                              {% endif %}
+                            </td>
+                            {% if fm.pr_fm > 0 %}
+                              <td{% if sub_marks.pr_fail %} style="background:#ffebee; color:#c62828; font-weight:bold;"{% endif %}>
+                                <div class="grade-wrapper">
+                                  <span class="grade-l">{{ sub_marks.pr_grade|default:"-" }}</span>
+                                  <span class="grade-s">{{ sub_marks.pr_symbol|default:"" }}</span>
+                                </div>
+                                {% if sub_marks.pr_gp is not None %}
+                                  <br><small>GP: {{ sub_marks.pr_gp }}</small>
+                                {% endif %}
+                              </td>
+                            {% endif %}
+                          {% endif %}
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                  {% endfor %}
+                  {% if bt.is_total and bt.gpa is not None %}
+                    <td style="text-align:center; font-weight:bold; background:#e8f0fe;">
+                      {{ bt.gpa }}
+                    </td>
+                  {% endif %}
+                </tr>
+                {% endfor %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {% if subject_fm_list %}
+      <div class="fm-ref no-print mt-3">
+        <h6><strong>📋 Full Marks, Pass Marks & Calculation Reference</strong></h6>
+        <p class="text-muted small">
+          Pass criteria: <strong>TH obtained ≥ TH Pass Mark</strong> (and <strong>PR obtained ≥ PR Pass Mark</strong> when practical exists).
+          Percentage = (TH + PR obtained) ÷ (TH FM + PR FM) × 100. Gray cell = failed component.
+        </p>
+        <table class="table table-bordered table-sm" style="width:auto; font-size:0.8em;">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Subject</th>
+              <th>{{ terminology.theory_short|default:"TH" }} Full Marks</th>
+              <th>{{ terminology.theory_short|default:"TH" }} Pass Mark</th>
+              <th>{{ terminology.theory_short|default:"TH" }} Pass % needed</th>
+              <th>{{ terminology.practical_short|default:"PR" }} Full Marks</th>
+              <th>{{ terminology.practical_short|default:"PR" }} Pass Mark</th>
+              <th>{{ terminology.practical_short|default:"PR" }} Pass % needed</th>
+              <th>Total FM</th>
+              <th>Has {{ terminology.practical_short|default:"PR" }}?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fm in subject_fm_list %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td><strong>{{ fm.name }}</strong></td>
+              <td>{{ fm.th_fm }}</td>
+              <td>{{ fm.th_pm }}</td>
+              <td>{% if fm.th_fm > 0 %}{{ fm.th_pm|floatformat:0 }}/{{ fm.th_fm|floatformat:0 }}{% else %}—{% endif %}</td>
+              <td>{{ fm.pr_fm }}</td>
+              <td>{{ fm.pr_pm }}</td>
+              <td>{% if fm.pr_fm > 0 %}{{ fm.pr_pm}}/{{ fm.pr_fm }}{% else %}—{% endif %}</td>
+              <td><strong>{{ fm.th_fm|add:fm.pr_fm }}</strong></td>
+              <td>{% if fm.pr_fm > 0 %}✔ Yes{% else %}✘ No{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script>
+      function exportToExcel() {
+        var wb = XLSX.utils.table_to_book(document.getElementById('ledgerTable'), {sheet:"Preview"});
+        XLSX.writeFile(wb, 'Ledger_Preview.xlsx');
+      }
+    </script>
+  </body>
+</html>
