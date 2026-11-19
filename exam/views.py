@@ -1718,8 +1718,8 @@ def print_ledger_preview(request):
     ).order_by('id')
 
     from exam.func import _parse_weighted_term_config
-    from exam.models import WeightedResultManagement, StudentSession, GradeFullMarks, MarkObtained
-    from sms.models import Subject
+    from exam.models import WeightedResultManagement, GradeFullMarks
+    from sms.models import Subject, StudentSession, MarkObtained
     normalized_wconfig = {}
     source_terms = []
     if ledgermode in ['2', '3']:
@@ -1892,7 +1892,7 @@ def print_ledger_preview(request):
         'subject_fm_list': subject_fm_list,
         'terminology': terminology,
     })
-    return _render_exam_template('exam/printledgerpreview.html', ctx)
+    return render(request, 'exam/printledgerpreview.html', ctx)
 
 
 @login_required
@@ -2119,7 +2119,7 @@ def print_ledger_now(request):
         'ledgermode': ledgermode, 'ledgertype': ledgertype,
         'terminology': terminology,
     })
-    return _render_exam_template('exam/printledgernow_detailed.html', ctx)
+    return render(request, 'exam/printledgernow_detailed.html', ctx)
 
 
 # ── Entrance Card (exam app replica of panel/print/entrancecard/) ───────────
@@ -2172,7 +2172,7 @@ def print_entrance_card(request):
                 'year': current_session.year, 'logo': logo, 'width': width,
                 'blankcount': '12345678', 'std_reg': std_reg, 'whattype': whattype,
             })
-            return _render_exam_template('exam/entrancecard_dict.html', ctx)
+            return render(request, 'exam/entrancecard_dict.html', ctx)
         elif whattype == 'blank':
             ctx = _nav_context(request)
             ctx.update({
@@ -2180,7 +2180,7 @@ def print_entrance_card(request):
                 'logo': logo, 'width': width, 'blankcount': '12345678',
                 'std_reg': std_reg, 'whattype': whattype,
             })
-            return _render_exam_template('exam/entrancecardblank.html', ctx)
+            return render(request, 'exam/entrancecardblank.html', ctx)
         elif whattype == 'image':
             ctx = _nav_context(request)
             ctx.update({
@@ -2188,13 +2188,13 @@ def print_entrance_card(request):
                 'year': current_session.year, 'logo': logo, 'width': width,
                 'blankcount': '12345678', 'std_reg': std_reg, 'whattype': whattype,
             })
-            return _render_exam_template('exam/entrancecard_dict.html', ctx)
+            return render(request, 'exam/entrancecard_dict.html', ctx)
 
     ctx = _nav_context(request)
     ctx.update({
         'grades': grades, 'school': school, 'exam_types': exam_types,
     })
-    return _render_exam_template('exam/entrancecardbase.html', ctx)
+    return render(request, 'exam/entrancecardbase.html', ctx)
 
 
 # ── Settings ─────────────────────────────────────────────────────────────────
