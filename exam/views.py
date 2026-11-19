@@ -2170,15 +2170,57 @@ def print_ledger_now(request):
     except SchoolTerminology.DoesNotExist:
         terminology = None
 
+    # Transform data to match printledgerpreview.html structure (student_data with breakdown_terms)
+    student_data = []
+    for sn, student_data_item in data.items():
+        # Build breakdown_terms from subjects
+        subjects_list = []
+        for sub in subjects:
+            marks = student_data_item['subjects'].get(sub.id, {})
+            subjects_list.append({
+                'th_val': marks.get('theory_raw', '-'),
+                'pr_val': marks.get('prac_raw', '-'),
+            })
+        
+        # Single term entry (since this is detailed ledger for one term)
+        breakdown_terms = [{
+            'term_label': term.term_name,
+            'subjects': subjects_list,
+            'is_total': False
+        }]
+        
+        # Add total row
+        total_subjects = []
+        for sub in subjects:
+            marks = student_data_item['subjects'].get(sub.id, {})
+            total_subjects.append({
+                'th_val': marks.get('theory_raw', '-'),
+                'pr_val': marks.get('prac_raw', '-'),
+            })
+        breakdown_terms.append({
+            'term_label': 'TOTAL',
+            'subjects': total_subjects,
+            'is_total': True
+        })
+        
+        student_data.append({
+            'reg_no': student_data_item['reg_no'],
+            'roll_no': student_data_item['roll_no'],
+            'name': student_data_item['name'],
+            'breakdown_terms': breakdown_terms,
+            'is_failed': student_data_item['is_failed'],
+        })
+
     ctx = _nav_context(request)
     ctx.update({
         'school': school, 'term': term, 'year': term.year,
-        'data': data, 'grade': grade, 'section': section,
+        'student_data': student_data, 'grade': grade, 'section': section,
         'subjects': subjects, 'subject_fm_list': subject_fm_list,
         'ledgermode': ledgermode, 'ledgertype': ledgertype,
         'terminology': terminology,
+        'edusession_id': edusession_id, 'term_id': term_id, 'grade_id': grade_id, 'section_id': section_id,
     })
-    return render(request, 'exam/printledgernow_detailed.html', ctx)
+    return render(request, 'exam/printledgerpreview.html', ctx)
 
 
 # ── Entrance Card (exam app replica of panel/print/entrancecard/) ───────────
