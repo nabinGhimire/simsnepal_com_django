@@ -1,0 +1,92 @@
+{% extends 'exam/base.html' %}
+{% load static %}
+{% block title %}Print Ledger Summary{% endblock %}
+
+{% block exam_content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-8 mx-auto text-center">
+      <p class="mb-0">{{ school.slogan }}</p>
+      <h1 class="school">{{ school.name }}</h1>
+      <div>{{ school.location }}</div>
+      <div><strong>{{ term.term_name|upper }} – {{ year }}</strong></div>
+      <div class="report-type">
+        {% if ledgertype == "2" %}MARKS{% else %}GRADE{% endif %} LEDGER SUMMARY —
+        GRADE {{ grade|upper }}{% if section %} ({{ section|upper }}){% else %} (ALL){% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2 no-print text-center">
+    <div class="col-12">
+      <button onclick="window.print()" class="exam-btn exam-btn-primary btn-sm">
+        <i class="fa-solid fa-print me-1"></i> Print
+      </button>
+      <button onclick="exportToExcel()" class="exam-btn exam-btn-success btn-sm">
+        <i class="fa-solid fa-file-excel me-1"></i> Export Excel
+      </button>
+    </div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-12">
+      <div class="table-responsive">
+        <table id="ledgerTable" class="table table-bordered exam-table">
+          <thead>
+            <tr>
+              <th>S.N</th>
+              <th>Reg No</th>
+              <th>Roll</th>
+              <th>Name</th>
+              <th>Rank</th>
+              {% for fm in subject_fm_list %}
+                <th colspan="{% if fm.pr_fm > 0 %}2{% else %}1{% endif %}">{{ fm.name }}</th>
+              {% endfor %}
+              <th>Total</th>
+              <th>%</th>
+              <th>CGPA</th>
+              <th>Grade</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in student_data %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ student.reg_no }}</td>
+              <td>{{ student.roll_no }}</td>
+              <td class="name-col"><strong>{{ student.name }}</strong></td>
+              <td>{{ student.rank }}</td>
+              {% for bt in student.breakdown_terms %}
+                {% if bt.is_total %}
+                  {% for sub_marks in bt.subjects %}
+                    <td>{{ sub_marks.th_val|default:"-" }}</td>
+                    {% for fm in subject_fm_list %}
+                      {% if forloop.counter0 == forloop.parentloop.counter0 and fm.pr_fm > 0 %}
+                        <td>{{ sub_marks.pr_val|default:"-" }}</td>
+                      {% endif %}
+                    {% endfor %}
+                  {% endfor %}
+                {% endif %}
+              {% endfor %}
+              <td>{{ student.breakdown_terms|last.subjects.0.th_val|add:student.breakdown_terms|last.subjects.0.pr_val|default:"-" }}</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+  <script>
+    function exportToExcel() {
+      var wb = XLSX.utils.table_to_book(document.getElementById('ledgerTable'), {sheet:"Summary"});
+      XLSX.writeFile(wb, 'Ledger_Summary.xlsx');
+    }
+  </script>
+{% endblock %}

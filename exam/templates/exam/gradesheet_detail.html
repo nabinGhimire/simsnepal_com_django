@@ -1,0 +1,425 @@
+{% load static exam_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Result</title>
+    <link href='https://fonts.googleapis.com/css?family=Poppins' rel='stylesheet'>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css"
+        integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://app.hamro.com/static/css/printledger.css">
+    <link rel="stylesheet" type="text/css" media="print" href="https://app.hamro.com/static/css/printledger.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            margin: 0;
+            padding: 0;
+            color: #000;
+            background-color: #fff;
+        }
+        .report-card {
+            position: relative;
+            margin: 10px auto;
+            padding: 0 10px;
+            border: 1px solid #000;
+            page-break-after: always;
+        }
+        .report-card:last-child {
+            page-break-after: auto;
+        }
+        .card-header {
+            position: relative;
+            display: block;
+            text-align: center;
+            padding: 10px 0;
+        }
+        .card-header h1 {
+            font-size: 22px;
+            font-family: "Times New Roman", Georgia, Serif;
+            margin: 0;
+            padding: 0;
+            font-weight: bold;
+        }
+        .branch {
+            font-size: 14px;
+            margin: 0;
+            padding: 0;
+        }
+        .card-header h2 {
+            font-size: 16px;
+            margin: 5px 0 0 0;
+            padding: 0;
+            font-weight: normal;
+        }
+        .report {
+            font-size: 12pt;
+            margin: 5px 0 0 0;
+            font-weight: bold;
+        }
+
+        .studentInfo {
+            position: relative;
+            display: block;
+            width: 100%;
+            margin: 10px 0 0 0;
+        }
+        .studentInfo table {
+            width: 100%;
+        }
+        .studentInfo table td {
+            border: none !important;
+            padding: 3px 5px;
+            vertical-align: top;
+        }
+
+        .marks {
+            position: relative;
+            display: block;
+            margin: 10px 0 0 0;
+        }
+        .marks table {
+            width: 100%;
+            border: 1px solid #000000;
+            border-collapse: collapse;
+        }
+        .marks table th {
+            text-align: center;
+            border: 1px solid #000000;
+            padding: 3px 5px;
+        }
+        .marks table td {
+            padding: 3px 5px;
+            margin: 0;
+            border-right: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+            vertical-align: top;
+        }
+        .marks table td p {
+            margin-bottom: 5px;
+        }
+
+        .sn { width: 2.5em; }
+
+        .teacher {
+            position: relative;
+            display: block;
+            margin: 15px 0 0 0;
+            text-align: center;
+        }
+        .teacher table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .teacher table td {
+            border: none !important;
+            padding: 8px;
+            text-align: center;
+        }
+        .teacher table tr:first-child td {
+            font-weight: bold;
+        }
+
+        .grading-system {
+            margin: 10px 0 0 0;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .grading-system th, .grading-system td {
+            border: 1px solid #000000;
+            padding: 3px 5px;
+            text-align: center;
+        }
+        .grading-system th.biggs { font-weight: bold; }
+        .grading-system td.bg-gray { background-color: #f0f0f0; }
+
+        .remarks-section {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0 0 0;
+        }
+        .remarks-section td {
+            border: 1px solid #000000;
+            padding: 5px;
+        }
+        .remarks-section tr:first-child {
+            background-color: #e0e0e0;
+        }
+
+        .acronym-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0 0 0;
+        }
+        .acronym-table th, .acronym-table td {
+            border: 1px solid #000000;
+            padding: 3px 5px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            @page {
+                size: A4 portrait;
+                margin: 12mm 12mm 12mm 12mm;
+            }
+            body { font-size: 12px; background-color: #fff; }
+            .report-card {
+                border: 1px solid #000;
+                page-break-after: always;
+                margin: 0;
+                padding: 0;
+            }
+            .report-card:last-child {
+                page-break-after: auto;
+            }
+        }
+        @page {
+            size: A4 portrait;
+            margin: 12mm 12mm 12mm 12mm;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% for item in data %}
+        {% if item.student %}
+        <div class="report-card" id="report-card">
+            <div class="card-header">
+                {% if school.logo %}
+                <img src="{{ school.logo.url }}" style="width: 80px; height: 80px; object-fit: contain; border: 1px solid #000; display: block; margin: 0 auto 10px auto;">
+                {% else %}
+                <div style="width: 80px; height: 80px; border: 1px solid #000; display: block; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">LOGO</div>
+                {% endif %}
+                <h1>{{ school.name }}</h1>
+                <div class="branch">{{ school.location|default:"" }}</div>
+                <h2>{% if term.final_term %}{{ term.final_term_name|upper }}{% else %}{{ term.term_name|upper }}{% endif %} - {{ year|default:"" }}</h2>
+                <div class="report">GRADE SHEET</div>
+            </div>
+
+            <div class="studentInfo">
+                <table>
+                    <tr>
+                        <td class="nobl" colspan="3">Student Name: <span style="font-weight:bold;">{{ item.student.student.name|upper }}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="nobl">Grade: <span style="font-weight:bold;">{{ grade|upper }}</span></td>
+                        <td class="nobl">Section/Roll: <span style="font-weight:bold;">{{ item.student.section|default:"" }}/{{ item.student.roll_no }}</span></td>
+                        <td class="nobr">Symbol No: <span style="font-weight:bold;">{{ item.student.student.reg_no }}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="nobl">DOB: <span style="font-weight:bold;">{% if item.student.student.dob %}{{ item.student.student.dob }}{% else %}N/A{% endif %}</span></td>
+                        <td class="nobl">EMIS: <span style="font-weight:bold;">{{ school.emis_code|default:"" }}</span></td>
+                        <td class="nobr">Contact: <span style="font-weight:bold;">{% if item.student.student.mothers_phone %}{{ item.student.student.mothers_phone }}{% elif item.student.student.fathers_phone %}{{ item.student.student.fathers_phone }}{% elif item.student.student.guardian_phone %}{{ item.student.student.guardian_phone }}{% else %}N/A{% endif %}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="nobl">Attendance: <span style="font-weight:bold;">{{ item.attendance.present }}/{{ item.attendance.total }}</span></td>
+                        <td class="nobl">EMIS: <span style="font-weight:bold;">{{ school.emis_code|default:"" }}</span></td>
+                        <td class="nobr">Contact: <span style="font-weight:bold;">{% if item.student.student.mothers_phone %}{{ item.student.student.mothers_phone }}{% elif item.student.student.fathers_phone %}{{ item.student.student.fathers_phone }}{% elif item.student.student.guardian_phone %}{{ item.student.student.guardian_phone }}{% else %}N/A{% endif %}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="nobl" colspan="2">Father's Name: <span style="font-weight:bold;">{% if item.student.student.fathers_name %}{{ item.student.student.fathers_name|upper }}{% else %}N/A{% endif %}</span></td>
+                        <td class="nobr">Address: <span style="font-weight:bold;">{% if item.student.student.temporary_address %}{{ item.student.student.temporary_address|upper }}{% else %}N/A{% endif %}</span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="marks">
+                <table id="ledgerTable">
+                    <thead>
+                        <tr>
+                            <th rowspan="3" class="sn">S.N</th>
+                            <th rowspan="3" colspan="2">SUBJECTS</th>
+                            <th colspan="{{ no_of_terms_marks_count }}">OBTAINED GRADE</th>
+                            <th rowspan="2">AGGREGATE GRADE</th>
+                            <th rowspan="2">GP</th>
+                        </tr>
+                        <tr>
+                            {% if no_of_terms >= 2 %}
+                            {% for this_term_code, this_term_name in term_acronym.items %}
+                            <th colspan="2">{{ this_term_code }}</th>
+                            {% endfor %}
+                            {% endif %}
+                        </tr>
+                        <tr>
+                            {% for x in no_of_terms_range %}
+                            <th style="width: 40px;">TH</th>
+                            <th style="width: 40px;">PR</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in subjects %}
+                        <tr>
+                            <td class="sn" style="text-align: center;" rowspan="2">{{ forloop.counter }}</td>
+                            <td style="text-align: left; font-weight: bold;" rowspan="2">{{ sub.subject }}</td>
+                            <td rowspan="2" style="width: 40px;">{{ terminology.theory_short|default:"TH" }}</td>
+                            {% for term in term_list %}
+                            {% with sub_data=item.mo_dict|get_item:sub.id %}
+                            <td style="text-align: center; width: 40px;">
+                                {{ sub_data|get_item:'th_grade'|default:"-" }}
+                                <sup>{{ sub_data|get_item:'th_symbol'|default:"" }}</sup>
+                            </td>
+                            <td style="text-align: center; width: 40px;">
+                                {{ sub_data|get_item:'th_point'|floatformat:1|default:"-" }}
+                            </td>
+                            {% endwith %}
+                            {% endfor %}
+                            <td style="text-align: center; width: 50px;">
+                                {% with sub_data=item.mo_dict|get_item:sub.id %}
+                                {{ sub_data|get_item:'total_grade'|default:"-" }}
+                                <sup>{{ sub_data|get_item:'total_symbol'|default:"" }}</sup>
+                                {% endwith %}
+                            </td>
+                            <td style="text-align: center; width: 40px;">
+                                {% with sub_data=item.mo_dict|get_item:sub.id %}
+                                {{ sub_data|get_item:'total_point'|floatformat:1|default:"-" }}
+                                {% endwith %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2" style="width: 40px;">{{ terminology.practical_short|default:"PR" }}</td>
+                            {% for term in term_list %}
+                            {% with sub_data=item.mo_dict|get_item:sub.id %}
+                            <td style="text-align: center; width: 40px;">
+                                {{ sub_data|get_item:'pr_grade'|default:"-" }}
+                                <sup>{{ sub_data|get_item:'pr_symbol'|default:"" }}</sup>
+                            </td>
+                            <td style="text-align: center; width: 40px;">
+                                {{ sub_data|get_item:'pr_point'|floatformat:1|default:"-" }}
+                            </td>
+                            {% endwith %}
+                            {% endfor %}
+                            <td style="text-align: center; width: 50px;">
+                                {% with sub_data=item.mo_dict|get_item:sub.id %}
+                                {{ sub_data|get_item:'total_grade'|default:"-" }}
+                                <sup>{{ sub_data|get_item:'total_symbol'|default:"" }}</sup>
+                                {% endwith %}
+                            </td>
+                            <td style="text-align: center; width: 40px;">
+                                {% with sub_data=item.mo_dict|get_item:sub.id %}
+                                {{ sub_data|get_item:'total_point'|floatformat:1|default:"-" }}
+                                {% endwith %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        <tr>
+                            <td colspan="{{ gpa_colspan }}" style="text-align: right; font-weight: bold; padding-right: 10px;">GRADE POINT AVERAGE (GPA)</td>
+                            <td style="text-align: center;">{{ item.cgpa|floatformat:2 }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <table class="grading-system">
+                <tr>
+                    <th colspan="6" class="biggs">GRADING SYSTEM</th>
+                </tr>
+                <tr class="bg-gray">
+                    <th class="biggs">Interval in %</th>
+                    <th>Grade</th>
+                    <th>GPA</th>
+                    <th class="biggs">Interval in %</th>
+                    <th>Grade</th>
+                    <th>GPA</th>
+                </tr>
+                <tr>
+                    <td class="biggs">90-100</td>
+                    <td>A<sup>+</sup></td>
+                    <td>4.0</td>
+                    <td class="biggs">50-60</td>
+                    <td>C+</td>
+                    <td>2.4</td>
+                </tr>
+                <tr>
+                    <td class="biggs">80-90</td>
+                    <td>A</td>
+                    <td>3.6</td>
+                    <td class="biggs">40-50</td>
+                    <td>C</td>
+                    <td>2.0</td>
+                </tr>
+                <tr>
+                    <td class="biggs">70-80</td>
+                    <td>B<sup>+</sup></td>
+                    <td>3.2</td>
+                    <td class="biggs">35-40</td>
+                    <td>D</td>
+                    <td>1.6</td>
+                </tr>
+                <tr>
+                    <td class="biggs">60-70</td>
+                    <td>B</td>
+                    <td>2.8</td>
+                    <td class="biggs">0-35</td>
+                    <td>NG</td>
+                    <td>0</td>
+                </tr>
+            </table>
+
+            {% if item.remarks %}
+            <table class="remarks-section">
+                <tr>
+                    <td style="font-weight: bold; width: 120px;">REMARKS:</td>
+                    <td><strong>{{ item.remarks }}</strong></td>
+                </tr>
+            </table>
+            {% endif %}
+
+            <div class="teacher">
+                <table>
+                    <tr>
+                        <td>_______________</td>
+                        <td>_____________________</td>
+                        <td>_____________</td>
+                    </tr>
+                    <tr>
+                        <td>CLASS TEACHER</td>
+                        <td>EXAM. CO-ORDINATOR</td>
+                        <td>PRINCIPAL</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <script>
+        $(document).ready(function () {
+            var obj = JSON.parse('{{ mo_dict|escapejs }}');
+            Object.keys(obj).forEach(function(k){
+                if(k.slice(-11) === "grade_point"){
+                    if(obj[k] === "-"){
+                        $("#"+k).text("-");
+                    }else{
+                        $("#"+k).text(parseFloat(obj[k]).toFixed(1));
+                    }
+                }else if(k.slice(-8) === "th_point"){
+                    if(obj[k] === "-"){
+                        $("#"+k).text("-");
+                    }else if(obj[k] != 0){
+                        $("#"+k).text(parseFloat(obj[k]).toFixed(1));
+                    }else{
+                        $("#"+k).text(0);
+                    }
+                }else if(k.slice(-8) === "pr_point"){
+                    if(obj[k] === "-"){
+                        $("#"+k).text("-");
+                    }else if(obj[k] != 0){
+                        $("#"+k).text(parseFloat(obj[k]).toFixed(1));
+                    }else{
+                        $("#"+k).text(0);
+                    }
+                }else{
+                    $("#"+k).text(obj[k]);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

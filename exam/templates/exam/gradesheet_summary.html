@@ -1,0 +1,263 @@
+{% load static exam_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Result</title>
+    <link href='https://fonts.googleapis.com/css?family=Poppins' rel='stylesheet'>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css"
+        integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://app.hamro.com/static/css/printledger.css">
+    <link rel="stylesheet" type="text/css" media="print" href="https://app.hamro.com/static/css/printledger.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            font-size: 11px;
+            margin: 0;
+            padding: 0;
+            color: #000;
+            background-color: #fff;
+        }
+        .report-card {
+            position: relative;
+            margin: 10px auto;
+            padding: 0 10px;
+            border: 1px solid #000;
+            page-break-after: auto;
+        }
+        .card-header {
+            position: relative;
+            display: block;
+            text-align: center;
+            padding: 10px 0;
+        }
+        .card-header h1 {
+            font-size: 22px;
+            font-family: "Times New Roman", Georgia, Serif;
+            margin: 0;
+            padding: 0;
+            font-weight: bold;
+        }
+        .branch {
+            font-size: 14px;
+            margin: 0;
+            padding: 0;
+        }
+        .card-header h2 {
+            font-size: 16px;
+            margin: 5px 0 0 0;
+            padding: 0;
+            font-weight: normal;
+        }
+        .report {
+            font-size: 12pt;
+            margin: 5px 0 0 0;
+            font-weight: bold;
+        }
+
+        .marks {
+            position: relative;
+            display: block;
+            margin: 10px 0 0 0;
+        }
+        .marks table {
+            width: 100%;
+            border: 1px solid #000000;
+            border-collapse: collapse;
+        }
+        .marks table th {
+            text-align: center;
+            border: 1px solid #000000;
+            padding: 3px 5px;
+            background-color: #f0f0f0;
+        }
+        .marks table td {
+            padding: 3px 5px;
+            margin: 0;
+            border-right: 1px solid #000000;
+            border-bottom: 1px solid #000000;
+            vertical-align: top;
+            text-align: center;
+        }
+
+        .teacher {
+            position: relative;
+            display: block;
+            margin: 15px 0 0 0;
+            text-align: center;
+        }
+        .teacher table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .teacher table td {
+            border: none !important;
+            padding: 8px;
+            text-align: center;
+        }
+        .teacher table tr:first-child td {
+            font-weight: bold;
+        }
+
+        .grading-system {
+            margin: 10px 0 0 0;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .grading-system th, .grading-system td {
+            border: 1px solid #000000;
+            padding: 3px 5px;
+            text-align: center;
+        }
+        .grading-system th.biggs { font-weight: bold; }
+        .grading-system td.bg-gray { background-color: #f0f0f0; }
+
+        @media print {
+            .no-print { display: none !important; }
+            @page {
+                size: A4 portrait;
+                margin: 12mm 12mm 12mm 12mm;
+            }
+            body { font-size: 11px; background-color: #fff; }
+            .report-card {
+                border: 1px solid #000;
+                page-break-after: auto;
+                margin: 0;
+                padding: 0;
+            }
+        }
+        @page {
+            size: A4 portrait;
+            margin: 12mm 12mm 12mm 12mm;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="report-card" id="report-card">
+            <div class="card-header">
+                {% if school.logo %}
+                <img src="{{ school.logo.url }}" style="width: 80px; height: 80px; object-fit: contain; border: 1px solid #000; display: block; margin: 0 auto 10px auto;">
+                {% else %}
+                <div style="width: 80px; height: 80px; border: 1px solid #000; display: block; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">LOGO</div>
+                {% endif %}
+                <h1>{{ school.name }}</h1>
+                <div class="branch">{{ school.location|default:"" }}</div>
+                <h2>{% if term.final_term %}{{ term.final_term_name|upper }}{% else %}{{ term.term_name|upper }}{% endif %} - {{ year|default:"" }}</h2>
+                <div class="report">GRADE SHEET SUMMARY</div>
+            </div>
+
+            <div class="marks">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;">S.N</th>
+                            <th>STUDENT</th>
+                            <th style="width: 80px;">REG NO</th>
+                            <th style="width: 50px;">ROLL</th>
+                            <th style="width: 50px;">RANK</th>
+                            <th style="width: 70px;">TOTAL FM</th>
+                            <th style="width: 70px;">TOTAL MO</th>
+                            <th style="width: 50px;">%</th>
+                            <th style="width: 50px;">CGPA</th>
+                            <th style="width: 80px;">GRADE</th>
+                            <th style="width: 80px;">STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in data %}
+                        <tr style="{% if item.fail_count > 0 %}background-color:#fff3f3;{% endif %}">
+                            <td>{{ forloop.counter }}</td>
+                            <td style="text-align: left; font-weight: bold;">{{ item.student.student.name|upper }}</td>
+                            <td>{{ item.student.student.reg_no }}</td>
+                            <td>{{ item.student.roll_no }}</td>
+                            <td>{{ item.rank|default:"-" }}</td>
+                            <td>{{ item.total_fm }}</td>
+                            <td>{{ item.total_mo }}</td>
+                            <td>{{ item.percentage }}%</td>
+                            <td>{{ item.cgpa }}</td>
+                            <td><strong>{{ item.overall_grade }}{{ item.overall_symbol }}</strong></td>
+                            <td>
+                                {% if item.fail_count > 0 %}
+                                <span style="color:#c0392b;font-weight:bold;">Fail</span>
+                                {% else %}
+                                <span style="color:#27ae60;font-weight:bold;">Pass</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" style="text-align: center;">No students found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <table class="grading-system">
+                <tr>
+                    <th colspan="6" class="biggs">GRADING SYSTEM</th>
+                </tr>
+                <tr class="bg-gray">
+                    <th class="biggs">Interval in %</th>
+                    <th>Grade</th>
+                    <th>GPA</th>
+                    <th class="biggs">Interval in %</th>
+                    <th>Grade</th>
+                    <th>GPA</th>
+                </tr>
+                <tr>
+                    <td class="biggs">90-100</td>
+                    <td>A<sup>+</sup></td>
+                    <td>4.0</td>
+                    <td class="biggs">50-60</td>
+                    <td>C+</td>
+                    <td>2.4</td>
+                </tr>
+                <tr>
+                    <td class="biggs">80-90</td>
+                    <td>A</td>
+                    <td>3.6</td>
+                    <td class="biggs">40-50</td>
+                    <td>C</td>
+                    <td>2.0</td>
+                </tr>
+                <tr>
+                    <td class="biggs">70-80</td>
+                    <td>B<sup>+</sup></td>
+                    <td>3.2</td>
+                    <td class="biggs">35-40</td>
+                    <td>D</td>
+                    <td>1.6</td>
+                </tr>
+                <tr>
+                    <td class="biggs">60-70</td>
+                    <td>B</td>
+                    <td>2.8</td>
+                    <td class="biggs">0-35</td>
+                    <td>NG</td>
+                    <td>0</td>
+                </tr>
+            </table>
+
+            <div class="teacher">
+                <table>
+                    <tr>
+                        <td>_______________</td>
+                        <td>_____________________</td>
+                        <td>_____________</td>
+                    </tr>
+                    <tr>
+                        <td>CLASS TEACHER</td>
+                        <td>EXAM. CO-ORDINATOR</td>
+                        <td>PRINCIPAL</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

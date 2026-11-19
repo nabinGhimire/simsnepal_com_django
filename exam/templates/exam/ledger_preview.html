@@ -1,0 +1,143 @@
+{% extends 'exam/base.html' %}
+{% load static %}
+{% block title %}Ledger Preview – {{ grade|upper }} – {{ term.term_name|upper }}{% endblock %}
+
+{% block exam_content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-8 mx-auto text-center">
+      <p class="mb-0">{{ school.slogan }}</p>
+      <h1 class="school">{{ school.name }}</h1>
+      <div>{{ school.location }}</div>
+      <div><strong>{{ term.term_name|upper }} – {{ year }}</strong></div>
+      <div class="report-type">
+        {% if ledgertype == "2" %}MARKS{% else %}GRADE{% endif %} LEDGER PREVIEW —
+        GRADE {{ grade|upper }}{% if section %} ({{ section|upper }}){% else %} (ALL){% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-2 no-print text-center">
+    <div class="col-12">
+      <button onclick="window.print()" class="exam-btn exam-btn-primary btn-sm">
+        <i class="fa-solid fa-print me-1"></i> Print
+      </button>
+      <button onclick="exportToExcel()" class="exam-btn exam-btn-success btn-sm">
+        <i class="fa-solid fa-file-excel me-1"></i> Export Excel
+      </button>
+    </div>
+  </div>
+
+  <div class="row mt-2">
+    <div class="col-12">
+      <div class="table-responsive">
+        <table id="ledgerTable" class="table table-bordered exam-table">
+          <thead>
+            <tr>
+              <th rowspan="2">S.N</th>
+              <th rowspan="2">Reg No</th>
+              <th rowspan="2">Roll</th>
+              <th rowspan="2">Name</th>
+              {% if ledgermode in "23" %}
+                <th rowspan="2">Term</th>
+              {% endif %}
+              {% for fm in subject_fm_list %}
+                <th colspan="{% if fm.pr_fm > 0 %}2{% else %}1{% endif %}">{{ fm.name }}</th>
+              {% endfor %}
+            </tr>
+            <tr>
+              {% for fm in subject_fm_list %}
+                <th>{{ terminology.theory_short|default:"TH" }}<br><small style="font-weight:normal;">FM: {{ fm.th_fm }}</small></th>
+                {% if fm.pr_fm > 0 %}
+                  <th>{{ terminology.practical_short|default:"PR" }}<br><small style="font-weight:normal;">FM: {{ fm.pr_fm }}</small></th>
+                {% endif %}
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in student_data %}
+              {% for bt in student.breakdown_terms %}
+              <tr{% if bt.is_total %} class="total-row"{% endif %}>
+                {% if forloop.first %}
+                  <td rowspan="{{ student.breakdown_terms|length }}">{{ forloop.parentloop.counter }}</td>
+                  <td rowspan="{{ student.breakdown_terms|length }}">{{ student.reg_no }}</td>
+                  <td rowspan="{{ student.breakdown_terms|length }}">{{ student.roll_no }}</td>
+                  <td rowspan="{{ student.breakdown_terms|length }}" class="name-col">
+                    <strong>{{ student.name }}</strong>
+                  </td>
+                {% endif %}
+                {% if ledgermode in "23" %}
+                  <td style="background:#f8f9fa; font-weight:bold; font-size:0.9em;">{{ bt.term_label }}</td>
+                {% endif %}
+                
+                {% for sub_marks in bt.subjects %}
+                  {% with outer_index=forloop.counter0 %}
+                    {% for fm in subject_fm_list %}
+                      {% if forloop.counter0 == outer_index %}
+                        <td>{{ sub_marks.th_val|default:"-" }}</td>
+                         {% if fm.pr_fm > 0 %}
+                           <td>{{ sub_marks.pr_val|default:"-" }}</td>
+                         {% endif %}
+                      {% endif %}
+                    {% endfor %}
+                  {% endwith %}
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if subject_fm_list %}
+  <div class="fm-ref no-print mt-3">
+    <h6><strong>Full Marks, Pass Marks & Calculation Reference</strong></h6>
+    <p class="text-muted small">
+      Pass criteria: <strong>TH obtained &ge; TH Pass Mark</strong> (and <strong>PR obtained &ge; PR Pass Mark</strong> when practical exists).
+      Percentage = (TH + PR obtained) &divide; (TH FM + PR FM) &times; 100. Gray cell = failed component.
+    </p>
+    <table class="table table-bordered table-sm" style="width:auto; font-size:0.8em;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Subject</th>
+          <th>{{ terminology.theory_short|default:"TH" }} Full Marks</th>
+          <th>{{ terminology.theory_short|default:"TH" }} Pass Mark</th>
+          <th>{{ terminology.theory_short|default:"TH" }} Pass % needed</th>
+          <th>{{ terminology.practical_short|default:"PR" }} Full Marks</th>
+          <th>{{ terminology.practical_short|default:"PR" }} Pass Mark</th>
+          <th>{{ terminology.practical_short|default:"PR" }} Pass % needed</th>
+          <th>Total FM</th>
+          <th>Has {{ terminology.practical_short|default:"PR" }}?</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fm in subject_fm_list %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td><strong>{{ fm.name }}</strong></td>
+          <td>{{ fm.th_fm }}</td>
+          <td>{{ fm.th_pm }}</td>
+          <td>{% if fm.th_fm > 0 %}{{ fm.th_pm }}/{{ fm.th_fm }} = {{ fm.th_pm|floatformat:0 }}/{{ fm.th_fm|floatformat:0 }}{% else %}&mdash;{% endif %}</td>
+          <td>{{ fm.pr_fm }}</td>
+          <td>{{ fm.pr_pm }}</td>
+          <td>{% if fm.pr_fm > 0 %}{{ fm.pr_pm }}/{{ fm.pr_fm }}{% else %}&mdash;{% endif %}</td>
+          <td><strong>{{ fm.th_fm|add:fm.pr_fm }}</strong></td>
+          <td>{% if fm.pr_fm > 0 %}&#x2714; Yes{% else %}&#x2718; No{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+  <script>
+    function exportToExcel() {
+      var wb = XLSX.utils.table_to_book(document.getElementById('ledgerTable'), {sheet:"Preview"});
+      XLSX.writeFile(wb, 'Ledger_Preview.xlsx');
+    }
+  </script>
+{% endblock %}
