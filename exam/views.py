@@ -3,6 +3,8 @@ Exam app views.
 All views render exam/ templates with the attendance-style design system.
 """
 import os
+import json
+from decimal import Decimal
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -19,6 +21,17 @@ from exam.func import (
     get_grade_config,
     calculate_rank,
 )
+
+
+def _decimal_to_float(obj):
+    """Recursively convert Decimal objects to float for JSON serialization."""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    elif isinstance(obj, dict):
+        return {k: _decimal_to_float(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_decimal_to_float(v) for v in obj]
+    return obj
 
 
 def _get_result_config(school, session, grade):
@@ -1373,7 +1386,7 @@ def marksgradesheet(request):
             'no_of_terms_range': no_of_terms_range,
             'no_of_terms_marks_count': no_of_terms_marks_count,
             'gpa_colspan': gpa_colspan,
-            'mo_dict': _json.dumps(mo_dict),
+            'mo_dict': _json.dumps(_decimal_to_float(mo_dict)),
             'the_space': range(0),  # Empty for single term
             'slogan': slogan,
             'logo': logo,
@@ -3008,7 +3021,7 @@ def print_ledger_from_calc(request, term_id):
             'no_of_terms_range': range(len(term_list)),
             'no_of_terms_marks_count': len(term_list) * 2,
             'gpa_colspan': 4 + len(term_list) * 2,
-            'mo_dict': json.dumps(mo_dict),
+            'mo_dict': _json.dumps(_decimal_to_float(mo_dict)),
             'the_space': range(0),
         })
         return render(request, 'exam/ledger_preview.html', ctx)
@@ -3464,7 +3477,7 @@ def print_ledger_now(request):
             'no_of_terms_range': range(len(term_list)),
             'no_of_terms_marks_count': len(term_list) * 2,
             'gpa_colspan': 4 + len(term_list) * 2,
-            'mo_dict': json.dumps(mo_dict),
+            'mo_dict': _json.dumps(_decimal_to_float(mo_dict)),
             'the_space': range(0),  # Empty for single term
         })
         return render(request, 'exam/ledger_preview.html', ctx)
