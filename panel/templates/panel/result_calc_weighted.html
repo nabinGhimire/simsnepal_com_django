@@ -46,7 +46,7 @@
           <a href="/panel/terms/?action=result_calc"><i class="ti ti-calculator"></i> Result Calculation</a>
         </li>
         <li class="active">
-          <a href="{% url 'weighted_result_calculation' %}"><i class="ti ti-adjustments"></i> Weighted Calculation</a>
+          <a href="{% url 'panel:weighted_result_calculation' %}"><i class="ti ti-adjustments"></i> Weighted Calculation</a>
         </li>
       </ul>
     </div>
@@ -56,7 +56,7 @@
     <div class="card">
       <div class="card-header d-flex align-items-center justify-content-between">
         <h3 class="card-title">Weighted Calculation Setup</h3>
-        <form action="{% url 'activate_weighted_calculation' %}" method="POST" class="m-0" id="activationForm">
+        <form action="{% url 'panel:activate_weighted_calculation' %}" method="POST" class="m-0" id="activationForm">
           {% csrf_token %}
           <div class="form-check form-switch m-0">
             <input class="form-check-input" type="checkbox" id="calcToggle" 
@@ -87,7 +87,7 @@
               <span class="text-secondary small">Configure how previous terms contribute to this term</span>
             </div>
             <div class="card-body">
-              <form action="{% url 'weighted_term_calculation' %}" method="POST">
+              <form action="{% url 'panel:weighted_term_calculation' %}" method="POST">
                 {% csrf_token %}
                 <input type="hidden" name="term_id" value="{{ term.id }}">
 
