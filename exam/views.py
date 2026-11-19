@@ -1204,7 +1204,8 @@ def marksgradesheet(request):
         term_id = request.POST.get('term')
         grade_id = request.POST.get('grade2')
         section_id = request.POST.get('section2')
-        printtype = int(request.POST.get('printtype', 1))  # 1=detail, 2=summary
+        ledger_type = int(request.POST.get('ledger_type', 1))  # 1=Grade, 2=Marks
+        printtype = int(request.POST.get('printtype', 1))  # 1=Detail, 2=Summary
 
         try:
             session = EduSession.objects.get(id=edusession_id)
@@ -1366,16 +1367,17 @@ def marksgradesheet(request):
         logo = school.logo.url if school.logo else ''
         slogan = school.slogan or ''
 
+        # Determine ledger type from form: 1=Grade, 2=Marks
+        ledger_type = int(request.POST.get('printtype', 1))
+        
         ctx = _nav_context(request)
         ctx.update({
             'school': school,
             'term': term,
             'year': term.year,
-            'data': panel_data,
             'grade': grade,
             'section': section,
             'subjects': subjects,
-            'printtype': printtype,
             'config': config,
             'is_exam_print': 'gradesheet',
             # Panel-compatible variables
@@ -1392,18 +1394,30 @@ def marksgradesheet(request):
             'logo': logo,
         })
 
-        if printtype == 2:
-            return render(request, 'exam/gradesheet_summary.html', ctx)
-        else:
-            # Select template based on grading_type (result_type)
-            grading_type = config.get('grading_type', 0)
-            if grading_type == 1:
-                template_name = 'exam/gradesheet_nongraded.html'
-            elif grading_type == 2:
-                template_name = 'exam/gradesheet_newgrading.html'
+        if ledger_type == 2:  # Marks - use detail template with TH/PR on separate rows
+            # Use student_data list format expected by gradesheet_detail.html
+            ctx.update({
+                'data': student_data,
+                'printtype': 1,  # Detail view
+            })
+            return render(request, 'exam/gradesheet_detail.html', ctx)
+        else:  # Grade - use panel-compatible format
+            ctx.update({
+                'data': panel_data,
+                'printtype': printtype,  # Keep original for summary check
+            })
+            if printtype == 2:  # Summary
+                return render(request, 'exam/gradesheet_summary.html', ctx)
             else:
-                template_name = 'exam/gradesheet_legacy.html'
-            return render(request, template_name, ctx)
+                # Select template based on grading_type (result_type)
+                grading_type = config.get('grading_type', 0)
+                if grading_type == 1:
+                    template_name = 'exam/gradesheet_nongraded.html'
+                elif grading_type == 2:
+                    template_name = 'exam/gradesheet_newgrading.html'
+                else:
+                    template_name = 'exam/gradesheet_legacy.html'
+                return render(request, template_name, ctx)
 
     ctx = _nav_context(request)
     ctx.update({
