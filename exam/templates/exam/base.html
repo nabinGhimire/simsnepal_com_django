@@ -435,11 +435,20 @@
               <a class="dropdown-item {% if is_exam_print == 'marks_form' %}active{% endif %}" href="{% url 'exam:marks_input_form' %}">
                 Marks Input Form
               </a>
-              <a class="dropdown-item {% if is_exam_print == 'gradesheet' %}active{% endif %}" href="{% url 'exam:marks_grade_sheet' %}">
-                Marks / Grade Sheet
+              <a class="dropdown-item {% if is_exam_print == 'mark_sheet' %}active{% endif %}" href="{% url 'exam:marks_grade_sheet' %}">
+                Mark Sheet
               </a>
-              <a class="dropdown-item {% if is_exam_print == 'ledger' %}active{% endif %}" href="{% url 'exam:grade_ledger' %}">
+              <a class="dropdown-item {% if is_exam_print == 'mark_ledger' %}active{% endif %}" href="{% url 'exam:print_ledger' %}">
+                Mark Ledger
+              </a>
+              <a class="dropdown-item {% if is_exam_print == 'grade_sheet' %}active{% endif %}" href="{% url 'exam:marks_grade_sheet' %}">
+                Grade Sheet
+              </a>
+              <a class="dropdown-item {% if is_exam_print == 'grade_ledger' %}active{% endif %}" href="{% url 'exam:grade_ledger' %}">
                 Grade Ledger
+              </a>
+              <a class="dropdown-item {% if is_exam_print == 'ledger_preview' %}active{% endif %}" href="{% url 'exam:print_ledger_preview' %}">
+                Ledger Preview
               </a>
             </div>
           </li>

@@ -1,0 +1,153 @@
+{% extends 'exam/base.html' %}
+{% load exam_extras %}
+{% block title %}Result Detail{% endblock %}
+
+{% block exam_content %}
+<div class="row g-3">
+  <!-- School Info -->
+  <div class="col-12">
+    <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
+      <div class="card-body py-2">
+        <div class="row">
+          <div class="col-md-3">
+            <strong>{{ school.name }}</strong>
+          </div>
+          <div class="col-md-3">
+            {{ term.term_name }} {{ term.year.year }}
+          </div>
+          <div class="col-md-3">
+            Grade: {{ grade }}
+          </div>
+          <div class="col-md-3">
+            {% if section %}Section: {{ section }}{% else %}All Sections{% endif %}
+            <span class="badge bg-{{ mode|yesno:'primary,info' }} ms-2">{{ mode|capfirst }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config Info -->
+  <div class="col-12">
+    <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
+      <div class="card-body py-2">
+        <small class="text-muted">
+          Grading: {{ config.grading_type|yesno:'Legacy,Non-Grade,New' }} | 
+          Ledger: {{ config.ledger_type|yesno:'Marks,Grade' }} | 
+          Calc: {{ config.calculation_type|capfirst }} | 
+          Source: {{ config.assessment_source|capfirst }}
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Results -->
+  {% for item in data %}
+  <div class="col-12">
+    <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
+      <div class="card-header bg-light" style="border-bottom:1px solid var(--exam-border);">
+        <div class="row">
+          <div class="col-md-4">
+            <strong>{{ item.student.student.name }}</strong> (Reg: {{ item.student.student.reg_no }})
+          </div>
+          <div class="col-md-2">
+            Roll: {{ item.student.roll_no }}
+          </div>
+          <div class="col-md-2">
+            Rank: {{ item.rank }}
+          </div>
+          <div class="col-md-2">
+            Total: {{ item.total_mo }} / {{ item.total_fm }}
+          </div>
+          <div class="col-md-2">
+            {% if mode == 'calculated' %}
+              CGPA: {{ item.cgpa }} | Grade: {{ item.overall_grade }}{{ item.overall_symbol }}
+            {% else %}
+              %: {{ item.percentage }}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th style="width:40px;">S.N</th>
+                <th>Subject</th>
+                <th style="width:80px;">TH FM</th>
+                <th style="width:80px;">TH MO</th>
+                <th style="width:80px;">PR FM</th>
+                <th style="width:80px;">PR MO</th>
+                {% if mode == 'calculated' %}
+                <th style="width:100px;">Grade</th>
+                <th style="width:80px;">GP</th>
+                <th style="width:80px;">Status</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for subject_id, sub_data in item.mo_dict.items %}
+              <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td>{{ sub_data.subject_name }}</td>
+                <td class="text-center">{{ sub_data.th_fm }}</td>
+                <td class="text-center">{{ sub_data.th_mo }}</td>
+                <td class="text-center">{{ sub_data.pr_fm }}</td>
+                <td class="text-center">{{ sub_data.pr_mo }}</td>
+                {% if mode == 'calculated' %}
+                <td class="text-center">
+                  {% if sub_data.total_grade %}
+                    {{ sub_data.total_grade }}{{ sub_data.total_symbol }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td class="text-center">{{ sub_data.gradepoint|floatformat:2 }}</td>
+                <td class="text-center">
+                  {% if sub_data.th_fail or sub_data.pr_fail %}
+                    <span class="badge bg-danger">Fail</span>
+                  {% else %}
+                    <span class="badge bg-success">Pass</span>
+                  {% endif %}
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr class="bg-light">
+                <td colspan="3" class="text-end"><strong>Total</strong></td>
+                <td class="text-center"><strong>{{ item.total_th_mo }}</strong></td>
+                <td class="text-center"><strong>{{ item.total_pr_fm }}</strong></td>
+                <td class="text-center"><strong>{{ item.total_pr_mo }}</strong></td>
+                {% if mode == 'calculated' %}
+                <td colspan="2" class="text-center"><strong>{{ item.overall_grade }}{{ item.overall_symbol }}</strong></td>
+                <td class="text-center"><strong>{{ item.cgpa }}</strong></td>
+                <td class="text-center">
+                  {% if item.fail_count > 0 %}
+                    <span class="badge bg-danger">Fail ({{ item.fail_count }})</span>
+                  {% else %}
+                    <span class="badge bg-success">Pass</span>
+                  {% endif %}
+                </td>
+                {% endif %}
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        {% if mode == 'calculated' %}
+        <div class="p-2">
+          <small class="text-muted"><strong>Remarks:</strong> {{ item.remarks }}</small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="alert alert-info">No students found for the selected criteria.</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

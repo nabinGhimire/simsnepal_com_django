@@ -62,7 +62,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Section</label>
-              <select name="section2" id="section2" class="exam-select"></select>
+              <select name="section2" id="section" class="exam-select"></select>
             </div>
             <div class="col-md-6">
               <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Result Type</label>
@@ -133,7 +133,7 @@ function populate2(s1, s2, y1) {
 }
 document.addEventListener('DOMContentLoaded', function() {
   filterTerms('edusession', 'term');
-  populate2('grade2', 'section2', 'edusession');
+  populate2('grade2', 'section', 'edusession');
 });
 </script>
 {% endblock %}

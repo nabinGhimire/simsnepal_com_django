@@ -1,4 +1,5 @@
 {% extends 'exam/base.html' %}
+{% load exam_extras %}
 {% block title %}Exam Terms{% endblock %}
 
 {% block exam_content %}
@@ -182,9 +183,9 @@
                 <tr>
                   <td class="text-muted">{{ forloop.counter }}</td>
                   <td>{{ exam.term_name }}</td>
-                  <td>
-                    <input type="number" class="form-control form-control-sm" name="{{ exam.id }}" placeholder="without %">
-                  </td>
+<td>
+                      <input type="number" class="form-control form-control-sm" name="{{ exam.id }}" value="{{ saved_calculations|get_item:term.id|get_item:exam.id|default:'' }}" placeholder="without %">
+                    </td>
                 </tr>
                 {% endif %}
                 {% endfor %}

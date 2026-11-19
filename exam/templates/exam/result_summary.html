@@ -1,0 +1,110 @@
+{% extends 'exam/base.html' %}
+{% load exam_extras %}
+{% block title %}Result Summary{% endblock %}
+
+{% block exam_content %}
+<div class="row g-3">
+  <!-- School Info -->
+  <div class="col-12">
+    <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
+      <div class="card-body py-2">
+        <div class="row">
+          <div class="col-md-3">
+            <strong>{{ school.name }}</strong>
+          </div>
+          <div class="col-md-3">
+            {{ term.term_name }} {{ term.year.year }}
+          </div>
+          <div class="col-md-3">
+            Grade: {{ grade }}
+          </div>
+          <div class="col-md-3">
+            {% if section %}Section: {{ section }}{% else %}All Sections{% endif %}
+            <span class="badge bg-{{ mode|yesno:'primary,info' }} ms-2">{{ mode|capfirst }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config Info -->
+  <div class="col-12">
+    <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
+      <div class="card-body py-2">
+        <small class="text-muted">
+          Grading: {{ config.grading_type|yesno:'Legacy,Non-Grade,New' }} | 
+          Ledger: {{ config.ledger_type|yesno:'Marks,Grade' }} | 
+          Calc: {{ config.calculation_type|capfirst }} | 
+          Source: {{ config.assessment_source|capfirst }}
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Table -->
+  <div class="col-12">
+    <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th style="width:40px;">S.N</th>
+                <th style="width:200px;">Student</th>
+                <th style="width:80px;">Reg No</th>
+                <th style="width:80px;">Roll</th>
+                <th style="width:80px;">Rank</th>
+                {% if mode == 'calculated' %}
+                <th style="width:80px;">Total FM</th>
+                <th style="width:80px;">Total MO</th>
+                <th style="width:80px;">%</th>
+                <th style="width:80px;">CGPA</th>
+                <th style="width:100px;">Grade</th>
+                <th style="width:80px;">Status</th>
+                {% else %}
+                <th style="width:80px;">Total FM</th>
+                <th style="width:80px;">Total MO</th>
+                <th style="width:80px;">%</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in data %}
+              <tr>
+                <td class="text-center">{{ forloop.counter }}</td>
+                <td>{{ item.student.student.name }}</td>
+                <td>{{ item.student.student.reg_no }}</td>
+                <td class="text-center">{{ item.student.roll_no }}</td>
+                <td class="text-center">{{ item.rank }}</td>
+                {% if mode == 'calculated' %}
+                <td class="text-center">{{ item.total_fm }}</td>
+                <td class="text-center">{{ item.total_mo }}</td>
+                <td class="text-center">{{ item.percentage }}%</td>
+                <td class="text-center">{{ item.cgpa }}</td>
+                <td class="text-center">{{ item.overall_grade }}{{ item.overall_symbol }}</td>
+                <td class="text-center">
+                  {% if item.fail_count > 0 %}
+                    <span class="badge bg-danger">Fail</span>
+                  {% else %}
+                    <span class="badge bg-success">Pass</span>
+                  {% endif %}
+                </td>
+                {% else %}
+                <td class="text-center">{{ item.total_fm }}</td>
+                <td class="text-center">{{ item.total_mo }}</td>
+                <td class="text-center">{{ item.percentage }}%</td>
+                {% endif %}
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="{{ subjects|length|add:8 }}" class="text-center text-muted py-4">No students found</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'exam/base.html' %}
+{% block title %}Private Result{% endblock %}
+
+{% block exam_content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;">
+        <div class="card-header bg-white">
+          <h3 class="card-title mb-0">{{ school.name }}</h3>
+        </div>
+        <div class="card-body">
+          <div class="text-center mb-4">
+            <h4>{{ student.name }}</h4>
+            <p class="text-muted mb-1">Reg No: {{ student.reg_no }} | Roll: {{ student.session_set.first.roll_no }}</p>
+            <p class="text-muted mb-1">Grade: {{ grade }} | Term: {{ term.term_name }}</p>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered exam-table">
+              <thead>
+                <tr>
+                  <th>Term</th>
+                  <th>Subject</th>
+                  <th>TH FM</th>
+                  <th>TH MO</th>
+                  <th>PR FM</th>
+                  <th>PR MO</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for t_id, t_data in student_terms.items %}
+                  {% for sub in t_data.subjects %}
+                  <tr>
+                    {% if forloop.first %}
+                      <td rowspan="{{ t_data.subjects|length }}">{{ t_data.term.term_name }}</td>
+                    {% endif %}
+                    <td>{{ sub.name }}</td>
+                    <td>{{ sub.th_fm }}</td>
+                    <td>{{ sub.th_mo }}</td>
+                    <td>{{ sub.pr_fm }}</td>
+                    <td>{{ sub.pr_mo }}</td>
+                    <td>{{ sub.th_mo|add:sub.pr_mo }}</td>
+                  </tr>
+                  {% endfor %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="text-center mt-3">
+            <a href="{% url 'exam:dashboard' %}" class="exam-btn exam-btn-secondary">Back to Dashboard</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

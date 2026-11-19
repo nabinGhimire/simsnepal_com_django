@@ -1,0 +1,39 @@
+<!-- Calculation Logic Modal -->
+<div id="calculationModal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Calculation Logic Explanation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>This modal explains how the grading, ledger, and calculation settings affect your print outputs.</p>
+        
+        <h6>Grading Types</h6>
+        <ul>
+          <li><strong>Type 0 (Legacy)</strong>: Traditional numeric grading with letter grades and GPA</li>
+          <li><strong>Type 1 (Non-Grade)</strong>: Pass/fail only, percentage-based</li>
+          <li><strong>Type 2 (New)</strong>: Letter grades (A+, A, B, etc.) with GPA</li>
+        </ul>
+        
+        <h6>Ledger Types</h6>
+        <ul>
+          <li><strong>Type 1 (GRADE)</strong>: Displays grades and GPAs in the ledger</li>
+          <li><strong>Type 2 (MARKS)</strong>: Displays actual marks/scores in the ledger</li>
+        </ul>
+        
+        <h6>Calculation Types</h6>
+        <ul>
+          <li><strong>Type 1 (STANDARD)</strong>: Basic mark summation across terms</li>
+          <li><strong>Type 2 (WEIGHTED)</strong>: Marks weighted by term configuration (from result management)</li>
+          <li><strong>Type 3 (CONSOLIDATED)</strong>: Aggregate marks across all terms</li>
+          <li><strong>Type 4 (NON GRADED)</strong>: No grading, just basic attendance/basic tracking</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <a href="{% url 'exam:grade_result_config' %}" class="btn btn-primary">Configure Result Settings</a>
+      </div>
+    </div>
+  </div>
+</div>

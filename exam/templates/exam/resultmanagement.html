@@ -217,64 +217,62 @@
                   <th style="width:140px;">Calculation Type</th>
                   <th style="width:120px;">Status</th>
                 </tr>
-              </thead>
-              <tbody>
-                {% for row in grade_config_rows %}
-                {% with cfg=row.config g=row.grade %}
-                <tr>
-                  <td>{{ g.grade_name|upper }}</td>
-                  <td>
-                    {% if cfg and cfg.assessment_source == 'cas' %}
-                      <span class="badge bg-warning text-dark" style="font-size:0.7rem;">CAS</span>
-                    {% else %}
-                      <span class="badge bg-success text-white" style="font-size:0.7rem;">Exam</span>
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if cfg and cfg.assessment_source == 'cas' %}
-                      <span class="text-muted small">Fixed by Govt.</span>
-                    {% elif cfg and cfg.grading_type == 0 %}LEGACY{% elif cfg and cfg.grading_type == 1 %}Non-Grade{% elif cfg and cfg.grading_type == 2 %}New Grading{% else %}Default{% endif %}
-                  </td>
-                  <td>
-                    {% if cfg and cfg.assessment_source == 'cas' %}
-                      <span class="text-muted small">—</span>
-                    {% elif cfg and cfg.ledger_type == 1 %}MARKS{% elif cfg and cfg.ledger_type == 2 %}GRADE{% else %}Default{% endif %}
-                  </td>
-                  <td>
-                    {% if cfg and cfg.assessment_source == 'cas' %}
-                      <span class="text-muted small">—</span>
-                    {% elif cfg and cfg.calculation_type == 'legacy' %}LEGACY{% elif cfg and cfg.calculation_type == 'weighted' %}WEIGHTED{% else %}Default{% endif %}
-                  </td>
-                  <td>
-                    {% if cfg %}
-                      <span class="badge bg-success text-white" style="font-size:0.7rem;">Configured</span>
-                      <form action="" method="POST" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="submittype" value="reset_grade_config">
-                        <input type="hidden" name="grade_id" value="{{ g.id }}">
-                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Reset</button>
-                      </form>
-                    {% else %}
-                      <span class="badge bg-secondary text-white" style="font-size:0.7rem;">Default</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% endwith %}
-                {% endfor %}
-              </tbody>
-            </table>
+                <tbody>
+                  {% for row in grade_config_rows %}
+                  {% with cfg=row.config g=row.grade %}
+                  <tr>
+                    <td>{{ g.grade_name|upper }}</td>
+                    <td>
+                      {% if cfg and cfg.assessment_source == 'cas' %}
+                        <span class="badge bg-warning text-dark" style="font-size:0.7rem;">CAS</span>
+                      {% else %}
+                        <span class="badge bg-success text-white" style="font-size:0.7rem;">Exam</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if cfg and cfg.assessment_source == 'cas' %}
+                        <span class="text-muted small">Fixed by Govt.</span>
+                      {% elif cfg and cfg.grading_type == 0 %}LEGACY{% elif cfg and cfg.grading_type == 1 %}Non-Grade{% elif cfg and cfg.grading_type == 2 %}New Grading{% else %}Default{% endif %}
+                    </td>
+                    <td>
+                      {% if cfg and cfg.assessment_source == 'cas' %}
+                        <span class="text-muted small">Fixed by Govt.</span>
+                      {% elif cfg and cfg.ledger_type == 1 %}MARKS{% elif cfg and cfg.ledger_type == 2 %}GRADE{% else %}Default{% endif %}
+                    </td>
+                    <td>
+                      {% if cfg and cfg.assessment_source == 'cas' %}
+                        <span class="text-muted small">Fixed by Govt.</span>
+                      {% elif cfg and cfg.calculation_type == 'legacy' %}LEGACY{% elif cfg and cfg.calculation_type == 'weighted' %}WEIGHTED{% else %}Default{% endif %}
+                    </td>
+                    <td>
+                      {% if cfg %}
+                        <span class="badge bg-success text-white" style="font-size:0.7rem;">Configured</span>
+                        <form action="" method="POST" style="display:inline;">
+                          {% csrf_token %}
+                          <input type="hidden" name="submittype" value="reset_grade_config">
+                          <input type="hidden" name="grade_id" value="{{ g.id }}">
+                          <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Reset</button>
+                        </form>
+                      {% else %}
+                        <span class="badge bg-secondary text-white" style="font-size:0.7rem;">Default</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endwith %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        <p class="text-secondary mt-2 small">
-          Changing a setting here only affects the current session. Previous years'
-          results are never modified. Grades without a configuration row use the
-          school-wide defaults shown above.
-        </p>
+          <p class="text-secondary mt-2 small">
+            Changing a setting here only affects the current session. Previous years' results are never modified. Grades without a configuration row use the school-wide defaults shown above.
+          </p>
+        </div>
       </div>
     </div>
   </div>
   {% endif %}
+  {% include 'exam/calculation_modal.html' %}
   {% endif %}
-</div>
 {% endblock %}

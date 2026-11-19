@@ -2,74 +2,132 @@
 {% block title %}Subject-wise Marks Entry{% endblock %}
 
 {% block exam_content %}
-<div class="card shadow-sm" style="border:1px solid var(--exam-border);border-radius:8px;max-width:700px;">
-  <div class="card-body">
-    <form action="" method="POST" class="form-horizontal">
-      {% csrf_token %}
+{% if messages %}
+{% for msg in messages %}
+<div class="alert alert-{{ msg.tags }} py-2 px-3 mb-3" style="font-size:0.8rem;border-radius:8px;">{{ msg }}</div>
+{% endfor %}
+{% endif %}
 
-      <div class="mb-3 row">
-        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">School</label>
-        <div class="col">
-          <div class="form-control-plaintext font-weight-bold">{{ school.name }}</div>
-        </div>
+<div class="row g-4">
+  <!-- Selection Form (50%) -->
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow-sm h-100" style="border:1px solid var(--exam-border);border-radius:8px;">
+      <div class="card-body">
+        <h3 class="card-title mb-3" style="font-size:1rem;">Select Parameters</h3>
+        <form action="" method="POST" class="form-horizontal">
+          {% csrf_token %}
+
+          <div class="mb-3 row">
+            <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">School</label>
+            <div class="col">
+              <div class="form-control-plaintext font-weight-bold">{{ school.name }}</div>
+            </div>
+          </div>
+          <div class="mb-3 row">
+            <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Location</label>
+            <div class="col">
+              <div class="form-control-plaintext">{{ school.location|default:"—" }}</div>
+            </div>
+          </div>
+          <div class="mb-3 row">
+            <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Year</label>
+            <div class="col">
+              <div class="form-control-plaintext">{{ this_year }}</div>
+            </div>
+          </div>
+          <hr class="my-3">
+          <div class="mb-3 row">
+            <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Exam Term</label>
+            <div class="col">
+              <select name="term" id="term" class="exam-select">
+                {% for exam_type in exam_types %}
+                <option value="{{ exam_type.id }}" {% if term_id == exam_type.id|stringformat:"s" %}selected{% endif %}>{{ exam_type.term_name|upper }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3 row">
+            <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Grade</label>
+            <div class="col">
+              <select name="grade" id="grade" class="exam-select" onchange="populate(this.id,'section')">
+                <option value="">— Select Grade —</option>
+                {% for grade in grades %}
+                <option value="{{ grade.id }}" {% if grade_id == grade.id|stringformat:"s" %}selected{% endif %}>{{ grade|upper }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3 row">
+            <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Section</label>
+            <div class="col">
+              <select name="section" id="section" class="exam-select">
+                {% if sections_for_grade %}
+                {% for sid, sname in sections_for_grade.items %}
+                    <option value="{{ sid }}" {% if section_id == sid %}selected{% endif %}>{{ sname }}</option>
+                {% endfor %}
+              {% endif %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3 row">
+            <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Order By</label>
+            <div class="col">
+              <select name="order" id="order" class="exam-select">
+                <option value="1" {% if order == '1' %}selected{% endif %}>Registration Number</option>
+                <option value="2" {% if order == '2' %}selected{% endif %}>Roll Number</option>
+                <option value="3" {% if order == '3' %}selected{% endif %}>Name</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-footer text-end mt-4">
+            <button type="submit" class="exam-btn exam-btn-primary px-4">
+              <i class="fa-solid fa-arrow-right me-1"></i> Load Subjects
+            </button>
+          </div>
+        </form>
       </div>
-      <div class="mb-3 row">
-        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Location</label>
-        <div class="col">
-          <div class="form-control-plaintext">{{ school.location|default:"—" }}</div>
-        </div>
-      </div>
-      <div class="mb-3 row">
-        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Year</label>
-        <div class="col">
-          <div class="form-control-plaintext">{{ this_year }}</div>
-        </div>
-      </div>
-      <hr class="my-3">
-      <div class="mb-3 row">
-        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Exam Term</label>
-        <div class="col">
-          <select name="term" id="term" class="exam-select">
-            {% for exam_type in exam_types %}
-            <option value="{{ exam_type.id }}">{{ exam_type.term_name|upper }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
-      <div class="mb-3 row">
-        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Grade</label>
-        <div class="col">
-          <select name="grade" id="grade" class="exam-select" onchange="populate(this.id,'section')">
-            <option value="">— Select Grade —</option>
-            {% for grade in grades %}
-            <option value="{{ grade.id }}">{{ grade|upper }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
-      <div class="mb-3 row">
-        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Section</label>
-        <div class="col">
-          <select name="section" id="section" class="exam-select"></select>
-        </div>
-      </div>
-      <div class="mb-3 row">
-        <label class="col-3 col-form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Order By</label>
-        <div class="col">
-          <select name="order" id="order" class="exam-select">
-            <option value="1">Registration Number</option>
-            <option value="2">Roll Number</option>
-            <option value="3">Name</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-footer text-end mt-4">
-        <button type="submit" class="exam-btn exam-btn-primary px-4">
-          <i class="fa-solid fa-arrow-right me-1"></i> Next Step
-        </button>
-      </div>
-    </form>
+    </div>
   </div>
+
+  <!-- Subject List (50%) -->
+  {% if subjects %}
+  <div class="col-md-6 col-lg-7">
+    <div class="card shadow-sm h-100" style="border:1px solid var(--exam-border);border-radius:8px;">
+      <div class="card-body">
+        <h3 class="card-title mb-3" style="font-size:1rem;">Subjects for {{ selected_grade }} - Term {{ term_id }} - Section {{ section_id }}</h3>
+        <form action="{% url 'exam:save_subject_wise_marks' %}" method="POST" target="_blank">
+          {% csrf_token %}
+          <input type="hidden" name="term" value="{{ term_id }}">
+          <input type="hidden" name="grade" value="{{ grade_id }}">
+          <input type="hidden" name="section" value="{{ section_id }}">
+          <input type="hidden" name="order" value="{{ order }}">
+          <div class="table-responsive">
+            <table class="table table-vcenter table-hover exam-table">
+              <thead>
+                <tr>
+                  <th style="width:50px;">S.N</th>
+                  <th>Subject</th>
+                  <th style="width:120px;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for subject in subjects %}
+                <tr>
+                  <td class="text-muted">{{ forloop.counter }}</td>
+                  <td>{{ subject.subject }}</td>
+                  <td>
+                    <button type="submit" name="subject" value="{{ subject.id }}" class="btn btn-sm btn-outline-primary">Enter Marks</button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <script>
@@ -86,5 +144,12 @@ function populate(s1, s2) {
     s2El.appendChild(opt);
   }
 }
+// Trigger populate on page load if grade is already selected
+document.addEventListener('DOMContentLoaded', function() {
+  var gradeEl = document.getElementById('grade');
+  if (gradeEl && gradeEl.value) {
+    populate('grade', 'section');
+  }
+});
 </script>
 {% endblock %}

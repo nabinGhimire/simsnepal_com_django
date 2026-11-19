@@ -29,7 +29,7 @@
             <div class="col-md-6">
               <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Year</label>
               <select name="edusession" id="edusession" class="exam-select"
-                      onchange="filterTerms('edusession','term'); populate2('grade2','section2','edusession')">
+                      onchange="filterTerms('edusession','term'); populate2('grade2','section','edusession')">
                 {% for session in edusession %}
                 <option value="{{ session.id }}" {% if session.id == current_session.id %}selected{% endif %}>{{ session.year }}</option>
                 {% endfor %}
@@ -46,7 +46,7 @@
             <div class="col-md-6">
               <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Grade</label>
               <select name="grade2" id="grade2" class="exam-select"
-                      onchange="populate2(this.id,'section2','edusession')">
+                      onchange="populate2(this.id,'section','edusession')">
                 <option value=""></option>
                 {% for grade in grades %}
                 <option value="{{ grade.id }}">{{ grade|upper }}</option>
@@ -55,7 +55,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Section</label>
-              <select name="section2" id="section2" class="exam-select"></select>
+              <select name="section" id="section" class="exam-select"></select>
             </div>
             <div class="col-md-6">
               <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Grading Type</label>
@@ -95,11 +95,22 @@
                 <option value="th">Theory Only</option>
               </select>
             </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Calculation Type</label>
+              <select name="calculation_type" class="exam-select">
+                <option value="legacy">Legacy (Current Term Only)</option>
+                <option value="weighted">Weighted (Previous Terms)</option>
+                <option value="raw">Raw Marks (No Grading)</option>
+              </select>
+            </div>
           </div>
 
           <div class="mt-4">
             <button type="submit" name="submit" value="Submit" class="exam-btn exam-btn-primary px-4">
               <i class="fa-solid fa-print me-1"></i> Generate Ledger
+            </button>
+            <button type="submit" name="export" value="excel" class="exam-btn exam-btn-success px-4 ms-2">
+              <i class="fa-solid fa-file-excel me-1"></i> Export Excel
             </button>
           </div>
         </form>
@@ -139,7 +150,7 @@ function populate2(s1, s2, y1) {
 }
 document.addEventListener('DOMContentLoaded', function() {
   filterTerms('edusession', 'term');
-  populate2('grade2', 'section2', 'edusession');
+  populate2('grade2', 'section', 'edusession');
 });
 </script>
 {% endblock %}
