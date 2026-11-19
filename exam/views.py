@@ -2834,10 +2834,11 @@ def ledger_preview(request):
 
 @login_required
 def print_ledger_now(request):
-    """Generate full ledger for printing."""
-    from sms.models import SchoolGrade, EduSession, Section, Subject, StudentSession, MarkObtained
+    """Generate full ledger for printing using centralized calculation."""
+    from sms.models import SchoolGrade, EduSession, Section, Subject, StudentSession, Attendance
     from exam.models import SchoolTerm, WeightedResultManagement, SchoolTerminology, GradeFullMarks
-    from exam.func import _parse_weighted_term_config, calculate_rank
+    from exam.func import _parse_weighted_term_config, calculate_rank, calculate_student_result
+    import json as _json
 
     branchuser, error = get_branch_info(request.user)
     if error:
@@ -2869,6 +2870,9 @@ def print_ledger_now(request):
 
         # Get ranks
         config = _get_result_config(school, this_session, this_grade)
+        config['grading_type'] = grading_type
+        config['ledgertype'] = ledgerttype
+        config['ledgermode'] = ledgermode
         ranks = calculate_rank(school.id, this_session, this_grade, this_term, this_section, rank_by=rank_by, config=config)
 
         subjects = Subject.objects.filter(session=this_session, branch=school, grade=this_grade, status=True).order_by("id")
@@ -2903,131 +2907,89 @@ def print_ledger_now(request):
             else:
                 ledgermode = 1
 
-        # Build FM cache
-        this_term_fm_cache = {fm.subject_id: fm for fm in GradeFullMarks.objects.filter(school=school, session=this_session, grade=this_grade, term=this_term)}
-
-        # Pre-fetch marks
-        all_marks_map = {}
-        source_fm_map = {}
+        # Build term list for ledger
+        term_list = [this_term.id]
+        term_acronym = {this_term.id: this_term.name_in_short or this_term.term_name[:3]}
         if ledgermode in [2, 3]:
-            source_term_ids = [t.id for t in source_terms]
-            marks_qs = MarkObtained.objects.filter(school=school, session=this_session, grade=this_grade, term_id__in=source_term_ids)
-            for m in marks_qs:
-                all_marks_map[(m.student_id, m.term_id, m.subject_id)] = (m.th_mo or 0, m.pr_mo or 0)
-            source_fm_qs = GradeFullMarks.objects.filter(school=school, session=this_session, grade=this_grade, term_id__in=source_term_ids)
-            source_fm_map = {(fm.term_id, fm.subject_id): (fm.th_fm or 0, fm.pr_fm or 0) for fm in source_fm_qs}
-        else:
-            marks_qs = MarkObtained.objects.filter(school=school, session=this_session, grade=this_grade, term=this_term)
-            for m in marks_qs:
-                all_marks_map[(m.student_id, this_term.id, m.subject_id)] = (m.th_mo or 0, m.pr_mo or 0)
+            for src_term in source_terms:
+                term_list.append(src_term.id)
+                term_acronym[src_term.id] = src_term.name_in_short or src_term.term_name[:3]
+        no_of_terms = len(term_list)
+        no_of_terms_range = range(len(term_list))
+        no_of_terms_marks_count = no_of_terms * 2  # TH + PR per term
+        gpa_colspan = 4 + no_of_terms_marks_count  # S.N + Subject + TH/PR columns + Aggregate
 
-        # Build student data
+        # Calculate results for each student using centralized function
         student_data_list = []
         for student in students:
-            std_entry = {
-                "reg_no": student.student.reg_no,
-                "name": student.student.name,
-                "roll_no": student.roll_no,
-                "rank": ranks.get(student.student.reg_no, '-'),
-                "breakdown_terms": [],
-            }
+            result = calculate_student_result(school, this_session, this_grade, this_term, student, config)
+            result['student'] = student
+            result['rank'] = ranks.get(student.student.reg_no, '-')
+            student_data_list.append(result)
 
-            if ledgermode == 1:
-                term_entry = {"term_label": this_term.term_name, "subjects": []}
-                for sub in subjects:
-                    th_obt, pr_obt = all_marks_map.get((student.student_id, this_term.id, sub.id), (0, 0))
-                    fm = this_term_fm_cache.get(sub.id)
-                    term_entry["subjects"].append({
-                        "th_val": int(th_obt) if th_obt == int(th_obt) else round(th_obt, 2),
-                        "pr_val": int(pr_obt) if pr_obt == int(pr_obt) else round(pr_obt, 2),
-                        "th_max": fm.th_fm if fm else 0,
-                        "pr_max": fm.pr_fm if fm else 0,
-                        "th_fail": False,
-                        "pr_fail": False,
-                    })
-                std_entry["breakdown_terms"].append(term_entry)
+        # Get terminology
+        try:
+            terminology = SchoolTerminology.objects.get(school=school)
+        except Exception:
+            terminology = None
+
+        # Get attendance data
+        from sms.models import Attendance
+        attendance_data = {}
+        for item in student_data_list:
+            student = item['student']
+            attendance = Attendance.objects.filter(
+                reg_no=student.student.reg_no,
+                session=this_session,
+                grade=this_grade,
+                term=this_term
+            ).first()
+            if attendance:
+                attendance_data[student.student.reg_no] = {
+                    'present': attendance.no_of_present_days,
+                    'total': attendance.no_of_school_days,
+                }
             else:
-                student_subject_totals = {sub.id: {"th": 0, "pr": 0} for sub in subjects}
-                for src_term in source_terms:
-                    term_label = getattr(src_term, 'name_in_short', None) or src_term.term_name
-                    if ledgermode == 2:
-                        term_label += " (WGT)"
-                    term_entry = {"term_label": term_label, "subjects": []}
-                    w_info = normalized_wconfig.get(str(src_term.id))
-                    for sub in subjects:
-                        s_th, s_pr = all_marks_map.get((student.student_id, src_term.id, sub.id), (0, 0))
-                        s_th_fm, s_pr_fm = source_fm_map.get((src_term.id, sub.id), (100, 100))
-                        if ledgermode == 2 and w_info:
-                            if w_info.get("plan") == "scaling":
-                                val_th = (s_th / s_th_fm * w_info["th_target_fm"] * w_info["th_from_th"]) if s_th_fm > 0 else 0
-                                val_pr = (s_pr / s_pr_fm * w_info["pr_target_fm"] * w_info["pr_from_pr"]) if s_pr_fm > 0 else 0
-                            else:
-                                val_th = s_th * w_info["th_from_th"]
-                                val_pr = s_pr * w_info["pr_from_pr"]
-                        else:
-                            val_th = s_th
-                            val_pr = s_pr
-                        student_subject_totals[sub.id]["th"] += val_th
-                        student_subject_totals[sub.id]["pr"] += val_pr
-                        term_entry["subjects"].append({
-                            "th_val": int(val_th) if val_th == int(val_th) else round(val_th, 2),
-                            "pr_val": int(val_pr) if val_pr == int(val_pr) else round(val_pr, 2),
-                            "th_max": s_th_fm,
-                            "pr_max": s_pr_fm,
-                        })
-                    std_entry["breakdown_terms"].append(term_entry)
+                attendance_data[student.student.reg_no] = {'present': 0, 'total': 0}
+            item['attendance'] = attendance_data.get(item['student'].student.reg_no, {'present': 0, 'total': 0})
 
-                total_label = "TOTAL"
-                if ledgermode == 2:
-                    total_label += " (WGT)"
-                total_entry = {"term_label": total_label, "subjects": [], "is_total": True}
-                for sub in subjects:
-                    t_th = student_subject_totals[sub.id]["th"]
-                    t_pr = student_subject_totals[sub.id]["pr"]
-                    total_entry["subjects"].append({
-                        "th_val": int(t_th) if t_th == int(t_th) else round(t_th, 2),
-                        "pr_val": int(t_pr) if t_pr == int(t_pr) else round(t_pr, 2),
-                        "th_max": 0,
-                        "pr_max": 0,
-                    })
-                std_entry["breakdown_terms"].append(total_entry)
+        # Build mo_dict for JavaScript (matching panel format)
+        mo_dict = {}
+        for item in student_data_list:
+            for sub_id, sub_data in item['mo_dict'].items():
+                for term_id in term_list:
+                    prefix = f"{item['student'].student.reg_no}_{sub_id}_{term_id}"
+                    mo_dict[f"{prefix}_th_grade"] = sub_data.get('th_grade', '-')
+                    mo_dict[f"{prefix}_th_symbol"] = sub_data.get('th_symbol', '')
+                    mo_dict[f"{prefix}_th_point"] = sub_data.get('th_point', '-')
+                    mo_dict[f"{prefix}_pr_grade"] = sub_data.get('pr_grade', '-')
+                    mo_dict[f"{prefix}_pr_symbol"] = sub_data.get('pr_symbol', '')
+                    mo_dict[f"{prefix}_pr_point"] = sub_data.get('pr_point', '-')
+                    mo_dict[f"{prefix}_total_grade"] = sub_data.get('total_grade', '-')
+                    mo_dict[f"{prefix}_total_symbol"] = sub_data.get('total_symbol', '')
+                    mo_dict[f"{prefix}_total_point"] = sub_data.get('total_point', '-')
 
-            student_data_list.append(std_entry)
+        # Add GPA and remarks to mo_dict for each student
+        for item in student_data_list:
+            reg_no = item['student'].student.reg_no
+            mo_dict[f"{reg_no}_gpa"] = item.get('cgpa', 0)
+            mo_dict[f"{reg_no}_remarks"] = item.get('remarks', '')
 
-        # Apply pass/fail filter
-        if filter_mode == 1:
-            student_data_list = [s for s in student_data_list if all(
-                all(not sub.get('th_fail', False) and not sub.get('pr_fail', False) for sub in bt['subjects'])
-                for bt in s['breakdown_terms']
-            )]
-        elif filter_mode == 2:
-            student_data_list = [s for s in student_data_list if any(
-                any(sub.get('th_fail', False) or sub.get('pr_fail', False) for sub in bt['subjects'])
-                for bt in s['breakdown_terms']
-            )]
-
-        # Subject FM list
+        # Subject FM list for header reference
         subject_fm_list = []
         for sub in subjects:
-            if ledgermode in [2, 3]:
+            if len(term_list) > 1:
                 th_max = 0
                 pr_max = 0
-                if ledgermode == 3:
+                if ledgermode == 3:  # Consolidated (Sum of all source FMs)
                     th_max = sum(source_fm_map.get((t.id, sub.id), (0, 0))[0] for t in source_terms)
                     pr_max = sum(source_fm_map.get((t.id, sub.id), (0, 0))[1] for t in source_terms)
-                else:
-                    first_w = next(iter(normalized_wconfig.values()), {})
-                    if first_w.get("plan") == "scaling":
-                        th_max = first_w.get("th_target_fm", 100)
-                        pr_max = first_w.get("pr_target_fm", 100)
-                    else:
-                        for t in source_terms:
-                            w_info = normalized_wconfig.get(str(t.id), {})
-                            s_th_fm, s_pr_fm = source_fm_map.get((t.id, sub.id), (0, 0))
-                            th_max += s_th_fm * w_info.get("th_from_th", 0)
-                            pr_max += s_pr_fm * w_info.get("pr_from_pr", 0)
+                else:  # Weighted (Mode 2) or standard
+                    fm = GradeFullMarks.objects.filter(school=school, session=this_session, grade=this_grade, term=this_term).filter(subject=sub).first()
+                    th_max = fm.th_fm if fm else 0
+                    pr_max = fm.pr_fm if fm else 0
             else:
-                fm = this_term_fm_cache.get(sub.id)
+                fm = GradeFullMarks.objects.filter(school=school, session=this_session, grade=this_grade, term=this_term).filter(subject=sub).first()
                 th_max = fm.th_fm if fm else 0
                 pr_max = fm.pr_fm if fm else 0
 
@@ -3037,27 +2999,29 @@ def print_ledger_now(request):
                 "pr_fm": int(pr_max),
             })
 
-        # Get terminology
-        try:
-            terminology = SchoolTerminology.objects.get(school=school)
-        except Exception:
-            terminology = None
-
-        # Choose template based on printtype
-        if printtype == 1:
-            template_name = 'exam/print_ledger_detail.html'
-        else:
-            template_name = 'exam/print_ledger_summary.html'
-
         ctx = _nav_context(request)
         ctx.update({
-            "school": school, "term": this_term, "year": this_term.year,
-            "student_data": student_data_list, "grade": this_grade, "section": this_section,
-            "subjects": subjects, "ledgermode": ledgermode, "ledgertype": ledgerttype,
-            "subject_fm_list": subject_fm_list, "terminology": terminology,
-            "grading_type": grading_type,
+            'school': school,
+            'term': this_term,
+            'year': this_term.year,
+            'student_data': student_data_list,
+            'grade': this_grade,
+            'section': this_section,
+            'subjects': subjects,
+            'ledgermode': ledgermode,
+            'ledgertype': ledgerttype,
+            'subject_fm_list': subject_fm_list,
+            'terminology': terminology,
+            'term_list': term_list,
+            'term_acronym': term_acronym,
+            'no_of_terms': len(term_list),
+            'no_of_terms_range': range(len(term_list)),
+            'no_of_terms_marks_count': len(term_list) * 2,
+            'gpa_colspan': 4 + len(term_list) * 2,
+            'mo_dict': json.dumps(mo_dict),
+            'the_space': range(0),  # Empty for single term
         })
-        return render(request, template_name, ctx)
+        return render(request, 'exam/ledger_preview.html', ctx)
 
     return HttpResponseRedirect('/exam/')
 
