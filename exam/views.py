@@ -972,6 +972,90 @@ def weighted_result_calculation(request):
     return render(request, 'exam/weighted_result_calculation.html', ctx)
 
 
+@login_required
+def weighted_term_calculation(request):
+    """Handle POST for weighted term calculation configuration."""
+    branchuser, error = get_branch_info(request.user)
+    if error:
+        return HttpResponse(error)
+
+    if request.method != "POST":
+        return HttpResponseRedirect('/exam/terms/weighted/')
+
+    school = branchuser.school
+    current_session = get_current_session()
+    term_id = request.POST.get("term_id")
+
+    try:
+        term_id = int(term_id)
+    except Exception:
+        return HttpResponseRedirect('/exam/terms/weighted/')
+
+    def _safe_float(value):
+        try:
+            return float(value)
+        except Exception:
+            return 0.0
+
+    # Global Plan and Target FMs (applies to the entire calculation for this target term)
+    global_plan = request.POST.get("global_plan", "direct")
+    global_target_fm_th = _safe_float(request.POST.get("global_target_fm_th", 100))
+    global_target_fm_pr = _safe_float(request.POST.get("global_target_fm_pr", 100))
+
+    sources = {}
+    all_terms = SchoolTerm.objects.filter(year=current_session, school=school)
+    for term in all_terms:
+        if term.id > term_id:
+            continue
+        th_th = _safe_float(request.POST.get(f"th_th_{term.id}", 0))
+        th_pr = _safe_float(request.POST.get(f"th_pr_{term.id}", 0))
+        pr_th = _safe_float(request.POST.get(f"pr_th_{term.id}", 0))
+        pr_pr = _safe_float(request.POST.get(f"pr_pr_{term.id}", 0))
+
+        if th_th != 0 or th_pr != 0 or pr_th != 0 or pr_pr != 0:
+            sources[str(term.id)] = {
+                "th": {"th": th_th, "pr": th_pr},
+                "pr": {"th": pr_th, "pr": pr_pr},
+            }
+
+    config = {
+        "sources": sources,
+        "plan": global_plan,
+        "target_fm_th": global_target_fm_th,
+        "target_fm_pr": global_target_fm_pr
+    }
+    school_term = SchoolTerm.objects.get(id=term_id)
+    WeightedResultManagement.objects.update_or_create(
+        year=current_session,
+        school=school,
+        school_term=school_term,
+        defaults={"weight_config": config},
+    )
+
+    return HttpResponseRedirect('/exam/terms/weighted/')
+
+
+@login_required
+def activate_weighted_calculation(request):
+    """Toggle weighted calculation mode."""
+    if request.method != "POST":
+        return HttpResponseRedirect('/exam/terms/weighted/')
+
+    branchuser, error = get_branch_info(request.user)
+    if error:
+        return HttpResponse(error)
+
+    school = branchuser.school
+    calc_type = request.POST.get("calculation_type", "legacy")
+
+    LiveResult.objects.update_or_create(
+        school=school,
+        defaults={"calculation_type": calc_type}
+    )
+
+    return HttpResponseRedirect('/exam/terms/weighted/')
+
+
 # ── Print / Grade Sheet ──────────────────────────────────────────────────────
 
 @login_required

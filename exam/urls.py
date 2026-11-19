@@ -51,6 +51,8 @@ urlpatterns = [
     path('terms/<int:term_id>/edit/', views.terms_list, name='edit_term'),
     path('terms/<int:term_id>/calculation/', views.terms_list, name='term_calculation'),
     path('terms/weighted/', views.weighted_result_calculation, name='weighted_calculation'),
+    path('terms/weighted/term/', views.weighted_term_calculation, name='weighted_term_calculation'),
+    path('terms/weighted/activate/', views.activate_weighted_calculation, name='activate_weighted_calculation'),
 
     # ── Full Marks ───────────────────────────────────────────────────────────────
     path('full-marks/', views.fullmarks, name='full_marks'),
