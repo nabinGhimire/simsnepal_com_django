@@ -3,6 +3,7 @@ Exam app shared functions for result calculation and grade ledger generation.
 Centralized logic for cross-validation and easy updates.
 """
 import json
+from decimal import Decimal, ROUND_HALF_UP
 
 
 def get_percentage(obtained, full):
@@ -557,24 +558,35 @@ def calculate_rank(school, session, grade, term, section=None, regno=None, rank_
 
 
 def _parse_weighted_term_config(weight_config, target_term_id, include_current=False):
-    """Parse weighted term configuration."""
+    """Parse weighted term configuration.
+    
+    Returns a tuple of (normalized_weights, global_settings) where:
+    - normalized_weights: dict mapping source_term_id -> {th_from_th, th_from_pr, pr_from_th, pr_from_pr} as fractions
+    - global_settings: dict with plan, target_fm_th, target_fm_pr
+    """
     if not weight_config:
-        return {}
-
+        return {}, {}
+    
     if isinstance(weight_config, str):
         try:
             import json
             weight_config = json.loads(weight_config)
         except Exception:
-            return {}
-
+            return {}, {}
+    
     if not isinstance(weight_config, dict):
-        return {}
-
+        return {}, {}
+    
     global_plan = weight_config.get("plan", "direct")
     target_fm_th = float(weight_config.get("target_fm_th", 100))
     target_fm_pr = float(weight_config.get("target_fm_pr", 100))
-
+    
+    global_settings = {
+        "plan": global_plan,
+        "target_fm_th": target_fm_th,
+        "target_fm_pr": target_fm_pr,
+    }
+    
     sources_block = {}
     if "sources" in weight_config:
         sources_block = weight_config["sources"]
@@ -584,58 +596,287 @@ def _parse_weighted_term_config(weight_config, target_term_id, include_current=F
         sources_block = target_block.get("sources", target_block)
     else:
         sources_block = weight_config
-
+    
     normalized = {}
-
+    
     def _as_float(val):
         try:
             return float(val)
         except Exception:
             return 0.0
-
+    
     for term_key, value in sources_block.items():
         try:
             term_id = int(term_key)
         except Exception:
             continue
-
+        
         if term_id == target_term_id and not include_current:
             continue
-
+        
         th_from_th = th_from_pr = pr_from_th = pr_from_pr = 0.0
-
+        
         if isinstance(value, (int, float)):
             th_from_th = pr_from_pr = float(value)
         elif isinstance(value, dict):
             th_block = value.get("th", {})
             pr_block = value.get("pr", {})
-
+            
             if isinstance(th_block, dict):
                 th_from_th = _as_float(th_block.get("th", 0))
                 th_from_pr = _as_float(th_block.get("pr", 0))
             else:
                 th_from_th = _as_float(value.get("th", 0))
                 th_from_pr = _as_float(value.get("pr", 0))
-
+            
             if isinstance(pr_block, dict):
                 pr_from_th = _as_float(pr_block.get("th", 0))
                 pr_from_pr = _as_float(pr_block.get("pr", 0))
             else:
                 pr_from_th = _as_float(value.get("th", 0))
                 pr_from_pr = _as_float(value.get("pr", 0))
-
+        
         if th_from_th > 0 or th_from_pr > 0 or pr_from_th > 0 or pr_from_pr > 0:
             normalized[str(term_id)] = {
                 "th_from_th": th_from_th / 100.0,
                 "th_from_pr": th_from_pr / 100.0,
                 "pr_from_th": pr_from_th / 100.0,
                 "pr_from_pr": pr_from_pr / 100.0,
-                "plan": global_plan,
-                "th_target_fm": target_fm_th,
-                "pr_target_fm": target_fm_pr,
             }
+    
+    return normalized, global_settings
 
-    return normalized
+
+def calculate_weighted_result(school, session, grade, target_term, student_session, config, grade_config=None):
+    """
+    Calculate weighted result for a student using WeightedResultManagement config.
+    
+    Implements the Weighted Result Calculation spec:
+    - Reads sources[source_term][target_component][source_component] = weight_percent
+    - Cross-mixing: TH can feed PR and vice versa
+    - plan="direct": weights applied directly, target_fm is display-only
+    - plan="scaling": rescale to target_fm first (NotImplementedError if not implemented)
+    - Uses Decimal for precision, round-half-up at display only
+    - Missing MarkObtreated -> 0 MO, FM still contributes
+    - Subject with no marks in any source term -> omitted
+    
+    Args:
+        school: SchoolBranch instance
+        session: EduSession instance
+        grade: SchoolGrade instance
+        target_term: SchoolTerm instance (the term being calculated)
+        student_session: StudentSession instance
+        config: dict with calculation_type, etc.
+        grade_config: GradeResultConfig instance for pass thresholds (optional)
+    
+    Returns:
+        dict with weighted results per subject, or None if no weighted config
+    """
+    from sms.models import Subject, MarkObtained
+    from exam.models import GradeFullMarks, WeightedResultManagement
+    
+    # Get weighted config for this target term
+    try:
+        wrm = WeightedResultManagement.objects.get(
+            school=school, year=session, school_term=target_term
+        )
+        weight_config = wrm.weight_config
+    except WeightedResultManagement.DoesNotExist:
+        return None
+    
+    if not weight_config:
+        return None
+    
+    # Parse the weight config
+    normalized, global_settings = _parse_weighted_term_config(weight_config, target_term.id, include_current=True)
+    if not normalized:
+        return None
+    
+    # Get global plan and target FMs from global_settings
+    global_plan = global_settings.get("plan", "direct")
+    target_fm_th = Decimal(str(global_settings.get("target_fm_th", 100)))
+    target_fm_pr = Decimal(str(global_settings.get("target_fm_pr", 100)))
+    
+    if global_plan != "direct":
+        raise NotImplementedError(f"Plan '{global_plan}' not implemented. Only 'direct' is supported.")
+    
+    # Get all subjects for this grade
+    subjects = Subject.objects.filter(branch=school, grade=grade, status=True).order_by('id')
+    subject_ids = list(subjects.values_list('id', flat=True))
+    student = student_session.student
+    
+    # Collect all source term IDs
+    source_term_ids = [int(tid) for tid in normalized.keys()]
+    
+    # Pre-fetch all marks for source terms
+    marks_qs = MarkObtained.objects.filter(
+        student=student,
+        session=session,
+        grade=grade,
+        term_id__in=source_term_ids,
+        subject_id__in=subject_ids,
+    ).values('term_id', 'subject_id', 'th_mo', 'pr_mo')
+    
+    marks_map = {}
+    for m in marks_qs:
+        marks_map[(m['term_id'], m['subject_id'])] = (
+            Decimal(str(m.get('th_mo', 0) or 0)),
+            Decimal(str(m.get('pr_mo', 0) or 0)),
+        )
+    
+    # Pre-fetch all full marks for source terms
+    fm_qs = GradeFullMarks.objects.filter(
+        session=session, school=school, grade=grade,
+        term_id__in=source_term_ids, subject_id__in=subject_ids,
+    ).values('term_id', 'subject_id', 'th_fm', 'pr_fm')
+    
+    fm_map = {}
+    for fm in fm_qs:
+        fm_map[(fm['term_id'], fm['subject_id'])] = (
+            Decimal(str(fm.get('th_fm', 0) or 0)),
+            Decimal(str(fm.get('pr_fm', 0) or 0)),
+        )
+    
+    # Get pass thresholds from grade_config if provided
+    th_pass_type = th_pass_value = pr_pass_type = pr_pass_value = None
+    if grade_config:
+        th_pass_type = grade_config.th_pass_type
+        th_pass_value = Decimal(str(grade_config.th_pass_value))
+        pr_pass_type = grade_config.pr_pass_type
+        pr_pass_value = Decimal(str(grade_config.pr_pass_value))
+    elif config:
+        th_pass_type = config.get('th_pass_type', 'percentage')
+        th_pass_value = Decimal(str(config.get('th_pass_value', 35.0)))
+        pr_pass_type = config.get('pr_pass_type', 'percentage')
+        pr_pass_value = Decimal(str(config.get('pr_pass_value', 35.0)))
+    
+    # Calculate weighted results for each subject
+    weighted_results = {}
+    
+    for subject in subjects:
+        sub_id = subject.id
+        
+        # Initialize weighted accumulators
+        weighted_th_mo = Decimal('0')
+        weighted_th_fm = Decimal('0')
+        weighted_pr_mo = Decimal('0')
+        weighted_pr_fm = Decimal('0')
+        
+        has_any_marks = False
+        
+        for src_term_id, weights in normalized.items():
+            src_term_id_int = int(src_term_id)
+            
+            # Get weights as Decimal (already divided by 100 in normalized)
+            w_th_from_th = Decimal(str(weights.get('th_from_th', 0)))
+            w_th_from_pr = Decimal(str(weights.get('th_from_pr', 0)))
+            w_pr_from_th = Decimal(str(weights.get('pr_from_th', 0)))
+            w_pr_from_pr = Decimal(str(weights.get('pr_from_pr', 0)))
+            
+            # Skip if all weights are 0
+            if w_th_from_th == 0 and w_th_from_pr == 0 and w_pr_from_th == 0 and w_pr_from_pr == 0:
+                continue
+            
+            # Get marks for this source term and subject
+            th_mo, pr_mo = marks_map.get((src_term_id_int, sub_id), (Decimal('0'), Decimal('0')))
+            th_fm, pr_fm = fm_map.get((src_term_id_int, sub_id), (Decimal('0'), Decimal('0')))
+            
+            # Check if student has any marks in this source term
+            if th_mo != 0 or pr_mo != 0:
+                has_any_marks = True
+            
+            # Apply weights: weighted_<tc>_MO = Σ (weight/100) * term[source_term][sc]_MO
+            # Note: weights in normalized are already divided by 100
+            weighted_th_mo += w_th_from_th * th_mo + w_th_from_pr * pr_mo
+            weighted_pr_mo += w_pr_from_th * th_mo + w_pr_from_pr * pr_mo
+            
+            # FM also gets weighted (student treated as scoring 0 out of FM if no marks)
+            weighted_th_fm += w_th_from_th * th_fm + w_th_from_pr * pr_fm
+            weighted_pr_fm += w_pr_from_th * th_fm + w_pr_from_pr * pr_fm
+        
+        # If no marks in any source term, omit subject
+        if not has_any_marks and weighted_th_fm == 0 and weighted_pr_fm == 0:
+            continue
+        
+        # Calculate percentages (full precision, no rounding yet)
+        th_percent = (weighted_th_mo / weighted_th_fm * 100) if weighted_th_fm > 0 else Decimal('0')
+        pr_percent = (weighted_pr_mo / weighted_pr_fm * 100) if weighted_pr_fm > 0 else Decimal('0')
+        
+        # Determine pass/fail using weighted values
+        th_fail = False
+        pr_fail = False
+        
+        if th_pass_type and weighted_th_fm > 0:
+            if th_pass_type == 'percentage':
+                th_fail = th_percent < th_pass_value
+            elif th_pass_type == 'gpa':
+                _, _, th_gp = get_grade_point(float(th_percent))
+                th_fail = Decimal(str(th_gp)) < th_pass_value
+            elif th_pass_type == 'marks':
+                th_fail = weighted_th_mo < th_pass_value
+        
+        if pr_pass_type and weighted_pr_fm > 0:
+            if pr_pass_type == 'percentage':
+                pr_fail = pr_percent < pr_pass_value
+            elif pr_pass_type == 'gpa':
+                _, _, pr_gp = get_grade_point(float(pr_percent))
+                pr_fail = Decimal(str(pr_gp)) < pr_pass_value
+            elif pr_pass_type == 'marks':
+                pr_fail = weighted_pr_mo < pr_pass_value
+        
+        # Calculate subject totals
+        subject_mo = weighted_th_mo + weighted_pr_mo
+        subject_fm = weighted_th_fm + weighted_pr_fm
+        subject_percent = (subject_mo / subject_fm * 100) if subject_fm > 0 else Decimal('0')
+        
+        # Get grade from subject percentage
+        subject_grade, subject_symbol, subject_gp = get_grade_point(float(subject_percent))
+        
+        # Store full precision values for later use, rounded values for display
+        def round_half_up_1dp(value):
+            """Round to 1 decimal place using ROUND_HALF_UP."""
+            if value is None:
+                return None
+            return Decimal(str(value)).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+        
+        def round_half_up_2dp(value):
+            """Round to 2 decimal places using ROUND_HALF_UP."""
+            if value is None:
+                return None
+            return Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        
+        weighted_results[sub_id] = {
+            'subject_name': subject.subject,
+            'subject_id': sub_id,
+            # Full precision (for calculations)
+            'weighted_th_mo': weighted_th_mo,
+            'weighted_th_fm': weighted_th_fm,
+            'weighted_pr_mo': weighted_pr_mo,
+            'weighted_pr_fm': weighted_pr_fm,
+            'th_percent': th_percent,
+            'pr_percent': pr_percent,
+            'subject_mo': subject_mo,
+            'subject_fm': subject_fm,
+            'subject_percent': subject_percent,
+            'th_fail': th_fail,
+            'pr_fail': pr_fail,
+            'subject_grade': subject_grade,
+            'subject_symbol': subject_symbol,
+            'subject_gp': Decimal(str(subject_gp)),
+            # Rounded for display (1 dp for MO, FM, %; 2 dp for GP)
+            'weighted_th_mo_disp': round_half_up_1dp(weighted_th_mo),
+            'weighted_th_fm_disp': round_half_up_1dp(weighted_th_fm),
+            'weighted_pr_mo_disp': round_half_up_1dp(weighted_pr_mo),
+            'weighted_pr_fm_disp': round_half_up_1dp(weighted_pr_fm),
+            'th_percent_disp': round_half_up_1dp(th_percent),
+            'pr_percent_disp': round_half_up_1dp(pr_percent),
+            'subject_mo_disp': round_half_up_1dp(subject_mo),
+            'subject_fm_disp': round_half_up_1dp(subject_fm),
+            'subject_percent_disp': round_half_up_1dp(subject_percent),
+            'subject_gp_disp': round_half_up_2dp(subject_gp),
+        }
+    
+    return weighted_results
 
 
 def calculate_student_result(school, session, grade, term, student_session, config):
@@ -649,213 +890,362 @@ def calculate_student_result(school, session, grade, term, student_session, conf
         grade: SchoolGrade instance
         term: SchoolTerm instance
         student_session: StudentSession instance
-        config: dict with grading_type, ledger_type, calculation_type, assessment_source
+        config: dict with grading_type, ledger_type, calculation_type, assessment_source,
+                th_pass_type, th_pass_value, pr_pass_type, pr_pass_value
     
     Returns:
         dict with calculated results
     """
     from sms.models import Subject, MarkObtained
-    from exam.models import GradeFullMarks, ResultManagement
-
+    from exam.models import GradeFullMarks, ResultManagement, WeightedResultManagement, GradeResultConfig
+    
     subjects = Subject.objects.filter(
         branch=school, grade=grade, status=True
     ).order_by('id')
-
+    
     grading_type = config.get('grading_type', 0)
     ledger_type = config.get('ledger_type', 1)
     calculation_type = config.get('calculation_type', 'legacy')
-
-    term_weights = {}
+    
+    # Try to get GradeResultConfig for pass thresholds
+    grade_config = None
+    try:
+        grade_config = GradeResultConfig.objects.get(
+            school=school, year=session, grade=grade
+        )
+    except GradeResultConfig.DoesNotExist:
+        pass
+    
+    # Check for new WeightedResultManagement config (Schema B - advanced per-component weights)
+    weighted_results = None
+    use_new_weighted = False
     if calculation_type == 'weighted':
+        try:
+            wrm = WeightedResultManagement.objects.get(
+                school=school, year=session, school_term=term
+            )
+            if wrm.weight_config and wrm.weight_config.get('sources'):
+                # New schema with cross-mixing support
+                weighted_results = calculate_weighted_result(
+                    school, session, grade, term, student_session, config, grade_config
+                )
+                if weighted_results:
+                    use_new_weighted = True
+        except WeightedResultManagement.DoesNotExist:
+            pass
+    
+    # Fall back to old ResultManagement term_calculation (Schema A - simple scalar weights)
+    term_weights = {}
+    if calculation_type == 'weighted' and not use_new_weighted:
         try:
             rm = ResultManagement.objects.get(school=school, year=session, school_term=term)
             term_weights = json.loads(rm.term_calculation)
         except (ResultManagement.DoesNotExist, json.JSONDecodeError):
             term_weights = {}
-
+    
     mo_dict = {}
-    total_th_mo = 0
-    total_pr_mo = 0
-    total_th_fm = 0
-    total_pr_fm = 0
-    cgpa_sum = 0
+    total_th_mo = Decimal('0')
+    total_pr_mo = Decimal('0')
+    total_th_fm = Decimal('0')
+    total_pr_fm = Decimal('0')
+    cgpa_sum = Decimal('0')
     subject_count = 0
     fail_count = 0
-
+    
     for subject in subjects:
         subject_count += 1
-        mo_dict[subject.id] = {
-            'subject_name': subject.subject,
-            'subject_id': subject.id,
-        }
-
-        try:
-            marks = MarkObtained.objects.get(
-                student=student_session.student,
-                session=session,
-                grade=grade,
-                term=term,
-                subject=subject
-            )
-            th_mo = marks.th_mo or 0
-            pr_mo = marks.pr_mo or 0
-        except MarkObtained.DoesNotExist:
-            th_mo = 0
-            pr_mo = 0
-
-        try:
-            gfm = GradeFullMarks.objects.get(
-                session=session, school=school, grade=grade, term=term, subject=subject
-            )
-            th_fm = gfm.th_fm or 0
-            pr_fm = gfm.pr_fm or 0
-            th_pm = gfm.th_pm or 0
-            pr_pm = gfm.pr_pm or 0
-        except GradeFullMarks.DoesNotExist:
-            th_fm = pr_fm = th_pm = pr_pm = 0
-
-        mo_dict[subject.id]['th_fm'] = th_fm
-        mo_dict[subject.id]['pr_fm'] = pr_fm
-        mo_dict[subject.id]['th_pm'] = th_pm
-        mo_dict[subject.id]['pr_pm'] = pr_pm
-        mo_dict[subject.id]['th_mo'] = th_mo
-        mo_dict[subject.id]['pr_mo'] = pr_mo
-
-        if calculation_type == 'weighted' and term_weights:
-            weighted_th_mo = 0
-            weighted_pr_mo = 0
-            weighted_th_fm = 0
-            weighted_pr_fm = 0
-
-            for src_term_id, weight in term_weights.items():
-                try:
-                    src_term = int(src_term_id)
-                    w = int(weight) / 100.0
-                    if src_term == term.id:
-                        weighted_th_mo += th_mo
-                        weighted_pr_mo += pr_mo
-                        weighted_th_fm += th_fm
-                        weighted_pr_fm += pr_fm
-                    else:
-                        src_marks = MarkObtained.objects.get(
-                            student=student_session.student,
-                            session=session,
-                            grade=grade,
-                            term_id=src_term,
-                            subject=subject
-                        )
-                        src_gfm = GradeFullMarks.objects.get(
-                            session=session, school=school, grade=grade, term_id=src_term, subject=subject
-                        )
-                        weighted_th_mo += (src_marks.th_mo or 0) * w
-                        weighted_pr_mo += (src_marks.pr_mo or 0) * w
-                        weighted_th_fm += (src_gfm.th_fm or 0) * w
-                        weighted_pr_fm += (src_gfm.pr_fm or 0) * w
-                except (MarkObtained.DoesNotExist, GradeFullMarks.DoesNotExist, ValueError):
-                    continue
-
-            th_mo = round(weighted_th_mo)
-            pr_mo = round(weighted_pr_mo)
-            th_fm = round(weighted_th_fm)
-            pr_fm = round(weighted_pr_fm)
-            mo_dict[subject.id]['th_mo'] = th_mo
-            mo_dict[subject.id]['pr_mo'] = pr_mo
-            mo_dict[subject.id]['th_fm'] = th_fm
-            mo_dict[subject.id]['pr_fm'] = pr_fm
-
+        sub_id = subject.id
+        
+        # Default values
+        th_mo = Decimal('0')
+        pr_mo = Decimal('0')
+        th_fm = Decimal('0')
+        pr_fm = Decimal('0')
+        th_pm = Decimal('0')
+        pr_pm = Decimal('0')
+        
+        if use_new_weighted and sub_id in weighted_results:
+            # Use new weighted calculation results
+            wr = weighted_results[sub_id]
+            th_mo = wr['weighted_th_mo']
+            pr_mo = wr['weighted_pr_mo']
+            th_fm = wr['weighted_th_fm']
+            pr_fm = wr['weighted_pr_fm']
+            th_pm = Decimal('0')  # Not used in weighted mode
+            pr_pm = Decimal('0')
+            
+            mo_dict[sub_id] = {
+                'subject_name': subject.subject,
+                'subject_id': sub_id,
+                'th_fm': wr['weighted_th_fm_disp'],
+                'pr_fm': wr['weighted_pr_fm_disp'],
+                'th_pm': 0,
+                'pr_pm': 0,
+                'th_mo': wr['weighted_th_mo_disp'],
+                'pr_mo': wr['weighted_pr_mo_disp'],
+                # Full precision for calculations
+                '_th_mo_prec': wr['weighted_th_mo'],
+                '_pr_mo_prec': wr['weighted_pr_mo'],
+                '_th_fm_prec': wr['weighted_th_fm'],
+                '_pr_fm_prec': wr['weighted_pr_fm'],
+                '_th_percent': wr['th_percent'],
+                '_pr_percent': wr['pr_percent'],
+                '_subject_mo': wr['subject_mo'],
+                '_subject_fm': wr['subject_fm'],
+                '_subject_percent': wr['subject_percent'],
+                '_th_fail': wr['th_fail'],
+                '_pr_fail': wr['pr_fail'],
+                '_subject_grade': wr['subject_grade'],
+                '_subject_symbol': wr['subject_symbol'],
+                '_subject_gp': wr['subject_gp'],
+                # Display values (rounded)
+                'th_percent_disp': wr['th_percent_disp'],
+                'pr_percent_disp': wr['pr_percent_disp'],
+                'subject_mo_disp': wr['subject_mo_disp'],
+                'subject_fm_disp': wr['subject_fm_disp'],
+                'subject_percent_disp': wr['subject_percent_disp'],
+                'subject_gp_disp': wr['subject_gp_disp'],
+            }
+        else:
+            # Legacy path: fetch marks for current term only
+            try:
+                marks = MarkObtained.objects.get(
+                    student=student_session.student,
+                    session=session,
+                    grade=grade,
+                    term=term,
+                    subject=subject
+                )
+                th_mo = Decimal(str(marks.th_mo or 0))
+                pr_mo = Decimal(str(marks.pr_mo or 0))
+            except MarkObtained.DoesNotExist:
+                th_mo = Decimal('0')
+                pr_mo = Decimal('0')
+            
+            try:
+                gfm = GradeFullMarks.objects.get(
+                    session=session, school=school, grade=grade, term=term, subject=subject
+                )
+                th_fm = Decimal(str(gfm.th_fm or 0))
+                pr_fm = Decimal(str(gfm.pr_fm or 0))
+                th_pm = Decimal(str(gfm.th_pm or 0))
+                pr_pm = Decimal(str(gfm.pr_pm or 0))
+            except GradeFullMarks.DoesNotExist:
+                th_fm = pr_fm = th_pm = pr_pm = Decimal('0')
+            
+            mo_dict[sub_id] = {
+                'subject_name': subject.subject,
+                'subject_id': sub_id,
+                'th_fm': th_fm,
+                'pr_fm': pr_fm,
+                'th_pm': th_pm,
+                'pr_pm': pr_pm,
+                'th_mo': th_mo,
+                'pr_mo': pr_mo,
+            }
+            
+            # Apply old weighted calculation if enabled
+            if calculation_type == 'weighted' and term_weights and not use_new_weighted:
+                weighted_th_mo = Decimal('0')
+                weighted_pr_mo = Decimal('0')
+                weighted_th_fm = Decimal('0')
+                weighted_pr_fm = Decimal('0')
+                
+                for src_term_id, weight in term_weights.items():
+                    try:
+                        src_term = int(src_term_id)
+                        w = Decimal(str(weight)) / Decimal('100')
+                        if src_term == term.id:
+                            weighted_th_mo += th_mo
+                            weighted_pr_mo += pr_mo
+                            weighted_th_fm += th_fm
+                            weighted_pr_fm += pr_fm
+                        else:
+                            src_marks = MarkObtained.objects.get(
+                                student=student_session.student,
+                                session=session,
+                                grade=grade,
+                                term_id=src_term,
+                                subject=subject
+                            )
+                            src_gfm = GradeFullMarks.objects.get(
+                                session=session, school=school, grade=grade, term_id=src_term, subject=subject
+                            )
+                            weighted_th_mo += (Decimal(str(src_marks.th_mo or 0))) * w
+                            weighted_pr_mo += (Decimal(str(src_marks.pr_mo or 0))) * w
+                            weighted_th_fm += (Decimal(str(src_gfm.th_fm or 0))) * w
+                            weighted_pr_fm += (Decimal(str(src_gfm.pr_fm or 0))) * w
+                    except (MarkObtained.DoesNotExist, GradeFullMarks.DoesNotExist, ValueError):
+                        continue
+                
+                th_mo = weighted_th_mo.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                pr_mo = weighted_pr_mo.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                th_fm = weighted_th_fm.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                pr_fm = weighted_pr_fm.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                
+                mo_dict[sub_id]['th_mo'] = th_mo
+                mo_dict[sub_id]['pr_mo'] = pr_mo
+                mo_dict[sub_id]['th_fm'] = th_fm
+                mo_dict[sub_id]['pr_fm'] = pr_fm
+        
         total_th_mo += th_mo
         total_pr_mo += pr_mo
         total_th_fm += th_fm
         total_pr_fm += pr_fm
-
+        
         priority = getattr(subject, 'heavy_weight', True)
-        if grading_type == 2:
-            g_obj = GradeAndGpaNew(th_fm, pr_fm, th_mo, pr_mo, priority, result_type=2)
+        
+        if use_new_weighted and sub_id in weighted_results:
+            # Use pre-calculated grades from weighted_results
+            wr = weighted_results[sub_id]
+            
+            # For grading_type 1 (Non-Grade), we need separate TH/PR grades
+            if grading_type == 1:
+                # Get TH grade from TH percent
+                th_grade, th_symbol, th_point = get_grade_point(float(wr['th_percent']))
+                # Get PR grade from PR percent
+                pr_grade, pr_symbol, pr_point = get_grade_point(float(wr['pr_percent']))
+                
+                mo_dict[sub_id]['th_grade'] = th_grade
+                mo_dict[sub_id]['th_symbol'] = th_symbol
+                mo_dict[sub_id]['th_point'] = th_point
+                mo_dict[sub_id]['th_fail'] = wr['th_fail']
+                
+                mo_dict[sub_id]['pr_grade'] = pr_grade
+                mo_dict[sub_id]['pr_symbol'] = pr_symbol
+                mo_dict[sub_id]['pr_point'] = pr_point
+                mo_dict[sub_id]['pr_fail'] = wr['pr_fail']
+                
+                # Combined subject grade
+                mo_dict[sub_id]['total_grade'] = wr['subject_grade']
+                mo_dict[sub_id]['total_symbol'] = wr['subject_symbol']
+                mo_dict[sub_id]['total_point'] = float(wr['subject_gp'])
+                
+                cgpa_sum += wr['subject_gp']
+                if wr['th_fail']:
+                    fail_count += 1
+                if wr['pr_fail']:
+                    fail_count += 1
+            else:
+                # Legacy (0) and New Grading (2) use combined grade
+                mo_dict[sub_id]['th_grade'] = wr['subject_grade']
+                mo_dict[sub_id]['th_symbol'] = wr['subject_symbol']
+                mo_dict[sub_id]['th_point'] = float(wr['subject_gp'])
+                mo_dict[sub_id]['pr_grade'] = wr['subject_grade']
+                mo_dict[sub_id]['pr_symbol'] = wr['subject_symbol']
+                mo_dict[sub_id]['pr_point'] = float(wr['subject_gp'])
+                mo_dict[sub_id]['th_fail'] = wr['th_fail']
+                mo_dict[sub_id]['pr_fail'] = wr['pr_fail']
+                mo_dict[sub_id]['total_grade'] = wr['subject_grade']
+                mo_dict[sub_id]['total_symbol'] = wr['subject_symbol']
+                mo_dict[sub_id]['total_point'] = float(wr['subject_gp'])
+                
+                cgpa_sum += wr['subject_gp']
+                if wr['th_fail'] or wr['pr_fail']:
+                    fail_count += 1
+        elif grading_type == 2:
+            g_obj = GradeAndGpaNew(
+                float(th_fm), float(pr_fm), float(th_mo), float(pr_mo), priority, result_type=2
+            )
+            mo_dict[sub_id]['th_grade'] = g_obj.th_grade
+            mo_dict[sub_id]['th_symbol'] = g_obj.th_symbol
+            mo_dict[sub_id]['th_point'] = g_obj.th_point
+            mo_dict[sub_id]['pr_grade'] = g_obj.pr_grade
+            mo_dict[sub_id]['pr_symbol'] = g_obj.pr_symbol
+            mo_dict[sub_id]['pr_point'] = g_obj.pr_point
+            mo_dict[sub_id]['th_fail'] = g_obj.th_fail
+            mo_dict[sub_id]['pr_fail'] = g_obj.pr_fail
+            mo_dict[sub_id]['total_grade'] = g_obj.total_grade
+            mo_dict[sub_id]['total_symbol'] = g_obj.total_symbol
+            mo_dict[sub_id]['total_point'] = g_obj.total_point
+            cgpa_sum += Decimal(str(g_obj.total_point))
+            if g_obj.th_fail:
+                fail_count += 1
+            if g_obj.pr_fail:
+                fail_count += 1
         elif grading_type == 1:
             if th_fm > 0 and pr_fm > 0:
-                th_obj = GradeAndGpaNonGradeTheory(th_fm, th_mo, th_pm)
-                pr_obj = GradeAndGpaNonGradePractical(pr_fm, pr_mo, pr_pm)
+                th_obj = GradeAndGpaNonGradeTheory(float(th_fm), float(th_mo), float(th_pm))
+                pr_obj = GradeAndGpaNonGradePractical(float(pr_fm), float(pr_mo), float(pr_pm))
             elif th_fm > 0:
-                th_obj = GradeAndGpaNonGradeTheory(th_fm, th_mo, th_pm)
+                th_obj = GradeAndGpaNonGradeTheory(float(th_fm), float(th_mo), float(th_pm))
                 pr_obj = None
             elif pr_fm > 0:
                 th_obj = None
-                pr_obj = GradeAndGpaNonGradePractical(pr_fm, pr_mo, pr_pm)
+                pr_obj = GradeAndGpaNonGradePractical(float(pr_fm), float(pr_mo), float(pr_pm))
             else:
                 th_obj = pr_obj = None
-        else:
-            g_obj = GradeAndGpa(th_fm, pr_fm, th_mo, pr_mo, priority)
-
-        if grading_type == 1:
+            
             if th_obj:
-                mo_dict[subject.id]['th_grade'] = th_obj.th_grade
-                mo_dict[subject.id]['th_symbol'] = th_obj.th_symbol
-                mo_dict[subject.id]['th_point'] = th_obj.th_point
-                mo_dict[subject.id]['th_fail'] = th_obj.fail > 0
-                cgpa_sum += th_obj.th_point
+                mo_dict[sub_id]['th_grade'] = th_obj.th_grade
+                mo_dict[sub_id]['th_symbol'] = th_obj.th_symbol
+                mo_dict[sub_id]['th_point'] = th_obj.th_point
+                mo_dict[sub_id]['th_fail'] = th_obj.fail > 0
+                cgpa_sum += Decimal(str(th_obj.th_point))
             if pr_obj:
-                mo_dict[subject.id]['pr_grade'] = pr_obj.pr_grade
-                mo_dict[subject.id]['pr_symbol'] = pr_obj.pr_symbol
-                mo_dict[subject.id]['pr_point'] = pr_obj.pr_point
-                mo_dict[subject.id]['pr_fail'] = pr_obj.fail > 0
-                cgpa_sum += pr_obj.pr_point
+                mo_dict[sub_id]['pr_grade'] = pr_obj.pr_grade
+                mo_dict[sub_id]['pr_symbol'] = pr_obj.pr_symbol
+                mo_dict[sub_id]['pr_point'] = pr_obj.pr_point
+                mo_dict[sub_id]['pr_fail'] = pr_obj.fail > 0
+                cgpa_sum += Decimal(str(pr_obj.pr_point))
             if th_obj and pr_obj:
-                mo_dict[subject.id]['total_grade'] = th_obj.total_grade
-                mo_dict[subject.id]['total_symbol'] = th_obj.total_symbol
-                mo_dict[subject.id]['total_point'] = th_obj.total_point
+                mo_dict[sub_id]['total_grade'] = th_obj.total_grade
+                mo_dict[sub_id]['total_symbol'] = th_obj.total_symbol
+                mo_dict[sub_id]['total_point'] = th_obj.total_point
             elif th_obj:
-                mo_dict[subject.id]['total_grade'] = th_obj.total_grade
-                mo_dict[subject.id]['total_symbol'] = th_obj.total_symbol
-                mo_dict[subject.id]['total_point'] = th_obj.total_point
+                mo_dict[sub_id]['total_grade'] = th_obj.total_grade
+                mo_dict[sub_id]['total_symbol'] = th_obj.total_symbol
+                mo_dict[sub_id]['total_point'] = th_obj.total_point
             elif pr_obj:
-                mo_dict[subject.id]['total_grade'] = pr_obj.total_grade
-                mo_dict[subject.id]['total_symbol'] = pr_obj.total_symbol
-                mo_dict[subject.id]['total_point'] = pr_obj.total_point
+                mo_dict[sub_id]['total_grade'] = pr_obj.total_grade
+                mo_dict[sub_id]['total_symbol'] = pr_obj.total_symbol
+                mo_dict[sub_id]['total_point'] = pr_obj.total_point
             if th_obj and th_obj.fail > 0:
                 fail_count += 1
             if pr_obj and pr_obj.fail > 0:
                 fail_count += 1
         else:
-            mo_dict[subject.id]['th_grade'] = g_obj.th_grade
-            mo_dict[subject.id]['th_symbol'] = g_obj.th_symbol
-            mo_dict[subject.id]['th_point'] = g_obj.th_point
-            mo_dict[subject.id]['pr_grade'] = g_obj.pr_grade
-            mo_dict[subject.id]['pr_symbol'] = g_obj.pr_symbol
-            mo_dict[subject.id]['pr_point'] = g_obj.pr_point
-            mo_dict[subject.id]['th_fail'] = g_obj.th_fail
-            mo_dict[subject.id]['pr_fail'] = g_obj.pr_fail
-            mo_dict[subject.id]['total_grade'] = g_obj.total_grade
-            mo_dict[subject.id]['total_symbol'] = g_obj.total_symbol
-            mo_dict[subject.id]['total_point'] = g_obj.total_point
-            cgpa_sum += g_obj.total_point
+            g_obj = GradeAndGpa(float(th_fm), float(pr_fm), float(th_mo), float(pr_mo), priority)
+            mo_dict[sub_id]['th_grade'] = g_obj.th_grade
+            mo_dict[sub_id]['th_symbol'] = g_obj.th_symbol
+            mo_dict[sub_id]['th_point'] = g_obj.th_point
+            mo_dict[sub_id]['pr_grade'] = g_obj.pr_grade
+            mo_dict[sub_id]['pr_symbol'] = g_obj.pr_symbol
+            mo_dict[sub_id]['pr_point'] = g_obj.pr_point
+            mo_dict[sub_id]['th_fail'] = g_obj.th_fail
+            mo_dict[sub_id]['pr_fail'] = g_obj.pr_fail
+            mo_dict[sub_id]['total_grade'] = g_obj.total_grade
+            mo_dict[sub_id]['total_symbol'] = g_obj.total_symbol
+            mo_dict[sub_id]['total_point'] = g_obj.total_point
+            cgpa_sum += Decimal(str(g_obj.total_point))
             if g_obj.th_fail:
                 fail_count += 1
             if g_obj.pr_fail:
                 fail_count += 1
-
-        mo_dict[subject.id]['gradepoint'] = g_obj.total_point if grading_type != 1 else mo_dict[subject.id].get('total_point', 0)
-
-    cgpa = round(cgpa_sum / subject_count, 2) if subject_count > 0 else 0
-
+        
+        mo_dict[sub_id]['gradepoint'] = float(mo_dict[sub_id].get('total_point', 0))
+    
+    cgpa = (cgpa_sum / Decimal(str(subject_count))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if subject_count > 0 else Decimal('0')
+    
     if cgpa > 0:
-        overall_grade, overall_symbol, overall_point = get_grade_point_from_point(cgpa)
+        overall_grade, overall_symbol, overall_point = get_grade_point_from_point(float(cgpa))
     else:
         overall_grade, overall_symbol, overall_point = "NG", "", 0
-
-    remarks_text = remarks(cgpa)
-
+    
+    remarks_text = remarks(float(cgpa))
+    
     total_mo = total_th_mo + total_pr_mo
     total_fm = total_th_fm + total_pr_fm
-    percentage = round((total_mo / total_fm * 100), 2) if total_fm > 0 else 0
-
+    percentage = (total_mo / total_fm * 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if total_fm > 0 else Decimal('0')
+    
     return {
         'mo_dict': mo_dict,
-        'total_th_mo': total_th_mo,
-        'total_pr_mo': total_pr_mo,
-        'total_mo': total_mo,
-        'total_fm': total_fm,
-        'total_th_fm': total_th_fm,
-        'total_pr_fm': total_pr_fm,
+        'total_th_mo': total_th_mo.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP),
+        'total_pr_mo': total_pr_mo.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP),
+        'total_mo': total_mo.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP),
+        'total_fm': total_fm.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP),
+        'total_th_fm': total_th_fm.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP),
+        'total_pr_fm': total_pr_fm.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP),
         'percentage': percentage,
         'cgpa': cgpa,
         'overall_grade': overall_grade,

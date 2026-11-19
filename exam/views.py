@@ -6,6 +6,8 @@ import os
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.http import HttpResponse, HttpResponseRedirect
+from django.urls import reverse
 
 # Re-use panel helpers — they are lightweight and don't render anything
 from panel.views import get_branch_info, get_current_session
@@ -1718,14 +1720,14 @@ def print_ledger_preview(request):
     from exam.func import _parse_weighted_term_config
     from exam.models import WeightedResultManagement, GradeFullMarks
     from sms.models import Subject, StudentSession, MarkObtained
-    normalized_wconfig = {}
+    normalized_wconfig, global_wsettings = {}, {}
     source_terms = []
     if ledgermode in ['2', '3']:
         weighted_config_obj = WeightedResultManagement.objects.filter(
             school=school, year=session, school_term=term
         ).first()
         if weighted_config_obj:
-            normalized_wconfig = _parse_weighted_term_config(
+            normalized_wconfig, global_wsettings = _parse_weighted_term_config(
                 weighted_config_obj.weight_config, term.id, include_current=True
             )
             source_term_ids = list(normalized_wconfig.keys())
@@ -1807,19 +1809,21 @@ def print_ledger_preview(request):
                 w_info = normalized_wconfig.get(str(src_term.id))
                 for sub in subjects:
                     s_th, s_pr = all_marks_map.get((student.student_id, src_term.id, sub.id), (0, 0))
-                    s_th_fm, s_pr_fm = source_fm_map.get((src_term.id, sub.id), (100, 100))
+                    s_th_fm, s_pr_fm = source_fm_map.get((src_term.id, sub.id), (0, 0))
                     if ledgermode == '2' and w_info:
+                        # Cross-mixing: TH gets contribution from both TH and PR
+                        val_th = s_th * w_info.get('th_from_th', 0) + s_pr * w_info.get('th_from_pr', 0)
+                        val_pr = s_th * w_info.get('pr_from_th', 0) + s_pr * w_info.get('pr_from_pr', 0)
+                        # For scaling plan (if implemented in future)
                         if w_info.get('plan') == 'scaling':
-                            val_th = (s_th / s_th_fm * w_info['th_target_fm'] * w_info['th_from_th']) if s_th_fm > 0 else 0
-                            val_pr = (s_pr / s_pr_fm * w_info['pr_target_fm'] * w_info['pr_from_pr']) if s_pr_fm > 0 else 0
-                        else:
-                            val_th = s_th * w_info['th_from_th']
-                            val_pr = s_pr * w_info['pr_from_pr']
+                            # Note: scaling not fully implemented in breakdown view
+                            pass
                     else:
                         val_th = s_th
                         val_pr = s_pr
                     student_subject_totals[sub.id]['th'] += val_th
                     student_subject_totals[sub.id]['pr'] += val_pr
+                    # For breakdown display, show the weighted contribution
                     term_entry['subjects'].append({
                         'th_val': int(val_th) if val_th == int(val_th) else round(val_th, 2),
                         'pr_val': int(val_pr) if val_pr == int(val_pr) else round(val_pr, 2),
@@ -1860,11 +1864,18 @@ def print_ledger_preview(request):
                 for t in source_terms:
                     w_info = normalized_wconfig.get(str(t.id), {})
                     s_th_fm, s_pr_fm = source_fm_map.get((t.id, sub.id), (0, 0))
+                    # Cross-mixing for FM: TH gets contribution from both TH and PR FM
                     if w_info.get('plan') == 'scaling':
-                        th_max += s_th_fm * w_info.get('th_target_fm', 100) * w_info.get('th_from_th', 0)
-                        pr_max += s_pr_fm * w_info.get('pr_target_fm', 100) * w_info.get('pr_from_pr', 0)
+                        th_target = global_wsettings.get('target_fm_th', 100)
+                        pr_target = global_wsettings.get('target_fm_pr', 100)
+                        th_max += s_th_fm * w_info.get('th_from_th', 0) * (th_target / 100 if s_th_fm > 0 else 0)
+                        th_max += s_pr_fm * w_info.get('th_from_pr', 0) * (pr_target / 100 if s_pr_fm > 0 else 0)
+                        pr_max += s_th_fm * w_info.get('pr_from_th', 0) * (th_target / 100 if s_th_fm > 0 else 0)
+                        pr_max += s_pr_fm * w_info.get('pr_from_pr', 0) * (pr_target / 100 if s_pr_fm > 0 else 0)
                     else:
                         th_max += s_th_fm * w_info.get('th_from_th', 0)
+                        th_max += s_pr_fm * w_info.get('th_from_pr', 0)
+                        pr_max += s_th_fm * w_info.get('pr_from_th', 0)
                         pr_max += s_pr_fm * w_info.get('pr_from_pr', 0)
         else:
             fm = this_term_fm_cache.get(sub.id)
@@ -1948,8 +1959,9 @@ def print_ledger_now(request):
 
     source_terms = []
     normalized_wconfig = {}
+    global_wsettings = {}
     if ledgermode in ['2', '3'] and weighted_config_obj:
-        normalized_wconfig = _parse_weighted_term_config(
+        normalized_wconfig, global_wsettings = _parse_weighted_term_config(
             weighted_config_obj.weight_config, term.id, include_current=True
         )
         source_term_ids = list(normalized_wconfig.keys())
@@ -2001,11 +2013,18 @@ def print_ledger_now(request):
             for t in source_terms:
                 w_info = normalized_wconfig.get(str(t.id), {})
                 s_th_fm, s_pr_fm = source_fm_map.get((t.id, sub.id), (0, 0))
+                # Cross-mixing for FM: TH gets contribution from both TH and PR FM
                 if w_info.get('plan') == 'scaling':
-                    th_max += s_th_fm * w_info.get('th_target_fm', 100) * w_info.get('th_from_th', 0)
-                    pr_max += s_pr_fm * w_info.get('pr_target_fm', 100) * w_info.get('pr_from_pr', 0)
+                    th_target = global_wsettings.get('target_fm_th', 100)
+                    pr_target = global_wsettings.get('target_fm_pr', 100)
+                    th_max += s_th_fm * w_info.get('th_from_th', 0) * (th_target / 100 if s_th_fm > 0 else 0)
+                    th_max += s_pr_fm * w_info.get('th_from_pr', 0) * (pr_target / 100 if s_pr_fm > 0 else 0)
+                    pr_max += s_th_fm * w_info.get('pr_from_th', 0) * (th_target / 100 if s_th_fm > 0 else 0)
+                    pr_max += s_pr_fm * w_info.get('pr_from_pr', 0) * (pr_target / 100 if s_pr_fm > 0 else 0)
                 else:
                     th_max += s_th_fm * w_info.get('th_from_th', 0)
+                    th_max += s_pr_fm * w_info.get('th_from_pr', 0)
+                    pr_max += s_th_fm * w_info.get('pr_from_th', 0)
                     pr_max += s_pr_fm * w_info.get('pr_from_pr', 0)
         subject_fm_data[sub.id] = {'th_max': th_max, 'pr_max': pr_max}
 
@@ -2023,6 +2042,24 @@ def print_ledger_now(request):
     sn = 0
     data = {}
     from exam.func import get_percentage
+    from exam.models import GradeResultConfig
+    
+    # Get grade config for pass thresholds
+    grade_config = GradeResultConfig.objects.filter(
+        school=school, year=session, grade=grade
+    ).first()
+    
+    if grade_config:
+        th_pass_type = grade_config.th_pass_type
+        th_pass_value = float(grade_config.th_pass_value)
+        pr_pass_type = grade_config.pr_pass_type
+        pr_pass_value = float(grade_config.pr_pass_value)
+    else:
+        th_pass_type = 'percentage'
+        th_pass_value = 35.0
+        pr_pass_type = 'percentage'
+        pr_pass_value = 35.0
+    
     for student in students:
         sn += 1
         data[sn] = {}
@@ -2032,15 +2069,19 @@ def print_ledger_now(request):
         data[sn]['section'] = student.section
 
         # Use exam's calculate_student_result for each subject
+        # Map ledgermode to calculation_type: '1'=legacy, '2'=weighted, '3'=legacy, '4'=weighted
+        calc_type_map = {'1': 'legacy', '2': 'weighted', '3': 'legacy', '4': 'weighted'}
+        calculation_type = calc_type_map.get(ledgermode, 'legacy')
+        
         config = {
             'grading_type': grading_type,
             'ledger_type': 2,
-            'calculation_type': ledgermode,
+            'calculation_type': calculation_type,
             'assessment_source': 'exam',
-            'th_pass_type': 'percentage',
-            'th_pass_value': 35.0,
-            'pr_pass_type': 'percentage',
-            'pr_pass_value': 35.0,
+            'th_pass_type': th_pass_type,
+            'th_pass_value': th_pass_value,
+            'pr_pass_type': pr_pass_type,
+            'pr_pass_value': pr_pass_value,
         }
         result = calculate_student_result(school, session, grade, term, student, config)
 
@@ -2070,28 +2111,19 @@ def print_ledger_now(request):
             'subjects': result['mo_dict'],
         })
 
-        # Pass/Fail detection
+        # Pass/Fail detection - use pre-calculated results from calculate_student_result
         is_failed = False
         fail_count = 0
         for sub in subjects:
             sub_id = sub.id
             marks = data[sn]['subjects'].get(sub_id, {})
-            th_raw = marks.get('th_mo', 0) or 0
-            pr_raw = marks.get('pr_mo', 0) or 0
-            fm_info = subject_fm_data.get(sub_id, {'th_max': 0, 'pr_max': 0})
-            th_fm = fm_info['th_max']
-            pr_fm = fm_info['pr_max']
-
-            if th_fm > 0:
-                th_percent = (th_raw / th_fm * 100) if th_fm > 0 else 0
-                if th_percent < 35:
-                    is_failed = True
-                    fail_count += 1
-            if pr_fm > 0:
-                pr_percent = (pr_raw / pr_fm * 100) if pr_fm > 0 else 0
-                if pr_percent < 35:
-                    is_failed = True
-                    fail_count += 1
+            # Use the th_fail and pr_fail flags calculated by calculate_student_result
+            if marks.get('th_fail', False):
+                is_failed = True
+                fail_count += 1
+            if marks.get('pr_fail', False):
+                is_failed = True
+                fail_count += 1
 
         data[sn]['is_failed'] = is_failed
         data[sn]['fail_count'] = fail_count
@@ -2587,6 +2619,389 @@ def print_ledger(request):
 
 
 @login_required
+def print_ledger_from_calc(request, term_id):
+    """Generate ledger based on term_calculation from ResultManagement."""
+    from sms.models import SchoolGrade, EduSession, Section, Subject, StudentSession, MarkObtained, Attendance
+    from exam.models import SchoolTerm, ResultManagement, SchoolTerminology, GradeFullMarks
+    from exam.func import calculate_student_result, calculate_rank
+    import json as _json
+
+    branchuser, error = get_branch_info(request.user)
+    if error:
+        return HttpResponse(error)
+
+    school = branchuser.school
+    current_session = get_current_session()
+
+    try:
+        this_term = SchoolTerm.objects.get(id=term_id, school=school)
+    except SchoolTerm.DoesNotExist:
+        return HttpResponse("Term not found.")
+
+    # Get the term calculation config from ResultManagement
+    try:
+        term_calc = ResultManagement.objects.get(school=school, year=current_session, school_term=this_term)
+        term_calc_data = _json.loads(term_calc.term_calculation)
+    except (ResultManagement.DoesNotExist, _json.JSONDecodeError):
+        term_calc_data = {}
+
+    # Build term list from calculation config
+    term_list = []
+    term_acronym = {}
+    for key, value in term_calc_data.items():
+        if int(value) > 0:
+            try:
+                t = SchoolTerm.objects.get(id=key)
+                term_acronym[int(key)] = t.name_in_short or t.term_name[:3]
+                term_list.append(int(key))
+            except SchoolTerm.DoesNotExist:
+                continue
+
+    # Always include the target term
+    if this_term.id not in term_list:
+        term_list.append(this_term.id)
+        term_acronym[this_term.id] = this_term.name_in_short or this_term.term_name[:3]
+
+    no_of_terms = len(term_list)
+    no_of_terms_range = range(len(term_list))
+    no_of_terms_marks_count = no_of_terms * 2
+    gpa_colspan = 4 + no_of_terms_marks_count
+
+    # GET request - show selection form
+    if request.method == 'GET':
+        from sms.models import SchoolGrade, EduSession, Section
+        from exam.models import SchoolTerm
+
+        current_session = get_current_session()
+        edusession_all = EduSession.objects.all().order_by('-year')
+        grades = SchoolGrade.objects.filter(school=school, active=True).order_by('id')
+        exam_types = SchoolTerm.objects.filter(school=school, active=True)
+
+        section_list = {}
+        for session in edusession_all:
+            sid = str(session.id)
+            section_list[sid] = {}
+            for g in grades:
+                section_list[sid][str(g.id)] = {str(s.id): s.section for s in Section.objects.filter(grade=g, session=session)}
+
+        ctx = _nav_context(request)
+        ctx.update({
+            'edusession': edusession_all, 'current_session': current_session,
+            'exam_types': exam_types, 'grades': grades, 'school': school,
+            'branchuser': branchuser, 'term': this_term,
+            'term_list': term_list, 'term_acronym': term_acronym,
+            'no_of_terms': len(term_list),
+            'is_exam_print': 'mark_ledger',
+        })
+        return render(request, 'exam/print_ledger.html', ctx)
+
+# POST - generate ledger
+    grade_id = request.POST.get('grade2')
+    section_id = request.POST.get('section2')
+    printtype = int(request.POST.get('printtype', 1))
+    ledgerttype = int(request.POST.get('ledgerttype', 2))
+    grading_type = int(request.POST.get('grading_type', 2))
+    ledgermode = int(request.POST.get('ledgermode', 1))
+    rank_by = request.POST.get('rank_by', 'total')
+    order = request.POST.get('order_print', '1')
+    data_filter = int(request.POST.get('filter', 0))
+
+    try:
+        grade = SchoolGrade.objects.get(id=grade_id)
+        session = current_session
+        term = this_term
+
+        if section_id and str(section_id).strip() not in ("", "0"):
+            section = Section.objects.get(id=section_id, session=session)
+        else:
+            section = None
+
+        # Build term list from term_calc_data (for RESULT CALC CONFIG mode)
+        term_list = []
+        term_acronym = {}
+        source_terms = []
+        normalized_wconfig = {}
+        
+        if ledgermode in [2, 3, 4]:  # WEIGHTED, CONSOLIDATED RAW, or RESULT CALC CONFIG
+            if ledgermode == 4:  # RESULT CALC CONFIG - use ResultManagement.term_calculation
+                # term_calc_data already parsed from ResultManagement
+                normalized_wconfig, _ = _parse_weighted_term_config(term_calc_data, this_term.id, include_current=True)
+                source_term_ids = list(normalized_wconfig.keys())
+                term_objects = {str(t.id): t for t in SchoolTerm.objects.filter(id__in=source_term_ids)}
+                source_terms = [term_objects[tid] for tid in source_term_ids if tid in term_objects]
+            else:  # WEIGHTED (2) or CONSOLIDATED RAW (3) - use WeightedResultManagement
+                weighted_config_obj = WeightedResultManagement.objects.filter(school=school, year=current_session, school_term=this_term).first()
+                if weighted_config_obj:
+                    normalized_wconfig, _ = _parse_weighted_term_config(weighted_config_obj.weight_config, this_term.id, include_current=True)
+                    source_term_ids = list(normalized_wconfig.keys())
+                    term_objects = {str(t.id): t for t in SchoolTerm.objects.filter(id__in=source_term_ids)}
+                    source_terms = [term_objects[tid] for tid in source_term_ids if tid in term_objects]
+                else:
+                    ledgermode = 1  # Fallback to standard
+            
+            if not source_terms:
+                ledgermode = 1  # Fallback to standard if no source terms
+
+            # Build term_list from source_terms
+            term_list = [t.id for t in source_terms]
+            term_acronym = {t.id: t.name_in_short or t.term_name[:3] for t in source_terms}
+        else:  # Standard mode (1)
+            term_list = [this_term.id]
+            term_acronym = {this_term.id: this_term.name_in_short or this_term.term_name[:3]}
+
+        # Get ranks
+        config = _get_result_config(school, session, grade)
+        config['grading_type'] = grading_type
+        config['ledgerttype'] = ledgerttype
+        config['ledgermode'] = ledgermode
+        config['calculation_type'] = 'legacy'  # term_calc uses legacy calculation
+
+        ranks = calculate_rank(school.id, session, grade, term, section, rank_by=rank_by, config=config)
+
+        subjects = Subject.objects.filter(session=session, branch=school, grade=grade, status=True).order_by('id')
+
+        # Build student queryset
+        base_qs = StudentSession.objects.filter(session=session, grade=grade, status=True)
+        if section:
+            base_qs = base_qs.filter(section=section)
+        
+        if order == '1':
+            students = list(base_qs.select_related('student').order_by('student__reg_no'))
+        elif order == '2':
+            students = list(base_qs.select_related('student').order_by('roll_no'))
+        elif order == '3':
+            students = list(base_qs.select_related('student'))
+            students.sort(key=lambda s: ranks.get(s.student.reg_no, 9999))
+        else:
+            students = list(base_qs.select_related('student').order_by('roll_no'))
+
+        # Get ranks for all students (for display)
+        all_ranks = calculate_rank(school.id, session, grade, term, section, rank_by=rank_by, config=config)
+
+        # Calculate results for each student
+        student_data_list = []
+        
+        if ledgermode == 4:  # RESULT CALC CONFIG - use term_calc_data for weighted calculation
+            # Parse the weighted config for this term
+            normalized_wconfig, _ = _parse_weighted_term_config(term_calc_data, this_term.id, include_current=True)
+            
+            # Build source term IDs and fetch terms
+            source_term_ids = list(normalized_wconfig.keys())
+            term_objects = {str(t.id): t for t in SchoolTerm.objects.filter(id__in=source_term_ids)}
+            source_terms = [term_objects[tid] for tid in source_term_ids if tid in term_objects]
+            
+            # Pre-fetch marks and full marks for all source terms
+            all_marks_map = {}
+            source_fm_map = {}
+            
+            source_term_ids = [t.id for t in source_terms]
+            marks_qs = MarkObtained.objects.filter(
+                school=school, session=session, grade=grade, 
+                term_id__in=source_term_ids, 
+                subject_id__in=[s.id for s in subjects]
+            )
+            for m in marks_qs:
+                all_marks_map[(m.student_id, m.term_id, m.subject_id)] = (m.th_mo or 0, m.pr_mo or 0)
+
+            source_fm_qs = GradeFullMarks.objects.filter(
+                school=school, session=session, grade=grade, term_id__in=source_term_ids
+            )
+            source_fm_map = {(fm.term_id, fm.subject_id): (fm.th_fm or 0, fm.pr_fm or 0) for fm in source_fm_qs}
+
+            for student in students:
+                student_subject_totals = {sub.id: {"th": 0, "pr": 0} for sub in subjects}
+                student_breakdown = []
+                
+                for src_term in source_terms:
+                    term_label = getattr(src_term, 'name_in_short', None) or src_term.term_name
+                    term_entry = {"term_label": term_label, "subjects": []}
+                    w_info = normalized_wconfig.get(str(src_term.id))
+                    
+                    for sub in subjects:
+                        s_th, s_pr = all_marks_map.get((student.student_id, src_term.id, sub.id), (0, 0))
+                        s_th_fm, s_pr_fm = source_fm_map.get((src_term.id, sub.id), (100, 100))
+                        
+                        if w_info:  # Weighted mode
+                            if w_info.get("plan") == "scaling":
+                                val_th = (s_th / s_th_fm * w_info["th_target_fm"] * w_info["th_from_th"]) if s_th_fm > 0 else 0
+                                val_pr = (s_pr / s_pr_fm * w_info["pr_target_fm"] * w_info["pr_from_pr"]) if s_pr_fm > 0 else 0
+                            else:
+                                val_th = s_th * w_info["th_from_th"]
+                                val_pr = s_pr * w_info["pr_from_pr"]
+                        else:  # Consolidated raw mode
+                            val_th = s_th
+                            val_pr = s_pr
+                        
+                        student_subject_totals[sub.id]["th"] += val_th
+                        student_subject_totals[sub.id]["pr"] += val_pr
+                        
+                        term_entry["subjects"].append({
+                            "th_val": int(val_th) if val_th == int(val_th) else round(val_th, 2),
+                            "pr_val": int(val_pr) if val_pr == int(val_pr) else round(val_pr, 2),
+                            "th_max": s_th_fm,
+                            "pr_max": s_pr_fm,
+                        })
+                    student_breakdown.append(term_entry)
+                
+                # Add TOTAL row
+                total_label = "TOTAL"
+                total_entry = {"term_label": total_label, "subjects": [], "is_total": True}
+                for sub in subjects:
+                    t_th = student_subject_totals[sub.id]["th"]
+                    t_pr = student_subject_totals[sub.id]["pr"]
+                    total_entry["subjects"].append({
+                        "th_val": int(t_th) if t_th == int(t_th) else round(t_th, 2),
+                        "pr_val": int(t_pr) if t_pr == int(t_pr) else round(t_pr, 2),
+                        "th_max": 0,
+                        "pr_max": 0,
+                    })
+                student_breakdown.append(total_entry)
+                
+                # Calculate rank
+                rank = all_ranks.get(student.student.reg_no, '-')
+                
+                student_data_list.append({
+                    'student': student,
+                    'rank': rank,
+                    'breakdown_terms': student_breakdown,
+                })
+        else:
+            # Standard mode (1), Weighted (2), Consolidated (3) - use single term calculation
+            for student in students:
+                result = calculate_student_result(school, session, grade, term, student, config)
+                result['student'] = student
+                result['rank'] = all_ranks.get(student.student.reg_no, '-')
+                student_data_list.append({
+                    'student': student,
+                    'rank': result['rank'],
+                    'breakdown_terms': [{
+                        'term_label': term.term_name,
+                        'subjects': [],
+                        'is_total': False
+                    } for bt in [result]],  # Simplified - will be handled by template
+                    'totals': {
+                        'total_fm': result['total_fm'],
+                        'total_mo': result['total_mo'],
+                        'percentage': result['percentage'],
+                        'cgpa': result['cgpa'],
+                        'overall_grade': result['overall_grade'],
+                        'overall_symbol': result['overall_symbol'],
+                        'any_fail': result['fail_count'] > 0,
+                    },
+                })
+
+        # Get terminology
+        try:
+            terminology = SchoolTerminology.objects.get(school=school)
+        except SchoolTerminology.DoesNotExist:
+            terminology = None
+
+        # Build term list for ledger (from term_calc_data)
+        term_list = []
+        term_acronym = {}
+        for key, value in term_calc_data.items():
+            if int(value) > 0:
+                try:
+                    t = SchoolTerm.objects.get(id=key)
+                    term_acronym[int(key)] = t.name_in_short or t.term_name[:3]
+                    term_list.append(int(key))
+                except SchoolTerm.DoesNotExist:
+                    continue
+
+        # Always include the target term
+        if this_term.id not in term_list:
+            term_list.append(this_term.id)
+            term_acronym[this_term.id] = this_term.name_in_short or this_term.term_name[:3]
+
+        no_of_terms = len(term_list)
+        no_of_terms_range = range(len(term_list))
+        no_of_terms_marks_count = no_of_terms * 2
+        gpa_colspan = 4 + no_of_terms_marks_count
+
+        # Get attendance data
+        from sms.models import Attendance
+        attendance_data = {}
+        for item in student_data_list:
+            student = item['student']
+            attendance = Attendance.objects.filter(
+                reg_no=student.student.reg_no,
+                session=session,
+                grade=grade,
+                term=term
+            ).first()
+            if attendance:
+                attendance_data[student.student.reg_no] = {
+                    'present': attendance.no_of_present_days,
+                    'total': attendance.no_of_school_days,
+                }
+            else:
+                attendance_data[student.student.reg_no] = {'present': 0, 'total': 0}
+            item['attendance'] = attendance_data.get(item['student'].student.reg_no, {'present': 0, 'total': 0})
+
+        # Build mo_dict for JavaScript (matching panel format)
+        mo_dict = {}
+        for item in student_data_list:
+            for sub_id, sub_data in item['mo_dict'].items():
+                for term_id in term_list:
+                    prefix = f"{item['student'].student.reg_no}_{sub_id}_{term_id}"
+                    mo_dict[f"{prefix}_th_grade"] = sub_data.get('th_grade', '-')
+                    mo_dict[f"{prefix}_th_symbol"] = sub_data.get('th_symbol', '')
+                    mo_dict[f"{prefix}_th_point"] = sub_data.get('th_point', '-')
+                    mo_dict[f"{prefix}_pr_grade"] = sub_data.get('pr_grade', '-')
+                    mo_dict[f"{prefix}_pr_symbol"] = sub_data.get('pr_symbol', '')
+                    mo_dict[f"{prefix}_pr_point"] = sub_data.get('pr_point', '-')
+                    mo_dict[f"{prefix}_total_grade"] = sub_data.get('total_grade', '-')
+                    mo_dict[f"{prefix}_total_symbol"] = sub_data.get('total_symbol', '')
+                    mo_dict[f"{prefix}_total_point"] = sub_data.get('total_point', '-')
+
+        # Add GPA and remarks to mo_dict for each student
+        for item in student_data_list:
+            reg_no = item['student'].student.reg_no
+            mo_dict[f"{reg_no}_gpa"] = item.get('cgpa', 0)
+            mo_dict[f"{reg_no}_remarks"] = item.get('remarks', '')
+
+        # Subject FM list for header reference
+        subject_fm_list = []
+        for sub in subjects:
+            fm = GradeFullMarks.objects.filter(school=school, session=session, grade=grade, term=term, subject=sub).first()
+            th_max = fm.th_fm if fm else 0
+            pr_max = fm.pr_fm if fm else 0
+
+            subject_fm_list.append({
+                "name": sub.subject,
+                "th_fm": int(th_max),
+                "pr_fm": int(pr_max),
+            })
+
+        ctx = _nav_context(request)
+        ctx.update({
+            'school': school,
+            'term': term,
+            'year': term.year,
+            'student_data': student_data_list,
+            'grade': grade,
+            'section': section,
+            'subjects': subjects,
+            'ledgermode': ledgermode,
+            'ledgerttype': ledgerttype,
+            'subject_fm_list': subject_fm_list,
+            'terminology': terminology,
+            'term_list': term_list,
+            'term_acronym': term_acronym,
+            'no_of_terms': len(term_list),
+            'no_of_terms_range': range(len(term_list)),
+            'no_of_terms_marks_count': len(term_list) * 2,
+            'gpa_colspan': 4 + len(term_list) * 2,
+            'mo_dict': json.dumps(mo_dict),
+            'the_space': range(0),
+        })
+        return render(request, 'exam/ledger_preview.html', ctx)
+    except Exception as e:
+        messages.error(request, f"Error generating ledger: {str(e)}")
+        return redirect('exam:print_ledger_from_calc', term_id=term_id)
+
+
+@login_required
 def ledger_preview(request):
     """Generate ledger preview with weighted/consolidated options."""
     from sms.models import SchoolGrade, EduSession, Section, Subject, StudentSession, MarkObtained
@@ -2634,7 +3049,7 @@ def ledger_preview(request):
         if ledgermode in ["2", "3"]:
             weighted_config_obj = WeightedResultManagement.objects.filter(school=school, year=this_session, school_term=this_term).first()
             if weighted_config_obj:
-                normalized_wconfig = _parse_weighted_term_config(weighted_config_obj.weight_config, this_term.id, include_current=True)
+                normalized_wconfig, _ = _parse_weighted_term_config(weighted_config_obj.weight_config, this_term.id, include_current=True)
                 source_term_ids = list(normalized_wconfig.keys())
                 term_objects = {str(t.id): t for t in SchoolTerm.objects.filter(id__in=source_term_ids)}
                 source_terms = [term_objects[tid] for tid in source_term_ids if tid in term_objects]
@@ -2717,12 +3132,13 @@ def ledger_preview(request):
                         s_th_fm, s_pr_fm = source_fm_map.get((src_term.id, sub.id), (100, 100))
 
                         if ledgermode == "2" and w_info:  # Weighted
+                            # Cross-mixing: TH gets contribution from both TH and PR
+                            val_th = s_th * w_info.get("th_from_th", 0) + s_pr * w_info.get("th_from_pr", 0)
+                            val_pr = s_th * w_info.get("pr_from_th", 0) + s_pr * w_info.get("pr_from_pr", 0)
+                            # For scaling plan (if implemented in future)
                             if w_info.get("plan") == "scaling":
-                                val_th = (s_th / s_th_fm * w_info["th_target_fm"] * w_info["th_from_th"]) if s_th_fm > 0 else 0
-                                val_pr = (s_pr / s_pr_fm * w_info["pr_target_fm"] * w_info["pr_from_pr"]) if s_pr_fm > 0 else 0
-                            else:
-                                val_th = s_th * w_info["th_from_th"]
-                                val_pr = s_pr * w_info["pr_from_pr"]
+                                # Note: scaling not fully implemented in breakdown view
+                                pass
                         else:  # Consolidated Raw
                             val_th = s_th
                             val_pr = s_pr
@@ -2773,11 +3189,18 @@ def ledger_preview(request):
                     for t in source_terms:
                         w_info = normalized_wconfig.get(str(t.id), {})
                         s_th_fm, s_pr_fm = source_fm_map.get((t.id, sub.id), (0, 0))
+                        # Cross-mixing for FM: TH gets contribution from both TH and PR FM
                         if w_info.get("plan") == "scaling":
-                            th_max += s_th_fm * w_info.get("th_target_fm", 100) * w_info.get("th_from_th", 0)
-                            pr_max += s_pr_fm * w_info.get("pr_target_fm", 100) * w_info.get("pr_from_pr", 0)
+                            # Note: scaling plan would need target_fm from global settings
+                            # For now, use the same logic as direct but with scaling
+                            th_max += s_th_fm * w_info.get("th_from_th", 0)
+                            th_max += s_pr_fm * w_info.get("th_from_pr", 0)
+                            pr_max += s_th_fm * w_info.get("pr_from_th", 0)
+                            pr_max += s_pr_fm * w_info.get("pr_from_pr", 0)
                         else:
                             th_max += s_th_fm * w_info.get("th_from_th", 0)
+                            th_max += s_pr_fm * w_info.get("th_from_pr", 0)
+                            pr_max += s_th_fm * w_info.get("pr_from_th", 0)
                             pr_max += s_pr_fm * w_info.get("pr_from_pr", 0)
             else:
                 fm = this_term_fm_cache.get(sub.id)
@@ -2873,11 +3296,13 @@ def print_ledger_now(request):
         else:
             this_section = None
 
-        # Get ranks
+# Get ranks
         config = _get_result_config(school, this_session, this_grade)
         config['grading_type'] = grading_type
-        config['ledgertype'] = ledgerttype
+        config['ledgerttype'] = ledgerttype
         config['ledgermode'] = ledgermode
+        # Use weighted calculation when ledgermode is 2 (Weighted Breakdown)
+        config['calculation_type'] = 'weighted' if ledgermode == 2 else 'legacy'
         ranks = calculate_rank(school.id, this_session, this_grade, this_term, this_section, rank_by=rank_by, config=config)
 
         subjects = Subject.objects.filter(session=this_session, branch=school, grade=this_grade, status=True).order_by("id")
@@ -2903,7 +3328,7 @@ def print_ledger_now(request):
         if ledgermode in [2, 3]:
             weighted_config_obj = WeightedResultManagement.objects.filter(school=school, year=this_session, school_term=this_term).first()
             if weighted_config_obj:
-                normalized_wconfig = _parse_weighted_term_config(weighted_config_obj.weight_config, this_term.id, include_current=True)
+                normalized_wconfig, _ = _parse_weighted_term_config(weighted_config_obj.weight_config, this_term.id, include_current=True)
                 source_term_ids = list(normalized_wconfig.keys())
                 term_objects = {str(t.id): t for t in SchoolTerm.objects.filter(id__in=source_term_ids)}
                 source_terms = [term_objects[tid] for tid in source_term_ids if tid in term_objects]
@@ -3226,7 +3651,7 @@ def public_result(request):
         term_list = []
         weights = {}
         if calc_type == 'weighted' and weighted_cfg:
-            weights = _parse_weighted_term_config(weighted_cfg.weight_config, this_term.id, include_current=True)
+            weights, _ = _parse_weighted_term_config(weighted_cfg.weight_config, this_term.id, include_current=True)
             term_list = sorted(set([this_term.id] + list(weights.keys())))
         else:
             try:
