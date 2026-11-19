@@ -991,6 +991,9 @@ def weighted_term_calculation(request):
     except Exception:
         return HttpResponseRedirect('/exam/terms/weighted/')
 
+    from exam.models import SchoolTerm
+    from exam.models import WeightedResultManagement
+
     def _safe_float(value):
         try:
             return float(value)
