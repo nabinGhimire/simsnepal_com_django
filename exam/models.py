@@ -83,6 +83,36 @@ class GradeResultConfig(models.Model):
         default="legacy",
         help_text="legacy | weighted",
     )
+    
+    # Separate pass logic for Theory and Practical
+    PASS_TYPE_CHOICES = [
+        ("percentage", "Percentage"),
+        ("gpa", "GPA"),
+        ("marks", "Absolute Marks"),
+    ]
+    
+    th_pass_type = models.CharField(
+        max_length=15,
+        choices=PASS_TYPE_CHOICES,
+        default="percentage",
+        help_text="Pass logic type for Theory",
+    )
+    th_pass_value = models.DecimalField(
+        max_digits=5, decimal_places=2, default=35.00,
+        help_text="Pass threshold for Theory (35% = 35.00, GPA 1.6 = 1.60, marks = absolute)"
+    )
+    
+    pr_pass_type = models.CharField(
+        max_length=15,
+        choices=PASS_TYPE_CHOICES,
+        default="percentage",
+        help_text="Pass logic type for Practical",
+    )
+    pr_pass_value = models.DecimalField(
+        max_digits=5, decimal_places=2, default=35.00,
+        help_text="Pass threshold for Practical"
+    )
+    
     is_published = models.BooleanField(default=False)
 
     class Meta:

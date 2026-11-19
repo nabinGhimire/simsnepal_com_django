@@ -18,6 +18,9 @@ def _redirect_full_marks(request):
 def _redirect_printmarksform(request):
     return redirect('exam:marks_input_form')
 
+def _redirect_marks_input_form(request):
+    return redirect('exam:marks_input_form')
+
 def _redirect_marks_grade_sheet(request):
     return redirect('exam:marks_grade_sheet')
 
@@ -67,16 +70,21 @@ urlpatterns = [
     path('settings/terminologies/', views.settings_terminologies, name='settings_terminologies'),
     path('settings/result-config/', views.resultmanagement, name='grade_result_config'),
 
-    # ── Print / Grade Sheet ──────────────────────────────────────────────────────
+    # ── Print / Ledger / Entrance Card ───────────────────────────────────────────
     path('print/marks-input-form/', views.printmarksform, name='marks_input_form'),
     path('print/marks-grade-sheet/', views.marksgradesheet, name='marks_grade_sheet'),
     path('print/marks-grade-sheet-2079/', views.printgradesheetnow2079, name='marks_grade_sheet_2079'),
     path('print/grade-ledger/', views.print_grade_ledger_exam, name='grade_ledger'),
+    path('print/result/', views.print_result, name='print_result'),
+    path('print/ledger/', views.print_ledger, name='print_ledger'),
+    path('print/ledger/preview/', views.print_ledger_preview, name='print_ledger_preview'),
+    path('print/ledger/now/', views.print_ledger_now, name='print_ledger_now'),
+    path('print/entrancecard/', views.print_entrance_card, name='print_entrance_card'),
 
     # ── Result status / public result ─────────────────────────────────────────────
-    path('result-status/<str:regno>/', views.flip_status_result, name='result_status'),
-    path('private-result/<str:regno>/', views.new_private_result_2080, name='private_result'),
-    path('public-result/', views.new_public_result_2079, name='public_result'),
+    path('result-status/<str:regno>/', views.result_status, name='result_status'),
+    path('private-result/<str:regno>/', views.private_result, name='private_result'),
+    path('public-result/', views.public_result, name='public_result'),
 ]
 
 # ── Legacy redirects (old URLs → new URLs) ──────────────────────────────────────
