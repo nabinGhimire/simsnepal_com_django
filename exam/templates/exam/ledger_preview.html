@@ -11,7 +11,10 @@
       <div>{{ school.location }}</div>
       <div><strong>{{ term.term_name|upper }} – {{ year }}</strong></div>
       <div class="report-type">
-        {% if ledgertype == "2" %}MARKS{% else %}GRADE{% endif %} LEDGER PREVIEW —
+        {% if ledgertype == "2" %}MARKS{% else %}GRADE{% endif %} LEDGER PREVIEW 
+        {% if ledgermode == "2" %}(WEIGHTED)
+        {% elif ledgermode == "3" %}(CONSOLIDATED RAW)
+        {% else %}(STANDARD RAW){% endif %} —
         GRADE {{ grade|upper }}{% if section %} ({{ section|upper }}){% else %} (ALL){% endif %}
       </div>
     </div>
@@ -22,6 +25,9 @@
       <button onclick="window.print()" class="exam-btn exam-btn-primary btn-sm">
         <i class="fa-solid fa-print me-1"></i> Print
       </button>
+      <a href="{% url 'exam:print_ledger' %}?edusession={{ edusession_id }}&term={{ term_id }}&grade2={{ grade_id }}&section2={{ section_id }}&ledgermode={{ ledgermode }}&ledgertype=2&grading_type=2" class="exam-btn exam-btn-info btn-sm">
+        <i class="fa-solid fa-file-lines me-1"></i> Print Marks Ledger
+      </a>
       <button onclick="exportToExcel()" class="exam-btn exam-btn-success btn-sm">
         <i class="fa-solid fa-file-excel me-1"></i> Export Excel
       </button>

@@ -5,8 +5,6 @@ All views render exam/ templates with the attendance-style design system.
 import os
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from django.template import loader, Context
-from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib import messages
 
 # Re-use panel helpers — they are lightweight and don't render anything
@@ -2615,6 +2613,11 @@ def ledger_preview(request):
         order = request.POST.get("order")
         ledgermode = request.POST.get("ledgermode", "1")
 
+        # Validate grade_id
+        if not grade_id or grade_id == "0" or grade_id == "":
+            messages.error(request, "Please select a valid grade.")
+            return redirect('exam:ledger_preview')
+
         this_grade = SchoolGrade.objects.get(id=grade_id)
         this_session = EduSession.objects.get(id=edusession_id)
         this_term = SchoolTerm.objects.get(id=term_id)
@@ -2794,6 +2797,7 @@ def ledger_preview(request):
             "subjects": subjects, "ledgermode": ledgermode, "ledgertype": "2",
             "subject_fm_list": subject_fm_list,
             "terminology": terminology,
+            "edusession_id": edusession_id, "term_id": term_id, "grade_id": grade_id, "section_id": section_id,
         })
         return render(request, 'exam/ledger_preview.html', ctx)
 
