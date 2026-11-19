@@ -2170,46 +2170,84 @@ def print_ledger_now(request):
     except SchoolTerminology.DoesNotExist:
         terminology = None
 
-    # Transform data to match printledgerpreview.html structure (student_data with breakdown_terms)
+    # Build student_data with breakdown_terms same as print_ledger_preview
+    # This ensures weighted mode shows each source term's contribution
     student_data = []
     for sn, student_data_item in data.items():
-        # Build breakdown_terms from subjects
-        subjects_list = []
-        for sub in subjects:
-            marks = student_data_item['subjects'].get(sub.id, {})
-            subjects_list.append({
-                'th_val': marks.get('theory_raw', '-'),
-                'pr_val': marks.get('prac_raw', '-'),
-            })
-        
-        # Single term entry (since this is detailed ledger for one term)
-        breakdown_terms = [{
-            'term_label': term.term_name,
-            'subjects': subjects_list,
-            'is_total': False
-        }]
-        
-        # Add total row
-        total_subjects = []
-        for sub in subjects:
-            marks = student_data_item['subjects'].get(sub.id, {})
-            total_subjects.append({
-                'th_val': marks.get('theory_raw', '-'),
-                'pr_val': marks.get('prac_raw', '-'),
-            })
-        breakdown_terms.append({
-            'term_label': 'TOTAL',
-            'subjects': total_subjects,
-            'is_total': True
-        })
-        
-        student_data.append({
+        std_entry = {
             'reg_no': student_data_item['reg_no'],
-            'roll_no': student_data_item['roll_no'],
             'name': student_data_item['name'],
-            'breakdown_terms': breakdown_terms,
-            'is_failed': student_data_item['is_failed'],
-        })
+            'roll_no': student_data_item['roll_no'],
+            'breakdown_terms': [],
+        }
+
+        if ledgermode == '1':
+            # Standard mode - single term
+            term_entry = {'term_label': term.term_name, 'subjects': []}
+            for sub in subjects:
+                marks = student_data_item['subjects'].get(sub.id, {})
+                term_entry['subjects'].append({
+                    'th_val': marks.get('theory_raw', '-'),
+                    'pr_val': marks.get('prac_raw', '-'),
+                    'th_max': marks.get('th_fm', 0),
+                    'pr_max': marks.get('pr_fm', 0),
+                })
+            std_entry['breakdown_terms'].append(term_entry)
+        else:
+            # Weighted/Consolidated mode - show each source term
+            student_subject_totals = {sub.id: {'th': 0, 'pr': 0} for sub in subjects}
+            for src_term in source_terms:
+                term_label = getattr(src_term, 'name_in_short', None) or src_term.term_name
+                if ledgermode == '2':
+                    term_label += ' (WGT)'
+                term_entry = {'term_label': term_label, 'subjects': []}
+                w_info = normalized_wconfig.get(str(src_term.id))
+                for sub in subjects:
+                    marks = student_data_item['subjects'].get(sub.id, {})
+                    # For weighted mode, we need raw marks from source term
+                    # Since we only have final weighted marks in student_data_item, 
+                    # use the pre-computed weighted marks for display
+                    s_th = marks.get('theory_raw', 0)
+                    s_pr = marks.get('prac_raw', 0)
+                    s_th_fm = marks.get('th_fm', 0)
+                    s_pr_fm = marks.get('pr_fm', 0)
+
+                    if ledgermode == '2' and w_info:
+                        # Cross-mixing: TH gets contribution from both TH and PR
+                        val_th = s_th * w_info.get('th_from_th', 0) + s_pr * w_info.get('th_from_pr', 0)
+                        val_pr = s_th * w_info.get('pr_from_th', 0) + s_pr * w_info.get('pr_from_pr', 0)
+                    else:
+                        val_th = s_th
+                        val_pr = s_pr
+
+                    student_subject_totals[sub.id]['th'] += val_th
+                    student_subject_totals[sub.id]['pr'] += val_pr
+
+                    term_entry['subjects'].append({
+                        'th_val': int(val_th) if val_th == int(val_th) else round(val_th, 2),
+                        'pr_val': int(val_pr) if val_pr == int(val_pr) else round(val_pr, 2),
+                        'th_max': s_th_fm,
+                        'pr_max': s_pr_fm,
+                    })
+                std_entry['breakdown_terms'].append(term_entry)
+
+            total_label = 'TOTAL'
+            if ledgermode == '2':
+                total_label += ' (WGT)'
+            total_entry = {'term_label': total_label, 'subjects': [], 'is_total': True}
+            for sub in subjects:
+                t_th = student_subject_totals[sub.id]['th']
+                t_pr = student_subject_totals[sub.id]['pr']
+                total_entry['subjects'].append({
+                    'th_val': int(t_th) if t_th == int(t_th) else round(t_th, 2),
+                    'pr_val': int(t_pr) if t_pr == int(t_pr) else round(t_pr, 2),
+                    'th_max': 0,
+                    'pr_max': 0,
+                })
+            std_entry['breakdown_terms'].append(total_entry)
+
+        std_entry['is_failed'] = student_data_item['is_failed']
+        student_data.append(std_entry)
 
     ctx = _nav_context(request)
     ctx.update({
