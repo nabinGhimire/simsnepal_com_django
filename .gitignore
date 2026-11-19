@@ -47,10 +47,10 @@ test/
 test_*.js
 debug_*.py
 extract*.py
-verify_*.py
-move_*.py
-import_*.py
-populate_*.py
+verify*.py
+move*.py
+import*.py
+populate*.py
 
 # Misc
 .graphify_detect.json
@@ -59,5 +59,13 @@ commit_msg.txt
 panel_views_diff.txt
 logs/
 
-
 check*.py
+
+# Backup / panel reference files (not for commit)
+exam/templates/exam/*_backup.html
+exam/templates/exam/*_panel_reference.html
+exam/templates/exam/gradesheet_*.html
+exam/templates/exam/printledger*.html
+exam/templates/exam/get_marks_grade_sheet_*.html
+exam/templates/gradesheet_*.html
+exam/views_fixed.py
