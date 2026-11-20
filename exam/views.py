@@ -1606,21 +1606,13 @@ def print_grade_ledger_exam(request):
                     continue
 
             avg_cgpa = round(cgpa_sum / cgpa_count, 2) if cgpa_count > 0 else 0
+            # If any term has a failure, overall GPA is 0
+            if any_fail:
+                avg_cgpa = 0
             percentage = round((total_mo / total_fm * 100), 2) if total_fm > 0 else 0
-            if avg_cgpa >= 4.0:
-                overall_grade, overall_symbol = "A", "+"
-            elif avg_cgpa >= 3.6:
-                overall_grade, overall_symbol = "A", " "
-            elif avg_cgpa >= 3.2:
-                overall_grade, overall_symbol = "B", "+"
-            elif avg_cgpa >= 2.8:
-                overall_grade, overall_symbol = "B", " "
-            elif avg_cgpa >= 2.4:
-                overall_grade, overall_symbol = "C", "+"
-            elif avg_cgpa >= 2.0:
-                overall_grade, overall_symbol = "C", " "
-            elif avg_cgpa >= 1.6:
-                overall_grade, overall_symbol = "D", " "
+            from exam.func import get_grade_point_from_point
+            if avg_cgpa > 0:
+                overall_grade, overall_symbol, _ = get_grade_point_from_point(avg_cgpa)
             else:
                 overall_grade, overall_symbol = "NG", ""
 
