@@ -1267,7 +1267,11 @@ def calculate_student_result(school, session, grade, term, student_session, conf
         mo_dict[sub_id]['gradepoint'] = float(mo_dict[sub_id].get('total_point', 0))
     
     cgpa = (cgpa_sum / Decimal(str(subject_count))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if subject_count > 0 else Decimal('0')
-    
+
+    # If any subject is failed, GPA is 0
+    if fail_count > 0:
+        cgpa = Decimal('0')
+
     if cgpa > 0:
         overall_grade, overall_symbol, overall_point = get_grade_point_from_point(float(cgpa))
     else:
