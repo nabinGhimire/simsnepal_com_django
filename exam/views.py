@@ -2558,6 +2558,9 @@ def print_ledger_now(request):
             
             # Calculate GPA for this student
             gpa = (gp_sum / Decimal(str(gp_count))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if gp_count > 0 else Decimal('0')
+            # If any subject is failed, GPA is 0
+            if final_result.get('fail_count', 0) > 0:
+                gpa = Decimal('0')
             total_entry['gpa'] = float(gpa)
             
             std_entry['breakdown_terms'].append(total_entry)
