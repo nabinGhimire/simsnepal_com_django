@@ -6,15 +6,12 @@ register = template.Library()
 def get_item(dictionary, key):
     if dictionary is None:
         return None
-    # Try exact match first
-    if key in dictionary:
-        return dictionary[key]
-    # Try string key if integer
-    if isinstance(key, int) and str(key) in dictionary:
-        return dictionary[str(key)]
-    # Try integer key if string
-    if isinstance(key, str) and key.isdigit() and int(key) in dictionary:
-        return dictionary[int(key)]
+    key_str = str(key)
+    if isinstance(dictionary, dict):
+        if key_str in dictionary:
+            return dictionary[key_str]
+        if key in dictionary:
+            return dictionary[key]
     return None
 
 @register.filter

@@ -1367,8 +1367,25 @@ def marksgradesheet(request):
         logo = school.logo.url if school.logo else ''
         slogan = school.slogan or ''
 
+        # Build subject_fm_list for templates (full marks per subject)
+        from exam.models import GradeFullMarks
+        subject_fm_list = []
+        for sub in subjects:
+            gfm = GradeFullMarks.objects.filter(
+                school=school, session=session, grade=grade, term=term, subject=sub
+            ).first()
+            th_fm = gfm.th_fm if gfm else 0
+            pr_fm = gfm.pr_fm if gfm else 0
+            subject_fm_list.append({
+                'name': sub.subject,
+                'th_fm': th_fm,
+                'pr_fm': pr_fm,
+                'th_pm': gfm.th_pm if gfm else 0,
+                'pr_pm': gfm.pr_pm if gfm else 0,
+            })
+
         # Determine ledger type from form: 1=Grade, 2=Marks
-        ledger_type = int(request.POST.get('printtype', 1))
+        ledger_type = int(request.POST.get('ledger_type', 1))
         
         ctx = _nav_context(request)
         ctx.update({
@@ -1378,6 +1395,7 @@ def marksgradesheet(request):
             'grade': grade,
             'section': section,
             'subjects': subjects,
+            'subject_fm_list': subject_fm_list,
             'config': config,
             'is_exam_print': 'gradesheet',
             # Panel-compatible variables
@@ -1394,19 +1412,26 @@ def marksgradesheet(request):
             'logo': logo,
         })
 
-        if ledger_type == 2:  # Marks - use detail template with TH/PR on separate rows
-            # Use student_data list format expected by gradesheet_detail.html
-            ctx.update({
-                'data': student_data,
-                'printtype': 1,  # Detail view
-            })
-            return render(request, 'exam/gradesheet_detail.html', ctx)
-        else:  # Grade - use panel-compatible format
-            ctx.update({
-                'data': panel_data,
-                'printtype': printtype,  # Keep original for summary check
-            })
+        # Determine template based on ledger_type and printtype
+        if ledger_type == 2:  # Marks
             if printtype == 2:  # Summary
+                ctx.update({
+                    'data': student_data,
+                    'printtype': 2,
+                })
+                return render(request, 'exam/gradesheet_summary.html', ctx)
+            else:  # Detail
+                ctx.update({
+                    'data': student_data,
+                    'printtype': 1,
+                })
+                return render(request, 'exam/gradesheet_detail.html', ctx)
+        else:  # Grade - use panel-compatible format
+            if printtype == 2:  # Summary
+                ctx.update({
+                    'data': student_data,  # Use student_data list format for summary
+                    'printtype': 2,
+                })
                 return render(request, 'exam/gradesheet_summary.html', ctx)
             else:
                 # Select template based on grading_type (result_type)
@@ -1417,6 +1442,10 @@ def marksgradesheet(request):
                     template_name = 'exam/gradesheet_newgrading.html'
                 else:
                     template_name = 'exam/gradesheet_legacy.html'
+                ctx.update({
+                    'data': panel_data,
+                    'printtype': printtype,
+                })
                 return render(request, template_name, ctx)
 
     ctx = _nav_context(request)
@@ -2295,106 +2324,256 @@ def print_ledger_now(request):
         for m in marks_qs:
             all_marks_map[(m.student_id, term.id, m.subject_id)] = (m.th_mo or 0, m.pr_mo or 0)
 
-    # Build student_data with weighted ledger format (like panel's gradesheetall)
-    # One row per student per subject, with per-source-term grades and evaluation
-    from exam.func import get_grade_point
-    from decimal import Decimal
+    # Build config for calculate_student_result
+    calc_type_map = {'1': 'legacy', '2': 'weighted', '3': 'legacy', '4': 'weighted'}
+    calculation_type = calc_type_map.get(ledgermode, 'legacy')
     
-    student_data = []
-    sn = 0
+    # Get grade config for pass thresholds
+    grade_config = GradeResultConfig.objects.filter(
+        school=school, year=session, grade=grade
+    ).first()
+    
+    if grade_config:
+        th_pass_type = grade_config.th_pass_type
+        th_pass_value = float(grade_config.th_pass_value)
+        pr_pass_type = grade_config.pr_pass_type
+        pr_pass_value = float(grade_config.pr_pass_value)
+    else:
+        th_pass_type = 'percentage'
+        th_pass_value = 35.0
+        pr_pass_type = 'percentage'
+        pr_pass_value = 35.0
+
+    calc_config = {
+        'grading_type': grading_type,
+        'ledger_type': int(ledgertype),
+        'calculation_type': calculation_type,
+        'assessment_source': 'exam',
+        'th_pass_type': th_pass_type,
+        'th_pass_value': th_pass_value,
+        'pr_pass_type': pr_pass_type,
+        'pr_pass_value': pr_pass_value,
+    }
+
+    # Build student_data with same structure as print_ledger_preview (student-centric with breakdown_terms)
+    # but include calculated grades for the "now" (final print) version
+    from exam.func import get_grade_point, calculate_student_result
+    from decimal import Decimal, ROUND_HALF_UP
+    
+    student_data_list = []
+    student_gpas = {}
+    
     for student_data_item in data.values():
-        for sub in subjects:
-            sn += 1
-            marks = student_data_item['subjects'].get(sub.id, {})
-            
-            # Get per-source-term ORIGINAL grades (not weighted contribution)
-            source_term_grades = []
-            for src_term in source_terms:
-                s_th, s_pr = all_marks_map.get((student_data_item['student_id'], src_term.id, sub.id), (0, 0))
-                s_th_fm, s_pr_fm = source_fm_map.get((src_term.id, sub.id), (0, 0))
+        std_entry = {
+            'reg_no': student_data_item['reg_no'],
+            'name': student_data_item['name'],
+            'roll_no': student_data_item['roll_no'],
+            'breakdown_terms': [],
+        }
+        
+        # Get the StudentSession object for calculate_student_result
+        try:
+            student_session = StudentSession.objects.get(student_id=student_data_item['student_id'], session=session, grade=grade, status=True)
+        except StudentSession.DoesNotExist:
+            continue
+        
+        # Calculate final result using the full grading logic
+        final_result = calculate_student_result(school, session, grade, term, student_session, calc_config)
+        final_mo_dict = final_result['mo_dict']
+        
+        if ledgermode == '1':
+            # Standard mode: single term (current term) - use final calculated grades
+            term_entry = {'term_label': term.term_name, 'subjects': []}
+            for sub in subjects:
+                marks = student_data_item['subjects'].get(sub.id, {})
+                final_marks = final_mo_dict.get(sub.id, {})
                 
-                # Original term percentage and grade
-                th_pct = (Decimal(str(s_th)) / Decimal(str(s_th_fm)) * 100) if s_th_fm > 0 else Decimal('0')
-                pr_pct = (Decimal(str(s_pr)) / Decimal(str(s_pr_fm)) * 100) if s_pr_fm > 0 else Decimal('0')
-                th_grade, th_symbol, th_gp = get_grade_point(float(th_pct))
-                pr_grade, pr_symbol, pr_gp = get_grade_point(float(pr_pct))
+                # Use FINAL calculated marks and grades from calculate_student_result
+                th_obt = final_marks.get('th_mo', 0)
+                pr_obt = final_marks.get('pr_mo', 0)
+                th_fm = final_marks.get('th_fm', 0)
+                pr_fm = final_marks.get('pr_fm', 0)
                 
-                source_term_grades.append({
-                    'term_label': getattr(src_term, 'name_in_short', None) or src_term.term_name,
+                # Use pre-calculated grades from calculate_student_result
+                th_grade = final_marks.get('th_grade', '-')
+                th_symbol = final_marks.get('th_symbol', '')
+                th_gp = final_marks.get('th_point', 0)
+                th_fail = final_marks.get('th_fail', False)
+                
+                pr_grade = final_marks.get('pr_grade', '-')
+                pr_symbol = final_marks.get('pr_symbol', '')
+                pr_gp = final_marks.get('pr_point', 0)
+                pr_fail = final_marks.get('pr_fail', False)
+                
+                term_entry['subjects'].append({
+                    'th_val': int(th_obt) if th_obt == int(th_obt) else round(th_obt, 2),
+                    'pr_val': int(pr_obt) if pr_obt == int(pr_obt) else round(pr_obt, 2),
+                    'th_max': int(th_fm) if th_fm == int(th_fm) else round(th_fm, 2),
+                    'pr_max': int(pr_fm) if pr_fm == int(pr_fm) else round(pr_fm, 2),
                     'th_grade': th_grade,
                     'th_symbol': th_symbol,
                     'th_gp': round(th_gp, 2),
                     'pr_grade': pr_grade,
                     'pr_symbol': pr_symbol,
                     'pr_gp': round(pr_gp, 2),
-                    'th_fail': th_gp == 0 and th_pct > 0,
-                    'pr_fail': pr_gp == 0 and pr_pct > 0,
+                    'th_fail': th_fail,
+                    'pr_fail': pr_fail,
                 })
             
-            # Evaluation: final weighted marks from calculate_student_result
-            weighted_th_mo = marks.get('weighted_th_mo', marks.get('theory_raw', 0))
-            weighted_pr_mo = marks.get('weighted_pr_mo', marks.get('prac_raw', 0))
-            weighted_th_fm = marks.get('weighted_th_fm', marks.get('th_fm', 0))
-            weighted_pr_fm = marks.get('weighted_pr_fm', marks.get('pr_fm', 0))
+            std_entry['breakdown_terms'].append(term_entry)
             
-            th_pct = (Decimal(str(weighted_th_mo)) / Decimal(str(weighted_th_fm)) * 100) if weighted_th_fm > 0 else Decimal('0')
-            pr_pct = (Decimal(str(weighted_pr_mo)) / Decimal(str(weighted_pr_fm)) * 100) if weighted_pr_fm > 0 else Decimal('0')
-            eval_th_grade, eval_th_symbol, eval_th_gp = get_grade_point(float(th_pct))
-            eval_pr_grade, eval_pr_symbol, eval_pr_gp = get_grade_point(float(pr_pct))
+        else:
+            # Weighted/Consolidated mode: show breakdown per source term + total
+            student_subject_totals = {sub.id: {'th': Decimal('0'), 'pr': Decimal('0')} for sub in subjects}
+            student_subject_fm = {sub.id: {'th': Decimal('0'), 'pr': Decimal('0')} for sub in subjects}
             
-            # Subject total grade (combined)
-            subject_mo = Decimal(str(weighted_th_mo)) + Decimal(str(weighted_pr_mo))
-            subject_fm = Decimal(str(weighted_th_fm)) + Decimal(str(weighted_pr_fm))
-            subject_pct = (subject_mo / subject_fm * 100) if subject_fm > 0 else Decimal('0')
-            eval_total_grade, eval_total_symbol, eval_total_gp = get_grade_point(float(subject_pct))
+            # First pass: build breakdown for each source term with grades
+            for src_term in source_terms:
+                term_label = getattr(src_term, 'name_in_short', None) or src_term.term_name
+                if ledgermode == '2':
+                    term_label += ' (WGT)'
+                term_entry = {'term_label': term_label, 'subjects': []}
+                
+                w_info = normalized_wconfig.get(str(src_term.id), {})
+                
+                for sub in subjects:
+                    s_th, s_pr = all_marks_map.get((student_data_item['student_id'], src_term.id, sub.id), (0, 0))
+                    s_th_fm, s_pr_fm = source_fm_map.get((src_term.id, sub.id), (0, 0))
+                    
+                    if ledgermode == '2' and w_info:
+                        # Cross-mixing: TH gets contribution from both TH and PR
+                        w_th_from_th = Decimal(str(w_info.get('th_from_th', 0)))
+                        w_th_from_pr = Decimal(str(w_info.get('th_from_pr', 0)))
+                        w_pr_from_th = Decimal(str(w_info.get('pr_from_th', 0)))
+                        w_pr_from_pr = Decimal(str(w_info.get('pr_from_pr', 0)))
+                        val_th = Decimal(str(s_th)) * w_th_from_th + Decimal(str(s_pr)) * w_th_from_pr
+                        val_pr = Decimal(str(s_th)) * w_pr_from_th + Decimal(str(s_pr)) * w_pr_from_pr
+                        
+                        # Weighted FM for this source term
+                        w_th_fm = w_th_from_th * Decimal(str(s_th_fm)) + w_th_from_pr * Decimal(str(s_pr_fm))
+                        w_pr_fm = w_pr_from_th * Decimal(str(s_th_fm)) + w_pr_from_pr * Decimal(str(s_pr_fm))
+                        
+                        # Track which components have weight > 0 for this source term
+                        th_has_weight = (w_th_from_th > 0) or (w_th_from_pr > 0)
+                        pr_has_weight = (w_pr_from_th > 0) or (w_pr_from_pr > 0)
+                    else:
+                        val_th = Decimal(str(s_th))
+                        val_pr = Decimal(str(s_pr))
+                        w_th_fm = Decimal(str(s_th_fm))
+                        w_pr_fm = Decimal(str(s_pr_fm))
+                        th_has_weight = True
+                        pr_has_weight = True
+                    
+                    student_subject_totals[sub.id]['th'] += val_th
+                    student_subject_totals[sub.id]['pr'] += val_pr
+                    student_subject_fm[sub.id]['th'] += w_th_fm
+                    student_subject_fm[sub.id]['pr'] += w_pr_fm
+                    
+                    # For breakdown display: show grades from WEIGHTED contribution of this source term
+                    if th_has_weight and w_th_fm > 0:
+                        w_th_pct = (val_th / w_th_fm * 100)
+                        th_grade, th_symbol, th_gp = get_grade_point(float(w_th_pct))
+                        th_fail = th_gp == 0 and w_th_pct > 0
+                    else:
+                        th_grade = th_symbol = '-'
+                        th_gp = None
+                        th_fail = False
+                    
+                    if pr_has_weight and w_pr_fm > 0:
+                        w_pr_pct = (val_pr / w_pr_fm * 100)
+                        pr_grade, pr_symbol, pr_gp = get_grade_point(float(w_pr_pct))
+                        pr_fail = pr_gp == 0 and w_pr_pct > 0
+                    else:
+                        pr_grade = pr_symbol = '-'
+                        pr_gp = None
+                        pr_fail = False
+                    
+                    term_entry['subjects'].append({
+                        'th_val': int(val_th) if val_th == int(val_th) else round(val_th, 2) if th_has_weight else '-',
+                        'pr_val': int(val_pr) if val_pr == int(val_pr) else round(val_pr, 2) if pr_has_weight else '-',
+                        'th_max': float(w_th_fm) if th_has_weight else s_th_fm,
+                        'pr_max': float(w_pr_fm) if pr_has_weight else s_pr_fm,
+                        'th_grade': th_grade,
+                        'th_symbol': th_symbol,
+                        'th_gp': round(th_gp, 2) if th_gp is not None else None,
+                        'pr_grade': pr_grade,
+                        'pr_symbol': pr_symbol,
+                        'pr_gp': round(pr_gp, 2) if pr_gp is not None else None,
+                        'th_fail': th_fail,
+                        'pr_fail': pr_fail,
+                    })
+                
+                std_entry['breakdown_terms'].append(term_entry)
             
-            student_data.append({
-                'sn': sn,
-                'reg_no': student_data_item['reg_no'],
-                'name': student_data_item['name'],
-                'roll_no': student_data_item['roll_no'],
-                'subject_name': sub.subject,
-                'source_term_grades': source_term_grades,
-                'eval_th_grade': eval_th_grade,
-                'eval_th_symbol': eval_th_symbol,
-                'eval_th_gp': round(eval_th_gp, 2),
-                'eval_pr_grade': eval_pr_grade,
-                'eval_pr_symbol': eval_pr_symbol,
-                'eval_pr_gp': round(eval_pr_gp, 2),
-                'eval_total_grade': eval_total_grade,
-                'eval_total_symbol': eval_total_symbol,
-                'eval_total_gp': round(eval_total_gp, 2),
-                'th_fail': marks.get('th_fail', False),
-                'pr_fail': marks.get('pr_fail', False),
-            })
+            # Add total row - use FINAL calculated grades from calculate_student_result
+            total_label = 'TOTAL'
+            if ledgermode == '2':
+                total_label += ' (WGT)'
+            total_entry = {'term_label': total_label, 'subjects': [], 'is_total': True}
+            
+            gp_sum = Decimal('0')
+            gp_count = 0
+            
+            for sub in subjects:
+                final_marks = final_mo_dict.get(sub.id, {})
+                
+                # Use FINAL calculated marks and grades
+                t_th = final_marks.get('th_mo', 0)
+                t_pr = final_marks.get('pr_mo', 0)
+                t_th_fm = final_marks.get('th_fm', 0)
+                t_pr_fm = final_marks.get('pr_fm', 0)
+                
+                th_grade = final_marks.get('th_grade', '-')
+                th_symbol = final_marks.get('th_symbol', '')
+                th_gp = final_marks.get('th_point', 0)
+                th_fail = final_marks.get('th_fail', False)
+                
+                pr_grade = final_marks.get('pr_grade', '-')
+                pr_symbol = final_marks.get('pr_symbol', '')
+                pr_gp = final_marks.get('pr_point', 0)
+                pr_fail = final_marks.get('pr_fail', False)
+                
+                total_entry['subjects'].append({
+                    'th_val': int(t_th) if t_th == int(t_th) else round(t_th, 2),
+                    'pr_val': int(t_pr) if t_pr == int(t_pr) else round(t_pr, 2),
+                    'th_max': int(t_th_fm) if t_th_fm == int(t_th_fm) else round(t_th_fm, 2),
+                    'pr_max': int(t_pr_fm) if t_pr_fm == int(t_pr_fm) else round(t_pr_fm, 2),
+                    'th_grade': th_grade,
+                    'th_symbol': th_symbol,
+                    'th_gp': round(th_gp, 2),
+                    'pr_grade': pr_grade,
+                    'pr_symbol': pr_symbol,
+                    'pr_gp': round(pr_gp, 2),
+                    'th_fail': th_fail,
+                    'pr_fail': pr_fail,
+                })
+                
+                # Track for GPA
+                if t_th_fm > 0:
+                    gp_sum += Decimal(str(th_gp))
+                    gp_count += 1
+                if t_pr_fm > 0:
+                    gp_sum += Decimal(str(pr_gp))
+                    gp_count += 1
+            
+            # Calculate GPA for this student
+            gpa = (gp_sum / Decimal(str(gp_count))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if gp_count > 0 else Decimal('0')
+            total_entry['gpa'] = float(gpa)
+            
+            std_entry['breakdown_terms'].append(total_entry)
+        
+        student_data_list.append(std_entry)
+        student_gpas[std_entry['reg_no']] = {'gpa': float(gpa) if 'gpa' in locals() else 0}
     
-    # Calculate GPA for each student (average of all TH+PR grade points across all subjects)
-    from decimal import ROUND_HALF_UP
-    student_gpas = {}
-    for item in student_data:
-        reg_no = item['reg_no']
-        if reg_no not in student_gpas:
-            student_gpas[reg_no] = {'gp_sum': Decimal('0'), 'gp_count': 0}
-        student_gpas[reg_no]['gp_sum'] += Decimal(str(item['eval_th_gp']))
-        student_gpas[reg_no]['gp_count'] += 1
-        if item['eval_pr_gp'] > 0:
-            student_gpas[reg_no]['gp_sum'] += Decimal(str(item['eval_pr_gp']))
-            student_gpas[reg_no]['gp_count'] += 1
-    
-    for reg_no, gp_data in student_gpas.items():
-        gpa = (gp_data['gp_sum'] / Decimal(str(gp_data['gp_count']))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if gp_data['gp_count'] > 0 else Decimal('0')
-        student_gpas[reg_no]['gpa'] = round(gpa, 2)
-
     ctx = _nav_context(request)
     ctx.update({
         'school': school, 'term': term, 'year': term.year,
-        'student_data': student_data, 'grade': grade, 'section': section,
+        'student_data': student_data_list, 'grade': grade, 'section': section,
         'subjects': subjects, 'subject_fm_list': subject_fm_list,
         'ledgermode': ledgermode, 'ledgertype': ledgertype,
         'terminology': terminology,
         'source_terms': source_terms,
         'student_gpas': list(student_gpas.items()),
-        'student_names': {item['reg_no']: item['name'] for item in student_data},
         'edusession_id': edusession_id, 'term_id': term_id, 'grade_id': grade_id, 'section_id': section_id,
     })
     return render(request, 'exam/printledgerpreview.html', ctx)

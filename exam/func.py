@@ -750,7 +750,7 @@ def calculate_weighted_result(school, session, grade, target_term, student_sessi
         pr_pass_type = config.get('pr_pass_type', 'percentage')
         pr_pass_value = Decimal(str(config.get('pr_pass_value', 35.0)))
     
-    # Calculate weighted results for each subject
+# Calculate weighted results for each subject
     weighted_results = {}
     
     for subject in subjects:
@@ -762,10 +762,15 @@ def calculate_weighted_result(school, session, grade, target_term, student_sessi
         weighted_pr_mo = Decimal('0')
         weighted_pr_fm = Decimal('0')
         
+        # Track if each component has foreign imports (non-current-term sources with weight > 0)
+        th_has_foreign_import = False
+        pr_has_foreign_import = False
+        
         has_any_marks = False
         
         for src_term_id, weights in normalized.items():
             src_term_id_int = int(src_term_id)
+            is_current_term = (src_term_id_int == target_term.id)
             
             # Get weights as Decimal (already divided by 100 in normalized)
             w_th_from_th = Decimal(str(weights.get('th_from_th', 0)))
@@ -776,6 +781,13 @@ def calculate_weighted_result(school, session, grade, target_term, student_sessi
             # Skip if all weights are 0
             if w_th_from_th == 0 and w_th_from_pr == 0 and w_pr_from_th == 0 and w_pr_from_pr == 0:
                 continue
+            
+            # Check for foreign imports (non-current-term sources with weight > 0)
+            if not is_current_term:
+                if w_th_from_th > 0 or w_th_from_pr > 0:
+                    th_has_foreign_import = True
+                if w_pr_from_th > 0 or w_pr_from_pr > 0:
+                    pr_has_foreign_import = True
             
             # Get marks for this source term and subject
             th_mo, pr_mo = marks_map.get((src_term_id_int, sub_id), (Decimal('0'), Decimal('0')))
@@ -797,6 +809,32 @@ def calculate_weighted_result(school, session, grade, target_term, student_sessi
         # If no marks in any source term, omit subject
         if not has_any_marks and weighted_th_fm == 0 and weighted_pr_fm == 0:
             continue
+        
+        # Determine if each component is "direct" (only current term at 100%, no foreign imports)
+        # A component is direct if: no foreign imports AND current term contributes exactly 100%
+        th_is_direct = not th_has_foreign_import
+        pr_is_direct = not pr_has_foreign_import
+        
+        # Get current term marks/FM for this subject (used for direct path)
+        curr_th_mo, curr_pr_mo = marks_map.get((target_term.id, sub_id), (Decimal('0'), Decimal('0')))
+        curr_th_fm, curr_pr_fm = fm_map.get((target_term.id, sub_id), (Decimal('0'), Decimal('0')))
+        
+        # If direct, use raw marks and ACTUAL FM for percentage calculation
+        # (target_fm is for display/target only, not for grading denominator)
+        if th_is_direct:
+            weighted_th_mo = curr_th_mo
+            weighted_th_fm = curr_th_fm if curr_th_fm > 0 else target_fm_th
+        else:
+            # Weighted: if scaled FM is 0 but we have marks, avoid division by zero
+            if weighted_th_fm == 0 and weighted_th_mo != 0:
+                weighted_th_fm = target_fm_th
+        
+        if pr_is_direct:
+            weighted_pr_mo = curr_pr_mo
+            weighted_pr_fm = curr_pr_fm if curr_pr_fm > 0 else target_fm_pr
+        else:
+            if weighted_pr_fm == 0 and weighted_pr_mo != 0:
+                weighted_pr_fm = target_fm_pr
         
         # Calculate percentages (full precision, no rounding yet)
         th_percent = (weighted_th_mo / weighted_th_fm * 100) if weighted_th_fm > 0 else Decimal('0')
@@ -863,11 +901,14 @@ def calculate_weighted_result(school, session, grade, target_term, student_sessi
             'subject_grade': subject_grade,
             'subject_symbol': subject_symbol,
             'subject_gp': Decimal(str(subject_gp)),
+            'th_is_direct': th_is_direct,
+            'pr_is_direct': pr_is_direct,
             # Rounded for display (1 dp for MO, FM, %; 2 dp for GP)
+            # For direct components, display FM = target_fm; for weighted, display FM = calculated FM
             'weighted_th_mo_disp': round_half_up_1dp(weighted_th_mo),
-            'weighted_th_fm_disp': round_half_up_1dp(weighted_th_fm),
+            'weighted_th_fm_disp': round_half_up_1dp(target_fm_th if th_is_direct else weighted_th_fm),
             'weighted_pr_mo_disp': round_half_up_1dp(weighted_pr_mo),
-            'weighted_pr_fm_disp': round_half_up_1dp(weighted_pr_fm),
+            'weighted_pr_fm_disp': round_half_up_1dp(target_fm_pr if pr_is_direct else weighted_pr_fm),
             'th_percent_disp': round_half_up_1dp(th_percent),
             'pr_percent_disp': round_half_up_1dp(pr_percent),
             'subject_mo_disp': round_half_up_1dp(subject_mo),
@@ -1099,8 +1140,8 @@ def calculate_student_result(school, session, grade, term, student_session, conf
             # Use pre-calculated grades from weighted_results
             wr = weighted_results[sub_id]
             
-            # For grading_type 1 (Non-Grade), we need separate TH/PR grades
-            if grading_type == 1:
+            # For grading_type 1 (Non-Grade) and 2 (New Grading), we need separate TH/PR grades
+            if grading_type in (1, 2):
                 # Get TH grade from TH percent
                 th_grade, th_symbol, th_point = get_grade_point(float(wr['th_percent']))
                 # Get PR grade from PR percent
@@ -1127,7 +1168,7 @@ def calculate_student_result(school, session, grade, term, student_session, conf
                 if wr['pr_fail']:
                     fail_count += 1
             else:
-                # Legacy (0) and New Grading (2) use combined grade
+                # Legacy (0) uses combined grade
                 mo_dict[sub_id]['th_grade'] = wr['subject_grade']
                 mo_dict[sub_id]['th_symbol'] = wr['subject_symbol']
                 mo_dict[sub_id]['th_point'] = float(wr['subject_gp'])
