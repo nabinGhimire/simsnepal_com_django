@@ -54,7 +54,7 @@
               <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Print Type</label>
               <select name="printtype" class="exam-select">
                 <option value="1">Detail</option>
-                <option value="2">Summary</option>
+                <option value="2" selected>Summary</option>
               </select>
             </div>
             <div class="col-md-6">
@@ -76,14 +76,14 @@
               <select name="result_type" class="exam-select">
                 <option value="0" selected>Legacy</option>
                 <option value="1">Non-Grade System</option>
-                <option value="2">New Grading System</option>
+                <option value="2" selected>New Grading System</option>
               </select>
             </div>
             <div class="col-md-6">
               <label class="form-label" style="font-size:0.78rem;font-weight:600;color:var(--exam-text-muted);">Calculation</label>
               <select name="calc_type" class="exam-select">
-                <option value="legacy" {% if live_calc_type != 'weighted' %}selected{% endif %}>Legacy</option>
-                <option value="weighted" {% if live_calc_type == 'weighted' %}selected{% endif %}>Weighted</option>
+                <option value="legacy" {% if live_calc_type == 'legacy' %}selected{% endif %}>Legacy</option>
+                <option value="weighted" {% if live_calc_type != 'legacy' %}selected{% endif %}>Weighted</option>
               </select>
             </div>
             <div class="col-md-6">
