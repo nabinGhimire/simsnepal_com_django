@@ -1728,22 +1728,32 @@ def print_ledger(request):
 
 @login_required
 def print_ledger_preview(request):
-    """Print Ledger Preview — POST shows calculated marks preview."""
+    """Print Ledger Preview — POST shows calculated marks preview. GET with query params also works."""
     branchuser, error = get_branch_info(request.user)
     if error:
         return HttpResponse(error)
 
     school = branchuser.school
 
-    if request.method != 'POST':
-        return HttpResponseRedirect('/exam/')
+    # Support both POST and GET
+    if request.method == 'POST':
+        edusession_id = request.POST.get('edusession')
+        term_id = request.POST.get('term')
+        grade_id = request.POST.get('grade')
+        section_id = request.POST.get('section')
+        ledgermode = request.POST.get('ledgermode', '1')
+        order = request.POST.get('order', '1')
+    else:
+        # GET with query params
+        edusession_id = request.GET.get('edusession')
+        term_id = request.GET.get('term')
+        grade_id = request.GET.get('grade') or request.GET.get('grade2')
+        section_id = request.GET.get('section') or request.GET.get('section2')
+        ledgermode = request.GET.get('ledgermode', '1')
+        order = request.GET.get('order', '1')
 
-    edusession_id = request.POST.get('edusession')
-    term_id = request.POST.get('term')
-    grade_id = request.POST.get('grade')
-    section_id = request.POST.get('section')
-    ledgermode = request.POST.get('ledgermode', '1')
-    order = request.POST.get('order', '1')
+    if not edusession_id or not term_id or not grade_id:
+        return HttpResponse("Invalid selection.")
 
     from sms.models import EduSession, SchoolTerm, SchoolGrade, Section, Subject, StudentSession
 
@@ -1960,6 +1970,7 @@ def print_ledger_preview(request):
         'subjects': subjects, 'ledgermode': ledgermode, 'ledgertype': '2',
         'subject_fm_list': subject_fm_list,
         'terminology': terminology,
+        'edusession_id': edusession_id, 'term_id': term_id, 'grade_id': grade_id, 'section_id': section_id,
     })
     return render(request, 'exam/printledgerpreview.html', ctx)
 
