@@ -6,35 +6,34 @@
     <div class="marks">
         <table>
             <tr>
-                <th class="first subjects" rowspan="2">SN</th>
-                <th class="first subjects" rowspan="2">SUBJECTS</th>
-                <th class="first subjects" colspan="2">TH</th>
-                <th class="first subjects" colspan="2">PR</th>
-                <th class="first subjects" rowspan="2">FINAL GRADE</th>
-                <th class="first subjects" rowspan="2">GRADE POINT</th>
-            </tr>
-            <tr>
+                <th class="first subjects" >SN</th>
+                <th class="first subjects" >SUBJECTS</th>
+                <th class="first subjects" ></th>
                 <th class="first subjects">Grade</th>
                 <th class="first subjects">GP</th>
-                <th class="first subjects">Grade</th>
-                <th class="first subjects">GP</th>
+                <th class="first subjects" >FINAL GRADE</th>
+                <th class="first subjects" >GRADE POINT</th>
             </tr>
             {% for sub in subjects %}
             {% with marks=student.mo_dict|get_item:sub.id %}
             <tr class="tr-end">
-                <td class="subjects" style="text-align: center; border-left: 0.25mm solid #000;">{{ forloop.counter }}</td>
-                <td class="subject" style="text-align: left;">{{ sub.subject }}</td>
-                <td class="subject" style="text-align: center;">{{ marks.th_grade|default:"-" }}{{ marks.th_symbol|default:"" }}</td>
-                <td class="subject" style="text-align: center;">{{ marks.th_point|floatformat:2|default:"-" }}</td>
-                <td class="subject" style="text-align: center;">{{ marks.pr_grade|default:"-" }}{{ marks.pr_symbol|default:"" }}</td>
-                <td class="subject" style="text-align: center;">{{ marks.pr_point|floatformat:2|default:"-" }}</td>
-                <td class="subject" style="text-align: center;">{{ marks.total_grade|default:"-" }}{{ marks.total_symbol|default:"" }}</td>
-                <td class="subject" style="text-align: center;">{{ marks.total_point|floatformat:2|default:"-" }}</td>
+                <td class="subjects" style="text-align: center; border-left: 0.25mm solid #000;  border-bottom: 0.25mm solid #000;" rowspan="2">{{ forloop.counter }}</td>
+                <td class="subject" style="text-align: left;  border-bottom: 0.25mm solid #000;" rowspan="2">{{ sub.subject }}</td>
+                <td class="subject" style="text-align: left; border-bottom: 0.25mm solid #000;">TH</td>
+                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;">{{ marks.th_grade|default:"-" }}{{ marks.th_symbol|default:"" }}</td>
+                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;">{{ marks.th_point|floatformat:2|default:"-" }}</td>
+                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;" rowspan="2">{{ marks.total_grade|default:"-" }}{{ marks.total_symbol|default:"" }}</td>
+                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;" rowspan="2">{{ marks.total_point|floatformat:2|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td class="subject" style="text-align: left; border-bottom: 0.25mm solid #000;">PR</td>
+                 <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;" >{{ marks.pr_grade|default:"-" }}{{ marks.pr_symbol|default:"" }}</td>
+                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;" >{{ marks.pr_point|floatformat:2|default:"-" }}</td>
             </tr>
             {% endwith %}
             {% endfor %}
             <tr>
-                <th class="nob" colspan="7" style="text-align: right; padding-right: 5px; border-left: 0.25mm solid #000;">GRADE POINT AVERAGE (GPA)</th>
+                <th class="nob" colspan="6" style="text-align: right; padding-right: 5px; border-left: 0.25mm solid #000;">GRADE POINT AVERAGE (GPA)</th>
                 <th class="nob">{{ student.cgpa|floatformat:2|default:"-" }}</th>
             </tr>
         </table>
