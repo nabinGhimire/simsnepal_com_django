@@ -2172,9 +2172,18 @@ def print_ledger_now(request):
         'pr_pass_value': pr_pass_value,
     }
 
-    # Calculate ranks for rank ordering
+    # Calculate results for all students first to get CGPA for ranking
+    from exam.func import calculate_student_result
+    student_cgpas = {}
+    student_results = {}
+    for student in students:
+        result = calculate_student_result(school, session, grade, term, student, config)
+        student_results[student.student.reg_no] = result
+        student_cgpas[student.student.reg_no] = float(result.get('cgpa', 0))
+
+    # Calculate ranks using pre-calculated CGPA
     from exam.func import calculate_rank
-    ranks = calculate_rank(school.id, session, grade, term, section, rank_by=rank_by, config=config)
+    ranks = calculate_rank(school.id, session, grade, term, section, rank_by=rank_by, config=config, cgpa_map=student_cgpas)
 
     # If order is by rank, re-sort students
     if order == '3':
@@ -2198,22 +2207,8 @@ def print_ledger_now(request):
         data[sn]['roll_no'] = student.roll_no
         data[sn]['section'] = student.section
 
-        # Use exam's calculate_student_result for each subject
-        # Map ledgermode to calculation_type: '1'=legacy, '2'=weighted, '3'=legacy, '4'=weighted
-        calc_type_map = {'1': 'legacy', '2': 'weighted', '3': 'legacy', '4': 'weighted'}
-        calculation_type = calc_type_map.get(ledgermode, 'legacy')
-        
-        config = {
-            'grading_type': grading_type,
-            'ledger_type': 2,
-            'calculation_type': calculation_type,
-            'assessment_source': 'exam',
-            'th_pass_type': th_pass_type,
-            'th_pass_value': th_pass_value,
-            'pr_pass_type': pr_pass_type,
-            'pr_pass_value': pr_pass_value,
-        }
-        result = calculate_student_result(school, session, grade, term, student, config)
+        # Use pre-calculated result
+        result = student_results[student.student.reg_no]
 
         # Transform mo_dict to match panel template expected keys
         # Template expects: theory_raw, prac_raw, theory_mo, theory_mo_s, prac_mo, prac_mo_s, gradepoint, th_fail, pr_fail
@@ -2261,7 +2256,11 @@ def print_ledger_now(request):
             'mo_th': result.get('total_th_mo', 0),
             'mo_pr': result.get('total_pr_mo', 0),
             'total': result.get('total_mo', 0),
+            'total_obt': result.get('total_mo', 0),
             'gp': result.get('cgpa', 0),
+            'percent': result.get('percentage', 0),
+            'gpa_grade_l': result.get('overall_grade', '-'),
+            'gpa_grade_s': result.get('overall_symbol', ''),
             'subjects': subjects_for_template,  # Use transformed dict for template
         })
 
@@ -2563,7 +2562,8 @@ def print_ledger_now(request):
     ctx = _nav_context(request)
     ctx.update({
         'school': school, 'term': term, 'year': term.year,
-        'student_data': student_data_list, 'grade': grade, 'section': section,
+        'data': data,
+        'grade': grade, 'section': section,
         'subjects': subjects, 'subject_fm_list': subject_fm_list,
         'ledgermode': ledgermode, 'ledgertype': ledgertype,
         'terminology': terminology,
@@ -2571,7 +2571,7 @@ def print_ledger_now(request):
         'student_gpas': list(student_gpas.items()),
         'edusession_id': edusession_id, 'term_id': term_id, 'grade_id': grade_id, 'section_id': section_id,
     })
-    return render(request, 'exam/printledgerpreview.html', ctx)
+    return render(request, 'exam/printledgernow_detailed.html', ctx)
 
 
 # ── Entrance Card (exam app replica of panel/print/entrancecard/) ───────────

@@ -430,7 +430,7 @@ def remarks(gpa, failed_subjects=0, absent_subjects=0, is_final_term=False, subj
     return ' '.join(feedback_parts)
 
 
-def calculate_rank(school, session, grade, term, section=None, regno=None, rank_by="total", config=None):
+def calculate_rank(school, session, grade, term, section=None, regno=None, rank_by="total", config=None, cgpa_map=None):
     """Calculate rank for students. Skips failed students."""
     from sms.models import StudentSession, Subject, MarkObtained, GradeFullMarks
     from exam.models import ResultManagement
@@ -486,6 +486,8 @@ def calculate_rank(school, session, grade, term, section=None, regno=None, rank_
     pr_pass_type = config.get('pr_pass_type', 'percentage')
     pr_pass_value = float(config.get('pr_pass_value', 35.0))
 
+    from exam.func import get_grade_point
+
     student_scores = {}
     failed_regnos = set()
     
@@ -493,6 +495,8 @@ def calculate_rank(school, session, grade, term, section=None, regno=None, rank_
         total_mo = 0
         total_fm = 0
         has_failed = False
+        gp_sum = 0
+        gp_count = 0
         
         for subject in subjects:
             th_mo, pr_mo = marks_map.get((student.student_id, subject.id), (0, 0))
@@ -532,6 +536,18 @@ def calculate_rank(school, session, grade, term, section=None, regno=None, rank_
                 elif pr_pass_type == 'marks':
                     if pr_mo < pr_pass_value:
                         has_failed = True
+            
+            # Track GPA components for rank_by="gpa"
+            if th_fm > 0:
+                th_percent = (th_mo / th_fm * 100) if th_fm > 0 else 0
+                _, _, th_gp = get_grade_point(th_percent)
+                gp_sum += th_gp
+                gp_count += 1
+            if pr_fm > 0:
+                pr_percent = (pr_mo / pr_fm * 100) if pr_fm > 0 else 0
+                _, _, pr_gp = get_grade_point(pr_percent)
+                gp_sum += pr_gp
+                gp_count += 1
 
         if has_failed:
             failed_regnos.add(student.student.reg_no)
@@ -541,18 +557,30 @@ def calculate_rank(school, session, grade, term, section=None, regno=None, rank_
             score = total_mo
         elif rank_by == "th":
             score = sum(marks_map.get((student.student_id, s.id), (0, 0))[0] for s in subjects)
+        elif rank_by == "gpa":
+            # Use pre-calculated CGPA if available
+            if cgpa_map is not None:
+                score = cgpa_map.get(student.student.reg_no, 0)
+            else:
+                score = round(gp_sum / gp_count, 4) if gp_count > 0 else 0
         else:
             score = total_mo
 
-        if total_fm > 0:
+        if total_fm > 0 and rank_by != "gpa":
             score = score / total_fm * 100
 
         student_scores[student.student.reg_no] = score
 
     sorted_regnos = sorted(student_scores.keys(), key=lambda r: student_scores[r], reverse=True)
     ranks = {}
-    for rank, reg_no in enumerate(sorted_regnos, 1):
-        ranks[reg_no] = rank
+    prev_score = None
+    current_rank = 0
+    for i, reg_no in enumerate(sorted_regnos, 1):
+        score = round(student_scores[reg_no], 4)
+        if score != prev_score:
+            current_rank += 1
+        ranks[reg_no] = current_rank
+        prev_score = score
 
     return ranks
 
