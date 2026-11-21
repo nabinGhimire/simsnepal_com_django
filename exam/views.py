@@ -2281,7 +2281,7 @@ def print_ledger_now(request):
 
         data[sn]['is_failed'] = is_failed
         data[sn]['fail_count'] = fail_count
-        data[sn]['rank'] = '-'
+        data[sn]['rank'] = ranks.get(data[sn]['reg_no'], '-')
 
 # Apply filter
     if data_filter == 1:
