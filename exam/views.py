@@ -724,6 +724,7 @@ def resultmanagement(request):
         SchoolTerm, SchoolResultType, LiveResult, ResultManagement,
         GradeResultConfig,
     )
+    import json as _json
 
     branchuser, error = get_branch_info(request.user)
     if error:
