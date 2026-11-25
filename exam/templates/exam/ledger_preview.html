@@ -40,10 +40,10 @@
         <table id="ledgerTable" class="table table-bordered exam-table">
           <thead>
             <tr>
-              <th rowspan="2">S.N</th>
-              <th rowspan="2">Reg No</th>
-              <th rowspan="2">Roll</th>
-              <th rowspan="2">Name</th>
+              <th rowspan="{{ student_data.0.breakdown_terms|length }}">S.N</th>
+              <th rowspan="{{ student_data.0.breakdown_terms|length }}">Reg No</th>
+              <th rowspan="{{ student_data.0.breakdown_terms|length }}">Roll</th>
+              <th rowspan="{{ student_data.0.breakdown_terms|length }}">Name</th>
               {% if ledgermode in "23" %}
                 <th rowspan="2">Term</th>
               {% endif %}
