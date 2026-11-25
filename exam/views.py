@@ -2227,6 +2227,17 @@ def print_ledger_now(request):
         # Also include weighted marks and FM for breakdown display
         subjects_for_template = {}
         for sub_id, m in result['mo_dict'].items():
+            th_fail = m.get('th_fail', False)
+            pr_fail = m.get('pr_fail', False)
+            # If student failed in TH or IN, grade point should be 0
+            if th_fail or pr_fail:
+                gradepoint_val = 0
+                th_gp_val = 0
+                pr_gp_val = 0
+            else:
+                gradepoint_val = m.get('total_point', 0)
+                th_gp_val = m.get('th_point', 0)
+                pr_gp_val = m.get('pr_point', 0)
             subjects_for_template[sub_id] = {
                 'theory_raw': m.get('th_mo', 0),
                 'prac_raw': m.get('pr_mo', 0),
@@ -2234,16 +2245,16 @@ def print_ledger_now(request):
                 'theory_mo_s': m.get('th_symbol', ''),
                 'prac_mo': m.get('pr_grade', '-'),
                 'prac_mo_s': m.get('pr_symbol', ''),
-                'gradepoint': m.get('total_point', 0),
-                'th_fail': m.get('th_fail', False),
-                'pr_fail': m.get('pr_fail', False),
+                'gradepoint': gradepoint_val,
+                'th_fail': th_fail,
+                'pr_fail': pr_fail,
                 # Full precision weighted values for breakdown
                 'weighted_th_mo': m.get('_th_mo_prec', m.get('th_mo', 0)),
                 'weighted_pr_mo': m.get('_pr_mo_prec', m.get('pr_mo', 0)),
                 'weighted_th_fm': m.get('_th_fm_prec', m.get('th_fm', 0)),
                 'weighted_pr_fm': m.get('_pr_fm_prec', m.get('pr_fm', 0)),
-                'th_gp': m.get('th_point', 0),
-                'pr_gp': m.get('pr_point', 0),
+                'th_gp': th_gp_val,
+                'pr_gp': pr_gp_val,
             }
 
         weighted_subjects_data = []
