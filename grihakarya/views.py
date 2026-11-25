@@ -268,6 +268,7 @@ def grihakarya_homework_dashboard(request):
 
     if print_all:
         # ---- Excel export ----
+        selected_gs = selected_bs.to_datetime_date().isoformat()
         if request.GET.get('export') == 'excel':
             try:
                 import openpyxl
