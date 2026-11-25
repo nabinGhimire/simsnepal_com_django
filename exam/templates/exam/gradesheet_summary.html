@@ -21,14 +21,14 @@
                 <td class="subject" style="text-align: left;  border-bottom: 0.25mm solid #000;" rowspan="2">{{ sub.subject }}</td>
                 <td class="subject" style="text-align: left; border-bottom: 0.25mm solid #000;">TH</td>
                 <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;">{{ marks.th_grade|default:"-" }}{{ marks.th_symbol|default:"" }}</td>
-                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;">{{ marks.th_point|floatformat:2|default:"-" }}</td>
+                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;">{{ marks.th_point|floatformat:1|default:"-" }}</td>
                 <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;" rowspan="2">{{ marks.total_grade|default:"-" }}{{ marks.total_symbol|default:"" }}</td>
-                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;" rowspan="2">{{ marks.total_point|floatformat:2|default:"-" }}</td>
+                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;" rowspan="2">{{ marks.total_point|floatformat:1|default:"-" }}</td>
             </tr>
             <tr>
                 <td class="subject" style="text-align: left; border-bottom: 0.25mm solid #000;">PR</td>
                  <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;" >{{ marks.pr_grade|default:"-" }}{{ marks.pr_symbol|default:"" }}</td>
-                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;" >{{ marks.pr_point|floatformat:2|default:"-" }}</td>
+                <td class="subject" style="text-align: center; border-bottom: 0.25mm solid #000;" >{{ marks.pr_point|floatformat:1|default:"-" }}</td>
             </tr>
             {% endwith %}
             {% endfor %}
