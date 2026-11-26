@@ -9,289 +9,80 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.hamro.com/hamro/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f4f7f6;
-      color: #2c3e50;
-      padding-bottom: 40px;
-    }
-    .header-bar {
-      background: linear-gradient(135deg, #6c757d, #5a6268);
-      color: white;
-      padding: 20px 16px;
-      border-bottom-left-radius: 20px;
-      border-bottom-right-radius: 20px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    }
-    .sticky-footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #f8f9fa;
-      padding: 15px;
-      box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
-      z-index: 1000;
-    }
-    .attendance-card {
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      padding: 12px;
-      background: #fff;
-    }
-    .student-row {
-      border-bottom: 1px solid #f0f0f0;
-      padding: 8px 0;
-    }
-    .status-badge {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-    .status-present { background: #d4edda; color: #155724; }
-    .status-absent { background: #f8d7da; color: #721c24; }
-    .status-informed { background: #fff3cd; color: #856404; }
+    body {font-family: 'Inter', sans-serif; background-color: #f4f7f6; color: #2c3e50; padding-bottom: 40px;}
+    .header-bar {background: linear-gradient(135deg, #6c757d, #5a6268); color: white; padding: 20px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);}
+    .sticky-footer {position: fixed; bottom: 0; left: 0; right: 0; background: #f8f9fa; padding: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); z-index: 1000;}
+    .attendance-card {border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; padding: 12px; background: #fff;}
+    .student-row {border-bottom: 1px solid #f0f0f0; padding: 8px 0;}
+    .status-badge {display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 500;}
+    .status-present {background: #d4edda; color: #155724;}
+    .status-absent {background: #f8d7da; color: #721c24;}
+    .status-informed {background: #fff3cd; color: #856404;}
   </style>
 </head>
 <body>
 
   <div class="header-bar mb-3">
     <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h4 class="mb-0 fw-bold">Take Attendance</h4>
-        <small class="opacity-75">Teacher Portal</small>
-      </div>
-      <div>
-        {% if is_admin %}<span class="badge bg-warning-lt">Administrator</span>
-        {% else %}<span class="badge bg-white-lt">Teacher</span>{% endif %}
-      </div>
+      <div><h4 class="mb-0 fw-bold">Take Attendance</h4><small class="opacity-75">Teacher Portal</small></div>
+      <div>{% if is_admin %}<span class="badge bg-warning-lt">Administrator</span>{% else %}<span class="badge bg-white-lt">Teacher</span>{% endif %}</div>
     </div>
   </div>
 
   <div class="container-xl px-3 mt-3">
-    {% if message %}
-      <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 10px;">
-        <div class="d-flex">
-          <i class="ti ti-circle-check-filled me-2" style="font-size: 1.25rem;"></i>
-          <div>{{ message }}</div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    {% endif %}
+    {% if message %}<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 10px;"><div class="d-flex"><i class="ti ti-circle-check-filled me-2" style="font-size: 1.25rem;"></i><div>{{ message }}</div></div><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endif %}
 
-    <!-- School/Date Selection -->
     {% if available_schools|length > 1 and not selected_school %}
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
-      <div class="card-body p-3">
-        <form method="GET" action="" id="schoolForm">
-          <input type="hidden" name="token" value="{{ token }}">
-          <label class="form-label fw-semibold text-secondary mb-1">Select School</label>
-          <select name="school_id" class="form-select form-select-sm" onchange="this.form.submit();">
-            <option value="">-- Select School --</option>
-            {% for school in available_schools %}
-            <option value="{{ school.id }}" {% if school.id == selected_school.id %}selected{% endif %}>
-              {{ school.name }}
-            </option>
-            {% endfor %}
-          </select>
-        </form>
-      </div>
-    </div>
-    {% endif %}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;"><div class="card-body p-3"><form method="GET" action="" id="schoolForm"><input type="hidden" name="token" value="{{ token }}"><label class="form-label fw-semibold text-secondary mb-1">Select School</label><select name="school_id" class="form-select form-select-sm" onchange="this.form.submit();"><option value="">-- Select School --{% for school in available_schools %}<option value="{{ school.id }}" {% if school.id == selected_school.id %}selected{% endif %}{{ school.name }}{% endfor %}</select></form></div></div>{% endif %}
 
-    <!-- Date Picker -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
-      <div class="card-body p-3">
-        <form method="GET" action="" id="dateForm">
-          <input type="hidden" name="token" value="{{ token }}">
-          <input type="hidden" name="school_id" value="{{ selected_school.id }}">
-          <label class="form-label fw-semibold text-secondary mb-1">Select Date</label>
-          <input type="text" name="date" id="dateInput" class="form-control form-control-sm"
-            value="{{ selected_date|nepali_date:'Y-m-d' }}" placeholder="Select Nepali date"
-            readonly style="background: #f8f9fa;">
-          <small class="text-secondary">Format: YYYY-MM-DD (e.g., 2083-01-01)</small>
-        </form>
-      </div>
-    </div>
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;"><div class="card-body p-3"><form method="GET" action="" id="dateForm"><input type="hidden" name="token" value="{{ token }}"><input type="hidden" name="school_id" value="{{ selected_school.id if selected_school else '' }}"><label class="form-label fw-semibold text-secondary mb-1">Select Date</label><input type="text" name="date" id="dateInput" class="form-control form-control-sm" value="{{ selected_date }}" placeholder="Select date (YYYY-MM-DD)" readonly style="background: #f8f9fa;"><small class="text-secondary">Format: YYYY-MM-DD (e.g., 2083-01-01)</small></form></div></div>{% endif %}
 
-    <!-- grouped_ui: school -> class -> [subject, students, entry] -->
     {% if grouped_ui %}
     <div class="row g-3">
       {% for school_name, classes in grouped_ui.items %}
-      <div class="col-12">
-        <div class="attendance-card p-4 mb-3">
-          <h4 class="fw-bold text-secondary mb-3">
-            <i class="ti ti-building-community me-2"></i> {{ school_name }}
-          </h4>
-          
-          {% for class_name, class_data in classes.items %}
-          <div class="mb-4">
-            <h5 class="fw-semibold text-dark mb-3">
-              <i class="ti ti-school me-2"></i> {{ class_name }}
-            </h5>
-            
-            {% for entry in class_data %}
-            {% set subject_name = entry.subject|default:'All Subjects' %}
-            <div class="attendance-card p-3 mb-3">
-              <h6 class="fw-bold text-primary mb-2">
-                <i class="ti ti-book me-1"></i> {{ subject_name }}
-                {% if entry.entry %}
-                  (Grade {{ entry.entry.grade_id }}, Section {{ entry.entry.section_id }})
-                {% endif %}
-              </h6>
-              
-              <!-- Students table -->
-              <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                  <thead>
-                    <tr>
-                      <th style="width: 8%">#</th>
-                      <th style="width: 25%">Student Name</th>
-                      <th style="width 15%">Roll No</th>
-                      <th style="width: 20%">Status</th>
-                      <th style="width: 15%">Informed</th>
-                      <th style="width: 12%">Remarks</th>
-                      <th style="width: 10%">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for ss in entry.students %}
-                    <tr class="student-row">
-                      <td>{{ forloop.counter }}</td>
-                      <td>{{ ss.student.name }}</td>
-                      <td>{{ ss.roll_no }}</td>
-                      <td>
-                        <div class="form-check form-check-inline">
-                          <input class="form-check-input" type="radio" name="attendance_{{ ss.student.reg_no }}" value="present" id="present_{{ ss.student.reg_no }}" {% if ss|default_if_none:'is_present' == True %}checked{% endif %}>
-                          <label class="form-check-label" for="present_{{ ss.student.reg_no }}">
-                            <span class="status-badge status-present">Present</span>
-                          </label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                          <input class="form-check-input" type="radio" name="attendance_{{ ss.student.reg_no }}" value="absent" id="absent_{{ ss.student.reg_no }}" {% if ss|default_if_none:'is_present' == False %}checked{% endif %}>
-                          <label class="form-check-label" for="absent_{{ ss.student.reg_no }}">
-                            <span class="status-badge status-absent">Absent</span>
-                          </label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                          <input class="form-check-input" type="radio" name="attendance_{{ ss.student.reg_no }}" value="informed" id="informed_{{ ss.student.reg_no }}" {% if ss|default_if_none:'absent_informed' %}checked{% endif %}>
-                          <label class="form-check-label" for="informed_{{ ss.student.reg_no }}">
-                            <span class="status-badge status-informed">Informed</span>
-                          </label>
-                        </div>
-                      </td>
-                      <td>
-                        <input type="checkbox" name="informed_{{ ss.student.reg_no }}" value="yes"
-                          {% if ss|default_if_none:'absent_informed' %}checked{% endif %}>
-                      </td>
-                      <td>
-                        <input type="text" name="remarks_{{ ss.student.reg_no }}" class="form-control form-control-sm"
-                          placeholder="Remarks..."
-                          value="{{ ss|default_if_none:'remarks' }}">
-                      </td>
-                      <td>
-                        <button type="submit" name="action" value="save_attendance"
-                          class="btn btn-teal btn-sm" style="border-radius: 4px;"
-                          onclick="saveAttendance(event);">
-                          <i class="ti ti-save me-1"></i> Save
-                        </button>
-                      </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                      <td colspan="7" class="text-center py-4">No students assigned</td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
+      <div class="col-12"><div class="attendance-card p-4 mb-3"><h4 class="fw-bold text-secondary mb-3"><i class="ti ti-building-community me-2"></i> {{ school_name }}</h5>
+        {% for class_name, class_data in classes.items %}
+        <div class="mb-4"><h5 class="fw-semibold text-dark mb-3"><i class="ti ti-school me-2"></i> {{ class_name }}</h5>
+          {% for entry in class_data %}
+          <div class="attendance-card p-3 mb-3"><h6 class="fw-bold text-primary mb-2"><i class="ti ti-book me-1"></i> {{ entry.subject|default:'All Subjects' }}{% if entry.entry %}(Grade {{ entry.entry.grade_id }}, Section {{ entry.entry.section_id }}){% endif %}</h6>
+            <p class="text-secondary mb-3">Students: {{ entry.students|length }}</p>
+            <table class="table table-sm mb-0"><thead><tr><th>Student</th><th>Roll No</th><th>Status</th><th>Informed</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>
+            {% for ss in entry.students %}
+            <tr class="student-row"><td>{{ ss.student.name }}</td><td>{{ ss.roll_no }}</td><td>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="attendance_{{ ss.student.reg_no }}" value="present" {% if ss.is_present %}checked{% endif %}>
+                <label class="form-check-label" style="color: #155724;"><span class="status-badge status-present">Present</span></label>
               </div>
-            </div>
-            {% endfor %}
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="attendance_{{ ss.student.reg_no }}" value="absent" {% if not ss.is_present %}checked{% endif %}>
+                <label class="form-check-label" style="color: #721c24;"><span class="status-badge status-absent">Absent</span></label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="attendance_{{ ss.student.reg_no }}" value="informed" {% if ss.absent_informed %}checked{% endif %}>
+                <label class="form-check-label" style="color: #856404;"><span class="status-badge status-informed">Informed</span></label>
+              </div>
+            </td><td><input type="checkbox" name="informed_{{ ss.student.reg_no }}" value="yes" {% if ss.absent_informed %}checked{% endif %}></td><td><input type="text" name="remarks_{{ ss.student.reg_no }}" class="form-control form-control-sm" placeholder="Remarks..." value="{{ ss.remarks }}"></td><td><button type="submit" name="action" value="save_attendance" class="btn btn-teal btn-sm" style="border-radius: 4px;"><i class="ti ti-save me-1"></i> Save</button></td></tr>
+            {% empty %}<td colspan="6" class="text-center py-4">No students</td>{% endfor %}</tbody></table>
           </div>
-          {% endfor %}
+          {% endfor %}</div>
         </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="card border-0 shadow-sm text-center p-5" style="border-radius: 12px;">
-      <h3 class="fw-bold text-dark">No Classes Assigned</h3>
-      <p class="text-secondary mb-0">You have no subjects or classes assigned. Please contact the administrator.</p>
-    </div>
-    {% endif %}
+      {% endfor %}</div>
+      {% else %}<div class="card border-0 shadow-sm text-center p-5" style="border-radius: 12px;"><h3 class="fw-bold text-dark">No Classes Assigned</h3><p class="text-secondary mb-0">You have no subjects or classes assigned. Please contact the administrator.</p></div>{% endif %}
 
-    <!-- Navigation/Action Buttons -->
-    <div class="d-flex justify-content-end mb-3">
-      {% if action != "cancel" %}
-      <button type="submit" name="action" value="cancel"
-        class="btn btn-secondary me-2">Cancel</button>
-      {% endif %}
-    </div>
+    <div class="d-flex justify-content-end mb-3">{% if action != "cancel" %}<button type="submit" name="action" value="cancel" class="btn btn-secondary me-2">Cancel</button>{% endif %}</div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.hamro.com/hamro/js/nepali.datepicker.v4.0.1.min.js" type="text/javascript"></script>
   <script type="text/javascript">
-    // Initialize date picker
     if (typeof NepaliDatepicker !== 'undefined') {
       const dateInput = document.getElementById('dateInput');
-      if (dateInput) {
-        new NepaliDatepicker(dateInput, {
-          buttonClass: 'btn btn-link text-primary',
-          format: 'Y-m-d'
-        });
-      }
+      if (dateInput) { new NepaliDatepicker(dateInput, { buttonClass: 'btn btn-link text-primary', format: 'Y-m-d' }); }
     }
-
-    // Save attendance handler
-    function saveAttendance(event) {
-      event.preventDefault();
-      const form = event.target.closest('form');
-      if (!form) return;
-
-      const formData = new FormData(form);
-      fetch(window.location.href, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      })
-      .then(response => response.text())
-      .then(html => {
-        // Replace page content
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const newBody = doc.querySelector('body');
-        if (newBody) {
-          document.body.innerHTML = newBody.innerHTML;
-          // Reinitialize date picker
-          if (typeof NepaliDatepicker !== 'undefined') {
-            const newDateInput = document.getElementById('dateInput');
-            if (newDateInput) {
-              new NepaliDatepicker(newDateInput, {
-                buttonClass: 'btn btn-link text-primary',
-                format: 'Y-m-d'
-              });
-            }
-          }
-        }
-      })
-      .catch(error => console.error('Error:', error));
-    }
-
-    // Initialize: set date input value
     document.addEventListener('DOMContentLoaded', function() {
       const dateInput = document.getElementById('dateInput');
       if (dateInput && !dateInput.value) {
-        const today = new Date();
-        const y = today.getFullYear();
-        const m = String(today.getMonth() + 1).padStart(2, '0');
-        const d = String(today.getDate()).padStart(2, '0');
-        dateInput.value = `${y}-${m}-${d}`;
+        const today = new Date(); const y = today.getFullYear(); const m = String(today.getMonth() + 1).padStart(2, '0'); const d = String(today.getDate()).padStart(2, '0'); dateInput.value = `${y}-${m}-${d}`;
       }
     });
   </script>
