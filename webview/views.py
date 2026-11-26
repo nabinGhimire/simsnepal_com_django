@@ -133,13 +133,15 @@ def validate_webview_token(request, expected_role):
 
 
 def parent_homework(request):
-    phone = request.GET.get("token") or request.POST.get("token")
-    if not phone:
+    user = validate_webview_token(request, "parent")
+    if not user:
         return render(request, "webview/error.html", {
             "error_title": "Unauthorized Access",
             "error_message": "Invalid or expired token. Please reopen the page from the app."
         })
         
+    phone = user  # validate_webview_token returns the phone for parent role
+    
     current_session = get_current_session()
     if not current_session:
         return render(request, "webview/error.html", {
@@ -254,13 +256,15 @@ def parent_homework(request):
 
 
 def parent_result(request):
-    phone = request.GET.get("token") or request.POST.get("token")
-    if not phone:
+    user = validate_webview_token(request, "parent")
+    if not user:
         return render(request, "webview/error.html", {
             "error_title": "Unauthorized Access",
             "error_message": "Invalid or expired token. Please reopen the page from the app."
         })
         
+    phone = user  # validate_webview_token returns the phone for parent role
+    
     current_session = get_current_session()
     if not current_session:
         return render(request, "webview/error.html", {
@@ -388,13 +392,15 @@ def parent_result_detail(request):
     from exam.models import GradeFullMarks, Attendance, Rank, SchoolTerminology, SchoolResultType, LiveResult
     from django.contrib.auth import get_user_model
     
-    phone = request.GET.get("token") or request.POST.get("token")
-    if not phone:
+    user = validate_webview_token(request, "parent")
+    if not user:
         return render(request, "webview/error.html", {
             "error_title": "Unauthorized Access",
             "error_message": "Invalid or expired token. Please reopen the page from the app."
         })
         
+    phone = user  # validate_webview_token returns the phone for parent role
+    
     current_session = get_current_session()
     if not current_session:
         return render(request, "webview/error.html", {
