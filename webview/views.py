@@ -108,7 +108,7 @@ def parent_homework(request):
                     hw_dict = {}
                 else:
                     hw_dict = json.loads(homework_qs.first().homework or "{}")
-                
+
         subjects = Subject.objects.filter(
             Q(section=section) | Q(section__isnull=True),
             session=current_session,
