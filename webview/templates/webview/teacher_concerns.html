@@ -122,7 +122,8 @@
                       {% for entry in class_data %}
                         <div class="mb-3">
                           <label class="form-label fw-bold text-dark mb-1">
-                            <i class="ti ti-book me-1 text-teal" style="color: #008877;"></i> {{ entry.subject.subject if entry.subject else 'All Subjects' }}
+                            <i class="ti ti-book me-1 text-teal" style="color: #008877;"></i>
+                          {% if entry.subject %}{{ entry.subject.subject }}{% else %}All Subjects{% endif %}
                           </label>
                           
                           <!-- Students - remarks only -->
