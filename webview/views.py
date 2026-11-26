@@ -73,15 +73,38 @@ def generate_auth_token(request):
         except ValueError:
             pass
 
+    # Try to find user via hamro_uuid first
     if hamro_uuid:
         from sso.models import HamroUserProfile
         profile = HamroUserProfile.objects.filter(hamro_uuid=hamro_uuid).first()
         user = profile.user if profile else None
-        if user and BranchUser.objects.filter(user=user, status=True).exists():
-            response_data["exists"] = True
-            response_data["roles"].append("teacher")
-            # Generate a token for teacher access (required by webview apps)
-            response_data["teacher_token"] = signer.sign_object({"role": "teacher", "user_id": user.id})    
+
+    # If no hamro_uuid, try lookup by phone
+    if not user and phone:
+        from sso.models import HamroUserProfile
+        normalized_phone = normalize_nepali_phone(phone)
+        try:
+            phone_int = int(normalized_phone)
+            profile = HamroUserProfile.objects.filter(mobile_number=phone_int).first()
+            user = profile.user if profile else None
+        except ValueError:
+            user = None
+
+    # If no user yet, try lookup by username
+    if not user and username:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            user = None
+
+    # If user found and has BranchUser record, generate teacher token
+    if user and BranchUser.objects.filter(user=user, status=True).exists():
+        response_data["exists"] = True
+        response_data["roles"].append("teacher")
+        # Generate a token for teacher access (required by webview apps)
+        response_data["teacher_token"] = signer.sign_object({"role": "teacher", "user_id": user.id})    
    
     return JsonResponse(response_data)
 
@@ -958,21 +981,29 @@ def teacher_homework(request):
         else:
             # Teacher-specific subjects – try to locate the teacher record using various identifiers
             logger = logging.getLogger(__name__)
-            phone = getattr(user, "mobile_number", None) or request.GET.get('phone')
+            # Get phone from HamroUserProfile (phone numbers reside on HamroUserProfile, not User model)
+            phone = None
+            from sso.models import HamroUserProfile
+            try:
+                profile = HamroUserProfile.objects.get(user=user)
+                phone = profile.mobile_number
+            except Exception:
+                phone = request.GET.get('phone')
             logger.info("Teacher lookup phone: %s", phone)
             # Primary attempt: direct FK relationship
             ts_access = TeacherSubjectAccess.objects.filter(
                 teacher=user, session=current_session, status=True
             ).select_related('grade__school')
             if not ts_access.exists() and phone:
-                # Fallback: match on teacher's mobile_number field
+                # Fallback: match on HamroUserProfile's mobile_number via teacher->hamro_profile relation
+                # HamroUserProfile has OneToOneField to User with related_name='hamro_profile'
                 ts_access = TeacherSubjectAccess.objects.filter(
-                    teacher__mobile_number=phone, session=current_session, status=True
+                    teacher__hamro_profile__mobile_number=phone, session=current_session, status=True
                 ).select_related('grade__school')
             if not ts_access.exists() and phone:
-                # Additional fallback: teacher model may store phone under a different field name
+                # Additional fallback: same lookup (kept for explicit clarity)
                 ts_access = TeacherSubjectAccess.objects.filter(
-                    teacher__phone=phone, session=current_session, status=True
+                    teacher__hamro_profile__mobile_number=phone, session=current_session, status=True
                 ).select_related('grade__school')
             access_entries = list(ts_access)
             if not access_entries:
