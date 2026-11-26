@@ -9,4 +9,6 @@ urlpatterns = [
     path("teacher/homework/", views.teacher_homework, name="teacher_homework"),
     path("teacher/marks/", views.teacher_marks, name="teacher_marks"),
     path("teacher/marks/entry/", views.teacher_marks_entry, name="teacher_marks_entry"),
+    path("teacher/attendance/", views.teacher_attendance, name="teacher_attendance"),
+    path("teacher/concerns/", views.teacher_concerns, name="teacher_concerns"),
 ]
