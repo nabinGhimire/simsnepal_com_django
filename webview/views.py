@@ -1263,3 +1263,388 @@ def teacher_concerns(request):
             "error_message": "An unexpected error occurred while loading the page. Please contact support."
         })
     return render(request, "webview/error.html", {"error_title": "No Content", "error_message": "Unable to load teacher concerns. Please ensure you are assigned to a school and students."})
+
+
+def teacher_homework(request):
+    """Render teacher homework webview with robust error handling."""
+    try:
+        token = request.GET.get('token') or request.POST.get('token')
+        user = validate_webview_token(request, "teacher")
+        if not user:
+            return render(request, "webview/error.html", {
+                "error_title": "Unauthorized Access",
+                "error_message": "Invalid or expired token. Please reopen the page from the app."
+            })
+
+        # Get current academic session
+        current_session = get_current_session()
+        if not current_session:
+            return render(request, "webview/error.html", {
+                "error_title": "Configuration Error",
+                "error_message": "No active academic session configured."
+            })
+
+        # Determine admin status based on branch admin flag or superuser
+        from sms.models import BranchUser
+        branch_users = BranchUser.objects.filter(user=user, status=True)
+        is_admin = branch_users.filter(admin_status=True).exists() or user.is_superuser
+
+        # Identify available schools
+        if is_admin:
+            if user.is_superuser:
+                available_schools = list(SchoolBranch.objects.filter(status=True))
+            else:
+                available_schools = [bu.school for bu in branch_users if bu.admin_status]
+        else:
+            # Teacher-specific schools from TeacherSubjectAccess
+            ts_access = TeacherSubjectAccess.objects.filter(
+                teacher=user, session=current_session, status=True
+            ).select_related('grade__school', 'grade__level', 'section', 'subject')
+            if not ts_access.exists():
+                return render(request, "webview/error.html", {
+                    "error_title": "No Subjects Assigned",
+                    "error_message": "You have no subjects or classes assigned. Please contact the administrator."
+                })
+            schools_from_access = list(set(
+                t.grade.school for t in ts_access if t.grade and t.grade.school
+            ))
+            if branch_users:
+                available_schools = list(set(schools_from_access + [bu.school for bu in branch_users]))
+            else:
+                available_schools = schools_from_access
+
+        if not available_schools:
+            return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
+
+        # School selection
+        school_id = request.GET.get('school_id') or request.POST.get('school_id')
+        if len(available_schools) > 1 and not school_id:
+            return render(request, "webview/teacher_select_school.html", {
+                "schools": available_schools,
+                "token": token,
+                "next_url": request.path,
+            })
+
+        if school_id:
+            try:
+                selected_school = SchoolBranch.objects.get(id=school_id)
+            except SchoolBridge.DoesNotExist:
+                selected_school = available_schools[0]
+        else:
+            selected_school = available_schools[0]
+
+        # Date selection
+        selected_date_str = request.GET.get('date')
+        if selected_date_str:
+            try:
+                parts = selected_date_str.split('-')
+                selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
+            except Exception:
+                selected_date = nepali_datetime.date.today()
+        else:
+            selected_date = nepali_datetime.date.today()
+
+        # Get teacher's students by class
+        ts_access = TeacherSubjectAccess.objects.filter(
+            teacher=user, session=current_session, status=True
+        ).select_related('grade__school', 'grade__level', 'section', 'subject')
+
+        students_by_class = {}
+        for entry in ts_access:
+            key = (entry.grade_id, entry.section_id)
+            if key not in students_by_class:
+                students_by_class[key] = StudentSession.objects.filter(
+                    grade_id=entry.grade_id,
+                    section_id=entry.section_id,
+                    session=current_session,
+                    status=True
+                ).select_related('student', 'grade', 'section').order_by('roll_no', 'student__name')
+
+        # Build class->subjects->students mapping
+        grouped_ui = {}
+        for entry in ts_access:
+            key = (entry.grade_id, entry.section_id)
+            school_name = entry.grade.school.name
+            class_name = f"Grade {entry.grade.grade_name} - Section {entry.section.section}"
+
+            if key not in grouped_ui:
+                grouped_ui[school_name] = {}
+
+            if class_name not in grouped_ui[school_name]:
+                grouped_ui[school_name][class_name] = []
+
+            students = students_by_class.get(key, [])
+
+            grouped_ui[school_name][class_name].append({
+                'subject': entry.subject,
+                'grade_id': entry.grade_id,
+                'section_id': entry.section_id,
+                'students': students,
+                'entry': entry,
+            })
+
+        # POST: Save homework
+        if request.method == "POST":
+            action = request.POST.get("action")
+            date = request.POST.get("date")
+
+            if action == "save_homework":
+                saved = 0
+                for (g_id, s_id), ss_list in students_by_class.items():
+                    for ss in ss_list:
+                        reg_no = ss.student.reg_no
+                        homework_text = request.POST.get(f"homework_{reg_no}", "")
+
+                        from sms.models import Homework
+                        from django.utils import timezone
+
+                        # Create or update homework
+                        homework, created = Homework.objects.get_or_create(
+                            session=current_session,
+                            grade_id=g_id,
+                            section_id=s_id,
+                            nepali_date=selected_date,
+                        )
+
+                        # Store homework text (simple string for now)
+                        homework.homework = homework_text
+                        homework.save()
+
+                        saved += 1
+
+                if saved > 0:
+                    message = f"Homework for {saved} students saved successfully."
+                else:
+                    message = "Homework saved successfully."
+
+                return render(request, "webview/teacher_homework.html", {
+                    'is_admin': is_admin,
+                    'selected_school': selected_school,
+                    'selected_date': selected_date,
+                    'message': message,
+                    'token': token,
+                })
+            elif action == "cancel":
+                return redirect(request.path)
+
+        # GET: render form with grouped UI data
+        context = {
+            'is_admin': is_admin,
+            'selected_school': selected_school,
+            'selected_date': selected_date,
+            'token': token,
+            'grouped_ui': grouped_ui,
+            'message': "",
+        }
+        return render(request, "webview/teacher_homework.html", context)
+
+    except Exception as exc:
+        import traceback
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error("Unexpected error in teacher_homework: %s\n%s", exc, traceback.format_exc())
+        return render(request, "webview/error.html", {
+            "error_title": "Server Error",
+            "error_message": "An unexpected error occurred while loading the page. Please contact support."
+        })
+    return render(request, "webview/error.html", {"error_title": "No Content", "error_message": "Unable to load teacher homework. Please ensure you are assigned to a school and students."})
+
+
+def teacher_marks(request):
+    """Render teacher marks webview."""
+    try:
+        token = request.GET.get('token') or request.POST.get('token')
+        user = validate_webview_token(request, "teacher")
+        if not user:
+            return render(request, "webview/error.html", {
+                "error_title": "Unauthorized Access",
+                "error_message": "Invalid or expired token. Please reopen the page from the app."
+            })
+
+        # Get current academic session
+        current_session = get_current_session()
+        if not current_session:
+            return render(request, "webview/error.html", {
+                "error_title": "Configuration Error",
+                "error_message": "No active academic session configured."
+            })
+
+        # Determine admin status
+        from sms.models import BranchUser
+        branch_users = BranchUser.objects.filter(user=user, status=True)
+        is_admin = branch_users.filter(admin_status=True).exists() or user.is_superuser
+
+        # Identify available schools
+        if is_admin:
+            if user.is_superuser:
+                available_schools = list(SchoolBranch.objects.filter(status=True))
+            else:
+                available_schools = [bu.school for bu in branch_users if bu.admin_status]
+        else:
+            from sms.models import TeacherSubjectAccess
+            ts_access = TeacherSubjectAccess.objects.filter(
+                teacher=user, session=current_session, status=True
+            ).select_related('grade__school', 'grade__level', 'section', 'subject')
+            if not ts_access.exists():
+                return render(request, "webview/error.html", {
+                    "error_title": "No Subjects Assigned",
+                    "error_message": "You have no subjects or classes assigned. Please contact the administrator."
+                })
+            schools_from_access = list(set(
+                t.grade.school for t in ts_access if t.grade and t.grade.school
+            ))
+            if branch_users:
+                available_schools = list(set(schools_from_access + [bu.school for bu in branch_users]))
+            else:
+                available_schools = schools_from_access
+
+        if not available_schools:
+            return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
+
+        # School selection
+        school_id = request.GET.get('school_id') or request.POST.get('school_id')
+        if len(available_schools) > 1 and not school_id:
+            return render(request, "webview/teacher_select_school.html", {
+                "schools": available_schools,
+                "token": token,
+                "next_url": request.path,
+            })
+
+        if school_id:
+            try:
+                selected_school = SchoolBranch.objects.get(id=school_id)
+            except SchoolBridge.DoesNotExist:
+                selected_school = available_schools[0]
+        else:
+            selected_school = available_schools[0]
+
+        # Date selection
+        selected_date_str = request.GET.get('date')
+        if selected_date_str:
+            try:
+                parts = selected_date_str.split('-')
+                selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
+            except Exception:
+                selected_date = nepali_datetime.date.today()
+        else:
+            selected_date = nepali_datetime.date.today()
+
+        # GET: render marks view
+        context = {
+            'is_admin': is_admin,
+            'selected_school': selected_school,
+            'selected_date': selected_date,
+            'token': token,
+        }
+        return render(request, "webview/teacher_marks.html", context)
+
+    except Exception as exc:
+        import traceback
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error("Unexpected error in teacher_marks: %s\n%s", exc, traceback.format_exc())
+        return render(request, "webview/error.html", {
+            "error_title": "Server Error",
+            "error_message": "An unexpected error occurred while loading the page. Please contact support."
+        })
+    return render(request, "webview/error.html", {"error_title": "No Content", "error_message": "Unable to load teacher marks. Please ensure you are assigned to a school and students."})
+
+
+def teacher_marks_entry(request):
+    """Render teacher marks entry webview."""
+    try:
+        token = request.GET.get('token') or request.POST.get('token')
+        user = validate_webview_token(request, "teacher")
+        if not user:
+            return render(request, "webview/error.html", {
+                "error_title": "Unauthorized Access",
+                "error_message": "Invalid or expired token. Please reopen the page from the app."
+            })
+
+        # Get current academic session
+        current_session = get_current_session()
+        if not current_session:
+            return render(request, "webview/error.html", {
+                "error_title": "Configuration Error",
+                "error_message": "No active academic session configured."
+            })
+
+        # Determine admin status
+        from sms.models import BranchUser
+        branch_users = BranchUser.objects.filter(user=user, status=True)
+        is_admin = branch_users.filter(admin_status=True).exists() or user.is_superuser
+
+        # Identify available schools
+        if is_admin:
+            if user.is_superuser:
+                available_schools = list(SchoolBranch.objects.filter(status=True))
+            else:
+                available_schools = [bu.school for bu in branch_users if bu.admin_status]
+        else:
+            from sms.models import TeacherSubjectAccess
+            ts_access = TeacherSubjectAccess.objects.filter(
+                teacher=user, session=current_session, status=True
+            ).select_related('grade__school', 'grade__level', 'section', 'subject')
+            if not ts_access.exists():
+                return render(request, "webview/error.html", {
+                    "error_title": "No Subjects Assigned",
+                    "error_message": "You have no subjects or classes assigned. Please contact the administrator."
+                })
+            schools_from_access = list(set(
+                t.grade.school for t in ts_access if t.grade and t.grade.school
+            ))
+            if branch_users:
+                available_schools = list(set(schools_from_access + [bu.school for bu in branch_users]))
+            else:
+                available_schools = schools_from_access
+
+        if not available_schools:
+            return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
+
+        # School selection
+        school_id = request.GET.get('school_id') or request.POST.get('school_id')
+        if len(available_schools) > 1 and not school_id:
+            return render(request, "webview/teacher_select_school.html", {
+                "schools": available_schools,
+                "token": token,
+                "next_url": request.path,
+            })
+
+        if school_id:
+            try:
+                selected_school = SchoolBranch.objects.get(id=school_id)
+            except SchoolBridge.DoesNotExist:
+                selected_school = available_schools[0]
+        else:
+            selected_school = available_schools[0]
+
+        # Date selection
+        selected_date_str = request.GET.get('date')
+        if selected_date_str:
+            try:
+                parts = selected_date_str.split('-')
+                selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
+            except Exception:
+                selected_date = nepali_datetime.date.today()
+        else:
+            selected_date = nepali_datetime.date.today()
+
+        # GET: render marks entry view
+        context = {
+            'is_admin': is_admin,
+            'selected_school': selected_school,
+            'selected_date': selected_date,
+            'token': token,
+        }
+        return render(request, "webview/teacher_marks_entry.html", context)
+
+    except Exception as exc:
+        import traceback
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error("Unexpected error in teacher_marks_entry: %s\n%s", exc, traceback.format_exc())
+        return render(request, "webview/error.html", {
+            "error_title": "Server Error",
+            "error_message": "An unexpected error occurred while loading the page. Please contact support."
+        })
+    return render(request, "webview/error.html", {"error_title": "No Content", "error_message": "Unable to load teacher marks entry. Please ensure you are assigned to a school and students."})
