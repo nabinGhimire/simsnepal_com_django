@@ -35,7 +35,7 @@
     {% if available_schools|length > 1 and not selected_school %}
     <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;"><div class="card-body p-3"><form method="GET" action="" id="schoolForm"><input type="hidden" name="token" value="{{ token }}"><label class="form-label fw-semibold text-secondary mb-1">Select School</label><select name="school_id" class="form-select form-select-sm" onchange="this.form.submit();"><option value="">-- Select School --{% for school in available_schools %}<option value="{{ school.id }}" {% if school.id == selected_school.id %}selected{% endif %}{{ school.name }}{% endfor %}</select></form></div></div>{% endif %}
 
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;"><div class="card-body p-3"><form method="GET" action="" id="dateForm"><input type="hidden" name="token" value="{{ token }}"><input type="hidden" name="school_id" value="{{ selected_school.id if selected_school else '' }}"><label class="form-label fw-semibold text-secondary mb-1">Select Date</label><input type="text" name="date" id="dateInput" class="form-control form-control-sm" value="{{ selected_date }}" placeholder="Select date (YYYY-MM-DD)" readonly style="background: #f8f9fa;"><small class="text-secondary">Format: YYYY-MM-DD (e.g., 2083-01-01)</small></form></div></div>{% endif %}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;"><div class="card-body p-3"><form method="GET" action="" id="dateForm"><input type="hidden" name="token" value="{{ token }}"><input type="hidden" name="school_id" value="{% if selected_school %}{{ selected_school.id }}{% endif %}"><label class="form-label fw-semibold text-secondary mb-1">Select Date</label><input type="text" name="date" id="dateInput" class="form-control form-control-sm" value="{{ selected_date }}" placeholder="Select date (YYYY-MM-DD)" readonly style="background: #f8f9fa;"><small class="text-secondary">Format: YYYY-MM-DD (e.g., 2083-01-01)</small></form></div></div>
 
     {% if grouped_ui %}
     <div class="row g-3">
@@ -66,6 +66,7 @@
           </div>
           {% endfor %}</div>
         </div>
+      {% endfor %}</div>
       {% endfor %}</div>
       {% else %}<div class="card border-0 shadow-sm text-center p-5" style="border-radius: 12px;"><h3 class="fw-bold text-dark">No Classes Assigned</h3><p class="text-secondary mb-0">You have no subjects or classes assigned. Please contact the administrator.</p></div>{% endif %}
 

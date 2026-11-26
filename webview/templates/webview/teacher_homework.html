@@ -40,7 +40,7 @@
           {% for entry in class_data %}
           <div class="subject-card p-3 mb-3"><h6 class="fw-bold text-primary mb-2"><i class="ti ti-book me-1"></i> {{ entry.subject|default:'All Subjects' }}{% if entry.entry %}(Grade {{ entry.entry.grade_id }}, Section {{ entry.entry.section_id }}){% endif %}</h6>
             <p class="text-secondary mb-3">Students: {{ entry.students|length }}</p>
-            <textarea name="homework_{{ entry.entry.student.first.student.reg_no }}" class="form-control" rows="3" placeholder="Enter homework description...">{{ entry.entry.homework if entry.entry and entry.entry.homework else '' }}</textarea>
+            <textarea name="homework_{{ entry.entry.student.first.student.reg_no }}" class="form-control" rows="3" placeholder="Enter homework description...">{% if entry.entry and entry.entry.homework %}{{ entry.entry.homework }}{% endif %}</textarea>
             <button type="submit" name="action" value="save_homework" class="btn btn-teal w-100 py-2 mt-3" style="border-radius: 8px;"><i class="ti ti-save me-2"></i> Save Homework</a>
             <a href="{% url 'teacher_homework' %}?token={{ token }}{% if selected_school %}&school_id={{ selected_school.id }}{% endif %}" class="btn btn-outline-secondary w-100 py-2 mt-2" style="border-radius: 8px;">Cancel</a>
           </div>
