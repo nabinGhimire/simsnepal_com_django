@@ -935,16 +935,20 @@ def teacher_attendance(request):
         else:
             selected_school = available_schools[0]
 
-        # Date selection
-        selected_date_str = request.GET.get('date')
-        if selected_date_str:
-            try:
-                parts = selected_date_str.split('-')
-                selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
-            except Exception:
-                selected_date = nepali_datetime.date.today()
+        # Date selection (GET filter or POST save). DailyAttendance.date is a
+        # Gregorian DateField, so keep the BS date for display and convert to AD
+        # for queries/saves (same as the main attendance view).
+        selected_date_str = request.GET.get('date') or request.POST.get('date')
+        try:
+            parts = [int(p) for p in selected_date_str.split('-')] if selected_date_str else []
+        except (TypeError, ValueError):
+            parts = []
+        if len(parts) == 3 and 2050 <= parts[0] <= 2120:
+            bs_date = nepali_datetime.date(parts[0], parts[1], parts[2])
         else:
-            selected_date = nepali_datetime.date.today()
+            bs_date = nepali_datetime.date.today()
+        selected_date = bs_date.to_datetime_date()
+        selected_date_display = f"{bs_date.year}-{bs_date.month:02d}-{bs_date.day:02d}"
 
         # Get teacher's students by class
         ts_access = TeacherSubjectAccess.objects.filter(
@@ -962,46 +966,71 @@ def teacher_attendance(request):
                     status=True
                 ).select_related('student', 'grade', 'section').order_by('roll_no', 'student__name')
 
-        # Build class->subjects->students mapping
-        grouped_ui = {}
+        from attendance.models import DailyAttendance, AttendanceAuditLog
+
+        def build_attendance_map():
+            reg_nos = [ss.student_id for ss_list in students_by_class.values() for ss in ss_list]
+            if not reg_nos:
+                return {}
+            return {
+                rec.reg_no_id: rec
+                for rec in DailyAttendance.objects.filter(
+                    session=current_session,
+                    date=selected_date,
+                    reg_no__in=reg_nos,
+                )
+            }
+
+        # One list per class; subjects are combined for display (attendance is per student/day)
+        class_meta = {}
         for entry in ts_access:
             key = (entry.grade_id, entry.section_id)
-            school_name = entry.grade.school.name
-            class_name = f"Grade {entry.grade.grade_name} - Section {entry.section.section}"
+            if key not in class_meta:
+                class_meta[key] = {
+                    'school_name': entry.grade.school.name,
+                    'class_name': f"Grade {entry.grade.grade_name} - Section {entry.section.section}",
+                    'subjects': [],
+                }
+            subject_name = entry.subject.subject if entry.subject else ''
+            if subject_name and subject_name not in class_meta[key]['subjects']:
+                class_meta[key]['subjects'].append(subject_name)
 
-            if key not in grouped_ui:
-                grouped_ui[school_name] = {}
+        def build_grouped_ui(attendance_map):
+            grouped = {}
+            for key, meta in class_meta.items():
+                rows = []
+                for ss in students_by_class.get(key, []):
+                    student = ss.student
+                    rec = attendance_map.get(student.reg_no)
+                    rows.append({
+                        'student': student,
+                        'reg_no': student.reg_no,
+                        'roll_no': ss.roll_no,
+                        'is_present': rec.is_present if rec else True,
+                        'absent_informed': rec.absent_informed if rec else False,
+                        'remarks': (rec.remarks or '') if rec else '',
+                    })
+                grouped.setdefault(meta['school_name'], {})[meta['class_name']] = {
+                    'subjects': meta['subjects'],
+                    'students': rows,
+                }
+            return grouped
 
-            if class_name not in grouped_ui[school_name]:
-                grouped_ui[school_name][class_name] = []
-
-            students = students_by_class.get(key, [])
-
-            grouped_ui[school_name][class_name].append({
-                'subject': entry.subject,
-                'grade_id': entry.grade_id,
-                'section_id': entry.section_id,
-                'students': students,
-                'entry': entry,
-            })
+        grouped_ui = build_grouped_ui(build_attendance_map())
 
         # POST: Save attendance
         if request.method == "POST":
             action = request.POST.get("action")
-            date = request.POST.get("date")
 
             if action == "save_attendance":
                 saved = 0
+                changed = 0
                 for (g_id, s_id), ss_list in students_by_class.items():
                     for ss in ss_list:
                         reg_no = ss.student.reg_no
-                        status_val = request.POST.get(f"attendance_{reg_no}")
-                        is_present = status_val == "present"
+                        is_present = request.POST.get(f"attendance_{reg_no}") == "present"
                         informed = request.POST.get(f"informed_{reg_no}") == "yes"
                         remarks = request.POST.get(f"remarks_{reg_no}", "")
-
-                        from attendance.models import DailyAttendance, AttendanceAuditLog
-                        from django.utils import timezone
 
                         existing = DailyAttendance.objects.filter(
                             reg_no=ss.student,
@@ -1018,6 +1047,7 @@ def teacher_attendance(request):
                             grade_id=g_id,
                             section_id=s_id,
                             defaults={
+                                'nepali_date': bs_date,
                                 'is_present': is_present,
                                 'absent_informed': informed,
                                 'remarks': remarks,
@@ -1036,19 +1066,21 @@ def teacher_attendance(request):
                                     previous_remarks=existing.remarks,
                                     new_remarks=remarks
                                 )
+                                changed += 1
                         saved += 1
 
-                if saved > 0:
-                    message = f"Attendance for {saved} students saved successfully ({saved} changes logged in Audit Trail)."
-                else:
-                    message = "Attendance saved successfully."
-
+                message = (
+                    f"Attendance saved for {saved} students"
+                    + (f" ({changed} updated)." if changed else ".")
+                )
                 return render(request, "webview/teacher_attendance.html", {
                     'is_admin': is_admin,
                     'selected_school': selected_school,
-                    'selected_date': selected_date,
+                    'available_schools': available_schools,
+                    'selected_date': selected_date_display,
                     'message': message,
                     'token': token,
+                    'grouped_ui': build_grouped_ui(build_attendance_map()),
                 })
             elif action == "cancel":
                 return redirect(request.path)
@@ -1057,7 +1089,8 @@ def teacher_attendance(request):
         context = {
             'is_admin': is_admin,
             'selected_school': selected_school,
-            'selected_date': selected_date,
+            'available_schools': available_schools,
+            'selected_date': selected_date_display,
             'token': token,
             'grouped_ui': grouped_ui,
             'message': "",
@@ -1266,7 +1299,7 @@ def teacher_concerns(request):
 
 
 def teacher_homework(request):
-    """Render teacher homework webview with robust error handling."""
+    """Render and save the teacher homework webview."""
     try:
         token = request.GET.get('token') or request.POST.get('token')
         user = validate_webview_token(request, "teacher")
@@ -1276,7 +1309,6 @@ def teacher_homework(request):
                 "error_message": "Invalid or expired token. Please reopen the page from the app."
             })
 
-        # Get current academic session
         current_session = get_current_session()
         if not current_session:
             return render(request, "webview/error.html", {
@@ -1284,29 +1316,28 @@ def teacher_homework(request):
                 "error_message": "No active academic session configured."
             })
 
-        # Determine admin status based on branch admin flag or superuser
         from sms.models import BranchUser
+        from datetime import date as gregorian_date
+
         branch_users = BranchUser.objects.filter(user=user, status=True)
         is_admin = branch_users.filter(admin_status=True).exists() or user.is_superuser
 
-        # Identify available schools
         if is_admin:
             if user.is_superuser:
                 available_schools = list(SchoolBranch.objects.filter(status=True))
             else:
                 available_schools = [bu.school for bu in branch_users if bu.admin_status]
         else:
-            # Teacher-specific schools from TeacherSubjectAccess
-            ts_access = TeacherSubjectAccess.objects.filter(
+            ts_schools = TeacherSubjectAccess.objects.filter(
                 teacher=user, session=current_session, status=True
-            ).select_related('grade__school', 'grade__level', 'section', 'subject')
-            if not ts_access.exists():
+            ).select_related('grade__school')
+            if not ts_schools.exists():
                 return render(request, "webview/error.html", {
                     "error_title": "No Subjects Assigned",
                     "error_message": "You have no subjects or classes assigned. Please contact the administrator."
                 })
             schools_from_access = list(set(
-                t.grade.school for t in ts_access if t.grade and t.grade.school
+                t.grade.school for t in ts_schools if t.grade and t.grade.school
             ))
             if branch_users:
                 available_schools = list(set(schools_from_access + [bu.school for bu in branch_users]))
@@ -1314,9 +1345,11 @@ def teacher_homework(request):
                 available_schools = schools_from_access
 
         if not available_schools:
-            return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
+            return render(request, "webview/error.html", {
+                "error_title": "No Classes",
+                "error_message": "You have no assigned subjects."
+            })
 
-        # School selection
         school_id = request.GET.get('school_id') or request.POST.get('school_id')
         if len(available_schools) > 1 and not school_id:
             return render(request, "webview/teacher_select_school.html", {
@@ -1325,31 +1358,36 @@ def teacher_homework(request):
                 "next_url": request.path,
             })
 
-        if school_id:
-            try:
-                selected_school = SchoolBranch.objects.get(id=school_id)
-            except SchoolBridge.DoesNotExist:
-                selected_school = available_schools[0]
-        else:
-            selected_school = available_schools[0]
+        selected_school = next(
+            (school for school in available_schools if str(school.id) == str(school_id)),
+            available_schools[0],
+        )
 
-        # Date selection
-        selected_date_str = request.GET.get('date')
-        if selected_date_str:
+        # Homework dates are shown in BS; the Gregorian date is kept in sync for reports.
+        selected_date_str = request.GET.get('date') or request.POST.get('date')
+        try:
+            parts = [int(p) for p in selected_date_str.split('-')] if selected_date_str else []
+        except (TypeError, ValueError):
+            parts = []
+        if len(parts) == 3 and 2050 <= parts[0] <= 2120:
+            bs_date = nepali_datetime.date(parts[0], parts[1], parts[2])
+        elif len(parts) == 3:
             try:
-                parts = selected_date_str.split('-')
-                selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
-            except Exception:
-                selected_date = nepali_datetime.date.today()
+                ad_date = gregorian_date(parts[0], parts[1], parts[2])
+                bs_date = nepali_datetime.date.from_datetime_date(ad_date)
+            except (TypeError, ValueError):
+                bs_date = nepali_datetime.date.today()
         else:
-            selected_date = nepali_datetime.date.today()
+            bs_date = nepali_datetime.date.today()
+        ad_date = bs_date.to_datetime_date()
+        bs_display = f"{bs_date.year}-{bs_date.month:02d}-{bs_date.day:02d}"
 
-        # Get teacher's students by class
         ts_access = TeacherSubjectAccess.objects.filter(
             teacher=user, session=current_session, status=True
         ).select_related('grade__school', 'grade__level', 'section', 'subject')
 
         students_by_class = {}
+        class_meta = {}
         for entry in ts_access:
             key = (entry.grade_id, entry.section_id)
             if key not in students_by_class:
@@ -1357,86 +1395,232 @@ def teacher_homework(request):
                     grade_id=entry.grade_id,
                     section_id=entry.section_id,
                     session=current_session,
-                    status=True
+                    status=True,
                 ).select_related('student', 'grade', 'section').order_by('roll_no', 'student__name')
 
-        # Build class->subjects->students mapping
-        grouped_ui = {}
-        for entry in ts_access:
-            key = (entry.grade_id, entry.section_id)
-            school_name = entry.grade.school.name
-            class_name = f"Grade {entry.grade.grade_name} - Section {entry.section.section}"
+            if key not in class_meta:
+                class_meta[key] = {
+                    'school_name': entry.grade.school.name,
+                    'class_name': f"Grade {entry.grade.grade_name} - Section {entry.section.section}",
+                    'subjects': [],
+                    'subject_keys': set(),
+                }
+            subject_key = entry.subject_id or 0
+            if subject_key not in class_meta[key]['subject_keys']:
+                class_meta[key]['subject_keys'].add(subject_key)
+                class_meta[key]['subjects'].append({
+                    'key': subject_key,
+                    'id': entry.subject_id,
+                    'name': entry.subject.subject if entry.subject else 'General',
+                })
 
-            if key not in grouped_ui:
-                grouped_ui[school_name] = {}
+        def parse_homework_json(value):
+            try:
+                data = json.loads(value or '{}')
+            except (json.JSONDecodeError, TypeError):
+                return {}
+            return data if isinstance(data, dict) else {}
 
-            if class_name not in grouped_ui[school_name]:
-                grouped_ui[school_name][class_name] = []
+        def build_homework_map():
+            if not class_meta:
+                return {}
+            return {
+                (homework.grade_id, homework.section_id): homework
+                for homework in Homework.objects.filter(
+                    session=current_session,
+                    grade_id__in=[key[0] for key in class_meta],
+                    section_id__in=[key[1] for key in class_meta],
+                    nepali_date=bs_date,
+                )
+            }
 
-            students = students_by_class.get(key, [])
+        def own_text(homework_map, key, subject_key):
+            homework = homework_map.get(key)
+            if not homework:
+                return ''
+            bucket = parse_homework_json(homework.homework).get(str(subject_key), '')
+            if isinstance(bucket, str):
+                return bucket
+            if not isinstance(bucket, dict):
+                return ''
+            mine = bucket.get(str(user.id))
+            if isinstance(mine, dict):
+                return mine.get('text', '') or ''
+            if isinstance(mine, str):
+                return mine
+            direct = bucket.get('text')
+            if isinstance(direct, str):
+                return direct
+            return ''
 
-            grouped_ui[school_name][class_name].append({
-                'subject': entry.subject,
-                'grade_id': entry.grade_id,
-                'section_id': entry.section_id,
-                'students': students,
-                'entry': entry,
+        def build_grouped_ui(homework_map):
+            grouped = {}
+            for key, meta in class_meta.items():
+                rows = []
+                for subject in meta['subjects']:
+                    rows.append({
+                        'subject': subject['name'],
+                        'students_count': len(students_by_class.get(key, [])),
+                        'field_name': f"homework_{key[0]}_{key[1]}_{subject['key']}",
+                        'text': own_text(homework_map, key, subject['key']),
+                    })
+                grouped.setdefault(meta['school_name'], {})[meta['class_name']] = {'subjects': rows}
+            return grouped
+
+        homework_map = build_homework_map()
+        teacher_name = user.get_full_name() or user.username
+
+        if request.method == "POST" and request.POST.get("action") == "save_homework":
+            saved_classes = 0
+            changed = 0
+
+            for key, meta in class_meta.items():
+                grade_id, section_id = key
+                entries = []
+                for subject in meta['subjects']:
+                    field_name = f"homework_{grade_id}_{section_id}_{subject['key']}"
+                    text = (request.POST.get(field_name) or '').replace('\r\n', '\n').strip()
+                    entries.append((subject, text))
+
+                homework = homework_map.get(key)
+                if not homework and not any(text for _subject, text in entries):
+                    continue
+
+                if not homework:
+                    homework = Homework(
+                        session=current_session,
+                        grade_id=grade_id,
+                        section_id=section_id,
+                        nepali_date=bs_date,
+                        homework='{}',
+                    )
+                homework.date = ad_date
+                homework.save()
+                hw_dict = parse_homework_json(homework.homework)
+
+                for subject, text in entries:
+                    subject_id = subject['id']
+                    if not subject_id:
+                        if text:
+                            hw_dict['0'] = text
+                        else:
+                            hw_dict.pop('0', None)
+                        continue
+
+                    subject_key = str(subject_id)
+                    bucket = hw_dict.get(subject_key)
+                    if isinstance(bucket, str):
+                        bucket = {'legacy': {'text': bucket, 'teacher_name': 'Imported'}}
+                    elif not isinstance(bucket, dict):
+                        bucket = {}
+
+                    own_key = str(user.id)
+                    old_value = bucket.get(own_key)
+                    if isinstance(old_value, dict):
+                        old_text = old_value.get('text', '') or ''
+                    elif isinstance(old_value, str):
+                        old_text = old_value
+                    else:
+                        old_text = ''
+
+                    if text:
+                        bucket[own_key] = {'text': text, 'teacher_name': teacher_name}
+                        hw_dict[subject_key] = bucket
+                    else:
+                        bucket.pop(own_key, None)
+                        if bucket:
+                            hw_dict[subject_key] = bucket
+                        else:
+                            hw_dict.pop(subject_key, None)
+
+                    entry = HomeworkEntry.objects.filter(
+                        homework=homework, subject_id=subject_id
+                    ).first()
+
+                    if text:
+                        if entry:
+                            if entry.homework_text != text:
+                                HomeworkEntryAuditLog.objects.create(
+                                    entry=entry,
+                                    changed_by=user,
+                                    old_text=entry.homework_text,
+                                    new_text=text,
+                                    source='webview',
+                                )
+                                entry.homework_text = text
+                                changed += 1
+                            if entry.added_by_id != user.id or entry.teacher_name != teacher_name:
+                                entry.added_by = user
+                                entry.teacher_name = teacher_name
+                            entry.save()
+                        else:
+                            entry = HomeworkEntry.objects.create(
+                                homework=homework,
+                                subject_id=subject_id,
+                                homework_text=text,
+                                added_by=user,
+                                teacher_name=teacher_name,
+                            )
+                            HomeworkEntryAuditLog.objects.create(
+                                entry=entry,
+                                changed_by=user,
+                                old_text='',
+                                new_text=text,
+                                source='webview',
+                            )
+                            changed += 1
+                    elif entry:
+                        remaining = ''
+                        remaining_bucket = hw_dict.get(subject_key)
+                        if isinstance(remaining_bucket, dict) and remaining_bucket:
+                            first = next(iter(remaining_bucket.values()))
+                            if isinstance(first, dict):
+                                remaining = first.get('text', '') or ''
+                            elif isinstance(first, str):
+                                remaining = first
+                        if remaining:
+                            entry.homework_text = remaining
+                            entry.save(update_fields=['homework_text'])
+                        else:
+                            entry.delete()
+
+                homework.homework = json.dumps(hw_dict)
+                homework.save()
+                saved_classes += 1
+
+            if saved_classes:
+                class_word = 'class' if saved_classes == 1 else 'classes'
+                message = f"Homework saved for {saved_classes} {class_word}"
+                if changed:
+                    entry_word = 'entry' if changed == 1 else 'entries'
+                    message += f" ({changed} subject {entry_word} updated)."
+                else:
+                    message += "."
+            else:
+                message = "No homework to save."
+
+            return render(request, "webview/teacher_homework.html", {
+                'is_admin': is_admin,
+                'selected_school': selected_school,
+                'available_schools': available_schools,
+                'selected_date': bs_display,
+                'message': message,
+                'token': token,
+                'grouped_ui': build_grouped_ui(build_homework_map()),
             })
 
-        # POST: Save homework
-        if request.method == "POST":
-            action = request.POST.get("action")
-            date = request.POST.get("date")
+        if request.method == "POST" and request.POST.get("action") == "cancel":
+            return redirect(request.path)
 
-            if action == "save_homework":
-                saved = 0
-                for (g_id, s_id), ss_list in students_by_class.items():
-                    for ss in ss_list:
-                        reg_no = ss.student.reg_no
-                        homework_text = request.POST.get(f"homework_{reg_no}", "")
-
-                        from sms.models import Homework
-                        from django.utils import timezone
-
-                        # Create or update homework
-                        homework, created = Homework.objects.get_or_create(
-                            session=current_session,
-                            grade_id=g_id,
-                            section_id=s_id,
-                            nepali_date=selected_date,
-                        )
-
-                        # Store homework text (simple string for now)
-                        homework.homework = homework_text
-                        homework.save()
-
-                        saved += 1
-
-                if saved > 0:
-                    message = f"Homework for {saved} students saved successfully."
-                else:
-                    message = "Homework saved successfully."
-
-                return render(request, "webview/teacher_homework.html", {
-                    'is_admin': is_admin,
-                    'selected_school': selected_school,
-                    'selected_date': selected_date,
-                    'message': message,
-                    'token': token,
-                })
-            elif action == "cancel":
-                return redirect(request.path)
-
-        # GET: render form with grouped UI data
-        context = {
+        return render(request, "webview/teacher_homework.html", {
             'is_admin': is_admin,
             'selected_school': selected_school,
-            'selected_date': selected_date,
+            'available_schools': available_schools,
+            'selected_date': bs_display,
             'token': token,
-            'grouped_ui': grouped_ui,
+            'grouped_ui': build_grouped_ui(homework_map),
             'message': "",
-        }
-        return render(request, "webview/teacher_homework.html", context)
+        })
 
     except Exception as exc:
         import traceback
@@ -1447,7 +1631,6 @@ def teacher_homework(request):
             "error_title": "Server Error",
             "error_message": "An unexpected error occurred while loading the page. Please contact support."
         })
-    return render(request, "webview/error.html", {"error_title": "No Content", "error_message": "Unable to load teacher homework. Please ensure you are assigned to a school and students."})
 
 
 def teacher_marks(request):

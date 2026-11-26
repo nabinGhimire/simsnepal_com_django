@@ -9,217 +9,144 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.hamro.com/hamro/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f4f7f6;
-      color: #2c3e50;
-      padding-bottom: 30px;
-    }
-    .header-bar {
-      background: linear-gradient(135deg, #008877, #00a890);
-      color: white;
-      padding: 20px 16px;
-      border-bottom-left-radius: 20px;
-      border-bottom-right-radius: 20px;
-      box-shadow: 0 4px 15px rgba(0,136,119,0.15);
-    }
-    .student-card {
-      background: white;
-      border-radius: 14px;
-      border: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-      margin-top: 16px;
-      overflow: hidden;
-    }
-    .student-header {
-      background-color: #fcfefe;
-      border-bottom: 1px solid #eef3f2;
-      padding: 14px 16px;
-    }
-    .subject-badge {
-      background-color: #e6f3f2;
-      color: #008877;
-      font-weight: 600;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 4px 8px;
-      border-radius: 6px;
-    }
-    .homework-item {
-      padding: 14px 16px;
-      border-bottom: 1px dashed #eef3f2;
-    }
-    .homework-item:last-child {
-      border-bottom: none;
-    }
-  </style>
-  <style>
-    /* Loader overlay */
-    #loader {
-      position: fixed;
-      inset: 0;
-      background: rgba(255,255,255,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      backdrop-filter: blur(4px);
-    }
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid #008877;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    body {font-family: 'Inter', sans-serif; background: #f4f7f6; color: #2c3e50; -webkit-tap-highlight-color: transparent;}
+    .header-bar {background: linear-gradient(135deg, #008877, #00a890); color: #fff; padding: 18px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,136,119,.18);}
+    .filter-card {background: #fff; border: 0; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.05); padding: 12px; margin-top: 12px;}
+    .filter-card label {font-size: .75rem; font-weight: 600; color: #6c757d; margin-bottom: 4px;}
+    .filter-card .form-control {font-size: 16px; border-radius: 10px;}
+    .student-card {background: #fff; border: 0; border-radius: 16px; box-shadow: 0 3px 14px rgba(0,0,0,.05); margin-top: 12px; overflow: hidden;}
+    .student-header {display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: #fcfefe; border-bottom: 1px solid #eef3f2;}
+    .student-avatar {flex: 0 0 52px; width: 52px; height: 52px; border-radius: 50%; background: #008877; color: #fff; display: flex; align-items: center; justify-content: center; font-size: .95rem; font-weight: 700; overflow: hidden;}
+    .student-avatar img {width: 100%; height: 100%; object-fit: cover;}
+    .student-name {font-size: 1rem; font-weight: 700; margin: 0;}
+    .student-meta {font-size: .75rem; color: #6c757d; margin-top: 2px;}
+    .class-chip {display: inline-block; font-size: .7rem; font-weight: 600; color: #008877; background: #e6f3f2; padding: 3px 9px; border-radius: 999px; margin-top: 6px;}
+    .homework-item {padding: 14px 16px; border-bottom: 1px dashed #eef3f2;}
+    .homework-item:last-child {border-bottom: 0;}
+    .subject-badge {display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #008877; background: #e6f3f2; padding: 5px 10px; border-radius: 8px;}
+    .hw-entry {font-size: .92rem; line-height: 1.55; word-break: break-word; overflow-wrap: anywhere;}
+    .hw-entry + .hw-entry {margin-top: 12px; padding-top: 12px; border-top: 1px dashed #eef3f2;}
+    .teacher-note {font-size: .75rem; color: #6c757d; margin-top: 5px;}
+    .empty-state {text-align: center; padding: 22px 16px; color: #6c757d;}
+    .empty-state i {font-size: 2rem; display: block; margin-bottom: 6px;}
+    .vacation-block {background: #fff8e1; border-top: 2px solid #f59f00; padding: 12px 14px 4px;}
+    .vacation-title {display: flex; align-items: center; gap: 6px; font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #b45309; margin-bottom: 8px;}
+    .vacation-card {background: #fff; border: 1px solid #fde68a; border-radius: 10px; margin-bottom: 8px; overflow: hidden;}
+    .vacation-head {display: flex; justify-content: space-between; gap: 8px; background: #fef9c3; padding: 7px 12px; border-bottom: 1px solid #fde68a; font-size: .76rem;}
+    .vacation-assigned {font-weight: 600; color: #78350f;}
+    .vacation-due {font-weight: 700; color: #b42318; background: #fee2e2; padding: 2px 8px; border-radius: 4px; white-space: nowrap;}
+    .vacation-body {padding: 8px 12px; border-bottom: 1px dashed #fde68a;}
+    .vacation-body:last-child {border-bottom: 0;}
+    .hw-md-text p {margin: 0 0 4px;}
+    .hw-md-text ul, .hw-md-text ol {padding-left: 18px; margin: 4px 0;}
+    .hw-md-text li {margin-bottom: 2px;}
+    .hw-md-text strong {font-weight: 700;}
+    .hw-md-text em {font-style: italic;}
+    .hw-md-text hr {border: 0; border-top: 1px solid #dbe4e2; margin: 8px 0;}
+    .hw-md-text code {background: rgba(0,0,0,.06); border-radius: 3px; padding: 1px 4px; font-size: .85em;}
+    .hw-md-text a {color: #008877;}
   </style>
 </head>
 <body>
 
   <div class="header-bar">
     <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h4 class="mb-0 fw-bold">Hamro School Portal</h4>
-        <small class="opacity-75">Daily Homework Dashboard</small>
-      </div>
-      <div class="text-end">
-        <span class="badge bg-white-lt text-white px-2 py-1"><i class="ti ti-phone me-1"></i>{{ parent_phone }}</span>
-      </div>
+      <div><h4 class="mb-0 fw-bold">Daily Homework</h4><small class="opacity-75">Hamro School Portal</small></div>
+      {% if parent_phone %}<span class="badge bg-white-lt text-dark px-2 py-1"><i class="ti ti-phone me-1"></i>{{ parent_phone }}</span>{% endif %}
     </div>
   </div>
 
-  <div class="container-xl px-3">
-    <!-- Date selector -->
-    <div class="card mt-3 border-0 shadow-sm" style="border-radius: 12px;">
-      <div class="card-body p-3">
-        <form method="GET" action="">
-          <label class="form-label fw-semibold text-secondary mb-1">Select Nepali Date</label>
-          <div class="input-group">
-            <input type="text" id="nepali-datepicker" name="date" class="form-control" value="{{ selected_date }}" readonly placeholder="YYYY-MM-DD">
-            <button type="submit" class="btn btn-teal text-white" style="background-color: #008877;">
-              <i class="ti ti-calendar-search me-1"></i>View
-            </button>
+  <div class="container-xl px-3 pb-4">
+    <form method="GET" action="" class="filter-card">
+      <label class="form-label" for="nepali-datepicker">Date (Nepali)</label>
+      <div class="d-flex gap-2">
+        <input type="text" id="nepali-datepicker" name="date" class="form-control" value="{{ selected_date }}" readonly placeholder="YYYY-MM-DD">
+        <button type="submit" class="btn btn-teal px-3" style="border-radius: 10px;"><i class="ti ti-calendar-search me-1"></i>View</button>
+      </div>
+      {% if token %}<input type="hidden" name="token" value="{{ token }}">{% endif %}
+      {% if parent_phone %}<input type="hidden" name="parent_phone" value="{{ parent_phone }}">{% endif %}
+    </form>
+
+    {% if student_homeworks %}
+      {% for entry in student_homeworks %}
+        <div class="student-card">
+          <div class="student-header">
+            <div class="student-avatar">
+              {% with avatar=entry.student.get_avatar %}
+                {% if avatar and avatar.url %}
+                  <img src="{{ avatar.url }}" alt="{{ entry.student.name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                  <span style="display:none">{{ entry.student.name|slice:":2" }}</span>
+                {% else %}
+                  <span>{{ entry.student.name|slice:":2" }}</span>
+                {% endif %}
+              {% endwith %}
+            </div>
+            <div class="min-w-0">
+              <h3 class="student-name text-dark">{{ entry.student.name }}</h3>
+              {% if entry.student.school.name %}<div class="student-meta">{{ entry.student.school.name }}</div>{% endif %}
+              <span class="class-chip">Grade {{ entry.grade }} &middot; Section {{ entry.section }}</span>
+            </div>
           </div>
-          {% if token %}
-            <input type="hidden" name="token" value="{{ token }}">
-          {% endif %}
-          {% if parent_phone %}
-            <input type="hidden" name="parent_phone" value="{{ parent_phone }}">
-          {% endif %}
-        </form>
-      </div>
-    </div>
 
-    <!-- Student Cards -->
-    <div id="loader"><div class="spinner"></div></div>
-    {% for entry in student_homeworks %}
-    <div class="student-card card">
-      <div class="student-header d-flex justify-content-between align-items-center">
-        <div>
-          <h3 class="mb-0 fw-bold text-dark">{{ entry.student.name }}</h3>
-          <small class="fw-bold text-teal" style="color: #008877;">{{ entry.student.school.name }}</small><br>
-          <small class="text-secondary">Grade {{ entry.grade }} - Section {{ entry.section }}</small>
-        </div>
-        <div class="avatar avatar-md rounded-circle" style="background-color: #008877;">
-          {% with avatar=entry.student.get_avatar current_session=current_session %}
-            {% if avatar and avatar.url %}
-              <img src="{{ avatar.url }}" alt="{{ entry.student.name }}" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">
-            {% else %}
-              <span class="text-white fw-bold" style="font-size: 1.5rem;">{{ entry.student.name|slice:":2" }}</span>
-            {% endif %}
-          {% endwith %}
-        </div>
-      </div>
-
-      <div class="card-body p-0">
-        {% if entry.homeworks %}
-          {% for hw in entry.homeworks %}
-            <div class="homework-item">
-              <div class="d-flex align-items-center mb-2">
-                <span class="subject-badge">{{ hw.subject }}</span>
-              </div>
-              {% for e in hw.entries %}
-                <div class="mb-{% if not forloop.last %}3{% else %}1{% endif %}">
-                  <div class="hw-md-text text-dark" style="font-size: 0.95rem; line-height: 1.5;"><pre class="md-src" style="display:none">{{ e.text }}</pre></div>
-                  {% if e.teacher_name %}
-                    <div class="text-muted mt-1" style="font-size: 0.8rem;"><i class="ti ti-user-edit me-1"></i>Assigned by {{ e.teacher_name }}</div>
-                  {% endif %}
+          <div>
+            {% if entry.homeworks %}
+              {% for hw in entry.homeworks %}
+                <div class="homework-item">
+                  <div class="mb-2"><span class="subject-badge">{{ hw.subject }}</span></div>
+                  {% for e in hw.entries %}
+                    <div class="hw-entry">
+                      {% if e.teacher_name %}<div class="teacher-note"><i class="ti ti-user-edit me-1"></i>Assigned by {{ e.teacher_name }}</div>{% endif %}
+                      <div class="hw-md-text"><pre class="md-src" style="display:none">{{ e.text }}</pre></div>
+                    </div>
+                  {% endfor %}
                 </div>
               {% endfor %}
-            </div>
-          {% endfor %}
-        {% else %}
-          <div class="text-center p-4">
-            <div class="text-secondary mb-2" style="font-size: 2rem;"><i class="ti ti-notebook-off"></i></div>
-            <p class="text-secondary mb-0">No homework assigned for this date.</p>
-          </div>
-        {% endif %}
+            {% else %}
+              <div class="empty-state"><i class="ti ti-notebook-off"></i>No homework assigned for this date.</div>
+            {% endif %}
 
-        {# ── Vacation / long-term homework still active ── #}
-        {% if entry.vacation_homeworks %}
-        <div style="background:#fff8e1;border-top:2px solid #f59f00;padding:10px 14px 4px 14px;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-            <span style="font-size:1rem;">🏖️</span>
-            <span style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#b45309;">Vacation / Long-term Homework</span>
-          </div>
-          {% for ventry in entry.vacation_homeworks %}
-          <div style="background:white;border-radius:10px;border:1px solid #fde68a;margin-bottom:8px;overflow:hidden;">
-            <div style="background:#fef9c3;padding:6px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fde68a;">
-              <span style="font-size:0.78rem;font-weight:600;color:#78350f;">
-                <i class="ti ti-calendar-event me-1"></i>Assigned: {{ ventry.assigned_date }}
-              </span>
-              <span style="font-size:0.78rem;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 8px;border-radius:4px;">
-                Due: {{ ventry.due_date }}
-              </span>
-            </div>
-            {% for hw in ventry.homeworks %}
-            <div style="padding:8px 12px;border-bottom:1px dashed #fde68a;">
-              <div style="margin-bottom:4px;">
-                <span style="background:#e6f3f2;color:#008877;font-weight:600;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;padding:2px 7px;border-radius:4px;">{{ hw.subject }}</span>
+            {% if entry.vacation_homeworks %}
+              <div class="vacation-block">
+                <div class="vacation-title"><span>🏖️</span><span>Vacation / Long-term Homework</span></div>
+                {% for ventry in entry.vacation_homeworks %}
+                  <div class="vacation-card">
+                    <div class="vacation-head">
+                      <span class="vacation-assigned"><i class="ti ti-calendar-event me-1"></i>Assigned: {{ ventry.assigned_date }}</span>
+                      <span class="vacation-due">Due: {{ ventry.due_date }}</span>
+                    </div>
+                    {% for hw in ventry.homeworks %}
+                      <div class="vacation-body">
+                        <div class="mb-1"><span class="subject-badge">{{ hw.subject }}</span></div>
+                        {% for e in hw.entries %}
+                          <div class="hw-entry">
+                            {% if e.teacher_name %}<div class="teacher-note"><i class="ti ti-user-edit me-1"></i>{{ e.teacher_name }}</div>{% endif %}
+                            <div class="hw-md-text"><pre class="md-src" style="display:none">{{ e.text }}</pre></div>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endfor %}
               </div>
-              {% for e in hw.entries %}
-              <div class="hw-md-text" style="font-size:0.9rem;color:#1c1c1c;line-height:1.5;margin-top:4px;"><pre class="md-src" style="display:none">{{ e.text }}</pre></div>
-              {% if e.teacher_name %}<div style="font-size:0.75rem;color:#888;margin-top:2px;"><i class="ti ti-user-edit me-1"></i>{{ e.teacher_name }}</div>{% endif %}
-              {% endfor %}
-            </div>
-            {% endfor %}
+            {% endif %}
           </div>
-          {% endfor %}
         </div>
-        {% endif %}
-
-      </div>
-    </div>
-    {% endfor %}
+      {% endfor %}
+    {% else %}
+      <div class="student-card"><div class="empty-state"><i class="ti ti-users"></i>No student profiles are linked to this account.</div></div>
+    {% endif %}
   </div>
 
   <script src="https://cdn.hamro.com/hamro/js/nepali.datepicker.v4.0.1.min.js" type="text/javascript"></script>
-  <script type="text/javascript">
-    window.onload = function() {
-      const pickerElement = document.getElementById("nepali-datepicker");
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    window.onload = function () {
+      var pickerElement = document.getElementById("nepali-datepicker");
       if (pickerElement) {
-        pickerElement.nepaliDatePicker({
-          ndpYear: true,
-          ndpMonth: true,
-          ndpYearCount: 20,
-          readOnlyInput: true
-        });
+        pickerElement.nepaliDatePicker({ ndpYear: true, ndpMonth: true, ndpYearCount: 20, readOnlyInput: true });
       }
     };
   </script>
-  <script>
-    // Hide loader after content is ready
-    document.addEventListener('DOMContentLoaded', function() {
-      var loader = document.getElementById('loader');
-      if (loader) loader.style.display = 'none';
-    });
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof marked === 'undefined') return;
@@ -229,14 +156,6 @@
       });
     });
   </script>
-  <style>
-    .hw-md-text p { margin: 0 0 4px; }
-    .hw-md-text ul, .hw-md-text ol { padding-left: 18px; margin: 4px 0; }
-    .hw-md-text li { margin-bottom: 2px; }
-    .hw-md-text strong { font-weight: 700; }
-    .hw-md-text em { font-style: italic; }
-    .hw-md-text hr { border: none; border-top: 1px solid #ddd; margin: 6px 0; }
-    .hw-md-text code { background: rgba(0,0,0,0.06); border-radius: 3px; padding: 1px 4px; font-size: 0.85em; }
-  </style>
+
 </body>
 </html>

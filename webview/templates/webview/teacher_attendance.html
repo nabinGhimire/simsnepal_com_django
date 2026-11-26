@@ -9,15 +9,52 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.hamro.com/hamro/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
   <style>
-    body {font-family: 'Inter', sans-serif; background-color: #f4f7f6; color: #2c3e50; padding-bottom: 40px;}
-    .header-bar {background: linear-gradient(135deg, #6c757d, #5a6268); color: white; padding: 20px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);}
-    .sticky-footer {position: fixed; bottom: 0; left: 0; right: 0; background: #f8f9fa; padding: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); z-index: 1000;}
-    .attendance-card {border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; padding: 12px; background: #fff;}
-    .student-row {border-bottom: 1px solid #f0f0f0; padding: 8px 0;}
-    .status-badge {display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 500;}
-    .status-present {background: #d4edda; color: #155724;}
-    .status-absent {background: #f8d7da; color: #721c24;}
-    .status-informed {background: #fff3cd; color: #856404;}
+    body {font-family: 'Inter', sans-serif; background: #f4f7f6; color: #2c3e50; padding-bottom: 88px; -webkit-tap-highlight-color: transparent;}
+    .header-bar {background: linear-gradient(135deg, #6c757d, #5a6268); color: #fff; padding: 18px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,.15);}
+    .filter-card {background: #fff; border: 0; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.05); padding: 12px; margin-bottom: 12px;}
+    .filter-card label {font-size: .75rem; font-weight: 600; color: #6c757d; margin-bottom: 4px;}
+    .filter-card .form-control, .filter-card .form-select {font-size: 16px; border-radius: 10px;}
+    .bulk-bar {position: sticky; top: 0; z-index: 20; display: flex; gap: 8px; overflow-x: auto; background: #fff; border: 1px solid #e3eae9; border-radius: 14px; padding: 10px; margin-bottom: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.06); scrollbar-width: none;}
+    .bulk-bar::-webkit-scrollbar {display: none;}
+    .bulk-btn {flex: 1 0 auto; min-width: 104px; padding: 10px 12px; border-radius: 10px; border: 1px solid #dbe4e2; background: #fff; color: #374151; font-size: .85rem; font-weight: 600; white-space: nowrap;}
+    .bulk-btn i {vertical-align: -2px; margin-right: 4px;}
+    .bulk-btn.present {border-color: #b7e4cd; background: #eaf8f0; color: #0a7448;}
+    .bulk-btn.absent {border-color: #f3c7c7; background: #fdeeee; color: #b42318;}
+    .bulk-btn.informed {border-color: #f2d9a8; background: #fff6e6; color: #946200;}
+    .class-header {display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px;}
+    .class-header h4 {font-size: 1rem; margin: 0; font-weight: 700;}
+    .class-header small {font-size: .72rem; color: #6c757d;}
+    .student-card {display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px; margin-bottom: 8px; background: #fff; border: 1px solid #e4ebea; border-radius: 14px; cursor: pointer; transition: background .15s, border-color .15s, transform .1s;}
+    .student-card:active {transform: scale(.995);}
+    .student-card.absent {background: #fff8f8; border-color: #f3c7c7;}
+    .student-card.informed {border-left: 4px solid #e0a800;}
+    .student-avatar {flex: 0 0 42px; width: 42px; height: 42px; border-radius: 50%; background: #008877; color: #fff; display: flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 700; overflow: hidden;}
+    .student-avatar img {width: 100%; height: 100%; object-fit: cover;}
+    .student-info {flex: 1 1 130px; min-width: 0;}
+    .student-name {font-size: .95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+    .student-sub {font-size: .75rem; color: #6c757d; margin-top: 2px;}
+    .informed-chips {display: flex; gap: 6px; margin-top: 6px;}
+    .student-card:not(.absent) .informed-chips {display: none;}
+    .chip {padding: 3px 9px; border-radius: 999px; border: 1px solid #dbe4e2; background: #fff; font-size: .7rem; font-weight: 600; color: #6c757d;}
+    .chip.active {background: #fff1cf; border-color: #e0a800; color: #8a5b00;}
+    .card-actions {display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: 0 0 auto;}
+    .status-pill {display: inline-block; min-width: 66px; text-align: center; padding: 6px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700;}
+    .status-pill.present {background: #e6f7ef; color: #0a7448;}
+    .status-pill.absent {background: #fdecec; color: #b42318;}
+    .icon-btn {width: 38px; height: 38px; border-radius: 10px; border: 1px solid #dbe4e2; background: #fff; color: #008877; display: inline-flex; align-items: center; justify-content: center;}
+    .icon-btn.has-remarks {background: #eaf8f0; border-color: #b7e4cd;}
+    .remarks-panel {flex: 1 0 100%; max-height: 0; overflow: hidden; transition: max-height .22s ease;}
+    .student-card.remarks-open .remarks-panel {max-height: 240px;}
+    .remarks-panel-inner {padding-top: 6px;}
+    .auto-grow {display: block; width: 100%; font-size: 16px; line-height: 1.4; min-height: 42px; max-height: 200px; padding: 9px 10px; border: 1px solid #ced9d7; border-radius: 10px; resize: none; overflow-y: auto;}
+    .save-bar {position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; align-items: center; gap: 12px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: #fff; box-shadow: 0 -4px 16px rgba(0,0,0,.08);}
+    .save-summary {flex: 1; font-size: .78rem; color: #6c757d; line-height: 1.3;}
+    .save-summary strong {color: #2c3e50;}
+    .bottom-spacer {height: 96px;}
+    @media (max-width: 576px) {
+      body {padding-bottom: calc(96px + env(safe-area-inset-bottom));}
+      .bottom-spacer {height: 144px;}
+    }
   </style>
 </head>
 <body>
@@ -30,62 +67,202 @@
   </div>
 
   <div class="container-xl px-3 mt-3">
-    {% if message %}<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 10px;"><div class="d-flex"><i class="ti ti-circle-check-filled me-2" style="font-size: 1.25rem;"></i><div>{{ message }}</div></div><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endif %}
+    {% if message %}<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 12px;"><div class="d-flex"><i class="ti ti-circle-check-filled me-2" style="font-size: 1.25rem;"></i><div>{{ message }}</div></div><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endif %}
 
-    {% if available_schools|length > 1 and not selected_school %}
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;"><div class="card-body p-3"><form method="GET" action="" id="schoolForm"><input type="hidden" name="token" value="{{ token }}"><label class="form-label fw-semibold text-secondary mb-1">Select School</label><select name="school_id" class="form-select form-select-sm" onchange="this.form.submit();"><option value="">-- Select School --{% for school in available_schools %}<option value="{{ school.id }}" {% if school.id == selected_school.id %}selected{% endif %}{{ school.name }}{% endfor %}</select></form></div></div>{% endif %}
+    <!-- Filters: school + date (auto-submits on change) -->
+    <form method="GET" action="" id="filterForm" class="filter-card">
+      <input type="hidden" name="token" value="{{ token }}">
+      {% if available_schools|length > 1 %}
+        <label class="form-label" for="schoolFilter">School</label>
+        <select name="school_id" id="schoolFilter" class="form-select form-select-sm mb-3" onchange="this.form.submit();">
+          {% for school in available_schools %}<option value="{{ school.id }}" {% if school.id == selected_school.id %}selected{% endif %}>{{ school.name }}</option>{% endfor %}
+        </select>
+      {% else %}
+        <input type="hidden" name="school_id" value="{{ selected_school.id }}">
+      {% endif %}
+      <label class="form-label" for="dateInput">Date (Nepali)</label>
+      <div class="d-flex gap-2">
+        <input type="text" name="date" id="dateInput" class="form-control form-control-sm" value="{{ selected_date }}" placeholder="YYYY-MM-DD" readonly onchange="this.form.submit();">
+        <button type="submit" class="btn btn-teal btn-sm px-3" style="border-radius: 10px;">Go</button>
+      </div>
+    </form>
 
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;"><div class="card-body p-3"><form method="GET" action="" id="dateForm"><input type="hidden" name="token" value="{{ token }}"><input type="hidden" name="school_id" value="{% if selected_school %}{{ selected_school.id }}{% endif %}"><label class="form-label fw-semibold text-secondary mb-1">Select Date</label><input type="text" name="date" id="dateInput" class="form-control form-control-sm" value="{{ selected_date }}" placeholder="Select date (YYYY-MM-DD)" readonly style="background: #f8f9fa;"><small class="text-secondary">Format: YYYY-MM-DD (e.g., 2083-01-01)</small></form></div></div>
+    <form method="POST" action="" id="attendanceForm">
+      {% csrf_token %}
+      <input type="hidden" name="token" value="{{ token }}">
+      <input type="hidden" name="date" value="{{ selected_date }}">
+      <input type="hidden" name="school_id" value="{{ selected_school.id }}">
 
-    {% if grouped_ui %}
-    <div class="row g-3">
-      {% for school_name, classes in grouped_ui.items %}
-      <div class="col-12"><div class="attendance-card p-4 mb-3"><h4 class="fw-bold text-secondary mb-3"><i class="ti ti-building-community me-2"></i> {{ school_name }}</h5>
-        {% for class_name, class_data in classes.items %}
-        <div class="mb-4"><h5 class="fw-semibold text-dark mb-3"><i class="ti ti-school me-2"></i> {{ class_name }}</h5>
-          {% for entry in class_data %}
-          <div class="attendance-card p-3 mb-3"><h6 class="fw-bold text-primary mb-2"><i class="ti ti-book me-1"></i> {{ entry.subject|default:'All Subjects' }}{% if entry.entry %}(Grade {{ entry.entry.grade_id }}, Section {{ entry.entry.section_id }}){% endif %}</h6>
-            <p class="text-secondary mb-3">Students: {{ entry.students|length }}</p>
-            <table class="table table-sm mb-0"><thead><tr><th>Student</th><th>Roll No</th><th>Status</th><th>Informed</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>
-            {% for ss in entry.students %}
-            <tr class="student-row"><td>{{ ss.student.name }}</td><td>{{ ss.roll_no }}</td><td>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="attendance_{{ ss.student.reg_no }}" value="present" {% if ss.is_present %}checked{% endif %}>
-                <label class="form-check-label" style="color: #155724;"><span class="status-badge status-present">Present</span></label>
+      <!-- Bulk actions -->
+      <div class="bulk-bar">
+        <button type="button" class="bulk-btn present" data-bulk="present"><i class="ti ti-checks"></i> All Present</button>
+        <button type="button" class="bulk-btn absent" data-bulk="absent"><i class="ti ti-x"></i> All Absent</button>
+        <button type="button" class="bulk-btn informed" data-bulk="informed"><i class="ti ti-bell"></i> Absent + Informed</button>
+      </div>
+
+      {% if grouped_ui %}
+        {% for school_name, classes in grouped_ui.items %}
+          {% for class_name, info in classes.items %}
+            <div class="card border-0 shadow-sm mb-3" style="border-radius: 14px; overflow: hidden;">
+              <div class="card-header bg-light border-0 py-2 px-3">
+                <div class="class-header"><h4 class="text-dark">{{ class_name }}</h4>{% if info.subjects %}<small>{{ info.subjects|join:", " }}</small>{% endif %}</div>
               </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="attendance_{{ ss.student.reg_no }}" value="absent" {% if not ss.is_present %}checked{% endif %}>
-                <label class="form-check-label" style="color: #721c24;"><span class="status-badge status-absent">Absent</span></label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="attendance_{{ ss.student.reg_no }}" value="informed" {% if ss.absent_informed %}checked{% endif %}>
-                <label class="form-check-label" style="color: #856404;"><span class="status-badge status-informed">Informed</span></label>
-              </div>
-            </td><td><input type="checkbox" name="informed_{{ ss.student.reg_no }}" value="yes" {% if ss.absent_informed %}checked{% endif %}></td><td><input type="text" name="remarks_{{ ss.student.reg_no }}" class="form-control form-control-sm" placeholder="Remarks..." value="{{ ss.remarks }}"></td><td><button type="submit" name="action" value="save_attendance" class="btn btn-teal btn-sm" style="border-radius: 4px;"><i class="ti ti-save me-1"></i> Save</button></td></tr>
-            {% empty %}<td colspan="6" class="text-center py-4">No students</td>{% endfor %}</tbody></table>
-          </div>
-          {% endfor %}</div>
-        </div>
-      {% endfor %}</div>
-      {% endfor %}</div>
-      {% else %}<div class="card border-0 shadow-sm text-center p-5" style="border-radius: 12px;"><h3 class="fw-bold text-dark">No Classes Assigned</h3><p class="text-secondary mb-0">You have no subjects or classes assigned. Please contact the administrator.</p></div>{% endif %}
+              <div class="card-body p-2 px-3">
+                {% for row in info.students %}
+                  <div class="student-card {% if not row.is_present %}absent{% endif %} {% if row.absent_informed %}informed{% endif %}" data-reg="{{ row.reg_no }}" role="button" tabindex="0" aria-label="Toggle attendance for {{ row.student.name }}">
+                    <input type="hidden" name="attendance_{{ row.reg_no }}" value="{% if row.is_present %}present{% else %}absent{% endif %}">
+                    <input type="hidden" name="informed_{{ row.reg_no }}" value="{% if row.absent_informed %}yes{% else %}no{% endif %}">
 
-    <div class="d-flex justify-content-end mb-3">{% if action != "cancel" %}<button type="submit" name="action" value="cancel" class="btn btn-secondary me-2">Cancel</button>{% endif %}</div>
+                    <div class="student-avatar">
+                      {% with avatar=row.student.get_avatar %}
+                        {% if avatar and avatar.url %}
+                          <img src="{{ avatar.url }}" alt="{{ row.student.name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                          <span style="display:none">{{ row.student.name|slice:":2" }}</span>
+                        {% else %}
+                          <span>{{ row.student.name|slice:":2" }}</span>
+                        {% endif %}
+                      {% endwith %}
+                    </div>
+
+                    <div class="student-info">
+                      <div class="student-name">{{ row.student.name }}</div>
+                      <div class="student-sub">Roll {{ row.roll_no|default:"-" }} &middot; Reg {{ row.reg_no }}</div>
+                      <div class="informed-chips" data-no-toggle>
+                        <button type="button" class="chip {% if not row.absent_informed %}active{% endif %}" data-informed="no" aria-label="Mark absent as uninformed">Uninformed</button>
+                        <button type="button" class="chip {% if row.absent_informed %}active{% endif %}" data-informed="yes" aria-label="Mark absent as informed">Informed</button>
+                      </div>
+                    </div>
+
+                    <div class="card-actions">
+                      <span class="status-pill {% if row.is_present %}present{% else %}absent{% endif %}" data-role="status">{% if row.is_present %}Present{% else %}Absent{% endif %}</span>
+                      <button type="button" class="icon-btn {% if row.remarks %}has-remarks{% endif %}" data-role="remarks" data-no-toggle aria-label="Add remark for {{ row.student.name }}"><i class="ti ti-notes"></i></button>
+                    </div>
+
+                    <div class="remarks-panel" data-no-toggle>
+                      <div class="remarks-panel-inner">
+                        <textarea name="remarks_{{ row.reg_no }}" class="auto-grow" rows="1" placeholder="Add a remark (Enter for a new line)..." maxlength="255">{{ row.remarks }}</textarea>
+                      </div>
+                    </div>
+                  </div>
+                {% empty %}
+                  <div class="text-center text-secondary py-4">No students in this class.</div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        {% endfor %}
+      {% else %}
+        <div class="card border-0 shadow-sm text-center p-5" style="border-radius: 14px;"><h3 class="fw-bold text-dark">No Classes Assigned</h3><p class="text-secondary mb-0">You have no subjects or classes assigned. Please contact the administrator.</p></div>
+      {% endif %}
+
+      <!-- Keeps the final student card above the fixed Save bar on small screens. -->
+      <div class="bottom-spacer" aria-hidden="true"></div>
+
+      <div class="save-bar">
+        <div class="save-summary" id="saveSummary">Tap a student to toggle status. Use <strong>remarks</strong> for notes.</div>
+        <button type="submit" name="action" value="save_attendance" class="btn btn-teal fw-bold px-4" style="border-radius: 10px;"><i class="ti ti-device-floppy me-1"></i> Save</button>
+      </div>
+    </form>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.hamro.com/hamro/js/nepali.datepicker.v4.0.1.min.js" type="text/javascript"></script>
-  <script type="text/javascript">
-    if (typeof NepaliDatepicker !== 'undefined') {
-      const dateInput = document.getElementById('dateInput');
-      if (dateInput) { new NepaliDatepicker(dateInput, { buttonClass: 'btn btn-link text-primary', format: 'Y-m-d' }); }
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-      const dateInput = document.getElementById('dateInput');
-      if (dateInput && !dateInput.value) {
-        const today = new Date(); const y = today.getFullYear(); const m = String(today.getMonth() + 1).padStart(2, '0'); const d = String(today.getDate()).padStart(2, '0'); dateInput.value = `${y}-${m}-${d}`;
+  <script>
+    (function () {
+      var form = document.getElementById('attendanceForm');
+      if (!form) return;
+
+      var cards = Array.prototype.slice.call(form.querySelectorAll('.student-card'));
+
+      function autoGrow(el) {
+        el.style.height = 'auto';
+        // scrollHeight includes padding; add borders so multiline text is not clipped.
+        el.style.height = Math.min(el.scrollHeight + 2, 200) + 'px';
       }
-    });
+
+      function setStatus(card, status) {
+        var present = status === 'present';
+        card.classList.toggle('absent', !present);
+        if (present) {
+          card.classList.remove('informed');
+          setInformed(card, 'no');
+        }
+        card.querySelector('[data-role="status"]').textContent = present ? 'Present' : 'Absent';
+        card.querySelector('[data-role="status"]').className = 'status-pill ' + (present ? 'present' : 'absent');
+        card.querySelector('input[name^="attendance_"]').value = present ? 'present' : 'absent';
+        updateSummary();
+      }
+
+      function setInformed(card, value) {
+        var yes = value === 'yes';
+        card.classList.toggle('informed', yes);
+        card.querySelector('input[name^="informed_"]').value = yes ? 'yes' : 'no';
+        card.querySelectorAll('[data-informed]').forEach(function (chip) {
+          chip.classList.toggle('active', (chip.getAttribute('data-informed') === 'yes') === yes);
+        });
+      }
+
+      function updateSummary() {
+        var present = 0, absent = 0, notes = 0;
+        cards.forEach(function (card) {
+          if (card.querySelector('input[name^="attendance_"]').value === 'present') present++; else absent++;
+          if (card.querySelector('textarea[name^="remarks_"]').value.trim()) notes++;
+        });
+        var summary = document.getElementById('saveSummary');
+        if (summary) {
+          summary.innerHTML = '<strong>' + present + '</strong> present &middot; <strong>' + absent + '</strong> absent' + (notes ? ' &middot; <strong>' + notes + '</strong> with remarks' : '');
+        }
+      }
+
+      cards.forEach(function (card) {
+        var statusInput = card.querySelector('input[name^="attendance_"]');
+        var remarksInput = card.querySelector('textarea[name^="remarks_"]');
+
+        remarksInput.addEventListener('input', function () {
+          autoGrow(remarksInput);
+          updateSummary();
+        });
+        autoGrow(remarksInput);
+
+        card.addEventListener('click', function (event) {
+          if (event.target.closest('[data-no-toggle]')) return;
+          setStatus(card, statusInput.value === 'present' ? 'absent' : 'present');
+        });
+
+        card.addEventListener('keydown', function (event) {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          if (event.target.closest('[data-no-toggle]')) return;
+          event.preventDefault();
+          setStatus(card, statusInput.value === 'present' ? 'absent' : 'present');
+        });
+
+        card.querySelector('[data-role="remarks"]').addEventListener('click', function () {
+          var open = card.classList.toggle('remarks-open');
+          if (open) { autoGrow(remarksInput); remarksInput.focus(); }
+        });
+
+        card.querySelectorAll('[data-informed]').forEach(function (chip) {
+          chip.addEventListener('click', function () { setInformed(card, chip.getAttribute('data-informed')); });
+        });
+      });
+
+      form.querySelectorAll('[data-bulk]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var mode = button.getAttribute('data-bulk');
+          cards.forEach(function (card) {
+            if (mode === 'present') setStatus(card, 'present');
+            else { setStatus(card, 'absent'); setInformed(card, mode === 'informed' ? 'yes' : 'no'); }
+          });
+        });
+      });
+
+      updateSummary();
+
+      if (typeof NepaliDatepicker !== 'undefined') {
+        var dateInput = document.getElementById('dateInput');
+        if (dateInput) new NepaliDatepicker(dateInput, { buttonClass: 'btn btn-link text-primary', format: 'Y-m-d' });
+      }
+    })();
   </script>
 
 </body>
