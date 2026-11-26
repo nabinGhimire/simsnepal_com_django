@@ -22,6 +22,116 @@ signer = TimestampSigner(key=settings.SIMS_WEBVIEW_SIGNER_KEY, salt='')
 def get_current_session():
     return EduSession.objects.filter(status=True).first()
 
+def normalize_nepali_phone(phone_str):
+    if not phone_str:
+        return ""
+    phone = str(phone_str).strip()
+    if phone.startswith('+'):
+        phone = phone[1:]
+    if phone.startswith('00'):
+        phone = phone[2:]
+    if phone.startswith('977') and len(phone) > 10:
+        phone = phone[3:]
+    return phone
+
+
+@csrf_exempt
+def generate_auth_token(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST requests allowed"}, status=405)
+        
+    api_key = request.headers.get("X-API-Key")
+    expected_key = getattr(settings, "WEBVIEW_API_KEY", "")
+    if not api_key or api_key != expected_key:
+        return JsonResponse({"error": "Unauthorized API Access"}, status=403)
+        
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        data = request.POST
+
+    phone = data.get("phone")
+    hamro_uuid = data.get("hamro_uuid")
+    username = data.get("username")
+    
+    # response_data = {"exists": False, "roles": []}
+    response_data = {"exists": False, "roles": [], "phone": phone, "hamro_uuid": hamro_uuid, "username": username}
+    
+    if phone:
+        try:
+            normalized_phone = normalize_nepali_phone(phone)
+            phone_int = int(normalized_phone)
+            parent_exists = Student.objects.filter(
+                Q(fathers_phone=phone_int) |
+                Q(mothers_phone=phone_int) |
+                Q(guardian_phone=phone_int),
+                status=True
+            ).exists()
+            if parent_exists:
+                response_data["exists"] = True
+                response_data["roles"].append("parent")
+                response_data["parent_token"] = signer.sign_object({"role": "parent", "phone": str(normalized_phone)})
+        except ValueError:
+            pass
+
+    # Try to find user via hamro_uuid first
+    if hamro_uuid:
+        from sso.models import HamroUserProfile
+        profile = HamroUserProfile.objects.filter(hamro_uuid=hamro_uuid).first()
+        user = profile.user if profile else None
+
+    # If no hamro_uuid, try lookup by phone
+    if not user and phone:
+        from sso.models import HamroUserProfile
+        normalized_phone = normalize_nepali_phone(phone)
+        try:
+            phone_int = int(normalized_phone)
+            profile = HamroUserProfile.objects.filter(mobile_number=phone_int).first()
+            user = profile.user if profile else None
+        except ValueError:
+            user = None
+
+    # If no user yet, try lookup by username
+    if not user and username:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            user = None
+
+    # If user found and has BranchUser record, generate teacher token
+    if user:
+        response_data["exists"] = True
+        response_data["roles"].append("teacher")
+        # Generate a token for teacher access (required by webview apps)
+        response_data["teacher_token"] = signer.sign_object({"role": "teacher", "user_id": user.id})    
+   
+    return JsonResponse(response_data)
+
+
+def validate_webview_token(request, expected_role):
+    token = request.GET.get("token") or request.POST.get("token")
+    if not token:
+        return None
+        
+    try:
+        data = signer.unsign_object(token, max_age=86400)
+    except (BadSignature, SignatureExpired):
+        return None
+        
+    if data.get("role") != expected_role:
+        return None
+        
+    if expected_role == "parent":
+        return data.get("phone")
+    elif expected_role == "teacher":
+        user_id = data.get("user_id")
+        return User.objects.filter(id=user_id).first()
+        
+    return None
+
+
 def parent_homework(request):
     phone = request.GET.get("token") or request.POST.get("token")
     if not phone:
@@ -83,32 +193,18 @@ def parent_homework(request):
         grade = ss.grade
         section = ss.section
         
-        try:
-            homework_qs = Homework.objects.filter(
-                session=current_session,
-                grade=grade,
-                section=section,
-                nepali_date=selected_date,
-            )
-            if not homework_qs.exists():
-                greg_date = selected_date
-                if hasattr(selected_date, "to_datetime_date"):
-                    greg_date = selected_date.to_datetime_date()
-                elif hasattr(selected_date, "to_date"):
-                    greg_date = selected_date.to_date()
-                else:
-                    greg_date = selected_date
-                homework_qs = Homework.objects.filter(
-                    session=current_session,
-                    grade=grade,
-                    section=section,
-                    date=greg_date,
-                )
-                if not homework_qs.exists():
-                    hw_dict = {}
-                else:
-                    hw_dict = json.loads(homework_qs.first().homework or "{}")
-
+        homework_qs = Homework.objects.filter(
+            session=current_session,
+            grade=grade,
+            section=section,
+            nepali_date=selected_date,
+        )
+        
+        if not homework_qs.exists():
+            hw_dict = {}
+        else:
+            hw_dict = json.loads(homework_qs.first().homework or "{}")
+            
         subjects = Subject.objects.filter(
             Q(section=section) | Q(section__isnull=True),
             session=current_session,
@@ -765,29 +861,6 @@ def generate_auth_token(request):
     return JsonResponse(response_data)
 
 
-
-def validate_webview_token(request, expected_role):
-    token = request.GET.get("token") or request.POST.get("token")
-    if not token:
-        return None
-        
-    try:
-        data = signer.unsign_object(token, max_age=86400)
-    except (BadSignature, SignatureExpired):
-        return None
-        
-    if data.get("role") != expected_role:
-        return None
-        
-    if expected_role == "parent":
-        return data.get("phone")
-    elif expected_role == "teacher":
-        user_id = data.get("user_id")
-        return User.objects.filter(id=user_id).first()
-        
-    return None
-
-
 def teacher_attendance(request):
     """Render teacher attendance webview with robust error handling."""
     try:
@@ -986,6 +1059,8 @@ def teacher_attendance(request):
         return render(request, "webview/teacher_attendance.html", context)
 
     except Exception as exc:
+        import traceback
+        import logging
         logger = logging.getLogger(__name__)
         logger.error("Unexpected error in teacher_attendance: %s\n%s", exc, traceback.format_exc())
         return render(request, "webview/error.html", {
