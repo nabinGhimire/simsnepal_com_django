@@ -9,209 +9,58 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.hamro.com/hamro/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f4f7f6;
-      color: #2c3e50;
-      padding-bottom: 40px;
-    }
-    .header-bar {
-      background: linear-gradient(135deg, #6c757d, #5a6268);
-      color: white;
-      padding: 20px 16px;
-      border-bottom-left-radius: 20px;
-      border-bottom-right-radius: 20px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    }
-    .sticky-footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #f8f9fa;
-      padding: 15px;
-      box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
-      z-index: 1000;
-    }
-    .marks-card {
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      padding: 12px;
-      background: #fff;
-    }
-    .student-row {
-      border-bottom: 1px solid #f0f0f0;
-      padding: 8px 0;
-    }
+    body {font-family: 'Inter', sans-serif; background-color: #f4f7f6; color: #2c3e50; padding-bottom: 40px;}
+    .header-bar {background: linear-gradient(135deg, #6c757d, #5a6268); color: white; padding: 20px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);}
+    .sticky-footer {position: fixed; bottom: 0; left: 0; right: 0; background: #f8f9fa; padding: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); z-index: 1000;}
+    .marks-card {border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; padding: 12px; background: #fff;}
+    .student-row {border-bottom: 1px solid #f0f0f0; padding: 8px 0;}
   </style>
 </head>
 <body>
 
   <div class="header-bar mb-3">
     <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h4 class="mb-0 fw-bold">Marks</h4>
-        <small class="opacity-75">Teacher Portal</small>
-      </div>
-      <div>
-        {% if is_admin %}<span class="badge bg-warning-lt">Administrator</span>
-        {% else %}<span class="badge bg-white-lt">Teacher</span>{% endif %}
-      </div>
+      <div><h4 class="mb-0 fw-bold">Marks</h4><small class="opacity-75">Teacher Portal</small></div>
+      <div>{% if is_admin %}<span class="badge bg-warning-lt">Administrator</span>{% else %}<span class="badge bg-white-lt">Teacher</span>{% endif %}</div>
     </div>
   </div>
 
   <div class="container-xl px-3 mt-3">
-    {% if message %}
-      <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 10px;">
-        <div class="d-flex">
-          <i class="ti ti-circle-check-filled me-2" style="font-size: 1.25rem;"></i>
-          <div>{{ message }}</div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    {% endif %}
-
-    <!-- School Selection -->
-    {% if available_schools|length > 1 and not selected_school %}
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
-      <div class="card-body p-3">
-        <form method="GET" action="" id="schoolForm">
-          <input type="hidden" name="token" value="{{ token }}">
-          <label class="form-label fw-semibold text-secondary mb-1">Select School</label>
-          <select name="school_id" class="form-select form-select-sm" onchange="this.form.submit();">
-            <option value="">-- Select School --</option>
-            {% for school in available_schools %}
-            <option value="{{ school.id }}" {% if school.id == selected_school.id %}selected{% endif %}>
-              {{ school.name }}
-            </option>
-            {% endfor %}
-          </select>
-        </form>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Date Picker -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
-      <div class="card-body p-3">
-        <form method="GET" action="" id="dateForm">
-          <input type="hidden" name="token" value="{{ token }}">
-          <input type="hidden" name="school_id" value="{{ selected_school.id if selected_school else '' }}">
-          <label class="form-label fw-semibold text-secondary mb-1">Select Date</label>
-          <input type="text" name="date" id="dateInput" class="form-control form-control-sm"
-            value="{{ selected_date|nepali_date:'Y-m-d' }}" placeholder="Select Nepali date"
-            readonly style="background: #f8f9fa;">
-          <small class="text-secondary">Format: YYYY-MM-DD (e.g., 2083-01-01)</small>
-        </form>
-      </div>
-    </div>
+    {% if message %}<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 10px;"><div class="d-flex"><i class="ti ti-circle-check-filled me-2" style="font-size: 1.25rem;"></i><div>{{ message }}</div></div><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endif %}
 
     {% if grouped_ui %}
     <div class="row g-3">
       {% for school_name, classes in grouped_ui.items %}
-      <div class="col-12">
-        <div class="marks-card p-4 mb-3">
-          <h4 class="fw-bold text-secondary mb-3">
-            <i class="ti ti-building-community me-2"></i> {{ school_name }}
-          </h4>
-          
-          {% for class_name, class_data in classes.items %}
-          <div class="mb-4">
-            <h5 class="fw-semibold text-dark mb-3">
-              <i class="ti ti-school me-2"></i> {{ class_name }}
-            </h5>
-            
-            {% for entry in class_data %}
-            <div class="marks-card p-3 mb-3">
-              <h6 class="fw-bold text-primary mb-2">
-                <i class="ti ti-book me-1"></i> {{ entry.subject|default:'All Subjects' }}
-              </h6>
-              
-              <p class="text-secondary mb-3">Students: {{ entry.students|length }}</p>
-              
-              <!-- Marks table -->
-              <div class="table-responsive">
-                <table class="table table-sm mb-0">
-                  <thead>
-                    <tr>
-                      <th style="width: 8%">#</th>
-                      <th style="width: 25%">Student Name</th>
-                      <th style="width: 15%">Roll No</th>
-                      <th style="width: 15%">Term 1</th>
-                      <th style="width: 15%">Term 2</th>
-                      <th style="width: 12%">Term 3</th>
-                      <th style="width: 10%">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for ss in entry.students %}
-                    <tr class="student-row">
-                      <td>{{ forloop.counter }}</td>
-                      <td>{{ ss.student.name }}</td>
-                      <td>{{ ss.roll_no }}</td>
-                      <td><input type="number" class="form-control form-control-sm" placeholder="Mark 1"></td>
-                      <td><input type="number" class="form-control form-control-sm" placeholder="Mark 2"></td>
-                      <td><input type="number" class="form-control form-control-sm" placeholder="Mark 3"></td>
-                      <td>
-                        <button type="submit" name="action" value="save_marks"
-                          class="btn btn-teal btn-sm" style="border-radius: 4px;">
-                          <i class="ti ti-save me-1"></i> Save
-                        </button>
-                      </td>
-                    </tr>
-                    {% empty %}
-                    <td colspan="7" class="text-center py-4">No students</td>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            {% endfor %}
+      <div class="col-12"><div class="marks-card p-4 mb-3"><h4 class="fw-bold text-secondary mb-3"><i class="ti ti-building-community me-2"></i> {{ school_name }}</h5>
+        {% for class_name, class_data in classes.items %}
+        <div class="mb-4"><h5 class="fw-semibold text-dark mb-3"><i class="ti ti-school me-2"></i> {{ class_name }}</h5>
+          {% for entry in class_data %}
+          <div class="marks-card p-3 mb-3"><h6 class="fw-bold text-primary mb-2"><i class="ti ti-book me-1"></i> {{ entry.subject|default:'All Subjects' }}</h6>
+            <p class="text-secondary mb-3">Students: {{ entry.students|length }}</p>
+            <div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th style="width: 8%">#</th><th style="width: 25%">Student Name</th><th style="width: 15%">Roll No</th><th style="width: 15%">Term 1</th><th style="width: 15%">Term 2</th><th style="width: 12%">Term 3</th><th style="width: 10%">Actions</th></tr></thead><tbody>
+            {% for ss in entry.students %}
+            <tr class="student-row"><td>{{ forloop.counter }}</td><td>{{ ss.student.name }}</td><td>{{ ss.roll_no }}</td><td><input type="number" class="form-control form-control-sm" placeholder="Mark 1"></td><td><input type="number" class="form-control form-control-sm" placeholder="Mark 2"></td><td><input type="number" class="form-control form-control-sm" placeholder="Mark 3"></td><td><button type="submit" name="action" value="save_marks" class="btn btn-teal btn-sm" style="border-radius: 4px;"><i class="ti ti-save me-1"></i> Save</td></tr>
+            {% empty %}<td colspan="7" class="text-center py-4">No students</td>{% endfor %}</tbody></table></div>
           </div>
-          {% endfor %}
+          {% endfor %}</div>
         </div>
-      </div>
-      {% endfor %}
-    {% else %}
-    <div class="card border-0 shadow-sm text-center p-5" style="border-radius: 12px;">
-      <h3 class="fw-bold text-dark">No Classes Assigned</h3>
-      <p class="text-secondary mb-0">You have no subjects or classes assigned. Please contact the administrator.</p>
-    </div>
-    {% endif %}
+      {% endfor %}</div>
+      {% else %}<div class="card border-0 shadow-sm text-center p-5" style="border-radius: 12px;"><h3 class="fw-bold text-dark">No Classes Assigned</h3><p class="text-secondary mb-0">You have no subjects or classes assigned. Please contact the administrator.</p></div>{% endif %}
 
-    <!-- Navigation/Action Buttons -->
-    <div class="d-flex justify-content-end mb-3">
-      {% if action != "cancel" %}
-      <button type="submit" name="action" value="cancel"
-        class="btn btn-secondary me-2">Cancel</button>
-      {% endif %}
-    </div>
+    <div class="d-flex justify-content-end mb-3">{% if action != "cancel" %}<button type="submit" name="action" value="cancel" class="btn btn-secondary me-2">Cancel</button>{% endif %}</div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.hamro.com/hamro/js/nepali.datepicker.v4.0.1.min.js" type="text/javascript"></script>
   <script type="text/javascript">
-    // Initialize date picker
     if (typeof NepaliDatepicker !== 'undefined') {
       const dateInput = document.getElementById('dateInput');
-      if (dateInput) {
-        new NepaliDatepicker(dateInput, {
-          buttonClass: 'btn btn-link text-primary',
-          format: 'Y-m-d'
-        });
-      }
+      if (dateInput) { new NepaliDatepicker(dateInput, { buttonClass: 'btn btn-link text-primary', format: 'Y-m-d' }); }
     }
-
-    // Initialize: set date input value
     document.addEventListener('DOMContentLoaded', function() {
       const dateInput = document.getElementById('dateInput');
       if (dateInput && !dateInput.value) {
-        const today = new Date();
-        const y = today.getFullYear();
-        const m = String(today.getMonth() + 1).padStart(2, '0');
-        const d = String(today.getDate()).padStart(2, '0');
-        dateInput.value = `${y}-${m}-${d}`;
+        const today = new Date(); const y = today.getFullYear(); const m = String(today.getMonth() + 1).padStart(2, '0'); const d = String(today.getDate()).padStart(2, '0'); dateInput.value = `${y}-${m}-${d}`;
       }
     });
   </script>
