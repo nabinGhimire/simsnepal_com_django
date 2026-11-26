@@ -181,7 +181,7 @@
                         {% if forloop.counter0 == outer_index %}
                           <td {% if marks.th_fail %}class="cell-fail"{% endif %}>{{ marks.theory_raw|default:"-" }}</td>
                           {% if fm.pr_fm > 0 %}<td {% if marks.pr_fail %}class="cell-fail"{% endif %}>{{ marks.prac_raw|default:"-" }}</td>{% endif %}
-                          <td>{{ marks.gradepoint|floatformat:2 }}</td>
+                          <td>{{ marks.gradepoint|floatformat:1 }}</td>
                         {% endif %}
                       {% endfor %}
                     {% endwith %}
@@ -205,7 +205,7 @@
                             </div>
                           </td>
                           {% endif %}
-                          <td>{{ marks.gradepoint|floatformat:2 }}</td>
+                          <td>{{ marks.gradepoint|floatformat:1 }}</td>
                         {% endif %}
                       {% endfor %}
                     {% endwith %}

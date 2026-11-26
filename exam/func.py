@@ -1175,6 +1175,13 @@ def calculate_student_result(school, session, grade, term, student_session, conf
                 # Get PR grade from PR percent
                 pr_grade, pr_symbol, pr_point = get_grade_point(float(wr['pr_percent']))
                 
+                # A failed component is NG with zero point, matching the
+                # non-weighted new grading behaviour.
+                if wr['th_fail']:
+                    th_grade, th_symbol, th_point = "NG", "", 0
+                if wr['pr_fail']:
+                    pr_grade, pr_symbol, pr_point = "NG", "", 0
+
                 mo_dict[sub_id]['th_grade'] = th_grade
                 mo_dict[sub_id]['th_symbol'] = th_symbol
                 mo_dict[sub_id]['th_point'] = th_point
@@ -1185,12 +1192,19 @@ def calculate_student_result(school, session, grade, term, student_session, conf
                 mo_dict[sub_id]['pr_point'] = pr_point
                 mo_dict[sub_id]['pr_fail'] = wr['pr_fail']
                 
-                # Combined subject grade
-                mo_dict[sub_id]['total_grade'] = wr['subject_grade']
-                mo_dict[sub_id]['total_symbol'] = wr['subject_symbol']
-                mo_dict[sub_id]['total_point'] = float(wr['subject_gp'])
+                # Combined subject grade is NG/0 when either component fails.
+                if wr['th_fail'] or wr['pr_fail']:
+                    total_grade, total_symbol, total_point = "NG", "", 0
+                else:
+                    total_grade = wr['subject_grade']
+                    total_symbol = wr['subject_symbol']
+                    total_point = float(wr['subject_gp'])
                 
-                cgpa_sum += wr['subject_gp']
+                mo_dict[sub_id]['total_grade'] = total_grade
+                mo_dict[sub_id]['total_symbol'] = total_symbol
+                mo_dict[sub_id]['total_point'] = total_point
+
+                cgpa_sum += Decimal(str(total_point))
                 if wr['th_fail']:
                     fail_count += 1
                 if wr['pr_fail']:
