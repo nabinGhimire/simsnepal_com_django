@@ -11,7 +11,7 @@ import nepali_datetime
 from django.urls import reverse
 import logging
 from types import SimpleNamespace
-from sms.models import EduSession, SchoolBranch, SchoolGrade, Section, Subject, Student, StudentSession, Homework, MarkObtained, SchoolTerm, TeacherSubjectAccess, BranchUser, LiveResult
+from sms.models import EduSession, SchoolBranch, SchoolGrade, Section, Subject, Student, StudentSession, Homework, MarkObtained, SchoolTerm, Teacher, TeacherSubjectAccess, BranchUser, LiveResult
 from grihakarya.models import HomeworkEntry, HomeworkEntryAuditLog
 
 
@@ -35,79 +35,59 @@ def normalize_nepali_phone(phone_str):
     return phone
 
 
-@csrf_exempt
-def generate_auth_token(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST requests allowed"}, status=405)
-        
-    api_key = request.headers.get("X-API-Key")
-    expected_key = getattr(settings, "WEBVIEW_API_KEY", "")
-    if not api_key or api_key != expected_key:
-        return JsonResponse({"error": "Unauthorized API Access"}, status=403)
-        
-    try:
-        data = json.loads(request.body)
-    except Exception:
-        data = request.POST
+def find_webview_user(phone=None, hamro_uuid=None, username=None):
+    """Resolve a Django user from the identifiers sent by the mobile app."""
+    from sms.models import PlatformUserMapping
+    from sso.models import HamroUserProfile
 
-    phone = data.get("phone")
-    hamro_uuid = data.get("hamro_uuid")
-    username = data.get("username")
-    
-    # response_data = {"exists": False, "roles": []}
-    response_data = {"exists": False, "roles": [], "phone": phone, "hamro_uuid": hamro_uuid, "username": username}
-    
-    if phone:
-        try:
-            normalized_phone = normalize_nepali_phone(phone)
-            phone_int = int(normalized_phone)
-            parent_exists = Student.objects.filter(
-                Q(fathers_phone=phone_int) |
-                Q(mothers_phone=phone_int) |
-                Q(guardian_phone=phone_int),
-                status=True
-            ).exists()
-            if parent_exists:
-                response_data["exists"] = True
-                response_data["roles"].append("parent")
-                response_data["parent_token"] = signer.sign_object({"role": "parent", "phone": str(normalized_phone)})
-        except ValueError:
-            pass
+    normalized = normalize_nepali_phone(phone) if phone else ""
 
-    # Try to find user via hamro_uuid first
+    # The app's uuid is cached on Teacher.external_id. SSO profiles may hold a
+    # different (older) uuid, so both sources must be checked.
     if hamro_uuid:
-        from sso.models import HamroUserProfile
-        profile = HamroUserProfile.objects.filter(hamro_uuid=hamro_uuid).first()
-        user = profile.user if profile else None
+        profile = HamroUserProfile.objects.select_related('user').filter(
+            hamro_uuid=hamro_uuid
+        ).first()
+        if profile:
+            return profile.user
+        teacher = Teacher.objects.select_related('teacher').filter(
+            external_id=hamro_uuid
+        ).first()
+        if teacher:
+            return teacher.teacher
 
-    # If no hamro_uuid, try lookup by phone
-    if not user and phone:
-        from sso.models import HamroUserProfile
-        normalized_phone = normalize_nepali_phone(phone)
-        try:
-            phone_int = int(normalized_phone)
-            profile = HamroUserProfile.objects.filter(mobile_number=phone_int).first()
-            user = profile.user if profile else None
-        except ValueError:
-            user = None
+    if normalized:
+        phone_variants = {
+            normalized,
+            f'+977{normalized}',
+            f'977{normalized}',
+            f'00{normalized}',
+        }
+        profile = HamroUserProfile.objects.select_related('user').filter(
+            mobile_number__in=phone_variants
+        ).first()
+        if not profile and len(normalized) >= 10:
+            profile = HamroUserProfile.objects.select_related('user').filter(
+                mobile_number__endswith=normalized
+            ).first()
+        if profile:
+            return profile.user
 
-    # If no user yet, try lookup by username
-    if not user and username:
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            user = None
+        # Platform mappings cache phone -> Hamro uuid, which is stored on the
+        # teacher record. Useful when the SSO profile is missing entirely.
+        mapping = PlatformUserMapping.objects.filter(
+            phone_or_email__in=phone_variants
+        ).first()
+        if mapping and mapping.external_id:
+            teacher = Teacher.objects.select_related('teacher').filter(
+                external_id=mapping.external_id
+            ).first()
+            if teacher:
+                return teacher.teacher
 
-    # If user found and has BranchUser record, generate teacher token
-    if user:
-        response_data["exists"] = True
-        response_data["roles"].append("teacher")
-        # Generate a token for teacher access (required by webview apps)
-        response_data["teacher_token"] = signer.sign_object({"role": "teacher", "user_id": user.id})    
-   
-    return JsonResponse(response_data)
+    if username:
+        return User.objects.filter(username=username).first()
+    return None
 
 
 def validate_webview_token(request, expected_role):
@@ -833,38 +813,18 @@ def generate_auth_token(request):
         except ValueError:
             pass
 
-    # Try to find user via hamro_uuid first
-    if hamro_uuid:
-        from sso.models import HamroUserProfile
-        profile = HamroUserProfile.objects.filter(hamro_uuid=hamro_uuid).first()
-        user = profile.user if profile else None
+    # Resolve the teacher from the identifiers supplied by the app. A user can
+    # be both a parent and a teacher, so these checks are independent.
+    user = find_webview_user(phone=phone, hamro_uuid=hamro_uuid, username=username)
+    is_teacher = bool(user and (
+        Teacher.objects.filter(teacher=user).exists() or
+        BranchUser.objects.filter(user=user, status=True).exists()
+    ))
 
-    # If no hamro_uuid, try lookup by phone
-    if not user and phone:
-        from sso.models import HamroUserProfile
-        normalized_phone = normalize_nepali_phone(phone)
-        try:
-            phone_int = int(normalized_phone)
-            profile = HamroUserProfile.objects.filter(mobile_number=phone_int).first()
-            user = profile.user if profile else None
-        except ValueError:
-            user = None
-
-    # If no user yet, try lookup by username
-    if not user and username:
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            user = None
-
-    # If user found and has BranchUser record, generate teacher token
-    if user:
+    if is_teacher:
         response_data["exists"] = True
         response_data["roles"].append("teacher")
-        # Generate a token for teacher access (required by webview apps)
-        response_data["teacher_token"] = signer.sign_object({"role": "teacher", "user_id": user.id})    
+        response_data["teacher_token"] = signer.sign_object({"role": "teacher", "user_id": user.id})
    
     return JsonResponse(response_data)
 
