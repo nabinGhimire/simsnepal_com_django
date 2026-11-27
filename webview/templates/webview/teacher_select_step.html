@@ -37,6 +37,8 @@
           <h3 class="mb-0 fw-bold">{{ term.term_name }}</h3>
           <div class="ms-auto text-secondary"><i class="ti ti-chevron-right"></i></div>
         </a>
+      {% empty %}
+        <div class="alert alert-warning border-0 shadow-sm">No terms are available for this school.</div>
       {% endfor %}
       
     {% elif step == 'class' %}
@@ -46,6 +48,8 @@
           <h3 class="mb-0 fw-bold">Grade {{ cls.grade.grade_name }} - Section {{ cls.section.section }}</h3>
           <div class="ms-auto text-secondary"><i class="ti ti-chevron-right"></i></div>
         </a>
+      {% empty %}
+        <div class="alert alert-warning border-0 shadow-sm">No classes are assigned to you for this school.</div>
       {% endfor %}
       
     {% elif step == 'subject' %}
@@ -55,6 +59,8 @@
           <h3 class="mb-0 fw-bold">{{ sub.subject }}</h3>
           <div class="ms-auto text-secondary"><i class="ti ti-chevron-right"></i></div>
         </a>
+      {% empty %}
+        <div class="alert alert-warning border-0 shadow-sm">No subjects are assigned to you for this class.</div>
       {% endfor %}
     {% endif %}
   </div>

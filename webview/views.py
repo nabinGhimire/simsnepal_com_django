@@ -1735,14 +1735,15 @@ def teacher_marks(request):
                 "selected_date": selected_date_display,
             })
 
-        # Class and subject selection for the chosen term/school, limited to
-        # this teacher's subject assignments.
-        access_subjects = [
-            t.subject for t in ts_access
-            if t.subject and t.grade and t.grade.school_id == selected_school.id
+        # Class and subject selection for the chosen term/school. Use the
+        # assignment rows because shared subjects can have no section of their
+        # own while the teacher is assigned to a specific section.
+        access_entries = [
+            t for t in ts_access
+            if t.subject and t.grade and t.section and t.grade.school_id == selected_school.id
         ]
 
-        if not access_subjects:
+        if not access_entries:
             return render(request, "webview/error.html", {
                 "error_title": "No Subjects Assigned",
                 "error_message": "You have no subjects assigned for the selected school. Please contact the administrator."
@@ -1750,14 +1751,12 @@ def teacher_marks(request):
 
         unique_classes = []
         seen_classes = set()
-        for sub in access_subjects:
-            if not sub.grade or not sub.section:
-                continue
-            key = (sub.grade_id, sub.section_id)
+        for entry in access_entries:
+            key = (entry.grade_id, entry.section_id)
             if key in seen_classes:
                 continue
             seen_classes.add(key)
-            unique_classes.append({'grade': sub.grade, 'section': sub.section})
+            unique_classes.append({'grade': entry.grade, 'section': entry.section})
 
         grade_id = request.GET.get('grade_id') or request.POST.get('grade_id')
         section_id = request.GET.get('section_id') or request.POST.get('section_id')
@@ -1772,8 +1771,8 @@ def teacher_marks(request):
             })
 
         subjects_in_class = [
-            sub for sub in access_subjects
-            if str(sub.grade_id) == str(grade_id) and str(sub.section_id) == str(section_id)
+            entry.subject for entry in access_entries
+            if str(entry.grade_id) == str(grade_id) and str(entry.section_id) == str(section_id)
         ]
         if not subjects_in_class:
             return render(request, "webview/error.html", {
