@@ -389,7 +389,9 @@ def parent_result(request):
 def parent_result_detail(request):
     from django.shortcuts import get_object_or_404
     from django.db.models import Q
-    from exam.models import GradeFullMarks, Attendance, Rank, SchoolTerminology, SchoolResultType, LiveResult
+    from exam.func import get_percentage, get_grade_point
+    from exam.models import GradeFullMarks, SchoolTerminology, LiveResult
+    from sms.models import Attendance
     from django.contrib.auth import get_user_model
     
     user = validate_webview_token(request, "parent")
@@ -460,6 +462,17 @@ def parent_result_detail(request):
             "error_message": "Results for this term are not yet published."
         })
     
+    # Get student session info
+    ss = StudentSession.objects.filter(
+        student=student, session=current_session, status=True
+    ).select_related('grade', 'section').first()
+
+    if not ss:
+        return render(request, "webview/error.html", {
+            "error_title": "Enrollment Not Found",
+            "error_message": "Student is not enrolled in the current session."
+        })
+
     # Verify this grade is included in LiveResult grade_list for this school
     live_result_obj = LiveResult.objects.filter(school=student.school).first()
     if live_result_obj:
@@ -482,17 +495,6 @@ def parent_result_detail(request):
                 "error_title": "Results Not Published for Your Grade",
                 "error_message": f"Results for {ss.grade.grade_name} are not published for this term."
             })
-    
-    # Get student session info
-    ss = StudentSession.objects.filter(
-        student=student, session=current_session, status=True
-    ).select_related('grade', 'section').first()
-    
-    if not ss:
-        return render(request, "webview/error.html", {
-            "error_title": "Enrollment Not Found",
-            "error_message": "Student is not enrolled in the current session."
-        })
     
     # Read per-grade result config (falls back to school-wide defaults if none)
     from exam.models import GradeResultConfig
@@ -891,49 +893,22 @@ def teacher_attendance(request):
         branch_users = BranchUser.objects.filter(user=user, status=True)
         is_admin = branch_users.filter(admin_status=True).exists() or user.is_superuser
 
-        # Identify available schools
-        if is_admin:
-            if user.is_superuser:
-                available_schools = list(SchoolBranch.objects.filter(status=True))
-            else:
-                available_schools = [bu.school for bu in branch_users if bu.admin_status]
-        else:
-            # Teacher-specific schools from TeacherSubjectAccess
-            ts_access = TeacherSubjectAccess.objects.filter(
-                teacher=user, session=current_session, status=True
-            ).select_related('grade__school', 'grade__level', 'section', 'subject')
-            if not ts_access.exists():
-                return render(request, "webview/error.html", {
-                    "error_title": "No Subjects Assigned",
-                    "error_message": "You have no subjects or classes assigned. Please contact the administrator."
-                })
-            schools_from_access = list(set(
-                t.grade.school for t in ts_access if t.grade and t.grade.school
-            ))
-            if branch_users:
-                available_schools = list(set(schools_from_access + [bu.school for bu in branch_users]))
-            else:
-                available_schools = schools_from_access
+        # Schools/classes must come from subject assignments, even for admins.
+        ts_access = TeacherSubjectAccess.objects.filter(
+            teacher=user, session=current_session, status=True
+        ).select_related('grade__school', 'grade__level', 'section', 'subject')
+        if not ts_access.exists():
+            return render(request, "webview/error.html", {
+                "error_title": "No Subjects Assigned",
+                "error_message": "You have no subjects or classes assigned. Please contact the administrator."
+            })
+        available_schools = sorted(
+            set(t.grade.school for t in ts_access if t.grade and t.grade.school),
+            key=lambda school: school.id,
+        )
 
         if not available_schools:
             return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
-
-        # School selection
-        school_id = request.GET.get('school_id') or request.POST.get('school_id')
-        if len(available_schools) > 1 and not school_id:
-            return render(request, "webview/teacher_select_school.html", {
-                "schools": available_schools,
-                "token": token,
-                "next_url": request.path,
-            })
-
-        if school_id:
-            try:
-                selected_school = SchoolBranch.objects.get(id=school_id)
-            except SchoolBridge.DoesNotExist:
-                selected_school = available_schools[0]
-        else:
-            selected_school = available_schools[0]
 
         # Date selection (GET filter or POST save). DailyAttendance.date is a
         # Gregorian DateField, so keep the BS date for display and convert to AD
@@ -950,26 +925,81 @@ def teacher_attendance(request):
         selected_date = bs_date.to_datetime_date()
         selected_date_display = f"{bs_date.year}-{bs_date.month:02d}-{bs_date.day:02d}"
 
-        # Get teacher's students by class
-        ts_access = TeacherSubjectAccess.objects.filter(
-            teacher=user, session=current_session, status=True
-        ).select_related('grade__school', 'grade__level', 'section', 'subject')
+        # School selection
+        school_id = request.GET.get('school_id') or request.POST.get('school_id')
+        if len(available_schools) > 1 and not school_id:
+            return render(request, "webview/teacher_select_school.html", {
+                "schools": available_schools,
+                "token": token,
+                "next_url": request.path,
+                "selected_date": selected_date_display,
+            })
+
+        selected_school = next(
+            (school for school in available_schools if str(school.id) == str(school_id)),
+            available_schools[0],
+        )
+
+        # Build the classes the teacher can use for the selected school.
+        allowed_classes = {}
+        for entry in ts_access:
+            if not entry.grade or not entry.section or entry.grade.school_id != selected_school.id:
+                continue
+            key = (entry.grade_id, entry.section_id)
+            meta = allowed_classes.setdefault(key, {
+                'grade': entry.grade,
+                'section': entry.section,
+                'subjects': [],
+            })
+            subject_name = entry.subject.subject if entry.subject else ''
+            if subject_name and subject_name not in meta['subjects']:
+                meta['subjects'].append(subject_name)
 
         students_by_class = {}
-        for entry in ts_access:
-            key = (entry.grade_id, entry.section_id)
-            if key not in students_by_class:
-                students_by_class[key] = StudentSession.objects.filter(
-                    grade_id=entry.grade_id,
-                    section_id=entry.section_id,
-                    session=current_session,
-                    status=True
-                ).select_related('student', 'grade', 'section').order_by('roll_no', 'student__name')
+        for key in allowed_classes:
+            students_by_class[key] = StudentSession.objects.filter(
+                grade_id=key[0],
+                section_id=key[1],
+                session=current_session,
+                status=True,
+            ).select_related('student', 'grade', 'section').order_by('roll_no', 'student__name')
+
+        # Class selection happens before showing students, so only one class is marked.
+        grade_id = request.GET.get('grade_id') or request.POST.get('grade_id')
+        section_id = request.GET.get('section_id') or request.POST.get('section_id')
+        selected_key = None
+        if grade_id and section_id:
+            try:
+                candidate_key = (int(grade_id), int(section_id))
+            except (TypeError, ValueError):
+                candidate_key = None
+            if candidate_key in allowed_classes:
+                selected_key = candidate_key
+
+        if selected_key is None and len(allowed_classes) == 1:
+            selected_key = next(iter(allowed_classes))
+
+        if selected_key is None:
+            class_items = [
+                SimpleNamespace(grade=meta['grade'], section=meta['section'])
+                for meta in allowed_classes.values()
+            ]
+            return render(request, "webview/teacher_select_step.html", {
+                "step": "class",
+                "school": selected_school,
+                "items": class_items,
+                "token": token,
+                "selected_date": selected_date_display,
+            })
+
+        selected_grade = allowed_classes[selected_key]['grade']
+        selected_section = allowed_classes[selected_key]['section']
+        selected_class = f"Grade {selected_grade.grade_name} - Section {selected_section.section}"
 
         from attendance.models import DailyAttendance, AttendanceAuditLog
 
         def build_attendance_map():
-            reg_nos = [ss.student_id for ss_list in students_by_class.values() for ss in ss_list]
+            reg_nos = [ss.student_id for ss in students_by_class.get(selected_key, [])]
             if not reg_nos:
                 return {}
             return {
@@ -981,39 +1011,25 @@ def teacher_attendance(request):
                 )
             }
 
-        # One list per class; subjects are combined for display (attendance is per student/day)
-        class_meta = {}
-        for entry in ts_access:
-            key = (entry.grade_id, entry.section_id)
-            if key not in class_meta:
-                class_meta[key] = {
-                    'school_name': entry.grade.school.name,
-                    'class_name': f"Grade {entry.grade.grade_name} - Section {entry.section.section}",
-                    'subjects': [],
-                }
-            subject_name = entry.subject.subject if entry.subject else ''
-            if subject_name and subject_name not in class_meta[key]['subjects']:
-                class_meta[key]['subjects'].append(subject_name)
-
         def build_grouped_ui(attendance_map):
             grouped = {}
-            for key, meta in class_meta.items():
-                rows = []
-                for ss in students_by_class.get(key, []):
-                    student = ss.student
-                    rec = attendance_map.get(student.reg_no)
-                    rows.append({
-                        'student': student,
-                        'reg_no': student.reg_no,
-                        'roll_no': ss.roll_no,
-                        'is_present': rec.is_present if rec else True,
-                        'absent_informed': rec.absent_informed if rec else False,
-                        'remarks': (rec.remarks or '') if rec else '',
-                    })
-                grouped.setdefault(meta['school_name'], {})[meta['class_name']] = {
-                    'subjects': meta['subjects'],
-                    'students': rows,
-                }
+            meta = allowed_classes[selected_key]
+            rows = []
+            for ss in students_by_class.get(selected_key, []):
+                student = ss.student
+                rec = attendance_map.get(student.reg_no)
+                rows.append({
+                    'student': student,
+                    'reg_no': student.reg_no,
+                    'roll_no': ss.roll_no,
+                    'is_present': rec.is_present if rec else True,
+                    'absent_informed': rec.absent_informed if rec else False,
+                    'remarks': (rec.remarks or '') if rec else '',
+                })
+            grouped.setdefault(selected_grade.school.name, {})[selected_class] = {
+                'subjects': meta['subjects'],
+                'students': rows,
+            }
             return grouped
 
         grouped_ui = build_grouped_ui(build_attendance_map())
@@ -1025,49 +1041,49 @@ def teacher_attendance(request):
             if action == "save_attendance":
                 saved = 0
                 changed = 0
-                for (g_id, s_id), ss_list in students_by_class.items():
-                    for ss in ss_list:
-                        reg_no = ss.student.reg_no
-                        is_present = request.POST.get(f"attendance_{reg_no}") == "present"
-                        informed = request.POST.get(f"informed_{reg_no}") == "yes"
-                        remarks = request.POST.get(f"remarks_{reg_no}", "")
+                g_id, s_id = selected_key
+                for ss in students_by_class.get(selected_key, []):
+                    reg_no = ss.student.reg_no
+                    is_present = request.POST.get(f"attendance_{reg_no}") == "present"
+                    informed = request.POST.get(f"informed_{reg_no}") == "yes"
+                    remarks = request.POST.get(f"remarks_{reg_no}", "")
 
-                        existing = DailyAttendance.objects.filter(
-                            reg_no=ss.student,
-                            date=selected_date,
-                            session=current_session,
-                            grade_id=g_id,
-                            section_id=s_id,
-                        ).first()
+                    existing = DailyAttendance.objects.filter(
+                        reg_no=ss.student,
+                        date=selected_date,
+                        session=current_session,
+                        grade_id=g_id,
+                        section_id=s_id,
+                    ).first()
 
-                        rec, created = DailyAttendance.objects.update_or_create(
-                            reg_no=ss.student,
-                            date=selected_date,
-                            session=current_session,
-                            grade_id=g_id,
-                            section_id=s_id,
-                            defaults={
-                                'nepali_date': bs_date,
-                                'is_present': is_present,
-                                'absent_informed': informed,
-                                'remarks': remarks,
-                                'taken_by': user,
-                                'school': selected_school,
-                            }
-                        )
+                    rec, created = DailyAttendance.objects.update_or_create(
+                        reg_no=ss.student,
+                        date=selected_date,
+                        session=current_session,
+                        grade_id=g_id,
+                        section_id=s_id,
+                        defaults={
+                            'nepali_date': bs_date,
+                            'is_present': is_present,
+                            'absent_informed': informed,
+                            'remarks': remarks,
+                            'taken_by': user,
+                            'school': selected_school,
+                        }
+                    )
 
-                        if not created and existing:
-                            if existing.is_present != is_present or existing.remarks != remarks or existing.absent_informed != informed:
-                                AttendanceAuditLog.objects.create(
-                                    attendance=rec,
-                                    updated_by=user,
-                                    previous_status=existing.is_present,
-                                    new_status=is_present,
-                                    previous_remarks=existing.remarks,
-                                    new_remarks=remarks
-                                )
-                                changed += 1
-                        saved += 1
+                    if not created and existing:
+                        if existing.is_present != is_present or existing.remarks != remarks or existing.absent_informed != informed:
+                            AttendanceAuditLog.objects.create(
+                                attendance=rec,
+                                updated_by=user,
+                                previous_status=existing.is_present,
+                                new_status=is_present,
+                                previous_remarks=existing.remarks,
+                                new_remarks=remarks
+                            )
+                            changed += 1
+                    saved += 1
 
                 message = (
                     f"Attendance saved for {saved} students"
@@ -1077,6 +1093,9 @@ def teacher_attendance(request):
                     'is_admin': is_admin,
                     'selected_school': selected_school,
                     'available_schools': available_schools,
+                    'selected_grade': selected_grade,
+                    'selected_section': selected_section,
+                    'selected_class': selected_class,
                     'selected_date': selected_date_display,
                     'message': message,
                     'token': token,
@@ -1090,6 +1109,9 @@ def teacher_attendance(request):
             'is_admin': is_admin,
             'selected_school': selected_school,
             'available_schools': available_schools,
+            'selected_grade': selected_grade,
+            'selected_section': selected_section,
+            'selected_class': selected_class,
             'selected_date': selected_date_display,
             'token': token,
             'grouped_ui': grouped_ui,
@@ -1634,7 +1656,7 @@ def teacher_homework(request):
 
 
 def teacher_marks(request):
-    """Render teacher marks webview."""
+    """Render teacher marks webview with school/term/class/subject selection."""
     try:
         token = request.GET.get('token') or request.POST.get('token')
         user = validate_webview_token(request, "teacher")
@@ -1644,7 +1666,6 @@ def teacher_marks(request):
                 "error_message": "Invalid or expired token. Please reopen the page from the app."
             })
 
-        # Get current academic session
         current_session = get_current_session()
         if not current_session:
             return render(request, "webview/error.html", {
@@ -1652,74 +1673,137 @@ def teacher_marks(request):
                 "error_message": "No active academic session configured."
             })
 
-        # Determine admin status
         from sms.models import BranchUser
         branch_users = BranchUser.objects.filter(user=user, status=True)
         is_admin = branch_users.filter(admin_status=True).exists() or user.is_superuser
 
-        # Identify available schools
-        if is_admin:
-            if user.is_superuser:
-                available_schools = list(SchoolBranch.objects.filter(status=True))
-            else:
-                available_schools = [bu.school for bu in branch_users if bu.admin_status]
-        else:
-            from sms.models import TeacherSubjectAccess
-            ts_access = TeacherSubjectAccess.objects.filter(
-                teacher=user, session=current_session, status=True
-            ).select_related('grade__school', 'grade__level', 'section', 'subject')
-            if not ts_access.exists():
-                return render(request, "webview/error.html", {
-                    "error_title": "No Subjects Assigned",
-                    "error_message": "You have no subjects or classes assigned. Please contact the administrator."
-                })
-            schools_from_access = list(set(
-                t.grade.school for t in ts_access if t.grade and t.grade.school
-            ))
-            if branch_users:
-                available_schools = list(set(schools_from_access + [bu.school for bu in branch_users]))
-            else:
-                available_schools = schools_from_access
+        # Schools/classes must come from subject assignments, even for admins.
+        ts_access = TeacherSubjectAccess.objects.filter(
+            teacher=user, session=current_session, status=True
+        ).select_related('grade__school', 'grade__level', 'section', 'subject')
+        if not ts_access.exists():
+            return render(request, "webview/error.html", {
+                "error_title": "No Subjects Assigned",
+                "error_message": "You have no subjects or classes assigned. Please contact the administrator."
+            })
+        available_schools = sorted(
+            set(t.grade.school for t in ts_access if t.grade and t.grade.school),
+            key=lambda school: school.id,
+        )
 
         if not available_schools:
             return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
 
-        # School selection
+        selected_date_str = request.GET.get('date') or request.POST.get('date')
+        try:
+            parts = [int(p) for p in selected_date_str.split('-')] if selected_date_str else []
+        except (TypeError, ValueError):
+            parts = []
+        if len(parts) == 3 and 2050 <= parts[0] <= 2120:
+            bs_date = nepali_datetime.date(parts[0], parts[1], parts[2])
+        else:
+            bs_date = nepali_datetime.date.today()
+        selected_date_display = f"{bs_date.year}-{bs_date.month:02d}-{bs_date.day:02d}"
+
         school_id = request.GET.get('school_id') or request.POST.get('school_id')
         if len(available_schools) > 1 and not school_id:
             return render(request, "webview/teacher_select_school.html", {
                 "schools": available_schools,
                 "token": token,
                 "next_url": request.path,
+                "selected_date": selected_date_display,
             })
 
-        if school_id:
-            try:
-                selected_school = SchoolBranch.objects.get(id=school_id)
-            except SchoolBridge.DoesNotExist:
-                selected_school = available_schools[0]
-        else:
-            selected_school = available_schools[0]
+        selected_school = next(
+            (school for school in available_schools if str(school.id) == str(school_id)),
+            available_schools[0],
+        )
 
-        # Date selection
-        selected_date_str = request.GET.get('date')
-        if selected_date_str:
-            try:
-                parts = selected_date_str.split('-')
-                selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
-            except Exception:
-                selected_date = nepali_datetime.date.today()
-        else:
-            selected_date = nepali_datetime.date.today()
+        # Term selection
+        term_id = request.GET.get('term_id') or request.POST.get('term_id')
+        if not term_id:
+            terms = SchoolTerm.objects.filter(
+                Q(active=True) | Q(status__value__iexact='current for marks entry'),
+                school=selected_school,
+                year=current_session,
+            )
+            return render(request, "webview/teacher_select_step.html", {
+                "step": "term",
+                "items": terms,
+                "school": selected_school,
+                "token": token,
+                "selected_date": selected_date_display,
+            })
 
-        # GET: render marks view
-        context = {
-            'is_admin': is_admin,
-            'selected_school': selected_school,
-            'selected_date': selected_date,
-            'token': token,
-        }
-        return render(request, "webview/teacher_marks.html", context)
+        # Class and subject selection for the chosen term/school, limited to
+        # this teacher's subject assignments.
+        access_subjects = [
+            t.subject for t in ts_access
+            if t.subject and t.grade and t.grade.school_id == selected_school.id
+        ]
+
+        if not access_subjects:
+            return render(request, "webview/error.html", {
+                "error_title": "No Subjects Assigned",
+                "error_message": "You have no subjects assigned for the selected school. Please contact the administrator."
+            })
+
+        unique_classes = []
+        seen_classes = set()
+        for sub in access_subjects:
+            if not sub.grade or not sub.section:
+                continue
+            key = (sub.grade_id, sub.section_id)
+            if key in seen_classes:
+                continue
+            seen_classes.add(key)
+            unique_classes.append({'grade': sub.grade, 'section': sub.section})
+
+        grade_id = request.GET.get('grade_id') or request.POST.get('grade_id')
+        section_id = request.GET.get('section_id') or request.POST.get('section_id')
+        if not grade_id or not section_id:
+            return render(request, "webview/teacher_select_step.html", {
+                "step": "class",
+                "items": unique_classes,
+                "term_id": term_id,
+                "school": selected_school,
+                "token": token,
+                "selected_date": selected_date_display,
+            })
+
+        subjects_in_class = [
+            sub for sub in access_subjects
+            if str(sub.grade_id) == str(grade_id) and str(sub.section_id) == str(section_id)
+        ]
+        if not subjects_in_class:
+            return render(request, "webview/error.html", {
+                "error_title": "Class Not Available",
+                "error_message": "You are not assigned to this class. Please reopen the page from the app."
+            })
+
+        subject_id = request.GET.get('subject_id') or request.POST.get('subject_id')
+        if len(subjects_in_class) == 1 or subject_id:
+            final_subject_id = subject_id if subject_id else subjects_in_class[0].id
+            from urllib.parse import urlencode as urlencode_params
+            query = urlencode_params({
+                'token': token,
+                'term': term_id,
+                'grade': grade_id,
+                'section': section_id,
+                'subject': final_subject_id,
+            })
+            return redirect(f"{reverse('teacher_marks_entry')}?{query}")
+
+        return render(request, "webview/teacher_select_step.html", {
+            "step": "subject",
+            "items": subjects_in_class,
+            "term_id": term_id,
+            "grade_id": grade_id,
+            "section_id": section_id,
+            "school": selected_school,
+            "token": token,
+            "selected_date": selected_date_display,
+        })
 
     except Exception as exc:
         import traceback
@@ -1730,11 +1814,10 @@ def teacher_marks(request):
             "error_title": "Server Error",
             "error_message": "An unexpected error occurred while loading the page. Please contact support."
         })
-    return render(request, "webview/error.html", {"error_title": "No Content", "error_message": "Unable to load teacher marks. Please ensure you are assigned to a school and students."})
 
 
 def teacher_marks_entry(request):
-    """Render teacher marks entry webview."""
+    """Render/save the mobile marks entry form for one class, subject and term."""
     try:
         token = request.GET.get('token') or request.POST.get('token')
         user = validate_webview_token(request, "teacher")
@@ -1744,7 +1827,6 @@ def teacher_marks_entry(request):
                 "error_message": "Invalid or expired token. Please reopen the page from the app."
             })
 
-        # Get current academic session
         current_session = get_current_session()
         if not current_session:
             return render(request, "webview/error.html", {
@@ -1752,74 +1834,115 @@ def teacher_marks_entry(request):
                 "error_message": "No active academic session configured."
             })
 
-        # Determine admin status
-        from sms.models import BranchUser
-        branch_users = BranchUser.objects.filter(user=user, status=True)
-        is_admin = branch_users.filter(admin_status=True).exists() or user.is_superuser
-
-        # Identify available schools
-        if is_admin:
-            if user.is_superuser:
-                available_schools = list(SchoolBranch.objects.filter(status=True))
-            else:
-                available_schools = [bu.school for bu in branch_users if bu.admin_status]
-        else:
-            from sms.models import TeacherSubjectAccess
-            ts_access = TeacherSubjectAccess.objects.filter(
-                teacher=user, session=current_session, status=True
-            ).select_related('grade__school', 'grade__level', 'section', 'subject')
-            if not ts_access.exists():
-                return render(request, "webview/error.html", {
-                    "error_title": "No Subjects Assigned",
-                    "error_message": "You have no subjects or classes assigned. Please contact the administrator."
-                })
-            schools_from_access = list(set(
-                t.grade.school for t in ts_access if t.grade and t.grade.school
-            ))
-            if branch_users:
-                available_schools = list(set(schools_from_access + [bu.school for bu in branch_users]))
-            else:
-                available_schools = schools_from_access
-
-        if not available_schools:
-            return render(request, "webview/error.html", {"error_title": "No Classes", "error_message": "You have no assigned subjects."})
-
-        # School selection
-        school_id = request.GET.get('school_id') or request.POST.get('school_id')
-        if len(available_schools) > 1 and not school_id:
-            return render(request, "webview/teacher_select_school.html", {
-                "schools": available_schools,
-                "token": token,
-                "next_url": request.path,
+        term_id = request.POST.get('term') or request.GET.get('term')
+        grade_id = request.POST.get('grade') or request.GET.get('grade')
+        section_id = request.POST.get('section') or request.GET.get('section')
+        subject_id = request.POST.get('subject') or request.GET.get('subject')
+        if not (term_id and grade_id and section_id and subject_id):
+            return render(request, "webview/error.html", {
+                "error_title": "Missing Parameters",
+                "error_message": "Required parameters are missing. Please reopen the page from the app."
             })
 
-        if school_id:
-            try:
-                selected_school = SchoolBranch.objects.get(id=school_id)
-            except SchoolBridge.DoesNotExist:
-                selected_school = available_schools[0]
-        else:
-            selected_school = available_schools[0]
+        grade = SchoolGrade.objects.filter(id=grade_id).first()
+        section = Section.objects.filter(id=section_id).first()
+        subject = Subject.objects.filter(id=subject_id).first()
+        term_exam = SchoolTerm.objects.filter(id=term_id).first()
+        if not (grade and section and subject and term_exam):
+            return render(request, "webview/error.html", {
+                "error_title": "Invalid Selection",
+                "error_message": "The selected class, subject or term was not found. Please reopen the page from the app."
+            })
+        school = grade.school
 
-        # Date selection
-        selected_date_str = request.GET.get('date')
-        if selected_date_str:
-            try:
-                parts = selected_date_str.split('-')
-                selected_date = nepali_datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
-            except Exception:
-                selected_date = nepali_datetime.date.today()
-        else:
-            selected_date = nepali_datetime.date.today()
+        is_assigned = TeacherSubjectAccess.objects.filter(
+            teacher=user,
+            session=current_session,
+            grade=grade,
+            section=section,
+            subject=subject,
+            status=True,
+        ).exists()
+        if not is_assigned:
+            return render(request, "webview/error.html", {
+                "error_title": "Class Not Available",
+                "error_message": "You are not assigned to this class or subject. Please reopen the page from the app."
+            })
 
-        # GET: render marks entry view
-        context = {
-            'is_admin': is_admin,
-            'selected_school': selected_school,
-            'selected_date': selected_date,
-            'token': token,
+        students = StudentSession.objects.filter(
+            session=current_session, grade=grade, section=section, status=True
+        ).select_related('student').order_by('roll_no')
+
+        from exam.models import GradeFullMarks
+        fullmark = GradeFullMarks.objects.filter(
+            school=school, grade=grade, session=current_session,
+            term=term_exam, subject=subject,
+        ).first()
+        if not fullmark:
+            return render(request, "webview/error.html", {
+                "error_title": "Configuration Error",
+                "error_message": "Full marks configuration missing for this subject."
+            })
+
+        marks_dict = {
+            m.student_id: m for m in MarkObtained.objects.filter(
+                school=school, grade=grade, term=term_exam,
+                subject=subject, session=current_session,
+            )
         }
-        return render(request, "webview/teacher_marks_entry.html", context)
+
+        def posted_marks(field_name, limit):
+            try:
+                value = int(request.POST.get(field_name) or 0)
+            except (TypeError, ValueError):
+                return 0
+            return max(0, min(value, limit))
+
+        new_desc = {}
+        for student_session in students:
+            student = student_session.student
+            reg_no = student.reg_no
+
+            if request.method == "POST":
+                is_absent = request.POST.get(f"{reg_no}_absent") == "1"
+                th_mo = 0 if is_absent else posted_marks(f"{reg_no}_th", fullmark.th_fm)
+                pr_mo = 0 if is_absent else posted_marks(f"{reg_no}_pr", fullmark.pr_fm)
+                MarkObtained.objects.update_or_create(
+                    student=student,
+                    school=school,
+                    grade=grade,
+                    term=term_exam,
+                    subject=subject,
+                    session=current_session,
+                    defaults={'th_mo': th_mo, 'pr_mo': pr_mo, 'is_absent': is_absent},
+                )
+            else:
+                mo = marks_dict.get(reg_no)
+                is_absent = mo.is_absent if mo else False
+                th_mo = mo.th_mo if mo else 0
+                pr_mo = mo.pr_mo if mo else 0
+
+            new_desc[reg_no] = {
+                "name": student.name,
+                "roll_no": student_session.roll_no,
+                "th_mo": th_mo,
+                "pr_mo": pr_mo,
+                "is_absent": is_absent,
+            }
+
+        context = {
+            "school": school,
+            "term_exam": term_exam,
+            "grade": grade,
+            "section": section,
+            "subject": subject,
+            "praMarks": fullmark.pr_fm > 0,
+            "fullmark": fullmark,
+            "new_desc": new_desc,
+            "token": token,
+            "success": request.method == "POST",
+        }
+        return render(request, "webview/teacher_marks_form.html", context)
 
     except Exception as exc:
         import traceback
@@ -1830,4 +1953,3 @@ def teacher_marks_entry(request):
             "error_title": "Server Error",
             "error_message": "An unexpected error occurred while loading the page. Please contact support."
         })
-    return render(request, "webview/error.html", {"error_title": "No Content", "error_message": "Unable to load teacher marks entry. Please ensure you are assigned to a school and students."})

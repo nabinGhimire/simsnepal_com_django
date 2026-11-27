@@ -10,7 +10,7 @@
   <link href="https://cdn.hamro.com/hamro/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
   <style>
     body {font-family: 'Inter', sans-serif; background-color: #f4f7f6; color: #2c3e50; padding-bottom: 40px;}
-    .header-bar {background: linear-gradient(135deg, #6c757d, #5a6268); color: white; padding: 20px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);}
+    .header-bar {background: linear-gradient(135deg, #008877, #00a890); color: white; padding: 20px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,136,119,0.15);}
     .sticky-footer {position: fixed; bottom: 0; left: 0; right: 0; background: #f8f9fa; padding: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); z-index: 1000;}
     .entry-card {border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; padding: 12px; background: #fff;}
     .student-row {border-bottom: 1px solid #f0f0f0; padding: 8px 0;}
@@ -39,7 +39,7 @@
             <p class="text-secondary mb-3">Students: {{ entry.students|length }}</p>
             <form method="POST" action="">{% csrf_token %}<input type="hidden" name="token" value="{{ token }}"><input type="hidden" name="action" value="save_marks_entry"><input type="hidden" name="school_id" value="{{ selected_school.id }}"><input type="hidden" name="date" value="{{ selected_date }}"><table class="table table-sm"><thead><tr><th style="width: 8%">#</th><th style="width: 25%">Student Name</th><th style="width: 15%">Roll No</th><th style="width: 20%">Marks</th><th style="width: 12%">Informed</th><th style="width: 10%">Actions</th></tr></thead><tbody>
             {% for ss in entry.students %}
-            <tr class="student-row"><td>{{ forloop.counter }}</td><td>{{ ss.student.name }}</td><td>{{ ss.roll_no }}</td><td><input type="number" class="form-control form-control-sm" name="marks_{{ ss.student.reg_no }}" placeholder="Marks" min="0" max="100"></td><td><input type="checkbox" name="informed_{{ ss.student.reg_no }}" value="yes"></td><td><button type="submit" name="action" value="save_marks_entry" class="btn btn-teal btn-sm" style="border-radius: 4px;"><i class="ti ti-save me-1"></i> Save</a><a href="{% url 'teacher_marks_entry' %}?token={{ token }}{% if selected_school %}&school_id={{ selected_school.id }}{% endif %}" class="btn btn-outline-secondary btn-sm" style="border-radius: 4px;">Cancel</td></tr>
+            <tr class="student-row"><td>{{ forloop.counter }}</td><td>{{ ss.student.name }}</td><td>{{ ss.roll_no }}</td><td><input type="number" class="form-control form-control-sm" name="marks_{{ ss.student.reg_no }}" placeholder="Marks" min="0" max="100"></td><td><input type="checkbox" name="informed_{{ ss.student.reg_no }}" value="yes"></td><td><button type="submit" name="action" value="save_marks_entry" class="btn btn-teal btn-sm" style="border-radius: 4px;"><i class="ti ti-save me-1"></i> Save</button><a href="{% url 'teacher_marks_entry' %}?token={{ token }}{% if selected_school %}&school_id={{ selected_school.id }}{% endif %}" class="btn btn-outline-secondary btn-sm" style="border-radius: 4px;">Cancel</a></td></tr>
             {% empty %}<td colspan="6" class="text-center py-4">No students</td>{% endfor %}</tbody></table></form>
           </div>
           {% endfor %}</div>

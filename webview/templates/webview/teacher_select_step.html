@@ -32,7 +32,7 @@
   <div class="container-xl px-3">
     {% if step == 'term' %}
       {% for term in items %}
-        <a href="?school_id={{ school.id }}&term_id={{ term.id }}&token={{ token }}" class="item-card d-flex align-items-center">
+        <a href="?school_id={{ school.id }}&term_id={{ term.id }}&token={{ token|urlencode }}{% if selected_date %}&date={{ selected_date|urlencode }}{% endif %}" class="item-card d-flex align-items-center">
           <div class="me-3"><span class="avatar bg-blue-lt"><i class="ti ti-calendar-event"></i></span></div>
           <h3 class="mb-0 fw-bold">{{ term.term_name }}</h3>
           <div class="ms-auto text-secondary"><i class="ti ti-chevron-right"></i></div>
@@ -41,7 +41,7 @@
       
     {% elif step == 'class' %}
       {% for cls in items %}
-        <a href="?school_id={{ school.id }}&term_id={{ term_id }}&grade_id={{ cls.grade.id }}&section_id={{ cls.section.id }}&token={{ token }}" class="item-card d-flex align-items-center">
+        <a href="?school_id={{ school.id }}&term_id={{ term_id }}&grade_id={{ cls.grade.id }}&section_id={{ cls.section.id }}&token={{ token|urlencode }}{% if selected_date %}&date={{ selected_date|urlencode }}{% endif %}" class="item-card d-flex align-items-center">
           <div class="me-3"><span class="avatar bg-green-lt"><i class="ti ti-users"></i></span></div>
           <h3 class="mb-0 fw-bold">Grade {{ cls.grade.grade_name }} - Section {{ cls.section.section }}</h3>
           <div class="ms-auto text-secondary"><i class="ti ti-chevron-right"></i></div>
@@ -50,7 +50,7 @@
       
     {% elif step == 'subject' %}
       {% for sub in items %}
-        <a href="?school_id={{ school.id }}&term_id={{ term_id }}&grade_id={{ grade_id }}&section_id={{ section_id }}&subject_id={{ sub.id }}&token={{ token }}" class="item-card d-flex align-items-center">
+        <a href="?school_id={{ school.id }}&term_id={{ term_id }}&grade_id={{ grade_id }}&section_id={{ section_id }}&subject_id={{ sub.id }}&token={{ token|urlencode }}{% if selected_date %}&date={{ selected_date|urlencode }}{% endif %}" class="item-card d-flex align-items-center">
           <div class="me-3"><span class="avatar bg-yellow-lt"><i class="ti ti-book"></i></span></div>
           <h3 class="mb-0 fw-bold">{{ sub.subject }}</h3>
           <div class="ms-auto text-secondary"><i class="ti ti-chevron-right"></i></div>

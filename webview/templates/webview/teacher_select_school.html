@@ -21,7 +21,7 @@
   </div>
   <div class="container-xl px-3">
     {% for school in schools %}
-      <a href="{{ next_url }}?school_id={{ school.id }}&token={{ token }}" class="school-card d-flex align-items-center">
+      <a href="{{ next_url }}?school_id={{ school.id }}&token={{ token|urlencode }}{% if selected_date %}&date={{ selected_date|urlencode }}{% endif %}" class="school-card d-flex align-items-center">
         <div class="me-3">
           <span class="avatar avatar-md rounded-circle text-white" style="background-color: #008877;">
             <i class="ti ti-building-community"></i>

@@ -10,7 +10,7 @@
   <link href="https://cdn.hamro.com/hamro/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
   <style>
     body {font-family: 'Inter', sans-serif; background-color: #f4f7f6; color: #2c3e50; padding-bottom: 40px;}
-    .header-bar {background: linear-gradient(135deg, #6c757d, #5a6268); color: white; padding: 20px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);}
+    .header-bar {background: linear-gradient(135deg, #008877, #00a890); color: white; padding: 20px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,136,119,0.15);}
     .sticky-footer {position: fixed; bottom: 0; left: 0; right: 0; background: #f8f9fa; padding: 15px; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); z-index: 1000;}
     .remarks-card {border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; padding: 12px; background: #fff;}
   </style>
@@ -61,13 +61,11 @@
   <script type="text/javascript">
     document.querySelectorAll('input[name="mode"]').forEach(radio => {
       radio.addEventListener('change', function() {
-        document.getElementById('one_by_one_mode').style.display = this.value === 'one_by_one' ? 'block' : 'none';
-        document.getElementById('batch_mode').style.display = this.value === 'batch' ? 'block' : 'none';
+        if (this.form) {
+          this.form.submit();
+        }
       });
     });
-    document.querySelector('input[name="mode"][value="one_by_one"]').checked = true;
-    document.getElementById('one_by_one_mode').style.display = 'block';
-    document.getElementById('batch_mode').style.display = 'none';
   </script>
 
 </body>

@@ -10,10 +10,13 @@
   <link href="https://cdn.hamro.com/hamro/css/nepali.datepicker.v4.0.1.min.css" rel="stylesheet" type="text/css"/>
   <style>
     body {font-family: 'Inter', sans-serif; background: #f4f7f6; color: #2c3e50; padding-bottom: 88px; -webkit-tap-highlight-color: transparent;}
-    .header-bar {background: linear-gradient(135deg, #6c757d, #5a6268); color: #fff; padding: 18px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,.15);}
+    .header-bar {background: linear-gradient(135deg, #008877, #00a890); color: #fff; padding: 18px 16px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,136,119,.18);}
     .filter-card {background: #fff; border: 0; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.05); padding: 12px; margin-bottom: 12px;}
     .filter-card label {font-size: .75rem; font-weight: 600; color: #6c757d; margin-bottom: 4px;}
     .filter-card .form-control, .filter-card .form-select {font-size: 16px; border-radius: 10px;}
+    .selection-summary {display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; font-size: .78rem; color: #6c757d;}
+    .selection-summary strong {color: #008877;}
+    .selection-summary a {color: #008877; font-weight: 600; text-decoration: none;}
     .bulk-bar {position: sticky; top: 0; z-index: 20; display: flex; gap: 8px; overflow-x: auto; background: #fff; border: 1px solid #e3eae9; border-radius: 14px; padding: 10px; margin-bottom: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.06); scrollbar-width: none;}
     .bulk-bar::-webkit-scrollbar {display: none;}
     .bulk-btn {flex: 1 0 auto; min-width: 104px; padding: 10px 12px; border-radius: 10px; border: 1px solid #dbe4e2; background: #fff; color: #374151; font-size: .85rem; font-weight: 600; white-space: nowrap;}
@@ -69,17 +72,25 @@
   <div class="container-xl px-3 mt-3">
     {% if message %}<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert" style="border-radius: 12px;"><div class="d-flex"><i class="ti ti-circle-check-filled me-2" style="font-size: 1.25rem;"></i><div>{{ message }}</div></div><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endif %}
 
-    <!-- Filters: school + date (auto-submits on change) -->
+    <!-- Filters: school/class + date (auto-submits on change) -->
     <form method="GET" action="" id="filterForm" class="filter-card">
       <input type="hidden" name="token" value="{{ token }}">
-      {% if available_schools|length > 1 %}
-        <label class="form-label" for="schoolFilter">School</label>
-        <select name="school_id" id="schoolFilter" class="form-select form-select-sm mb-3" onchange="this.form.submit();">
-          {% for school in available_schools %}<option value="{{ school.id }}" {% if school.id == selected_school.id %}selected{% endif %}>{{ school.name }}</option>{% endfor %}
-        </select>
-      {% else %}
-        <input type="hidden" name="school_id" value="{{ selected_school.id }}">
+      <input type="hidden" name="school_id" value="{{ selected_school.id }}">
+      {% if selected_grade and selected_section %}
+        <input type="hidden" name="grade_id" value="{{ selected_grade.id }}">
+        <input type="hidden" name="section_id" value="{{ selected_section.id }}">
       {% endif %}
+      <div class="selection-summary">
+        <span><i class="ti ti-building-community me-1"></i><strong>{{ selected_school.name }}</strong></span>
+        {% if available_schools|length > 1 %}
+          <a href="?token={{ token|urlencode }}&date={{ selected_date|urlencode }}">Change school</a>
+        {% endif %}
+        {% if selected_class %}
+          <span class="text-secondary">&middot;</span>
+          <span>{{ selected_class }}</span>
+          <a href="?school_id={{ selected_school.id }}&date={{ selected_date|urlencode }}&token={{ token|urlencode }}">Change class</a>
+        {% endif %}
+      </div>
       <label class="form-label" for="dateInput">Date (Nepali)</label>
       <div class="d-flex gap-2">
         <input type="text" name="date" id="dateInput" class="form-control form-control-sm" value="{{ selected_date }}" placeholder="YYYY-MM-DD" readonly onchange="this.form.submit();">
@@ -92,6 +103,10 @@
       <input type="hidden" name="token" value="{{ token }}">
       <input type="hidden" name="date" value="{{ selected_date }}">
       <input type="hidden" name="school_id" value="{{ selected_school.id }}">
+      {% if selected_grade and selected_section %}
+        <input type="hidden" name="grade_id" value="{{ selected_grade.id }}">
+        <input type="hidden" name="section_id" value="{{ selected_section.id }}">
+      {% endif %}
 
       <!-- Bulk actions -->
       <div class="bulk-bar">
